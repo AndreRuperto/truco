@@ -14,6 +14,7 @@ import {
   ErroJogada,
   type EstadoPartida,
   forca,
+  janelaDeFamilia,
   novaPartida,
   parceiroDe,
   quemDeveAgir,
@@ -376,6 +377,8 @@ export class Mesa {
       this.dicas = [null, null, null, null];
       this.sinaisDosBots();
     }
+    // Quem pediu família trocou as cartas: o sinal que o parceiro tinha não vale mais.
+    if (acao.tipo === 'familia') this.dicas[parceiroDe(acao.cadeira)] = null;
     this.atualizar();
     return true;
   }
@@ -426,7 +429,32 @@ export class Mesa {
       const ms = this.atrasoBot(s);
       for (const c of agentes) this.agendar(ms, () => this.jogarBot(c));
     }
+    this.familiasDosBots(s, agentes);
     this.enviarEstados();
+  }
+
+  /**
+   * Na janela de família, os bots fora da vez também podem pedir (`quemDeveAgir` só devolve
+   * a vez). Uma consulta por mudança de estado; só uma ação `familia` do próprio bot é aplicada.
+   */
+  private familiasDosBots(s: EstadoPartida, agentes: Cadeira[]): void {
+    if (!janelaDeFamilia(s)) return;
+    for (const c of CADEIRAS) {
+      if (agentes.includes(c) || this.humanoAtivo(c)) continue;
+      this.agendar(this.tempos.botMs, () => this.familiaDoBot(c));
+    }
+  }
+
+  private familiaDoBot(c: Cadeira): void {
+    const s = this.estado;
+    if (!s || !janelaDeFamilia(s)) return;
+    let a: AcaoJogador | null = null;
+    try {
+      a = this.decidirBot(s, c);
+    } catch (e) {
+      this.falha(e);
+    }
+    if (a?.tipo === 'familia' && a.cadeira === c) this.aplicar(a);
   }
 
   /** Aplica a batida ao tampo e avisa todos (o estado novo vai no próximo `estado`). */
@@ -454,6 +482,8 @@ export class Mesa {
   /** Espera do bot. A 1ª embaralhada de uma mão nova espera a pausa (o resumo da mão anterior aparece). */
   private atrasoBot(s: EstadoPartida): number {
     if (s.fase === 'embaralhando' && s.ritual?.embaralhadas === 0 && s.ultimaMao) return this.tempos.pausaMaoMs;
+    // A vez espera a janela de família: dá tempo de alguém (humano) pedir antes da 1ª carta.
+    if (janelaDeFamilia(s)) return Math.max(this.tempos.botMs, this.tempos.janelaFamiliaMs);
     return this.tempos.botMs;
   }
 

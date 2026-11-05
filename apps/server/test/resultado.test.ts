@@ -1,3 +1,4 @@
+import type { AcaoJogador } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
 import { contadoresZerados, contarAcao, percentual } from '../src/ranking/estatisticas';
 import { deltaAbandono, deltasDoFim, type JogadorRanqueado } from '../src/ranking/resultado';
@@ -53,6 +54,23 @@ describe('deltaAbandono', () => {
 });
 
 describe('contadores de truco', () => {
+  test('ritual e família não contam como truco nem corrida', () => {
+    let c = contadoresZerados();
+    const acoes: AcaoJogador[] = [
+      { tipo: 'embaralhar', cadeira: 0 },
+      { tipo: 'passarCorte', cadeira: 0 },
+      { tipo: 'cortar', cadeira: 0 },
+      { tipo: 'abrir3', cadeira: 0 },
+      { tipo: 'dar3', cadeira: 0 },
+      { tipo: 'devolver', cadeira: 0 },
+      { tipo: 'distribuir', cadeira: 0, modo: 'subindo' },
+      { tipo: 'familia', cadeira: 0 },
+      { tipo: 'conferir', cadeira: 0, conferir: true },
+    ];
+    for (const a of acoes) c = contarAcao(c, a);
+    expect(c).toEqual(contadoresZerados());
+  });
+
   test('truco, aumentar, aceitar, correr e recusar mão de 10', () => {
     let c = contadoresZerados();
     c = contarAcao(c, { tipo: 'truco', cadeira: 0 });
