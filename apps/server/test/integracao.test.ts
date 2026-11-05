@@ -1,22 +1,55 @@
 import { matchMaker } from '@colyseus/core';
+import { Client } from '@colyseus/sdk';
 import { boot, type ColyseusTestServer } from '@colyseus/testing';
+import { eq } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
+import { participacoes } from '../src/banco/schema';
 import { MesaRoom } from '../src/MesaRoom';
 import { chaveRegras } from '../src/mesa/protocolo';
+import { criarSessao, entrarComEmail } from '../src/repo/usuarios';
 import { criarServidor } from '../src/servidor';
+import { type Servicos, servicosDeTeste } from '../src/servicos';
+import { type BancoDeTeste, bancoDeTeste } from './banco-helpers';
 
 let colyseus: ColyseusTestServer;
+let banco: BancoDeTeste;
+let servicos: Servicos;
 
 beforeAll(async () => {
   MesaRoom.tempos = { botMs: 20, pausaMaoMs: 50, jogadaMs: 2_000 };
-  colyseus = await boot(criarServidor());
-});
+  banco = await bancoDeTeste();
+  servicos = servicosDeTeste(banco.db);
+  colyseus = await boot(criarServidor(servicos));
+}, 30_000);
 afterEach(async () => {
   await colyseus.cleanup();
+  await banco.limpar();
 });
 afterAll(async () => {
   await colyseus.shutdown();
+  await banco.fechar();
 });
+
+const URL_TESTE = 'http://localhost:2568';
+
+/** Usuário logado: sessão criada direto no banco e mandada como Bearer pelo SDK. */
+async function logado(email: string) {
+  const u = await entrarComEmail(banco.db, email);
+  const token = await criarSessao(banco.db, u.id, new Date());
+  const cliente = new Client(URL_TESTE);
+  cliente.auth.token = token;
+  return { u, token, cliente };
+}
+
+async function esperarAsync(cond: () => Promise<boolean>, ms = 5_000) {
+  const t0 = Date.now();
+  while (!(await cond())) {
+    if (Date.now() - t0 > ms) throw new Error('tempo esgotado esperando condição');
+    await new Promise((r) => setTimeout(r, 20));
+  }
+}
+
+const salasAbertas = async () => ((await (await fetch(`${URL_TESTE}/api/salas`)).json()) as { salas: any[] }).salas;
 
 function coletor(room: { onMessage: (tipo: '*', cb: (tipo: string | number, payload: any) => void) => unknown }) {
   const msgs: Record<string, any[]> = {};
@@ -194,5 +227,65 @@ describe('MesaRoom', () => {
     const b = await colyseus.sdk.joinOrCreate('mesa', { humanos: 2, nome: 'Bia' });
     coletor(b);
     expect(b.roomId).not.toBe(a.roomId);
+  });
+});
+
+describe('contas, privadas e HTTP no mesmo servidor', () => {
+  test('/saude e /api/config respondem na porta do Colyseus', async () => {
+    expect((await fetch(`${URL_TESTE}/saude`)).status).toBe(200);
+    expect(await (await fetch(`${URL_TESTE}/api/config`)).json()).toEqual({ google: null, emailTeste: true });
+  });
+
+  test('logado senta com o apelido da conta e a partida é gravada ao começar', async () => {
+    const ana = await logado('ana@x.com');
+    const sala = await ana.cliente.joinOrCreate('mesa', { humanos: 1, nome: 'Outro Nome' });
+    const m = coletor(sala);
+    await esperar(() => !!m.estado?.some((x) => x.visao));
+    expect(m.estado.at(-1).cadeiras[0].nome).toBe('ana');
+    expect(m.estado.at(-1).modo).toBe('classica');
+    await esperarAsync(async () => (await banco.db.select().from(participacoes)).length === 4);
+    const [p] = await banco.db.select().from(participacoes).where(eq(participacoes.usuarioId, ana.u.id));
+    expect(p).toMatchObject({ cadeira: 0, humano: true, nome: 'ana' });
+  });
+
+  test('token de sessão inválido entra como convidado', async () => {
+    const c = new Client(URL_TESTE);
+    c.auth.token = 'inventado';
+    const sala = await c.joinOrCreate('mesa', { humanos: 1, nome: 'Convidado' });
+    const m = coletor(sala);
+    await esperar(() => !!m.estado?.length);
+    expect(m.estado.at(-1).cadeiras[0].nome).toBe('Convidado');
+  });
+
+  test('mesa privada: fora da lista e do joinOrCreate, entra por código e tem chat', async () => {
+    const a = await colyseus.sdk.create('mesa', { modo: 'privada', humanos: 2, nome: 'Ana' });
+    const ma = coletor(a);
+    await esperar(() => !!ma.estado?.length);
+    expect(ma.estado.at(-1).modo).toBe('privada');
+    expect((await salasAbertas()).map((s) => s.id)).not.toContain(a.roomId);
+    const outro = await colyseus.sdk.joinOrCreate('mesa', { modo: 'privada', humanos: 2, nome: 'Cid' });
+    coletor(outro);
+    expect(outro.roomId).not.toBe(a.roomId);
+
+    const b = await colyseus.sdk.joinById(a.roomId, { nome: 'Bia' });
+    const mb = coletor(b);
+    await esperar(() => !!mb.estado?.length);
+    a.send('chat', '  oi\u0007 pessoal ');
+    await esperar(() => !!mb.chat?.length);
+    expect(mb.chat[0]).toEqual({ de: 0, nome: 'Ana', texto: 'oi pessoal' });
+  });
+
+  test('mesa casual esperando gente aparece em /api/salas', async () => {
+    const a = await colyseus.sdk.joinOrCreate('mesa', { humanos: 2, nivelBot: 'dificil', nome: 'Ana' });
+    coletor(a);
+    await esperarAsync(async () => (await salasAbertas()).some((s) => s.id === a.roomId));
+    expect((await salasAbertas()).find((s) => s.id === a.roomId)).toMatchObject({
+      modo: 'desafio',
+      variante: 'paulista',
+      humanos: 2,
+      nivelBot: 'dificil',
+      ocupados: 1,
+      dono: 'Ana',
+    });
   });
 });
