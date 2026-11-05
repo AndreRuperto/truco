@@ -5,5 +5,6 @@ export default defineConfig({
   resolve: {
     alias: { '@truco/engine': fileURLToPath(new URL('../../packages/engine/src/index.ts', import.meta.url)) },
   },
-  test: { include: ['test/**/*.test.ts'] },
+  // @colyseus/tools chama process.send('ready'), que quebra o IPC do pool 'forks' do Vitest.
+  test: { include: ['test/**/*.test.ts'], pool: 'threads' },
 });
