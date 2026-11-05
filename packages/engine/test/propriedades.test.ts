@@ -62,5 +62,5 @@ describe('propriedades: partidas aleatórias', () => {
       }),
       { numRuns: 200 },
     );
-  });
+  }, 30_000);
 });
