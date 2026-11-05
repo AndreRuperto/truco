@@ -2,7 +2,7 @@ import { type Carta, ehCoringa, type Variante } from '@truco/engine';
 import type { ReactNode } from 'react';
 import { ehVermelha, nomeManilha, rotuloCarta, simboloCarta } from '../logica/cartas';
 import { cx } from './cx';
-import { type Figura, FiguraCarta, OrnamentoAs } from './FiguraCarta';
+import { type Figura, FiguraCarta, FiguraCoringa, OrnamentoAs } from './FiguraCarta';
 
 const FIGURA: Partial<Record<Carta['valor'], Figura>> = { K: 'rei', Q: 'dama', J: 'valete' };
 
@@ -23,9 +23,18 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
   const simbolo = simboloCarta(carta);
   const figura = coringa ? undefined : FIGURA[carta.valor];
   const as = !coringa && carta.valor === 'A';
-  // O coringa não tem valor impresso: o canto mostra só a estrela.
+  /*
+   * O coringa não tem valor impresso: o canto traz "CORINGA" empilhado na carta larga
+   * (≥ 74px), "C" + estrela na média e só a estrela na estreita (< 48px). O CSS escolhe.
+   */
   const canto: ReactNode = coringa ? (
-    simbolo
+    <>
+      <span className="coringa-palavra">CORINGA</span>
+      <span className="coringa-curto">
+        <span className="coringa-c">C</span>
+        {simbolo}
+      </span>
+    </>
   ) : (
     <>
       {carta.valor}
@@ -40,7 +49,7 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
         ehVermelha(carta) ? 'vermelha' : 'preta',
         manilha && 'manilha',
         coringa && 'coringa',
-        (figura || as) && 'figurada',
+        (figura || as || coringa) && 'figurada',
       )}
       role="img"
       aria-label={rotuloCarta(carta, variante, vira)}
@@ -58,6 +67,11 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
       {figura && (
         <span className="figura">
           <FiguraCarta figura={figura} naipe={carta.naipe} />
+        </span>
+      )}
+      {coringa && (
+        <span className="figura figura-coringa">
+          <FiguraCoringa />
         </span>
       )}
       {as && (

@@ -24,6 +24,9 @@
   --verso-linha: #c9767b;
   --grito: #e9b02c;
   --nos: #3f9b66;
+  /* Bolinhas das fitas do coringa (sobre papel, com o verde e o amarelo acima). */
+  --coringa-azul: #2f68b8;
+  --coringa-rosa: #d9478a;
   --eles: #d0574d;
   --eles-forte: #a3302a;
   --branco: #ffffff;
@@ -900,12 +903,98 @@ button:disabled {
 .carta.manilha .canto-b {
   display: none;
 }
-/* Coringa: estrela num medalhão de filete tracejado, longe dos cantos. */
+/* Coringa estreito (< 48px): estrela num medalhão de filete tracejado, longe dos cantos. */
 .carta.coringa .naipe-central {
   inset: 29% 22%;
   border: 1.5px dashed currentColor;
   border-radius: 50%;
   font-size: calc(var(--carta-l) * 0.36);
+}
+/*
+ * Coringa largo e médio: o bobo da corte (FiguraCoringa) na carta toda. Canto com
+ * "CORINGA" em letras empilhadas a partir de 74px; abaixo disso, "C" + estrela.
+ */
+.carta.coringa {
+  --coringa-roupa: var(--naipe-vermelho);
+}
+.carta.coringa.preta {
+  /* um tom acima do contorno, para a roupa não virar silhueta */
+  --coringa-roupa: var(--tinta-suave);
+}
+.carta.coringa .figura-coringa {
+  inset: 4% 6% 3%;
+}
+.carta.coringa .canto {
+  top: 4%;
+  left: 6%;
+}
+.carta.coringa .canto-b {
+  top: auto;
+  left: auto;
+  right: 6%;
+  bottom: 4%;
+}
+.coringa-palavra {
+  display: block;
+  font-size: calc(var(--carta-l) * 0.12);
+  line-height: 1;
+  letter-spacing: -0.22em;
+  writing-mode: vertical-lr;
+  text-orientation: upright;
+}
+.coringa-curto {
+  display: none;
+  font-size: calc(var(--carta-l) * 0.2);
+}
+.coringa-c {
+  display: block;
+}
+@container (max-width: 73.98px) {
+  .carta.coringa .coringa-palavra {
+    display: none;
+  }
+  .carta.coringa .coringa-curto {
+    display: block;
+  }
+}
+@container (max-width: 47.98px) {
+  .carta.coringa .canto {
+    top: 5%;
+    left: 8%;
+  }
+  .carta.coringa .canto-b {
+    top: auto;
+    left: auto;
+    right: 8%;
+    bottom: 5%;
+  }
+  .carta.coringa .coringa-curto {
+    font-size: inherit;
+  }
+  .carta.coringa .coringa-c {
+    display: none;
+  }
+}
+.fig-roupa {
+  fill: var(--coringa-roupa, currentColor);
+}
+.fig-naipe-vermelho {
+  color: var(--naipe-vermelho);
+}
+.fig-naipe-preto {
+  color: var(--tinta);
+}
+.fig-bola-a {
+  fill: var(--nos);
+}
+.fig-bola-b {
+  fill: var(--grito);
+}
+.fig-bola-c {
+  fill: var(--coringa-azul);
+}
+.fig-bola-d {
+  fill: var(--coringa-rosa);
 }
 /*
  * Figuras (Rei, Dama, Valete) e o Ás ornamentado: SVG de FiguraCarta.tsx entre os cantos.

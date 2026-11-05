@@ -147,6 +147,117 @@ export function FiguraCarta({ figura, naipe }: { figura: Figura; naipe: Naipe })
   );
 }
 
+/** Bolinha/guizo: círculo amarelo com contorno. */
+const Guizo = ({ x, y, r = 2.6 }: { x: number; y: number; r?: number }) => (
+  <circle className="fig-ouro" cx={x} cy={y} r={r} />
+);
+
+/** Bolinhas coloridas das fitas, alternando as quatro cores. */
+const COR_BOLINHA = ['fig-bola-a', 'fig-bola-c', 'fig-bola-d', 'fig-bola-b'];
+
+/*
+ * Bobo da corte de corpo inteiro numa caixa 100×150, de frente: chapéu de três pontas com
+ * guizos, gola em zigue-zague, mão na cintura e a marotte erguida à direita. A composição
+ * deixa livres o alto à esquerda e o baixo à direita, onde ficam os cantos "CORINGA".
+ * A roupa usa `fig-roupa` (vermelho no Cc, tinta clara no Cp) e os detalhes, amarelo.
+ */
+function Bobo() {
+  return (
+    <>
+      {/* naipes pequenos em volta dos pés (cor própria de cada naipe) */}
+      <g className="fig-sem-traco">
+        <g className="fig-naipe-preto">
+          <Naipe naipe="espadas" x={11} y={131} t={10} />
+        </g>
+        <g className="fig-naipe-vermelho">
+          <Naipe naipe="copas" x={22} y={145} t={9} />
+        </g>
+        <g className="fig-naipe-preto">
+          <Naipe naipe="paus" x={50} y={145.5} t={8} />
+        </g>
+        <g className="fig-naipe-vermelho">
+          <Naipe naipe="ouros" x={77} y={145} t={9} />
+        </g>
+      </g>
+      {/* pernas em duas cores e sapatos de bico enrolado */}
+      <path className="fig-roupa" d="M39 102 L37 134 L47 134 L49 102 Z" />
+      <path className="fig-ouro" d="M51 102 L53 134 L63 134 L61 102 Z" />
+      <path className="fig-ouro" d="M47 131 L37 131 Q28 133 23 126 Q23 139 37 140 L47 140 Z" />
+      <path className="fig-roupa" d="M53 131 L63 131 Q72 133 77 126 Q77 139 63 140 L53 140 Z" />
+      <Guizo x={23} y={125} r={2.4} />
+      <Guizo x={77} y={125} r={2.4} />
+      {/* braço esquerdo na cintura */}
+      <path className="fig-roupa" d="M36 62 Q20 66 16 80 Q16 92 32 95 L34 87 Q25 85 25 80 Q27 72 38 71 Z" />
+      {/* túnica com barra em zigue-zague e pompons */}
+      <path className="fig-roupa" d="M33 60 Q28 82 30 104 L37 99 L43 106 L50 100 L57 106 L63 99 L70 104 Q72 82 67 60 Z" />
+      <circle className="fig-papel" cx="33" cy="91" r="4.2" />
+      <Guizo x={50} y={73} />
+      <Guizo x={50} y={84} />
+      <Guizo x={50} y={95} />
+      {/* braço direito erguido segurando a marotte */}
+      <path className="fig-roupa" d="M64 61 Q76 64 79 52 L86 55 Q83 72 65 73 Z" />
+      {/* marotte: bastão, fitas com bolinhas e a cabecinha com chapéu */}
+      <path className="fig-ouro" d="M80.5 62 L84 62 L88 22 L84.5 22 Z" />
+      {/* fitas largas em leque, cada uma com uma bolinha colorida na ponta */}
+      <path className="fig-papel" d="M85 24 Q76 26 72 34 L77 37 Q79 30 86 27 Z" />
+      <path className="fig-papel" d="M86 25 Q95 28 98 37 L93 39 Q91 31 85 28 Z" />
+      <path className="fig-papel" d="M86 26 Q92 36 91 46 L86 46 Q87 37 84 29 Z" />
+      {[
+        [74, 37],
+        [96, 40],
+        [88.5, 48],
+      ].map(([x, y], i) => (
+        <circle key={i} className={COR_BOLINHA[i % 4]} cx={x} cy={y} r="3.4" />
+      ))}
+      <circle className="fig-papel" cx="82.5" cy="52" r="4.6" />
+      <circle className="fig-papel" cx="86.5" cy="16" r="6" />
+      <circle className="fig-tinta fig-sem-traco" cx="84.5" cy="15.5" r="1.2" />
+      <circle className="fig-tinta fig-sem-traco" cx="88.5" cy="15.5" r="1.2" />
+      <path className="fig-so-traco" d="M84 19 Q86.5 21 89 19" />
+      <path className="fig-roupa" d="M80.5 12 L74 2 L86.5 7 L99 2 L92.5 12 Z" />
+      <Guizo x={74} y={2.5} r={2.2} />
+      <Guizo x={99} y={2.5} r={2.2} />
+      {/* gola em zigue-zague com guizos nas pontas */}
+      <path className="fig-papel" d="M30 55 L35 66 L41 58 L46 68 L50 59 L54 68 L59 58 L65 66 L70 55 Q50 47 30 55 Z" />
+      <Guizo x={35} y={66} r={2.2} />
+      <Guizo x={46} y={68} r={2.2} />
+      <Guizo x={54} y={68} r={2.2} />
+      <Guizo x={65} y={66} r={2.2} />
+      {/* rosto: sobrancelhas arqueadas, nariz redondo e sorriso maroto */}
+      <ellipse className="fig-papel" cx="50" cy="41" rx="12.5" ry="13.5" />
+      <circle className="fig-bola-d fig-sem-traco" cx="42" cy="46" r="2.4" />
+      <circle className="fig-bola-d fig-sem-traco" cx="58" cy="46" r="2.4" />
+      <path className="fig-so-traco" d="M41 34 Q44.5 30.5 48 34 M52 34 Q55.5 30.5 59 34" />
+      <circle className="fig-tinta fig-sem-traco" cx="45" cy="39" r="2.2" />
+      <circle className="fig-tinta fig-sem-traco" cx="55" cy="39" r="2.2" />
+      <circle className="fig-roupa" cx="50" cy="44" r="2.4" />
+      <path className="fig-tinta" d="M42 47 Q50 56 59 46 Q50 51 42 47 Z" />
+      {/* chapéu de três pontas: as de fora caídas, a do meio em pé, guizo em cada uma */}
+      <path className="fig-roupa" d="M38 31 Q28 17 17 29 Q28 23 44 25 Z" />
+      <path className="fig-roupa" d="M62 31 Q72 14 82 26 Q70 20 56 25 Z" />
+      <path className="fig-ouro" d="M42 27 Q41 9 53 1 Q55 14 58 27 Z" />
+      <path className="fig-roupa" d="M37 34 Q50 25 63 34 L63 29 Q50 20 37 29 Z" />
+      <Guizo x={17} y={29} />
+      <Guizo x={53} y={2} />
+      <Guizo x={82} y={26} />
+    </>
+  );
+}
+
+/**
+ * Coringa: o bobo da corte de corpo inteiro. Sem recorte: a figura ocupa a carta toda e
+ * os cantos com a palavra ficam por cima, num recorte de papel.
+ */
+export function FiguraCoringa() {
+  return (
+    <svg className="figura-svg" viewBox="0 0 100 150" aria-hidden="true" focusable="false" data-figura="coringa">
+      <g className="fig-traco">
+        <Bobo />
+      </g>
+    </svg>
+  );
+}
+
 /** Raios em volta do naipe do Ás (traço fino). */
 function Raios({ n, r1, r2 }: { n: number; r1: number; r2: number }) {
   const d = Array.from({ length: n }, (_, i) => {

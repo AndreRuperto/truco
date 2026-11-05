@@ -17,15 +17,46 @@ describe('CartaVisual', () => {
     expect(carta).toHaveClass('coringa', 'vermelha');
     expect(carta).not.toHaveClass('manilha');
     expect(carta.querySelectorAll('.canto')).toHaveLength(2);
-    for (const canto of carta.querySelectorAll('.canto')) expect(canto.textContent).toBe('★');
+    // Cada canto traz a palavra (carta larga) e "C" + estrela (média/estreita); o CSS escolhe.
+    for (const canto of carta.querySelectorAll('.canto')) {
+      expect(canto).toHaveAttribute('aria-hidden', 'true');
+      expect(canto.querySelector('.coringa-palavra')?.textContent).toBe('CORINGA');
+      expect(canto.querySelector('.coringa-curto')?.textContent).toBe('C★');
+      expect(canto.querySelector('.coringa-c')?.textContent).toBe('C');
+    }
+    // Estrela simples continua no DOM para a carta estreita.
     expect(carta.querySelector('.naipe-central')).toHaveTextContent('★');
     expect(carta.querySelector('.selo')).toBeNull();
-    expect(carta).not.toHaveTextContent('♥');
+    expect(carta).not.toHaveTextContent(/[♥♠♦♣]/);
+  });
+
+  test.each([
+    ['Cc', 'vermelha'],
+    ['Cp', 'preta'],
+  ])('coringa %s: bobo da corte desenhado, decorativo', (id, cor) => {
+    render(<CartaVisual carta={c(id)} variante="mineiro" vira={null} />);
+    const carta = screen.getByRole('img', { name: 'Coringa' });
+    expect(carta).toHaveClass('coringa', cor, 'figurada');
+    const svgs = carta.querySelectorAll('svg');
+    expect(svgs).toHaveLength(1);
+    expect(svgs[0]).toHaveAttribute('data-figura', 'coringa');
+    expect(svgs[0]).toHaveAttribute('aria-hidden', 'true');
+    // Os quatro naipes ao pé da figura, cada um na cor do seu naipe.
+    expect(svgs[0].querySelectorAll('.fig-naipe-vermelho')).toHaveLength(2);
+    expect(svgs[0].querySelectorAll('.fig-naipe-preto')).toHaveLength(2);
+    expect(carta.querySelector('.selo')).toBeNull();
   });
 
   test('coringa preto', () => {
     render(<CartaVisual carta={c('Cp')} variante="mineiro" vira={null} tamanho="pequena" />);
     expect(screen.getByRole('img', { name: 'Coringa' })).toHaveClass('coringa', 'preta', 'pequena');
+  });
+
+  test('coringa nunca é manilha nem ganha selo, mesmo com vira', () => {
+    render(<CartaVisual carta={c('Cp')} variante="paulista" vira={c('Kc')} />);
+    const carta = screen.getByRole('img', { name: 'Coringa' });
+    expect(carta).not.toHaveClass('manilha');
+    expect(carta.querySelector('.selo')).toBeNull();
   });
 
   test.each([
@@ -60,14 +91,16 @@ describe('CartaVisual', () => {
     expect(espadilha.querySelector('.selo')).toHaveTextContent('Espadilha');
   });
 
-  test('carta comum e coringa não ganham figura', () => {
+  test('carta comum não ganha figura', () => {
     render(<CartaVisual carta={c('7c')} variante="mineiro" vira={null} />);
-    render(<CartaVisual carta={c('Cp')} variante="mineiro" vira={null} />);
-    for (const nome of ['7 de copas — Copas', 'Coringa']) {
-      const carta = screen.getByRole('img', { name: nome });
-      expect(carta).not.toHaveClass('figurada');
-      expect(carta.querySelector('svg')).toBeNull();
-      expect(carta.querySelector('.figura')).toBeNull();
-    }
+    const carta = screen.getByRole('img', { name: '7 de copas — Copas' });
+    expect(carta).not.toHaveClass('figurada');
+    expect(carta.querySelector('svg')).toBeNull();
+    expect(carta.querySelector('.figura')).toBeNull();
+  });
+
+  test('só o coringa ganha o bobo; as figuras não', () => {
+    render(<CartaVisual carta={c('Kc')} variante="paulista" vira={null} />);
+    expect(screen.getByRole('img', { name: 'Rei de copas' }).querySelector('svg[data-figura="coringa"]')).toBeNull();
   });
 });
