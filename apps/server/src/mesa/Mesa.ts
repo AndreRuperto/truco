@@ -255,12 +255,18 @@ export class Mesa {
       this.enviarEstados();
       return;
     }
+    // Os agentes são sempre de uma só dupla. Havendo humano ativo entre eles, ninguém
+    // decide por ele: espera o prazo; no fim, o parceiro bot (se houver) decide.
     const agentes = quemDeveAgir(s);
     const humanos = agentes.filter((c) => this.humanoAtivo(c));
-    for (const c of agentes) if (!this.humanoAtivo(c)) this.agendar(this.tempos.botMs, () => this.jogarBot(c));
     if (humanos.length > 0) {
+      const substituto = agentes.find((c) => !this.humanoAtivo(c));
       this.prazo = { cadeiras: humanos, ate: this.relogio.agora() + this.tempos.jogadaMs };
-      this.agendar(this.tempos.jogadaMs, () => this.estourouTempo(humanos[0]));
+      this.agendar(this.tempos.jogadaMs, () =>
+        substituto !== undefined ? this.jogarBot(substituto) : this.estourouTempo(humanos[0]),
+      );
+    } else {
+      for (const c of agentes) this.agendar(this.tempos.botMs, () => this.jogarBot(c));
     }
     this.enviarEstados();
   }
