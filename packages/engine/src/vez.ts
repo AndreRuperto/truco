@@ -17,6 +17,12 @@ export interface SituacaoVez {
  * Cadeiras que precisam agir agora: no ritual, quem está com o monte (embaralhador ou
  * cortador); a da vez ao jogar; a dupla que não pediu durante um truco pendente ou uma
  * família fechada esperando conferência; a dupla no dez na decisão da mão de 10.
+ *
+ * Atenção: em `jogando` devolve só a da vez, mas na janela de família (`janelaDeFamilia`)
+ * qualquer cadeira pode pedir. Quem roda a mesa precisa consultar também quem NÃO é da vez
+ * (a `Mesa` do servidor pergunta aos bots fora da vez a cada mudança de estado). Na
+ * conferência, um `conferir` de qualquer um dos dois fecha para a dupla, e o engine não tem
+ * prazo: o servidor manda `conferir: false` quando o prazo acaba.
  */
 export function quemDeveAgir(s: SituacaoVez): Cadeira[] {
   const r = s.ritual;
