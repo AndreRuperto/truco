@@ -22,6 +22,14 @@ describe('Elo', () => {
     expect(deltaElo(1000, 1000, 1, 16)).toBe(8);
   });
 
+  test('soma zero mesmo com meio ponto (Elos iguais, K ímpar)', () => {
+    expect(deltaElo(1000, 1000, 1, 25)).toBe(13);
+    expect(deltaElo(1000, 1000, 0, 25)).toBe(-13);
+    for (const [a, b] of [[1000, 1000], [1234, 987], [900, 1500]]) {
+      for (const k of [25, 31, 33]) expect(deltaElo(a, b, 1, k) + deltaElo(b, a, 0, k)).toBe(0);
+    }
+  });
+
   test('media', () => {
     expect(media([1100, 900])).toBe(1000);
     expect(() => media([])).toThrow();

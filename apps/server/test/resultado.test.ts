@@ -27,6 +27,11 @@ describe('deltasDoFim', () => {
     expect(deltasDoFim(todos, [3, 2, 4], 0)).toEqual(new Map([[3, 16], [2, -16], [4, -16]]));
   });
 
+  test('soma zero com K ímpar: vencedor +d, perdedor -d', () => {
+    const todos = [j(1, 0, 1000), j(2, 1, 1000)];
+    expect(deltasDoFim(todos, [1, 2], 1, 25)).toEqual(new Map([[1, -13], [2, 13]]));
+  });
+
   test('dupla sem humano é erro', () => {
     expect(() => deltasDoFim([j(1, 0, 1000)], [1], 0)).toThrow();
   });
@@ -36,6 +41,10 @@ describe('deltaAbandono', () => {
   test('derrota contra a média dos adversários', () => {
     expect(deltaAbandono([j(1, 0, 1000), j(2, 1, 1000)], 1)).toBe(-16);
     expect(deltaAbandono([j(1, 0, 1000), j(2, 1, 1200)], 1, 32)).toBe(-8);
+  });
+
+  test('abandono com K ímpar: o simétrico do que o vencedor ganharia', () => {
+    expect(deltaAbandono([j(1, 0, 1000), j(2, 1, 1000)], 1, 25)).toBe(-13);
   });
 
   test('usuário fora da partida é erro', () => {

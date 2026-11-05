@@ -17,9 +17,17 @@ export function esperado(eloA: number, eloB: number): number {
   return 1 / (1 + 10 ** ((eloB - eloA) / 400));
 }
 
-/** Variação de A (arredondada) contra B; `resultado` 1 = A venceu. */
+/** Quanto o vencedor ganha (arredondado); o perdedor perde exatamente isso. */
+export function ganhoDoVencedor(eloVencedor: number, eloPerdedor: number, k = K_PADRAO): number {
+  return Math.round(k * (1 - esperado(eloVencedor, eloPerdedor)));
+}
+
+/**
+ * Variação de A contra B; `resultado` 1 = A venceu. Arredonda uma vez só (no ganho do
+ * vencedor) e dá o simétrico ao perdedor: a soma é sempre zero, mesmo em meio ponto.
+ */
 export function deltaElo(eloA: number, eloB: number, resultado: 0 | 1, k = K_PADRAO): number {
-  return Math.round(k * (resultado - esperado(eloA, eloB)));
+  return resultado === 1 ? ganhoDoVencedor(eloA, eloB, k) : -ganhoDoVencedor(eloB, eloA, k);
 }
 
 export function media(xs: readonly number[]): number {
