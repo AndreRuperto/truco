@@ -47,8 +47,10 @@ export class MesaRoom extends Room {
     if (this.mesa.sentar(client.sessionId, nome) === null) throw new Error('mesa cheia ou já iniciada');  }
 
   onDrop(client: Client) {
+    // Cliente cujo onJoin falhou (nunca sentou) também passa por aqui.
+    if (this.mesa.cadeiraDe(client.sessionId) === null) return;
     this.mesa.desconectar(client.sessionId);
-    this.allowReconnection(client, 60);
+    this.allowReconnection(client, 60).catch(() => {});
   }
 
   onReconnect(client: Client) {

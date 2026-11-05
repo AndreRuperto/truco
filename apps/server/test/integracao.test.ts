@@ -1,3 +1,4 @@
+import { matchMaker } from '@colyseus/core';
 import { boot, type ColyseusTestServer } from '@colyseus/testing';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { MesaRoom } from '../src/MesaRoom';
@@ -57,6 +58,25 @@ describe('MesaRoom', () => {
     const sala = await colyseus.createRoom('mesa', { humanos: 1 });
     await colyseus.connectTo(sala, { nome: 'Ana' });
     await expect(colyseus.connectTo(sala, { nome: 'Bia' })).rejects.toThrow();
+  });
+
+  test('quem reservou lugar mas a partida já começou é recusado sem rejeição solta', async () => {
+    const rejeicoes: unknown[] = [];
+    const ouvir = (e: unknown) => rejeicoes.push(e);
+    process.on('unhandledRejection', ouvir);
+    try {
+      const sala = await colyseus.createRoom('mesa', { humanos: 2 });
+      const a = await colyseus.connectTo(sala, { nome: 'Ana' });
+      const ma = coletor(a);
+      const reserva = await matchMaker.joinById(sala.roomId, { nome: 'Bia' });
+      a.send('iniciar');
+      await esperar(() => !!ma.estado?.some((m) => m.visao));
+      await expect(colyseus.sdk.consumeSeatReservation(reserva)).rejects.toThrow();
+      await new Promise((r) => setTimeout(r, 100));
+      expect(rejeicoes).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', ouvir);
+    }
   });
 
   test('dois humanos ficam parceiros', async () => {
