@@ -27,7 +27,8 @@ export function criarSessao(api: Pick<Api, 'config' | 'eu' | 'sair'>) {
     },
     getSnapshot: (): EstadoSessao => estado,
     async carregar(): Promise<void> {
-      const [c, e] = await Promise.allSettled([api.config(), api.eu()]);
+      // `async () => api.x()` transforma até um throw síncrono em rejeição: sempre termina pronta.
+      const [c, e] = await Promise.allSettled([(async () => api.config())(), (async () => api.eu())()]);
       mudar({
         pronta: true,
         config: c.status === 'fulfilled' ? c.value : CONFIG_VAZIA,

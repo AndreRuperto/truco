@@ -31,4 +31,15 @@ describe('sessão', () => {
     await s.sair();
     expect(s.getSnapshot().usuario).toBeNull();
   });
+  test('carregar termina pronta mesmo se a api lançar de forma síncrona', async () => {
+    const s = criarSessao({
+      config: vi.fn(() => {
+        throw new Error('quebrou');
+      }),
+      eu: vi.fn(async () => ({ usuario: USUARIO })),
+      sair: vi.fn(),
+    });
+    await s.carregar().catch(() => undefined);
+    expect(s.getSnapshot().pronta).toBe(true);
+  });
 });

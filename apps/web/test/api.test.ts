@@ -53,4 +53,31 @@ describe('cliente da API', () => {
       'POST /api/auth/sair',
     ]);
   });
+  test('falha de rede vira ErroApi(0) com mensagem amigável', async () => {
+    const f = vi.fn(async () => Promise.reject(new TypeError('Failed to fetch')));
+    const e = await criarApi(f as unknown as typeof fetch).eu().catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(ErroApi);
+    expect(e).toMatchObject({ status: 0, message: 'sem conexão com o servidor' });
+  });
+
+  test('2xx sem JSON vira ErroApi', async () => {
+    const f = fetchFalso([new Response('<html>oi</html>', { status: 200 })]);
+    const e = await criarApi(f as unknown as typeof fetch).perfil().catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(ErroApi);
+    expect(e).toMatchObject({ status: 200, message: 'resposta inválida do servidor' });
+  });
+
+  test('401 numa chamada autenticada avisa que a sessão caiu; em login não', async () => {
+    const r401 = () => new Response(JSON.stringify({ erro: 'entre na sua conta' }), { status: 401 });
+    const f = fetchFalso([r401(), r401(), r401(), r401(), r401()]);
+    const aoNaoAutorizado = vi.fn();
+    const api = criarApi(f as unknown as typeof fetch, '', aoNaoAutorizado);
+    await expect(api.confirmarLink('x')).rejects.toMatchObject({ status: 401 });
+    await expect(api.entrarGoogle('x')).rejects.toMatchObject({ status: 401 });
+    await expect(api.perfil(7)).rejects.toMatchObject({ status: 401 });
+    expect(aoNaoAutorizado).not.toHaveBeenCalled();
+    await expect(api.historico()).rejects.toMatchObject({ status: 401 });
+    await expect(api.perfil()).rejects.toMatchObject({ status: 401 });
+    expect(aoNaoAutorizado).toHaveBeenCalledTimes(2);
+  });
 });

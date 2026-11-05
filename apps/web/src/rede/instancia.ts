@@ -6,7 +6,8 @@ import { criarSessao } from './sessao';
 
 /** A loja única da aplicação. */
 export const loja = criarLoja({ persistirToken: gravarToken });
-export const api = criarApi();
+// 401 numa chamada que exige login = a sessão expirou: volta a convidado.
+export const api = criarApi(undefined, '', () => sessao.definirUsuario(null));
 export const sessao = criarSessao(api);
 
 export const lojaFila = criarLojaFila({
