@@ -9,5 +9,6 @@ export * from './familia';
 export { reduce, ErroJogada, ehAcaoJogador, escada, tipoDaMao } from './reducer';
 export * from './acoes';
 export * from './visao';
+export * from './vez';
 export * from './bots/facil';
 export * from './bots/dificil';

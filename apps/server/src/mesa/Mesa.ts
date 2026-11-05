@@ -4,7 +4,6 @@ import {
   botFacil,
   type Cadeira,
   type Carta,
-  duplaDe,
   ehAcaoJogador,
   embaralhar,
   ErroJogada,
@@ -14,6 +13,7 @@ import {
   novaPartida,
   novoBaralho,
   parceiroDe,
+  quemDeveAgir,
   reduce,
   type RegrasMesa,
   visaoDoJogador,
@@ -81,19 +81,6 @@ const ORDEM_SENTAR: Cadeira[] = [0, 2, 1, 3];
 const NOMES_BOT = ['Zé', 'Tião', 'Dita', 'Nhô'];
 
 const vazio = (): Ocupante => ({ id: null, nome: null, humano: false, conectado: false, ultimaMensagem: -Infinity });
-
-/** Cadeiras que precisam agir agora. */
-export function quemDeveAgir(s: EstadoPartida): Cadeira[] {
-  const m = s.mao;
-  if (!m) return [];
-  if (s.fase === 'jogando') return [m.vez];
-  if (s.fase === 'respondendoTruco' && m.trucoPendente) {
-    const pediu = m.trucoPendente.dupla;
-    return CADEIRAS.filter((c) => duplaDe(c) !== pediu);
-  }
-  if (s.fase === 'decisaoMao10') return CADEIRAS.filter((c) => duplaDe(c) === m.duplaNoDez);
-  return [];
-}
 
 /** Jogada quando o tempo estoura: corre, ou joga a carta mais fraca. */
 export function jogadaAutomatica(s: EstadoPartida, cadeira: Cadeira): AcaoJogador {

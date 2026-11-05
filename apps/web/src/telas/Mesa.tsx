@@ -1,4 +1,4 @@
-import { type Cadeira, parceiroDe } from '@truco/engine';
+import { type Cadeira, parceiroDe, quemDeveAgir } from '@truco/engine';
 import { useState } from 'react';
 import { Assento } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
@@ -23,7 +23,6 @@ import {
   textoPedidoPendente,
   valorMao,
 } from '../logica/textos';
-import { quemDeveAgir } from '../logica/vez';
 import { useAgora } from '../rede/hooks';
 import type { EstadoLoja, Loja } from '../rede/loja';
 

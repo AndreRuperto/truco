@@ -1,6 +1,6 @@
 import { type EstadoPartida, novaPartida, novoBaralho, reduce, REGRAS_RANQUEADA } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
-import { jogadaAutomatica, quemDeveAgir } from '../src/mesa/Mesa';
+import { jogadaAutomatica } from '../src/mesa/Mesa';
 
 /**
  * Baralho na ordem de novoBaralho() com pe = 3:
@@ -11,21 +11,6 @@ function inicio(placar: [number, number] = [0, 0]): EstadoPartida {
   s.placar = placar;
   return reduce(s, { tipo: 'distribuir', baralho: novoBaralho() });
 }
-
-describe('quemDeveAgir', () => {
-  test('jogando: só quem está na vez', () => {
-    expect(quemDeveAgir(inicio())).toEqual([0]);
-  });
-  test('truco pendente: a dupla adversária', () => {
-    expect(quemDeveAgir(reduce(inicio(), { tipo: 'truco', cadeira: 0 }))).toEqual([1, 3]);
-  });
-  test('mão de 10: a dupla com 10', () => {
-    expect(quemDeveAgir(inicio([4, 10]))).toEqual([1, 3]);
-  });
-  test('sem mão: ninguém', () => {
-    expect(quemDeveAgir(novaPartida(REGRAS_RANQUEADA.mineiro))).toEqual([]);
-  });
-});
 
 describe('jogadaAutomatica', () => {
   test('joga a carta mais fraca', () => {
