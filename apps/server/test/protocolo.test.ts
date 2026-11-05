@@ -130,6 +130,21 @@ describe('msgDaAcao do ritual', () => {
     expect(msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto: 20 }, c)).toEqual({ cadeira: 2, tipo: 'cortar', fracao: 0.5 });
   });
 
+  test('a fração do corte é só visual (décimos): não revela o ponto exato', () => {
+    const c = reduce(comMonte(), { tipo: 'passarCorte', cadeira: 3 });
+    const n = c.monte.length;
+    const pontos = Array.from({ length: Math.floor(n * 0.4) + 1 }, (_, i) => Math.ceil(n * 0.3) + i);
+    const fracoes = pontos.map((ponto) => msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto }, c).fracao!);
+    for (const f of fracoes) {
+      expect(f).toBeGreaterThanOrEqual(0);
+      expect(f).toBeLessThanOrEqual(1);
+      expect(Math.round(f * 10) / 10).toBe(f);
+    }
+    // Vários pontos dão a mesma fração: não dá para voltar ao ponto.
+    expect(new Set(fracoes).size).toBeLessThan(pontos.length);
+    expect(msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto: 19 }, c).fracao).toBe(msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto: 21 }, c).fracao);
+  });
+
   test('distribuir leva modo e ordem (sem quem ganhou o dar 3); dar3 leva quem recebe', () => {
     const c = reduce(comMonte(), { tipo: 'passarCorte', cadeira: 3 });
     expect(msgDaAcao({ tipo: 'dar3', cadeira: 2 }, c)).toEqual({ cadeira: 2, tipo: 'dar3', para: 0 });

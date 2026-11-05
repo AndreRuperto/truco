@@ -108,7 +108,7 @@ export interface MsgAcao {
   ordem?: Cadeira[];
   /** `dar3`: quem recebeu as 3 de cima. */
   para?: Cadeira;
-  /** `cortar`: fração do monte que passou para cima (0–1, 2 casas). Só para a animação. */
+  /** `cortar`: fração do monte que passou para cima (0–1, em décimos: não revela o ponto exato). Só para a animação. */
   fracao?: number;
   /** `familia`: true = aberta (as cartas aparecem no `estado`). */
   aberta?: boolean;
@@ -134,7 +134,7 @@ export function msgDaAcao(a: AcaoJogador, antes: EstadoPartida | null = null): M
       return { ...base, para: parceiroDe(a.cadeira) };
     case 'cortar': {
       const n = antes?.monte.length ?? 0;
-      return a.ponto !== undefined && n > 0 ? { ...base, fracao: Math.round((a.ponto / n) * 100) / 100 } : base;
+      return a.ponto !== undefined && n > 0 ? { ...base, fracao: Math.round((a.ponto / n) * 10) / 10 } : base;
     }
     case 'familia':
       return antes ? { ...base, aberta: tipoDaProximaFamilia(antes) === 'aberta' } : base;
