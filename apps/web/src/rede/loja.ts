@@ -41,6 +41,9 @@ export interface OpcoesLoja {
   maxEventos?: number;
 }
 
+/** `CloseCode.CONSENTED` do @colyseus/sdk 0.18: saída pedida (leave(true) ou o servidor). */
+export const SAIDA_CONSENTIDA = 4000;
+
 const INICIAL: EstadoLoja = { status: 'fora', msg: null, eventos: [], erro: null };
 
 export function criarLoja(o: OpcoesLoja = {}) {
@@ -60,9 +63,10 @@ export function criarLoja(o: OpcoesLoja = {}) {
   const evento = (e: NovoEvento) =>
     mudar({ eventos: [...estado.eventos, { ...e, id: ++seq, em: agora() }].slice(-maxEventos) });
   const erro = (mensagem: string) => mudar({ erro: { id: ++seq, mensagem } });
-  const largar = () => {
+  /** `esquecerToken` = false numa queda: um F5 ainda recupera a cadeira (o servidor guarda 60 s). */
+  const largar = (esquecerToken = true) => {
     sala = null;
-    persistir(null);
+    if (esquecerToken) persistir(null);
     mudar({ status: 'fora', msg: null, eventos: [] });
   };
 
@@ -98,8 +102,12 @@ export function criarLoja(o: OpcoesLoja = {}) {
         if (sala === s) persistir(s.reconnectionToken);
       });
     });
-    s.onLeave(() => {
-      if (sala === s) largar();
+    s.onLeave((code) => {
+      if (sala !== s) return;
+      const consentida = code === SAIDA_CONSENTIDA;
+      const terminou = estado.msg?.visao?.fase === 'fimPartida';
+      largar(consentida || terminou);
+      if (!consentida) erro('Conexão com a mesa perdida');
     });
     persistir(s.reconnectionToken);
     mudar({ status: 'na-mesa', msg: null, eventos: [] });

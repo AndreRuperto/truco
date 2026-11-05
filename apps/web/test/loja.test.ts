@@ -103,6 +103,32 @@ describe('loja', () => {
     expect(tokens.at(-1)).toBe('r1:t2');
   });
 
+  test('saída consentida do servidor (4000): lobby sem toast e esquece o token', () => {
+    const { loja, sala, tokens } = montar();
+    loja.conectar(sala);
+    sala.emit('leave', 4000);
+    expect(loja.getSnapshot()).toMatchObject({ status: 'fora', erro: null });
+    expect(tokens.at(-1)).toBeNull();
+  });
+
+  test('queda definitiva (ex.: SDK desiste por minUptime): toast e guarda o token para o F5', () => {
+    const { loja, sala, tokens } = montar();
+    loja.conectar(sala);
+    sala.emit('leave', 1006);
+    expect(loja.getSnapshot()).toMatchObject({ status: 'fora', erro: { mensagem: 'Conexão com a mesa perdida' } });
+    expect(tokens.at(-1)).toBe('r1:t1');
+  });
+
+  test('queda depois do fim da partida esquece o token', () => {
+    const { loja, sala, tokens } = montar();
+    loja.conectar(sala);
+    const m = msgEstado(distribuida(PAULISTA));
+    sala.receber('estado', { ...m, visao: { ...m.visao!, fase: 'fimPartida' } });
+    sala.emit('leave', 4003);
+    expect(loja.getSnapshot().status).toBe('fora');
+    expect(tokens.at(-1)).toBeNull();
+  });
+
   test('envia ações, sinais, falas e iniciar', () => {
     const { loja, sala } = montar();
     loja.conectar(sala);
