@@ -18,16 +18,17 @@ describe('distribuir', () => {
     expect(idCarta(s.mao!.vira!)).toBe('5p');
   });
 
-  test('não distribui fora de hora nem baralho incompleto', () => {
+  test('não distribui fora de hora nem põe o monte duas vezes', () => {
     const s = distribuida(MINEIRO, MAOS_DUPLA0_VENCE);
-    expect(() => reduce(s, { tipo: 'distribuir', baralho: [] })).toThrow();
-    expect(() => reduce(partida(MINEIRO), { tipo: 'distribuir', baralho: [] })).toThrow();
+    expect(() => reduce(s, { tipo: 'monte', baralho: [] })).toThrow();
+    expect(() => reduce(partida(MINEIRO), { tipo: 'monte', baralho: [] })).toThrow();
+    expect(() => reduce(s, { tipo: 'distribuir', cadeira: 3, modo: 'porCima' })).toThrow();
   });
 
   test('reduce não muta o estado de entrada', () => {
     const antes = partida(MINEIRO);
     const copia = structuredClone(antes);
-    reduce(antes, { tipo: 'distribuir', baralho: baralhoCom(MAOS_DUPLA0_VENCE) });
+    reduce(antes, { tipo: 'monte', baralho: baralhoCom(MAOS_DUPLA0_VENCE) });
     expect(antes).toEqual(copia);
   });
 });

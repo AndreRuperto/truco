@@ -74,6 +74,8 @@ export function amostrarMundo(v: Visao, rand: () => number, dica: DicaAmostra = 
     placar: [v.placar[0], v.placar[1]],
     pe: v.pe,
     fase: v.fase,
+    monte: [],
+    ritual: v.ritual,
     ultimaMao: null,
     ultimaFamilia: null,
     vencedor: v.vencedor,

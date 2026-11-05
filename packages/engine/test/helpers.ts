@@ -1,7 +1,10 @@
+import { distribuirSemRitual } from '../src/atalhos';
 import { baralhoDaMesa, type Carta, idCarta, type Naipe, novoBaralho, type Valor } from '../src/cartas';
 import { type Cadeira, type EstadoPartida, novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';
 import type { RegrasMesa } from '../src/regras';
+import { completarSorte } from '../src/ritual';
+import { embaralhar } from '../src/rng';
 
 const N: Record<string, Naipe> = { o: 'ouros', e: 'espadas', c: 'copas', p: 'paus' };
 export const c = (s: string): Carta => ({ valor: s.slice(0, -1) as Valor, naipe: N[s.slice(-1)] });
@@ -41,7 +44,24 @@ export function partida(regras: RegrasMesa, placar: [number, number] = [0, 0]): 
 }
 
 export function distribuida(regras: RegrasMesa, maos: string[][], vira?: string, placar?: [number, number]) {
-  return reduce(partida(regras, placar), { tipo: 'distribuir', baralho: baralhoCom(maos, vira, baralhoDaMesa(regras)) });
+  return distribuirSemRitual(partida(regras, placar), baralhoCom(maos, vira, baralhoDaMesa(regras)));
+}
+
+/** Ritual com um riffle e um corte sorteados por `rand` (partidas simuladas nos testes). */
+export function ritualSorteado(s: EstadoPartida, rand: () => number): EstadoPartida {
+  const r = s.ritual!;
+  let t = reduce(s, completarSorte({ tipo: 'embaralhar', cadeira: r.embaralhador }, s, rand));
+  t = reduce(t, { tipo: 'passarCorte', cadeira: r.embaralhador });
+  t = reduce(t, completarSorte({ tipo: 'cortar', cadeira: r.cortador }, t, rand));
+  t = reduce(t, { tipo: 'devolver', cadeira: r.cortador });
+  return reduce(t, { tipo: 'distribuir', cadeira: r.embaralhador, modo: 'porCima' });
+}
+
+/** O que acontece sem jogador: monte sorteado no começo e ritual sorteado entre mãos; null se não é o caso. */
+export function avancarSemJogadas(s: EstadoPartida, rand: () => number): EstadoPartida | null {
+  if (s.fase === 'aguardandoMonte') return reduce(s, { tipo: 'monte', baralho: embaralhar(baralhoDaMesa(s.regras), rand) });
+  if (s.fase === 'embaralhando') return ritualSorteado(s, rand);
+  return null;
 }
 
 export function jogarSeq(s: EstadoPartida, seq: [Cadeira, number][]): EstadoPartida {

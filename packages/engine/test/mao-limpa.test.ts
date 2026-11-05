@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { distribuirSemRitual } from '../src/atalhos';
 import { amostrarMundo } from '../src/bots/dificil';
 import { botFacil } from '../src/bots/facil';
 import { baralhoDaMesa, idCarta, novoBaralho } from '../src/cartas';
@@ -42,26 +43,26 @@ describe('baralhoDaMesa', () => {
   });
 });
 
-describe('distribuir valida contra o baralho da mesa', () => {
+describe('o monte valida contra o baralho da mesa', () => {
   test('mão limpa aceita as 29 cartas embaralhadas', () => {
     const b = embaralhar(baralhoDaMesa(MINEIRO_LIMPA), mulberry32(3));
-    const s = reduce(partida(MINEIRO_LIMPA), { tipo: 'distribuir', baralho: b });
+    const s = distribuirSemRitual(partida(MINEIRO_LIMPA), b);
     expect(s.mao!.maos.flat()).toHaveLength(12);
     expect(s.mao!.vira).toBeNull();
   });
 
   test('mão limpa recusa o baralho de 40; mesa normal recusa o de 29 e o coringa', () => {
-    expect(() => reduce(partida(MINEIRO_LIMPA), { tipo: 'distribuir', baralho: novoBaralho() })).toThrow(ErroJogada);
-    expect(() => reduce(partida(MINEIRO), { tipo: 'distribuir', baralho: baralhoDaMesa(MINEIRO_LIMPA) })).toThrow(ErroJogada);
+    expect(() => reduce(partida(MINEIRO_LIMPA), { tipo: 'monte', baralho: novoBaralho() })).toThrow(ErroJogada);
+    expect(() => reduce(partida(MINEIRO), { tipo: 'monte', baralho: baralhoDaMesa(MINEIRO_LIMPA) })).toThrow(ErroJogada);
     const comCoringa = novoBaralho();
     comCoringa[0] = c('Cc');
-    expect(() => reduce(partida(MINEIRO), { tipo: 'distribuir', baralho: comCoringa })).toThrow(ErroJogada);
+    expect(() => reduce(partida(MINEIRO), { tipo: 'monte', baralho: comCoringa })).toThrow(ErroJogada);
   });
 
   test('mão limpa recusa carta que saiu do baralho (4 a 7 comuns)', () => {
     const b = baralhoDaMesa(MINEIRO_LIMPA);
     b[0] = c('5o');
-    expect(() => reduce(partida(MINEIRO_LIMPA), { tipo: 'distribuir', baralho: b })).toThrow(ErroJogada);
+    expect(() => reduce(partida(MINEIRO_LIMPA), { tipo: 'monte', baralho: b })).toThrow(ErroJogada);
   });
 });
 
@@ -110,7 +111,7 @@ describe('coringa em jogo', () => {
     const permitidas = new Set(baralhoDaMesa(MINEIRO_LIMPA).map(idCarta));
     for (let seed = 1; seed <= 50; seed++) {
       const rand = mulberry32(seed);
-      const s = reduce(partida(MINEIRO_LIMPA), { tipo: 'distribuir', baralho: embaralhar(baralhoDaMesa(MINEIRO_LIMPA), rand) });
+      const s = distribuirSemRitual(partida(MINEIRO_LIMPA), embaralhar(baralhoDaMesa(MINEIRO_LIMPA), rand));
       const mundo = amostrarMundo(visaoDoJogador(s, 0), rand);
       const ids = mundo.mao!.maos.flat().map(idCarta);
       expect(ids.every((id) => permitidas.has(id))).toBe(true);

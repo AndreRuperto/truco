@@ -18,7 +18,7 @@ describe('jogar', () => {
     s = jogarSeq(s, [...RODADA, ...RODADA]);
     expect(s.placar).toEqual([2, 0]);
     expect(s.ultimaMao).toMatchObject({ vencedor: 0, pontos: 2, motivo: 'rodadas' });
-    expect(s.fase).toBe('aguardandoDistribuicao');
+    expect(s.fase).toBe('embaralhando');
     expect(s.mao).toBeNull();
     expect(s.pe).toBe(0);
   });

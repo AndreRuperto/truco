@@ -50,7 +50,11 @@ describe('validação de ações em tempo de execução', () => {
     ['indice string', { tipo: 'jogar', cadeira: 0, indice: '0' }],
     ['indice ausente', { tipo: 'jogar', cadeira: 0 }],
     ['coberta não booleana', { tipo: 'jogar', cadeira: 0, indice: 0, coberta: 'sim' }],
-    ['distribuir sem baralho', { tipo: 'distribuir' }],
+    ['monte sem baralho', { tipo: 'monte' }],
+    ['distribuir sem modo', { tipo: 'distribuir', cadeira: 0 }],
+    ['embaralhar com bit 2', { tipo: 'embaralhar', cadeira: 0, bits: [2] }],
+    ['cortar com ponto fracionário', { tipo: 'cortar', cadeira: 0, ponto: 1.5 }],
+    ['conferir sem booleano', { tipo: 'conferir', cadeira: 1 }],
   ])('%s → ErroJogada', (_nome, acao) => {
     // 2ª rodada, vez da cadeira 0: coberta seria permitida se fosse booleana.
     const s = jogarSeq(distribuida(MINEIRO, MAOS_DUPLA0_VENCE), [[0, 0], [1, 0], [2, 0], [3, 0]]);
@@ -67,40 +71,40 @@ describe('validação de ações em tempo de execução', () => {
   });
 });
 
-describe('distribuir valida o baralho', () => {
+describe('monte valida o baralho', () => {
   const s0 = () => partida(MINEIRO);
 
   test('baralho válido embaralhado é aceito', () => {
-    expect(() => reduce(s0(), { tipo: 'distribuir', baralho: [...novoBaralho()].reverse() })).not.toThrow();
+    expect(() => reduce(s0(), { tipo: 'monte', baralho: [...novoBaralho()].reverse() })).not.toThrow();
   });
 
   test('carta duplicada → ErroJogada', () => {
     const b = novoBaralho();
     b[39] = { ...b[0] };
-    expect(() => reduce(s0(), { tipo: 'distribuir', baralho: b })).toThrow(ErroJogada);
+    expect(() => reduce(s0(), { tipo: 'monte', baralho: b })).toThrow(ErroJogada);
   });
 
   test('carta inexistente → ErroJogada', () => {
     const b = novoBaralho();
     b[5] = cru({ valor: '8', naipe: 'ouros' }) as unknown as Carta;
-    expect(() => reduce(s0(), { tipo: 'distribuir', baralho: b })).toThrow(ErroJogada);
+    expect(() => reduce(s0(), { tipo: 'monte', baralho: b })).toThrow(ErroJogada);
   });
 
   test('entrada que não é carta → ErroJogada', () => {
     const b: unknown[] = novoBaralho();
     b[7] = null;
-    expect(() => reduce(s0(), cru({ tipo: 'distribuir', baralho: b }))).toThrow(ErroJogada);
+    expect(() => reduce(s0(), cru({ tipo: 'monte', baralho: b }))).toThrow(ErroJogada);
     const b2: unknown[] = novoBaralho();
     b2[7] = { valor: '4', naipe: 'ouros', extra: { valor: 'A', naipe: 'paus' } };
     // propriedades extras não importam para a identidade da carta, mas 4o já existe → duplicada
-    expect(() => reduce(s0(), cru({ tipo: 'distribuir', baralho: b2 }))).toThrow(ErroJogada);
+    expect(() => reduce(s0(), cru({ tipo: 'monte', baralho: b2 }))).toThrow(ErroJogada);
   });
 });
 
 describe('ehAcaoJogador', () => {
-  test('rejeita distribuir', () => {
-    expect(ehAcaoJogador({ tipo: 'distribuir', baralho: [] })).toBe(false);
-    expect(ehAcaoJogador({ tipo: 'distribuir', baralho: novoBaralho() })).toBe(false);
+  test('rejeita monte', () => {
+    expect(ehAcaoJogador({ tipo: 'monte', baralho: [] })).toBe(false);
+    expect(ehAcaoJogador({ tipo: 'monte', baralho: novoBaralho() })).toBe(false);
   });
 
   test('aceita ações de jogador bem formadas', () => {
@@ -108,6 +112,8 @@ describe('ehAcaoJogador', () => {
     expect(ehAcaoJogador({ tipo: 'jogar', cadeira: 3, indice: 0, coberta: true })).toBe(true);
     expect(ehAcaoJogador({ tipo: 'truco', cadeira: 2 })).toBe(true);
     expect(ehAcaoJogador({ tipo: 'mao10', cadeira: 1, jogar: false })).toBe(true);
+    expect(ehAcaoJogador({ tipo: 'distribuir', cadeira: 3, modo: 'subindo' })).toBe(true);
+    expect(ehAcaoJogador({ tipo: 'embaralhar', cadeira: 3 })).toBe(true);
   });
 
   test.each([

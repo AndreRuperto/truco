@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'vitest';
+import { distribuirSemRitual, ritualMinimo } from '../src/atalhos';
 import { novoBaralho } from '../src/cartas';
 import type { Acao, Cadeira, EstadoPartida } from '../src/estado';
 import { proximaCadeira } from '../src/estado';
 import { ErroJogada, reduce } from '../src/reducer';
 import { embaralhar, mulberry32 } from '../src/rng';
-import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, baralhoCom, distribuida, jogarSeq, partida } from './helpers';
+import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, baralhoCom, distribuida, jogarSeq, partida, ritualSorteado } from './helpers';
 
 const seq = (s: EstadoPartida, acoes: Acao[]) => acoes.reduce(reduce, s);
 const RODADA_IDX0: [Cadeira, number][] = [[0, 0], [1, 0], [2, 0], [3, 0]];
@@ -48,7 +49,7 @@ describe('três rodadas empatadas', () => {
     });
     expect(s.placar).toEqual([0, 0]);
     expect(s.pe).toBe(0);
-    expect(s.fase).toBe('aguardandoDistribuicao');
+    expect(s.fase).toBe('embaralhando');
   });
 });
 
@@ -124,7 +125,7 @@ describe('rotação do pé', () => {
     let s = partida(MINEIRO);
     const pes: Cadeira[] = [];
     for (let i = 0; i < 3; i++) {
-      s = reduce(s, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), rand) });
+      s = s.fase === 'aguardandoMonte' ? distribuirSemRitual(s, embaralhar(novoBaralho(), rand)) : ritualSorteado(s, rand);
       expect(s.mao!.vez).toBe(proximaCadeira(s.pe));
       s = encerrar(s);
       pes.push(s.pe);
@@ -141,7 +142,7 @@ describe('rotação do pé', () => {
     ];
     let s = reduce(distribuida(MINEIRO, FAMILIA), { tipo: 'familia', cadeira: 0 });
     expect(s.pe).toBe(3);
-    s = reduce(s, { tipo: 'distribuir', baralho: baralhoCom(MAOS_DUPLA0_VENCE) });
+    s = ritualMinimo(s);
     expect(s.pe).toBe(3);
     expect(s.mao!.vez).toBe(0);
     s = encerrar(s);

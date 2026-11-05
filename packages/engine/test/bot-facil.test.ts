@@ -5,7 +5,7 @@ import { baralhoDaMesa } from '../src/cartas';
 import { type Cadeira, novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';
 import { embaralhar, mulberry32 } from '../src/rng';
-import { MAOS_DUPLA0_VENCE, MINEIRO, MINEIRO_LIMPA, PAULISTA, distribuida } from './helpers';
+import { MAOS_DUPLA0_VENCE, MINEIRO, MINEIRO_LIMPA, PAULISTA, avancarSemJogadas, distribuida } from './helpers';
 
 describe('botFacil', () => {
   test('aceita truco com manilha, corre sem', () => {
@@ -29,8 +29,9 @@ describe('botFacil', () => {
       let s = novaPartida(regras);
       for (let passos = 0; s.fase !== 'fimPartida'; passos++) {
         if (passos > 2000) throw new Error('não terminou');
-        if (s.fase === 'aguardandoDistribuicao') {
-          s = reduce(s, { tipo: 'distribuir', baralho: embaralhar(baralhoDaMesa(regras), rand) });
+        const semJogada = avancarSemJogadas(s, rand);
+        if (semJogada) {
+          s = semJogada;
           continue;
         }
         const acao = ([0, 1, 2, 3] as Cadeira[]).map((c) => botFacil(s, c)).find((a) => a !== null);

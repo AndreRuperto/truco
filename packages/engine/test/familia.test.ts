@@ -23,7 +23,7 @@ describe('ehFamilia', () => {
 describe('pedir família', () => {
   test('fechada: redistribui sem revelar as cartas, mesmo pé', () => {
     const s = reduce(distribuida(MINEIRO, MAOS), { tipo: 'familia', cadeira: 0 });
-    expect(s.fase).toBe('aguardandoDistribuicao');
+    expect(s.fase).toBe('embaralhando');
     expect(s.mao).toBeNull();
     expect(s.pe).toBe(3);
     expect(s.ultimaFamilia).toEqual({ cadeira: 0, cartas: null });

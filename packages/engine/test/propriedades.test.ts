@@ -7,7 +7,7 @@ import { escada, reduce } from '../src/reducer';
 import { NIVEL_MAXIMO } from '../src/regras';
 import type { RegrasMesa } from '../src/regras';
 import { embaralhar, mulberry32 } from '../src/rng';
-import { MINEIRO, MINEIRO_LIMPA, PAULISTA, distribuida, MAOS_DUPLA0_VENCE } from './helpers';
+import { MINEIRO, MINEIRO_LIMPA, PAULISTA, distribuida, MAOS_DUPLA0_VENCE, avancarSemJogadas } from './helpers';
 
 const TODAS_REGRAS: RegrasMesa[] = [
   PAULISTA,
@@ -63,9 +63,9 @@ describe('propriedades: partidas aleatórias', () => {
         let passos = 0;
         while (s.fase !== 'fimPartida') {
           if (++passos > 5000) throw new Error('partida não terminou');
-          if (s.fase === 'aguardandoDistribuicao') {
-            s = reduce(s, { tipo: 'distribuir', baralho: embaralhar(baralhoDaMesa(regras), rand) });
-          } else {
+          const semJogada = avancarSemJogadas(s, rand);
+          if (semJogada) s = semJogada;
+          else {
             const acoes = todasAcoesValidas(s);
             expect(acoes.length).toBeGreaterThan(0);
             const antes = [...s.placar];

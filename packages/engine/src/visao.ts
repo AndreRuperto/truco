@@ -24,21 +24,23 @@ export interface VisaoResultadoMao extends Omit<ResultadoMao, 'rodadasJogadas'> 
   rodadasJogadas: JogadaVisivel[][];
 }
 
-export interface Visao extends Omit<EstadoPartida, 'mao' | 'ultimaMao'> {
+export interface Visao extends Omit<EstadoPartida, 'mao' | 'ultimaMao' | 'monte'> {
   cadeira: Cadeira;
   mao: VisaoMao | null;
   ultimaMao: VisaoResultadoMao | null;
+  /** Cartas no monte (a ordem ninguém vê). */
+  qtdMonte: number;
 }
 
 export function visaoDoJogador(estado: EstadoPartida, cadeira: Cadeira): Visao {
-  const s = structuredClone(estado);
+  const { monte, ...s } = structuredClone(estado);
   const esconder = (j: Jogada): JogadaVisivel =>
     j.coberta && j.cadeira !== cadeira ? { ...j, carta: null } : j;
   const ultimaMao: VisaoResultadoMao | null = s.ultimaMao && {
     ...s.ultimaMao,
     rodadasJogadas: s.ultimaMao.rodadasJogadas.map((r) => r.map(esconder)),
   };
-  if (!s.mao) return { ...s, cadeira, ultimaMao, mao: null };
+  if (!s.mao) return { ...s, cadeira, ultimaMao, qtdMonte: monte.length, mao: null };
 
   const { maos, mesa, rodadasJogadas, ...resto } = s.mao;
   const veParceiro = resto.tipo === 'mao10' && resto.duplaNoDez === duplaDe(cadeira);
@@ -47,6 +49,7 @@ export function visaoDoJogador(estado: EstadoPartida, cadeira: Cadeira): Visao {
     ...s,
     cadeira,
     ultimaMao,
+    qtdMonte: monte.length,
     mao: {
       ...resto,
       minhaMao: resto.tipo === 'mao11' ? maos[cadeira].map(() => null) : maos[cadeira],

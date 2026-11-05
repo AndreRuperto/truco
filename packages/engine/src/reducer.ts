@@ -6,6 +6,7 @@ import {
   type Dupla,
   type EstadoMao,
   type EstadoPartida,
+  type EstadoRitual,
   type ResultadoMao,
   type TipoMao,
   duplaDe,
@@ -15,6 +16,18 @@ import { ehFamilia } from './familia';
 import { forca } from './forca';
 import { resolverRodada, vencedorMao } from './mao';
 import { ESCADAS, NIVEL_MAXIMO, PONTOS_VITORIA, type RegrasMesa } from './regras';
+import {
+  cortarMonte,
+  darCartas,
+  LIMITE_EMBARALHADAS,
+  limitesCorte,
+  type ModoDistribuicao,
+  MODOS_DISTRIBUICAO,
+  MOVIMENTOS_CORTE,
+  ordemDistribuicao,
+  recolher,
+  riffle,
+} from './ritual';
 
 export class ErroJogada extends Error {
   /** Permite reconhecer o erro sem instanceof (ex.: depois de serializar). */
@@ -37,7 +50,7 @@ function problemaDeFormato(x: unknown): string | null {
   if (typeof x !== 'object' || x === null) return 'ação malformada';
   const a = x as Record<string, unknown>;
   switch (a.tipo) {
-    case 'distribuir':
+    case 'monte':
       return Array.isArray(a.baralho) ? null : 'baralho malformado';
     case 'jogar':
       if (!ehCadeira(a.cadeira)) return 'cadeira inválida';
@@ -47,11 +60,28 @@ function problemaDeFormato(x: unknown): string | null {
     case 'mao10':
       if (!ehCadeira(a.cadeira)) return 'cadeira inválida';
       return typeof a.jogar === 'boolean' ? null : 'jogar deve ser booleano';
+    case 'embaralhar':
+      if (!ehCadeira(a.cadeira)) return 'cadeira inválida';
+      if (a.bits === undefined) return null;
+      return Array.isArray(a.bits) && a.bits.every((b) => b === 0 || b === 1) ? null : 'bits do embaralho malformados';
+    case 'cortar':
+      if (!ehCadeira(a.cadeira)) return 'cadeira inválida';
+      return a.ponto === undefined || Number.isInteger(a.ponto) ? null : 'ponto de corte inválido';
+    case 'distribuir':
+      if (!ehCadeira(a.cadeira)) return 'cadeira inválida';
+      return (MODOS_DISTRIBUICAO as readonly unknown[]).includes(a.modo) ? null : 'modo de distribuir inválido';
+    case 'conferir':
+      if (!ehCadeira(a.cadeira)) return 'cadeira inválida';
+      return typeof a.conferir === 'boolean' ? null : 'conferir deve ser booleano';
     case 'truco':
     case 'aceitar':
     case 'correr':
     case 'aumentar':
     case 'familia':
+    case 'passarCorte':
+    case 'abrir3':
+    case 'dar3':
+    case 'devolver':
       return ehCadeira(a.cadeira) ? null : 'cadeira inválida';
     default:
       return `ação desconhecida: ${String(a.tipo)}`;
@@ -66,11 +96,11 @@ function validarAcao(acao: unknown): asserts acao is Acao {
 
 /**
  * Verifica se uma mensagem crua (ex.: vinda de um cliente) é uma ação de jogador
- * bem formada. Rejeita `distribuir`, que só o servidor pode emitir. Não verifica
+ * bem formada. Rejeita `monte`, que só o servidor pode emitir. Não verifica
  * se a ação é legal no estado atual — isso é papel do `reduce`.
  */
 export function ehAcaoJogador(x: unknown): x is AcaoJogador {
-  return problemaDeFormato(x) === null && (x as Acao).tipo !== 'distribuir';
+  return problemaDeFormato(x) === null && (x as Acao).tipo !== 'monte';
 }
 
 function idSeCarta(x: unknown): string | null {
@@ -99,8 +129,23 @@ export function reduce(estado: EstadoPartida, acao: Acao): EstadoPartida {
   validarAcao(acao);
   const s = structuredClone(estado);
   switch (acao.tipo) {
+    case 'monte':
+      porMonte(s, acao.baralho);
+      break;
+    case 'embaralhar':
+      embaralharMonte(s, acao.cadeira, acao.bits);
+      break;
+    case 'passarCorte':
+      passarCorte(s, acao.cadeira);
+      break;
+    case 'cortar':
+      cortar(s, acao.cadeira, acao.ponto);
+      break;
+    case 'devolver':
+      devolver(s, acao.cadeira);
+      break;
     case 'distribuir':
-      distribuir(s, acao.baralho);
+      distribuir(s, acao.cadeira, acao.modo);
       break;
     case 'jogar':
       jogar(s, acao.cadeira, acao.indice, acao.coberta ?? false);
@@ -138,20 +183,86 @@ export function tipoDaMao(s: EstadoPartida): TipoMao {
   return 'normal';
 }
 
-function distribuir(s: EstadoPartida, baralho: Carta[]): void {
-  if (s.fase !== 'aguardandoDistribuicao') falha('não é hora de distribuir');
-  validarBaralho(baralho, s.regras);
+function novoRitual(pe: Cadeira): EstadoRitual {
+  return { embaralhador: pe, cortador: ((pe + 3) % 4) as Cadeira, embaralhadas: 0, movimentos: 0, abertas: [], dadas: null };
+}
 
-  const maos: Carta[][] = [[], [], [], []];
-  let i = 0;
-  for (let rodada = 0; rodada < 3; rodada++) {
-    for (let k = 1; k <= 4; k++) maos[(s.pe + k) % 4].push({ ...baralho[i++] });
-  }
+function comecarRitual(s: EstadoPartida): void {
+  s.ritual = novoRitual(s.pe);
+  s.fase = 'embaralhando';
+}
+
+function ritualAtual(s: EstadoPartida): EstadoRitual {
+  if (!s.ritual) falha('não há ritual em andamento');
+  return s.ritual;
+}
+
+function porMonte(s: EstadoPartida, baralho: Carta[]): void {
+  if (s.fase !== 'aguardandoMonte') falha('o monte já está na mesa');
+  validarBaralho(baralho, s.regras);
+  s.monte = baralho.map((c) => ({ ...c }));
+  comecarRitual(s);
+}
+
+function gastarMovimento(s: EstadoPartida, r: EstadoRitual): void {
+  r.movimentos++;
+  if (r.movimentos >= MOVIMENTOS_CORTE) s.fase = 'escolhendoDistribuicao';
+}
+
+function embaralharMonte(s: EstadoPartida, cadeira: Cadeira, bits: (0 | 1)[] | undefined): void {
+  const r = ritualAtual(s);
+  if (s.fase !== 'embaralhando' && s.fase !== 'cortando') falha('não é hora de embaralhar');
+  if (s.fase === 'embaralhando' && cadeira !== r.embaralhador) falha('só quem dá as cartas embaralha');
+  if (s.fase === 'cortando' && cadeira !== r.cortador) falha('agora quem mexe no monte é quem corta');
+  if (s.fase === 'embaralhando' && r.embaralhadas >= LIMITE_EMBARALHADAS) falha('já embaralhou demais');
+  if (bits === undefined) falha('embaralhar precisa da sorte do servidor');
+  if (bits.length !== s.monte.length) falha('sorte do embaralho com tamanho errado');
+  s.monte = riffle(s.monte, bits);
+  if (s.fase === 'embaralhando') r.embaralhadas++;
+  else gastarMovimento(s, r);
+}
+
+function passarCorte(s: EstadoPartida, cadeira: Cadeira): void {
+  const r = ritualAtual(s);
+  if (s.fase !== 'embaralhando') falha('não é hora de passar pra cortar');
+  if (cadeira !== r.embaralhador) falha('só quem embaralha passa o monte');
+  s.fase = 'cortando';
+}
+
+function exigirCortador(s: EstadoPartida, cadeira: Cadeira): EstadoRitual {
+  const r = ritualAtual(s);
+  if (s.fase !== 'cortando') falha('não é hora de cortar');
+  if (cadeira !== r.cortador) falha('não é você quem corta');
+  return r;
+}
+
+function cortar(s: EstadoPartida, cadeira: Cadeira, ponto: number | undefined): void {
+  const r = exigirCortador(s, cadeira);
+  if (ponto === undefined) falha('cortar precisa da sorte do servidor');
+  const [min, max] = limitesCorte(s.monte.length);
+  if (!Number.isInteger(ponto) || ponto < min || ponto > max) falha('ponto de corte inválido');
+  s.monte = cortarMonte(s.monte, ponto);
+  gastarMovimento(s, r);
+}
+
+function devolver(s: EstadoPartida, cadeira: Cadeira): void {
+  exigirCortador(s, cadeira);
+  s.fase = 'escolhendoDistribuicao';
+}
+
+function distribuir(s: EstadoPartida, cadeira: Cadeira, modo: ModoDistribuicao): void {
+  const r = ritualAtual(s);
+  if (s.fase !== 'escolhendoDistribuicao') falha('não é hora de distribuir');
+  if (cadeira !== r.embaralhador) falha('só quem embaralhou dá as cartas');
+  const pulada = r.dadas?.cadeira ?? null;
+  const dadas = darCartas(s.monte, ordemDistribuicao(s.pe, pulada), modo, s.regras.variante === 'paulista');
+  if (r.dadas) dadas.maos[r.dadas.cadeira] = r.dadas.cartas;
+  s.monte = dadas.resto;
   const tipo = tipoDaMao(s);
   const mao: EstadoMao = {
     tipo,
-    vira: s.regras.variante === 'paulista' ? { ...baralho[12] } : null,
-    maos,
+    vira: dadas.vira,
+    maos: dadas.maos,
     mesa: [],
     rodadasJogadas: [],
     rodadas: [],
@@ -160,8 +271,14 @@ function distribuir(s: EstadoPartida, baralho: Carta[]): void {
     ultimoAumento: null,
     trucoPendente: null,
     duplaNoDez: tipo === 'mao10' ? (s.placar[0] === 10 ? 0 : 1) : null,
+    modo,
+    pulada,
+    abertasNoCorte: r.abertas,
+    familias: [],
+    familiaPendente: null,
   };
   s.mao = mao;
+  s.ritual = null;
   s.fase = tipo === 'mao10' ? 'decisaoMao10' : 'jogando';
 }
 
@@ -181,14 +298,15 @@ export function finalizarMao(
     rodadasJogadas: m.mesa.length > 0 ? [...m.rodadasJogadas, m.mesa] : m.rodadasJogadas,
     vira: m.vira,
   };
+  s.monte = [...recolher(m), ...s.monte];
   s.mao = null;
   if (vencedor !== null && s.placar[vencedor] >= PONTOS_VITORIA) {
     s.vencedor = vencedor;
     s.fase = 'fimPartida';
     return;
   }
-  s.pe = proximaCadeira(s.pe) as Cadeira;
-  s.fase = 'aguardandoDistribuicao';
+  s.pe = proximaCadeira(s.pe);
+  comecarRitual(s);
 }
 
 function maoAtual(s: EstadoPartida): EstadoMao {
@@ -286,6 +404,8 @@ function pedirFamilia(s: EstadoPartida, cadeira: Cadeira): void {
   const mao = m.maos[cadeira];
   if (!ehFamilia(mao)) falha('isso não é família');
   s.ultimaFamilia = { cadeira, cartas: s.regras.familia === 'aberta' ? [...mao] : null };
+  // Provisório (a Task 5 troca): a família ainda "redistribui" — tudo volta ao monte e o mesmo pé refaz o ritual.
+  s.monte = [...recolher(m), ...s.monte];
   s.mao = null;
-  s.fase = 'aguardandoDistribuicao';
+  comecarRitual(s);
 }

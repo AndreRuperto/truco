@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { distribuirSemRitual } from '../src/atalhos';
 import { idCarta } from '../src/cartas';
 import { novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';
@@ -8,7 +9,7 @@ import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, baralhoCom, partida } from './hel
 describe('estado não compartilha referências com a entrada', () => {
   test('mutar o baralho depois de distribuir não altera o estado', () => {
     const baralho = baralhoCom(MAOS_DUPLA0_VENCE, '5p');
-    const s = reduce(partida(PAULISTA), { tipo: 'distribuir', baralho });
+    const s = distribuirSemRitual(partida(PAULISTA), baralho);
     baralho[0].valor = '3'; // 1ª carta → cadeira 0 (era 4p)
     baralho[12].naipe = 'copas'; // vira (era 5p)
     expect(idCarta(s.mao!.maos[0][0])).toBe('4p');

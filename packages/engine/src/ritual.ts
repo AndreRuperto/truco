@@ -1,4 +1,5 @@
-import type { Cadeira } from './estado';
+import type { Carta } from './cartas';
+import type { AcaoJogador, Cadeira, EstadoMao, EstadoPartida } from './estado';
 
 export type ModoDistribuicao = 'porCima' | 'porBaixo' | 'subindo';
 export const MODOS_DISTRIBUICAO: readonly ModoDistribuicao[] = Object.freeze(['porCima', 'porBaixo', 'subindo'] as const);
@@ -74,4 +75,48 @@ export function darCartas<T>(monte: readonly T[], ordem: readonly Cadeira[], mod
 export function monteRodaARoda<T>(baralho: readonly T[]): T[] {
   const topo = [0, 1, 2, 3].flatMap((k) => [baralho[k], baralho[k + 4], baralho[k + 8]]);
   return [...topo, ...baralho.slice(12)];
+}
+
+/**
+ * Ordem do recolhimento no fim da mão: jogadas na ordem em que saíram (a rodada incompleta por
+ * último), mãos não jogadas (cadeiras 0→3), abertas do corte, famílias (na ordem dos pedidos), vira.
+ * A primeira carta da lista vai para o topo do monte.
+ */
+export function recolher(m: Pick<EstadoMao, 'rodadasJogadas' | 'mesa' | 'maos' | 'abertasNoCorte' | 'familias' | 'vira'>): Carta[] {
+  return [
+    ...[...m.rodadasJogadas.flat(), ...m.mesa].map((j) => j.carta),
+    ...m.maos.flat(),
+    ...m.abertasNoCorte,
+    ...m.familias.flatMap((f) => f.cartas),
+    ...(m.vira ? [m.vira] : []),
+  ];
+}
+
+/** Toda carta da partida, onde estiver (monte, ritual, mão). Server/teste: revela tudo. */
+export function cartasDaPartida(s: Pick<EstadoPartida, 'monte' | 'ritual' | 'mao'>): Carta[] {
+  const r = s.ritual;
+  return [...s.monte, ...(r ? [...r.abertas, ...(r.dadas?.cartas ?? [])] : []), ...(s.mao ? recolher(s.mao) : [])];
+}
+
+/** Preenche a sorte (bits do riffle, ponto do corte) com `rand`. Só o servidor chama com o rand de verdade. */
+export function completarSorte(a: AcaoJogador, s: Pick<EstadoPartida, 'monte'>, rand: () => number): AcaoJogador {
+  if (a.tipo === 'embaralhar') return { ...a, bits: s.monte.map(() => (rand() < 0.5 ? 0 : 1)) };
+  if (a.tipo === 'cortar') {
+    const [min, max] = limitesCorte(s.monte.length);
+    return { ...a, ponto: min + Math.floor(rand() * (max - min + 1)) };
+  }
+  return a;
+}
+
+/** Tira a sorte de uma ação (a de um cliente ou de um bot nunca conta). */
+export function semSorte(a: AcaoJogador): AcaoJogador {
+  if (a.tipo === 'embaralhar') {
+    const { bits: _b, ...resto } = a;
+    return resto;
+  }
+  if (a.tipo === 'cortar') {
+    const { ponto: _p, ...resto } = a;
+    return resto;
+  }
+  return a;
 }
