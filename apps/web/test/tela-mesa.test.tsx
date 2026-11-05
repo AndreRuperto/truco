@@ -15,7 +15,7 @@ describe('TelaMesa', () => {
     const user = userEvent.setup();
     const acoes = acoesFalsas();
     render(<TelaMesa snap={snap(msgEstado(distribuida(PAULISTA)))} acoes={acoes} />);
-    expect(screen.getByLabelText('Placar')).toHaveTextContent('Mão vale 1');
+    expect(screen.getByRole('group', { name: 'Placar: Nós 0, Eles 0, mão vale 1' })).toHaveTextContent('Mão vale 1');
     const mao = screen.getByTestId('minha-mao');
     expect(within(mao).getAllByRole('button', { name: /de ouros$/ })).toHaveLength(3);
     await user.click(screen.getByRole('button', { name: '4 de ouros' }));
