@@ -20,7 +20,16 @@ export default defineConfig({
       name: 'server',
       command: 'pnpm --filter @truco/server start',
       port: PORTA_SERVIDOR,
-      env: { PORT: String(PORTA_SERVIDOR), TRUCO_TEMPOS: 'rapido' },
+      env: {
+        PORT: String(PORTA_SERVIDOR),
+        TRUCO_TEMPOS: 'rapido',
+        // Banco descartável (PGlite em memória, mesmo se a máquina tiver DATABASE_URL) e caixa
+        // de saída de teste (GET /api/teste/emails); os links apontam para o Vite do E2E.
+        DATABASE_URL: '',
+        TRUCO_PGLITE: 'memoria',
+        TRUCO_EMAIL_TESTE: '1',
+        TRUCO_URL_PUBLICA: `http://127.0.0.1:${PORTA_WEB}`,
+      },
       stdout: 'pipe',
       reuseExistingServer: false,
       timeout: 60_000,
@@ -29,7 +38,8 @@ export default defineConfig({
       name: 'web',
       command: `pnpm exec vite --port ${PORTA_WEB} --strictPort --host 127.0.0.1`,
       url: `http://127.0.0.1:${PORTA_WEB}`,
-      env: { VITE_SERVIDOR: `ws://127.0.0.1:${PORTA_SERVIDOR}` },
+      // /api pelo proxy do Vite: o cookie de sessão fica em 127.0.0.1 e vai junto no WebSocket (mesmo host).
+      env: { VITE_SERVIDOR: `ws://127.0.0.1:${PORTA_SERVIDOR}`, TRUCO_PROXY_API: `http://127.0.0.1:${PORTA_SERVIDOR}` },
       reuseExistingServer: false,
       timeout: 60_000,
     },
