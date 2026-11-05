@@ -1,5 +1,6 @@
 import type { MsgEstado } from '@truco/protocolo';
 import { souDono } from '../logica/sala';
+import { resumoRegras } from '../logica/textos';
 
 interface Props {
   msg: MsgEstado;
@@ -23,6 +24,11 @@ export function SalaEspera({ msg, aoIniciar, aoSair }: Props) {
               {i % 2 === msg.minhaCadeira % 2 ? ' · sua dupla' : ''}
             </span>
           </li>
+        ))}
+      </ul>
+      <ul className="resumo-regras" aria-label="Regras da mesa">
+        {resumoRegras(msg.regras, msg.chanceInterceptarSinal).map((t) => (
+          <li key={t}>{t}</li>
         ))}
       </ul>
       {dono ? (

@@ -1,4 +1,4 @@
-import { opcoesDaSala } from '@truco/protocolo';
+import { chaveRegras, opcoesDaSala } from '@truco/protocolo';
 import { describe, expect, test } from 'vitest';
 import { CHAVE_APELIDO, formPadrao, gravarApelido, lerApelido, opcoesDeEntrada, trocarVariante } from '../src/logica/lobby';
 
@@ -29,6 +29,7 @@ describe('formulário do lobby', () => {
       humanos: 3,
       nivelBot: 'dificil',
       regras: { pontuacao: '1-3-6-9-12', maoDe10: false, maoDe11: 'qualquerDupla', familia: 'off' },
+      chaveRegras: '1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|int:0',
     });
     expect(opcoesDeEntrada({ ...formPadrao('paulista'), nome: '   ', humanos: 9 })).toMatchObject({ nome: 'Jogador', humanos: 4 });
   });
@@ -39,6 +40,8 @@ describe('formulário do lobby', () => {
     expect(s.regras).toEqual({ variante: 'mineiro', ...o.regras });
     expect(s.humanos).toBe(2);
     expect(s.nivelBot).toBe('facil');
+    // a chave que o cliente manda é a mesma que a sala recalcula
+    expect(o.chaveRegras).toBe(chaveRegras(s.regras, s.chanceInterceptarSinal));
   });
 
   test('apelido no localStorage', () => {

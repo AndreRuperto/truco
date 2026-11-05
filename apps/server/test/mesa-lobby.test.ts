@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { REGRAS_RANQUEADA } from '@truco/engine';
 import { criarMesa } from './mesa-helpers';
 
 beforeEach(() => vi.useFakeTimers());
@@ -25,6 +26,23 @@ describe('lobby', () => {
     expect(mesa.iniciada).toBe(true);
     expect(estado('b')!.cadeiras.map((c) => c.tipo)).toEqual(['humano', 'bot', 'humano', 'bot']);
     expect(mesa.sentar('c', 'Cid')).toBeNull();
+  });
+
+  test('o estado traz as regras da mesa e a chance de interceptar, mesmo antes de começar', () => {
+    const regras = { ...REGRAS_RANQUEADA.paulista, familia: 'aberta' as const };
+    const { mesa, estado } = criarMesa({ humanosEsperados: 2, regras, chanceInterceptarSinal: 0.25 });
+    mesa.sentar('a', 'Ana');
+    expect(estado('a')!.visao).toBeNull();
+    expect(estado('a')!.regras).toEqual(regras);
+    expect(estado('a')!.chanceInterceptarSinal).toBe(0.25);
+    mesa.sentar('b', 'Bia');
+    expect(estado('b')!.regras).toEqual(regras);
+  });
+
+  test('sem chance configurada, o estado diz 0', () => {
+    const { mesa, estado } = criarMesa();
+    mesa.sentar('a', 'Ana');
+    expect(estado('a')!.chanceInterceptarSinal).toBe(0);
   });
 
   test('não senta o mesmo id duas vezes e limpa o nome', () => {

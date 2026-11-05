@@ -394,6 +394,8 @@ export class Mesa {
     const msg: MsgEstado = {
       minhaCadeira: c,
       cadeiras,
+      regras: this.o.regras,
+      chanceInterceptarSinal: this.o.chanceInterceptarSinal ?? 0,
       visao: s ? visaoDoJogador(s, c) : null,
       prazo: this.prazo,
       minhasAcoes: s ? acoesValidas(s, c) : [],

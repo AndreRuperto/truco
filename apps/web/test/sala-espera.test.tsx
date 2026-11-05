@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { InfoCadeira } from '@truco/protocolo';
 import { describe, expect, test, vi } from 'vitest';
 import { SalaEspera } from '../src/telas/SalaEspera';
-import { msgEstado } from './fixtures';
+import { MINEIRO, msgEstado } from './fixtures';
 
 const cadeiras: InfoCadeira[] = [
   { tipo: 'humano', nome: 'Ana', conectado: true },
@@ -24,6 +24,18 @@ describe('SalaEspera', () => {
     rerender(<SalaEspera msg={msgEstado(null, 2, { cadeiras })} aoIniciar={aoIniciar} aoSair={vi.fn()} />);
     expect(screen.queryByRole('button', { name: 'Começar com bots' })).toBeNull();
     expect(screen.getByText('Bia (você)')).toBeInTheDocument();
+  });
+
+  test('mostra um resumo das regras da mesa', () => {
+    const regras = { ...MINEIRO, maoDe11: 'onzeAOnze' as const, familia: 'aberta' as const };
+    render(<SalaEspera msg={msgEstado(null, 0, { cadeiras, regras, chanceInterceptarSinal: 0.25 })} aoIniciar={vi.fn()} aoSair={vi.fn()} />);
+    const lista = screen.getByRole('list', { name: 'Regras da mesa' });
+    expect(lista).toHaveTextContent('Mineiro');
+    expect(lista).toHaveTextContent('Pontos 2 · 4 · 8 · 10 · 12');
+    expect(lista).toHaveTextContent('Mão de 10 ligada');
+    expect(lista).toHaveTextContent('Mão de 11 só no 11 a 11');
+    expect(lista).toHaveTextContent('Família aberta');
+    expect(lista).toHaveTextContent('Adversários às vezes interceptam sinais');
   });
 
   test('sair', async () => {

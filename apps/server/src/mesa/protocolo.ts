@@ -35,6 +35,10 @@ export interface InfoCadeira {
 export interface MsgEstado {
   minhaCadeira: Cadeira;
   cadeiras: InfoCadeira[];
+  /** Regras da mesa (vêm desde a sala de espera, antes de haver `visao`). */
+  regras: RegrasMesa;
+  /** Chance (0–1) de cada adversário ver um sinal; 0 = sinais são só do parceiro. */
+  chanceInterceptarSinal: number;
   visao: Visao | null;
   /** Quem precisa agir e até quando (epoch ms). */
   prazo: { cadeiras: Cadeira[]; ate: number } | null;
@@ -64,6 +68,22 @@ export interface OpcoesSala {
   nivelBot: NivelBot;
   /** Chance (0–1) de cada adversário ver um sinal. */
   chanceInterceptarSinal: number;
+}
+
+/**
+ * Chave achatada das regras que importam para juntar jogadores na mesma sala
+ * (o `filterBy` do Colyseus só compara valores simples). A variante fica de fora:
+ * ela já tem filtro próprio. O cliente oficial sempre manda esta chave em
+ * `joinOrCreate`; a sala a recalcula a partir das opções validadas (ver `MesaRoom.onCreate`).
+ */
+export function chaveRegras(regras: RegrasMesa, chanceInterceptarSinal: number): string {
+  return [
+    regras.pontuacao,
+    `m10:${regras.maoDe10 ? 1 : 0}`,
+    `m11:${regras.maoDe11}`,
+    `fam:${regras.familia}`,
+    `int:${chanceInterceptarSinal}`,
+  ].join('|');
 }
 
 function um<T extends string>(v: unknown, permitidos: readonly T[], padrao: T): T {

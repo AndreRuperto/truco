@@ -2,6 +2,7 @@ import { matchMaker } from '@colyseus/core';
 import { boot, type ColyseusTestServer } from '@colyseus/testing';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { MesaRoom } from '../src/MesaRoom';
+import { chaveRegras } from '../src/mesa/protocolo';
 import { criarServidor } from '../src/servidor';
 
 let colyseus: ColyseusTestServer;
@@ -113,6 +114,45 @@ describe('MesaRoom', () => {
     const d = await colyseus.sdk.joinOrCreate('mesa', { variante: 'mineiro', humanos: 2, nivelBot: 'facil', nome: 'Duda' });
     coletor(d);
     expect(d.roomId).toBe(a.roomId);
+  });
+
+  test('matchmaking separa por regras (chaveRegras) e a sala guarda a chave recalculada', async () => {
+    const regras = { pontuacao: '1-3-6-9-12', maoDe10: false, maoDe11: 'qualquerDupla', familia: 'off' } as const;
+    const chave = chaveRegras({ variante: 'paulista', ...regras }, 0);
+    const a = await colyseus.sdk.joinOrCreate('mesa', { variante: 'paulista', humanos: 2, nivelBot: 'facil', regras, chaveRegras: chave, nome: 'Ana' });
+    coletor(a);
+    const outras = { ...regras, familia: 'aberta' } as const;
+    const b = await colyseus.sdk.joinOrCreate('mesa', {
+      variante: 'paulista',
+      humanos: 2,
+      nivelBot: 'facil',
+      regras: outras,
+      chaveRegras: chaveRegras({ variante: 'paulista', ...outras }, 0),
+      nome: 'Bia',
+    });
+    coletor(b);
+    expect(b.roomId).not.toBe(a.roomId);
+    const c = await colyseus.sdk.joinOrCreate('mesa', { variante: 'paulista', humanos: 2, nivelBot: 'facil', regras, chaveRegras: chave, nome: 'Cid' });
+    const mc = coletor(c);
+    expect(c.roomId).toBe(a.roomId);
+    await esperar(() => !!mc.estado?.length);
+    expect(mc.estado.at(-1).regras).toEqual({ variante: 'paulista', ...regras });
+  });
+
+  test('chave mentirosa na criação é corrigida: quem pede as regras reais entra na sala', async () => {
+    const regras = { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'off', familia: 'fechada' } as const;
+    const a = await colyseus.sdk.joinOrCreate('mesa', { variante: 'mineiro', humanos: 2, nivelBot: 'facil', regras, chaveRegras: 'mentira', nome: 'Ana' });
+    coletor(a);
+    const b = await colyseus.sdk.joinOrCreate('mesa', {
+      variante: 'mineiro',
+      humanos: 2,
+      nivelBot: 'facil',
+      regras,
+      chaveRegras: chaveRegras({ variante: 'mineiro', ...regras }, 0),
+      nome: 'Bia',
+    });
+    coletor(b);
+    expect(b.roomId).toBe(a.roomId);
   });
 
   test('cliente que inunda mensagens é desconectado', async () => {

@@ -24,6 +24,7 @@ describe('Lobby', () => {
       humanos: 2,
       nivelBot: 'dificil',
       regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada' },
+      chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|int:0',
     });
     expect(localStorage.getItem(CHAVE_APELIDO)).toBe('Ana');
   });

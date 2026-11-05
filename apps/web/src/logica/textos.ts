@@ -75,3 +75,31 @@ export function textoFamilia(v: Visao, nomeDe: (c: Cadeira) => string): string |
   const f = v.ultimaFamilia;
   return f ? `${nomeDe(f.cadeira)} pediu família — cartas redistribuídas` : null;
 }
+
+const TEXTO_MAO11: Record<RegrasMesa['maoDe11'], string> = {
+  off: 'Mão de 11 desligada',
+  qualquerDupla: 'Mão de 11 para qualquer dupla',
+  onzeAOnze: 'Mão de 11 só no 11 a 11',
+};
+const TEXTO_FAMILIA: Record<RegrasMesa['familia'], string> = {
+  off: 'Sem família',
+  aberta: 'Família aberta',
+  fechada: 'Família fechada',
+};
+
+export function textoInterceptacao(chance: number): string {
+  if (chance <= 0) return 'Sinais: só o parceiro vê';
+  return chance >= 0.5 ? 'Adversários interceptam sinais com facilidade' : 'Adversários às vezes interceptam sinais';
+}
+
+/** Linhas curtas com as regras da mesa (sala de espera). */
+export function resumoRegras(r: RegrasMesa, chanceInterceptarSinal: number): string[] {
+  return [
+    r.variante === 'paulista' ? 'Paulista (com vira)' : 'Mineiro (manilhas fixas)',
+    `Pontos ${r.pontuacao.split('-').join(' · ')}`,
+    r.maoDe10 ? 'Mão de 10 ligada' : 'Mão de 10 desligada',
+    TEXTO_MAO11[r.maoDe11],
+    TEXTO_FAMILIA[r.familia],
+    textoInterceptacao(chanceInterceptarSinal),
+  ];
+}

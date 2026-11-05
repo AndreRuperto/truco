@@ -1,7 +1,7 @@
 import { type Client, Room, type RoomException, type RoomMethodName } from '@colyseus/core';
 import { randomInt } from 'node:crypto';
 import { Mesa, type Tempos } from './mesa/Mesa';
-import { opcoesDaSala } from './mesa/protocolo';
+import { chaveRegras, opcoesDaSala } from './mesa/protocolo';
 
 const randCripto = () => randomInt(0, 2 ** 32) / 2 ** 32;
 
@@ -14,6 +14,16 @@ export class MesaRoom extends Room {
   onCreate(options: unknown) {
     const { regras, humanos, nivelBot, chanceInterceptarSinal } = opcoesDaSala(options);
     this.maxClients = humanos;
+    // O Colyseus 0.18 copia os campos do `filterBy` das opções cruas de criação para
+    // `metadata`, e o `joinOrCreate` compara com `metadata`. Trocar pelos valores
+    // validados faz quem pede as regras reais achar esta sala mesmo que o criador
+    // tenha mandado lixo (o `setMetadata` substitui, não mescla).
+    void this.setMetadata({
+      variante: regras.variante,
+      humanos,
+      nivelBot,
+      chaveRegras: chaveRegras(regras, chanceInterceptarSinal),
+    });
     // Acima disso o Colyseus derruba o cliente (sinais/falas já têm limite próprio na Mesa).
     this.maxMessagesPerSecond = 20;
     this.mesa = new Mesa({

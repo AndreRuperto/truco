@@ -1,6 +1,24 @@
 import { REGRAS_RANQUEADA } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
-import { ehFala, ehSinal, limparNome, opcoesDaSala } from '../src/mesa/protocolo';
+import { chaveRegras, ehFala, ehSinal, limparNome, opcoesDaSala } from '../src/mesa/protocolo';
+
+describe('chaveRegras', () => {
+  const base = REGRAS_RANQUEADA.paulista;
+  test('determinística e igual para as mesmas regras (a variante fica de fora: tem filtro próprio)', () => {
+    expect(chaveRegras(base, 0)).toBe(chaveRegras({ ...base }, 0));
+    expect(chaveRegras(base, 0)).toBe(chaveRegras({ ...base, variante: 'mineiro' }, 0));
+    expect(chaveRegras(base, 0.25)).toBe('1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|int:0.25');
+  });
+
+  test('muda com cada regra e com a chance de interceptar', () => {
+    const k = chaveRegras(base, 0);
+    expect(chaveRegras({ ...base, pontuacao: '2-4-8-10-12' }, 0)).not.toBe(k);
+    expect(chaveRegras({ ...base, maoDe10: !base.maoDe10 }, 0)).not.toBe(k);
+    expect(chaveRegras({ ...base, maoDe11: 'off' }, 0)).not.toBe(k);
+    expect(chaveRegras({ ...base, familia: 'aberta' }, 0)).not.toBe(k);
+    expect(chaveRegras(base, 0.5)).not.toBe(k);
+  });
+});
 
 describe('opcoesDaSala', () => {
   test('padrão: paulista ranqueado, 1 humano, bot fácil', () => {

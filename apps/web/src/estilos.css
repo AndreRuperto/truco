@@ -145,6 +145,20 @@ button:disabled {
   border-radius: 10px;
   background: var(--feltro);
 }
+.resumo-regras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+.resumo-regras li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+}
 
 /* ---------- mesa ---------- */
 .tela-mesa {

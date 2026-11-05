@@ -1,5 +1,5 @@
 import { type Pontuacao, REGRAS_RANQUEADA, type RegrasMesa, type Variante } from '@truco/engine';
-import type { NivelBot } from '@truco/protocolo';
+import { chaveRegras, type NivelBot } from '@truco/protocolo';
 
 export interface FormLobby {
   nome: string;
@@ -19,6 +19,11 @@ export interface OpcoesEntrada {
   humanos: number;
   nivelBot: NivelBot;
   regras: Omit<RegrasMesa, 'variante'>;
+  /**
+   * `chaveRegras(regras, chance)`: o servidor só junta numa sala quem manda a mesma chave
+   * (quem omite aceita qualquer sala), então o cliente oficial sempre manda.
+   */
+  chaveRegras: string;
 }
 
 export const CHAVE_APELIDO = 'truco:apelido';
@@ -43,12 +48,14 @@ export function trocarVariante(f: FormLobby, variante: Variante): FormLobby {
 }
 
 export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
+  const regras = { pontuacao: f.pontuacao, maoDe10: f.maoDe10, maoDe11: f.maoDe11, familia: f.familia };
   return {
     nome: f.nome.trim() || 'Jogador',
     variante: f.variante,
     humanos: Math.min(4, Math.max(1, Math.round(f.humanos))),
     nivelBot: f.nivelBot,
-    regras: { pontuacao: f.pontuacao, maoDe10: f.maoDe10, maoDe11: f.maoDe11, familia: f.familia },
+    regras,
+    chaveRegras: chaveRegras({ variante: f.variante, ...regras }, 0),
   };
 }
 
