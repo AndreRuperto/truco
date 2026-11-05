@@ -1,6 +1,6 @@
 import type { Carta } from './cartas';
 import type { Fase, FamiliaPedida, TipoMao } from './estado';
-import type { RegrasMesa } from './regras';
+import { type RegrasMesa, tipoPeloPlacar } from './regras';
 import { LIMITE_FAMILIAS_FECHADAS } from './ritual';
 
 const FIGURAS = new Set(['Q', 'J', 'K', 'A']);
@@ -12,7 +12,8 @@ export function ehFamilia(mao: readonly Carta[]): boolean {
 
 /** O mínimo para decidir sobre família: serve para `EstadoPartida` e para `Visao`. */
 export interface SituacaoFamilia {
-  regras: Pick<RegrasMesa, 'familia'>;
+  regras: Pick<RegrasMesa, 'familia' | 'maoDe10' | 'maoDe11'>;
+  placar: readonly [number, number];
   fase: Fase;
   mao: {
     tipo: TipoMao;
@@ -36,7 +37,10 @@ export function tipoDaProximaFamilia(s: Pick<SituacaoFamilia, 'regras' | 'mao'>)
   return fechadasUsadas(s.mao) < LIMITE_FAMILIAS_FECHADAS ? 'fechada' : 'aberta';
 }
 
-/** Janela: família ligada, mão normal, nenhuma carta jogada e sem truco aceito. */
+/**
+ * Janela: família ligada, mão normal (e o placar atual ainda pede mão normal: pontos de família
+ * podem ter levado a 10/11 no meio da mão), nenhuma carta jogada e sem truco aceito.
+ */
 export function janelaDeFamilia(s: SituacaoFamilia): boolean {
   const m = s.mao;
   return (
@@ -44,6 +48,7 @@ export function janelaDeFamilia(s: SituacaoFamilia): boolean {
     s.fase === 'jogando' &&
     !!m &&
     m.tipo === 'normal' &&
+    tipoPeloPlacar(s.placar, s.regras) === 'normal' &&
     m.rodadas.length === 0 &&
     m.mesa.length === 0 &&
     m.nivel === 0

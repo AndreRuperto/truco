@@ -40,3 +40,19 @@ export const REGRAS_RANQUEADA: Readonly<Record<Variante, Readonly<RegrasMesa>>> 
     maoLimpa: false,
   }),
 });
+
+/**
+ * Tipo de mão que o placar `[a, b]` pede (mão de 11 / mão de 10 / normal). Serve na distribuição
+ * e no meio da mão (pontos de família podem levar a 10 ou 11 antes da 1ª carta).
+ */
+export function tipoPeloPlacar(
+  placar: readonly [number, number],
+  regras: Pick<RegrasMesa, 'maoDe10' | 'maoDe11'>,
+): 'normal' | 'mao10' | 'mao11' {
+  const [a, b] = placar;
+  const { maoDe10, maoDe11 } = regras;
+  if (maoDe11 === 'qualquerDupla' && (a === 11 || b === 11)) return 'mao11';
+  if (maoDe11 === 'onzeAOnze' && a === 11 && b === 11) return 'mao11';
+  if (maoDe10 && (a === 10) !== (b === 10)) return 'mao10';
+  return 'normal';
+}

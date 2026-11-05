@@ -110,6 +110,7 @@ Quem recebeu "dar 3" fica com aquelas cartas e é pulado. A mão de 10 e a de fe
 - Pedido: monte com ≥ 3 cartas; aberta exige `ehFamilia`; **fechada não exige** (blefe é o ponto). As 3 cartas vão para `familias`, o jogador recebe as 3 do topo. Fechada → `familiaPendente` e fase `conferindoFamilia`.
 - Conferir: só a dupla adversária, qualquer um dos dois (como responder truco). `conferir: false` → volta a `jogando` sem pontos. `true` → `real = ehFamilia(cartas)`; quem acertou ganha `ESCADAS[pontuacao][0]`; se isso chegar a 12, `finalizarMao(s, dupla, base, 'familia')` encerra a partida.
 - A janela reabre depois de cada conferência; vários jogadores (e o mesmo jogador de novo) podem pedir.
+- **Decisão (revisão):** pontos de família no meio da mão podem levar uma dupla a 10/11. A mão segue (`tipo` continua `normal`, as cartas já estão dadas), mas, com o placar atual pedindo mão de 10/11 (`tipoPeloPlacar`), a janela de família fecha e ninguém pode mais trucar nela.
 
 ### 2.6 Visão, vez e ações válidas
 

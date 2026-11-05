@@ -2,7 +2,9 @@ import { describe, expect, test } from 'vitest';
 import { type Carta, idCarta, novoBaralho } from '../src/cartas';
 import type { EstadoPartida } from '../src/estado';
 import { ehFamilia, fechadasUsadas, janelaDeFamilia, tipoDaProximaFamilia } from '../src/familia';
+import { acoesValidas } from '../src/acoes';
 import { ErroJogada, reduce } from '../src/reducer';
+import { visaoDoJogador } from '../src/visao';
 import { cartasDaPartida } from '../src/ritual';
 import { MINEIRO, c, distribuida, partida } from './helpers';
 
@@ -145,5 +147,25 @@ describe('quando pode', () => {
     expect(fim.mao).toBeNull();
     expect(fim.ultimaMao).toMatchObject({ vencedor: 0, pontos: 2, motivo: 'familia' });
     expect(cartasDaPartida(fim)).toHaveLength(40);
+  });
+});
+
+describe('família que leva o placar à mão de 10', () => {
+  test('depois dos pontos a mão segue, mas sem truco e sem mais família', () => {
+    // 8 a 0: família real conferida vale 2 → 10 a 0 (mão de 10 pelo placar atual).
+    const t = conferir(pedir(distribuida(MINEIRO, MAOS, undefined, [8, 0]), 0), 1, true);
+    expect(t.placar).toEqual([10, 0]);
+    expect(t.fase).toBe('jogando');
+    expect(janelaDeFamilia(t)).toBe(false);
+    expect(() => pedir(t, 2)).toThrow(ErroJogada);
+    expect(() => reduce(t, { tipo: 'truco', cadeira: 0 })).toThrow(ErroJogada);
+    expect(acoesValidas(t, 0).some((a) => a.tipo === 'truco' || a.tipo === 'familia')).toBe(false);
+    // A jogada da carta continua valendo.
+    expect(reduce(t, { tipo: 'jogar', cadeira: 0, indice: 0 }).mao!.mesa).toHaveLength(1);
+  });
+
+  test('a visão também fecha a janela', () => {
+    const t = conferir(pedir(distribuida(MINEIRO, MAOS, undefined, [8, 0]), 0), 1, true);
+    expect(janelaDeFamilia(visaoDoJogador(t, 2))).toBe(false);
   });
 });

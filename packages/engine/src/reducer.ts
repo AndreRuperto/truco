@@ -16,7 +16,7 @@ import {
 import { ehFamilia, janelaDeFamilia, tipoDaProximaFamilia } from './familia';
 import { forca } from './forca';
 import { resolverRodada, vencedorMao } from './mao';
-import { ESCADAS, NIVEL_MAXIMO, PONTOS_VITORIA, type RegrasMesa } from './regras';
+import { ESCADAS, NIVEL_MAXIMO, PONTOS_VITORIA, type RegrasMesa, tipoPeloPlacar } from './regras';
 import {
   cortarMonte,
   darCartas,
@@ -186,12 +186,7 @@ export function escada(s: EstadoPartida): readonly number[] {
 }
 
 export function tipoDaMao(s: EstadoPartida): TipoMao {
-  const [a, b] = s.placar;
-  const { maoDe10, maoDe11 } = s.regras;
-  if (maoDe11 === 'qualquerDupla' && (a === 11 || b === 11)) return 'mao11';
-  if (maoDe11 === 'onzeAOnze' && a === 11 && b === 11) return 'mao11';
-  if (maoDe10 && (a === 10) !== (b === 10)) return 'mao10';
-  return 'normal';
+  return tipoPeloPlacar(s.placar, s.regras);
 }
 
 function novoRitual(pe: Cadeira): EstadoRitual {
@@ -374,6 +369,8 @@ function pedirTruco(s: EstadoPartida, cadeira: Cadeira): void {
   if (s.fase !== 'jogando') falha('não é hora de trucar');
   if (m.vez !== cadeira) falha('só pode trucar na sua vez');
   if (m.tipo !== 'normal') falha('não se truca nesta mão');
+  // Pontos de família no meio da mão podem ter levado o placar a 10/11: aí não se truca mais.
+  if (tipoDaMao(s) !== 'normal') falha('não se truca nesta mão');
   const dupla = duplaDe(cadeira);
   if (m.ultimoAumento === dupla) falha('sua dupla não pode aumentar agora');
   if (m.nivel >= NIVEL_MAXIMO) falha('aposta já está no máximo');
