@@ -3,7 +3,9 @@ export type Naipe = (typeof NAIPES)[number];
 
 /** Ordem de força das cartas comuns, da mais fraca para a mais forte. */
 export const VALORES = ['4', '5', '6', '7', 'Q', 'J', 'K', 'A', '2', '3'] as const;
-export type Valor = (typeof VALORES)[number];
+export type ValorComum = (typeof VALORES)[number];
+/** 'C' = coringa (só na mão limpa do mineiro). O naipe do coringa só dá cor e identidade. */
+export type Valor = ValorComum | 'C';
 
 export interface Carta {
   valor: Valor;

@@ -1,8 +1,8 @@
 import type { Carta } from '../cartas';
 import { type AcaoJogador, type Cadeira, duplaDe, type EstadoPartida, type Jogada, parceiroDe } from '../estado';
-import { forca } from '../forca';
+import { FORCA_MANILHA_MIN, forca } from '../forca';
 
-const MANILHA = 11;
+const MANILHA = FORCA_MANILHA_MIN;
 
 /** Bot fácil: nunca truca; aceita com manilha; joga a menor carta que vence a mesa. */
 export function botFacil(s: EstadoPartida, cadeira: Cadeira): AcaoJogador | null {

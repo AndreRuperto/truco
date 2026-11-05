@@ -26,3 +26,10 @@ describe('rng', () => {
     expect([...a].sort()).toEqual(novoBaralho().map(idCarta).sort());
   });
 });
+
+describe('coringa', () => {
+  test('idCarta do coringa usa C + inicial do naipe (cor)', () => {
+    expect(idCarta({ valor: 'C', naipe: 'copas' })).toBe('Cc');
+    expect(idCarta({ valor: 'C', naipe: 'paus' })).toBe('Cp');
+  });
+});

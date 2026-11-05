@@ -35,3 +35,12 @@ describe('melhorManilha', () => {
     expect(melhorManilha([], 'paulista', c('5p'))).toBeNull();
   });
 });
+
+describe('coringa', () => {
+  test('não é manilha nem entra em melhorManilha', () => {
+    expect(ehManilha(c('Cc'), 'mineiro', null)).toBe(false);
+    expect(ehManilha(c('Cp'), 'mineiro', null)).toBe(false);
+    expect(melhorManilha(['Cc', '3o', 'Cp'].map(c), 'mineiro', null)).toBeNull();
+    expect(melhorManilha(['Cc', '7o'].map(c), 'mineiro', null)).toEqual(c('7o'));
+  });
+});

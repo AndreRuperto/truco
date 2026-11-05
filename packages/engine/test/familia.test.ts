@@ -45,3 +45,10 @@ describe('pedir família', () => {
     expect(() => reduce(off, { tipo: 'familia', cadeira: 0 })).toThrow(ErroJogada);
   });
 });
+
+describe('coringa e família', () => {
+  test('coringa não conta como figura', () => {
+    expect(ehFamilia(['Qo', 'Jc', 'Cc'].map(c))).toBe(false);
+    expect(ehFamilia(['Cc', 'Cp', 'Kp'].map(c))).toBe(false);
+  });
+});
