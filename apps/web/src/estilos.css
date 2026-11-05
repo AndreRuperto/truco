@@ -924,8 +924,9 @@ button:disabled {
   outline: 3px solid var(--foco);
   outline-offset: 3px;
 }
+/* Fora da vez a carta continua de papel limpo: só perde a elevação e o cursor de clique. */
 .carta-botao:disabled {
-  opacity: 0.85;
+  opacity: 1;
   cursor: default;
 }
 .alternar-coberta[aria-pressed='true'] {
