@@ -37,5 +37,11 @@ describe('fila', () => {
     );
     expect(textoErroFila('entre na sua conta para jogar ranqueada')).toBe('Entre na sua conta para jogar ranqueada.');
     expect(textoErroFila('rede caiu')).toBe('Não foi possível entrar na fila: rede caiu');
+    expect(textoErroFila('você já tem uma partida ranqueada em andamento (mesa abrindo); se ela não começar, libera sozinha — tente de novo em alguns segundos')).toBe(
+      'Você acabou de ser pareado e a mesa está abrindo. Se ela não começar, a fila libera sozinha — tente de novo em alguns segundos.',
+    );
+    expect(textoErroFila('você já tem uma partida ranqueada em andamento; a fila libera sozinha quando ela acabar')).toBe(
+      'Você já tem uma partida ranqueada em andamento (outra aba?). A fila libera sozinha quando ela acabar.',
+    );
   });
 });

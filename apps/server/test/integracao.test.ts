@@ -424,6 +424,10 @@ describe('fila ranqueada', () => {
     coletor(mesaB);
     await esperar(() => !!ma.estado?.some((m) => m.visao));
     await esperarAsync(async () => (await banco.db.select().from(partidas)).length === 1);
+    // Partida já começou: a fila recusa outra aba e diz que libera quando a partida acabar.
+    const outraAba = new Client(URL_TESTE);
+    outraAba.auth.token = ana.token;
+    await expect(outraAba.joinOrCreate('fila', FILA_1X1)).rejects.toThrow(/partida ranqueada em andamento.*libera sozinha quando ela acabar/);
 
     // O que o `gracefullyShutdown` do Colyseus faz com cada sala (SIGTERM).
     const roomId = mesaA.roomId;
@@ -451,7 +455,8 @@ describe('fila ranqueada', () => {
       await esperar(() => !!fa.pareado?.length && !!fb.pareado?.length);
       const outraAba = new Client(URL_TESTE);
       outraAba.auth.token = ana.token;
-      await expect(outraAba.joinOrCreate('fila', FILA_1X1)).rejects.toThrow(/partida ranqueada em andamento/);
+      // Reserva pendente: libera sozinha em segundos (a mesa começa ou é cancelada).
+      await expect(outraAba.joinOrCreate('fila', FILA_1X1)).rejects.toThrow(/partida ranqueada em andamento.*tente de novo em alguns segundos/);
       // Ninguém consome a reserva: a mesa é cancelada (sem penalidade) e a conta é liberada.
       const roomId = fa.pareado[0].reserva.roomId as string;
       await esperar(() => !matchMaker.getLocalRoomById(roomId), 5_000);

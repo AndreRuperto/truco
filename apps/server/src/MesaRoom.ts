@@ -62,9 +62,22 @@ export class MesaRoom extends Room {
   /** Conta → mesa ranqueada viva em que tem lugar (reservado ou sentado, partida sem fim). */
   private static readonly contasEmRanqueada = new Map<number, string>();
 
+  /** Mesas ranqueadas vivas cuja partida já começou. */
+  private static readonly ranqueadasIniciadas = new Set<string>();
+
   /** A conta foi pareada e a mesa dela ainda não acabou (a fila recusa a conta). */
   static emRanqueada(usuarioId: number): boolean {
     return MesaRoom.contasEmRanqueada.has(usuarioId);
+  }
+
+  /**
+   * Onde está a conta pareada: `reservada` = a mesa espera todos sentarem (começa ou é
+   * cancelada em segundos); `jogando` = a partida começou; null = livre.
+   */
+  static situacaoRanqueada(usuarioId: number): 'reservada' | 'jogando' | null {
+    const sala = MesaRoom.contasEmRanqueada.get(usuarioId);
+    if (sala === undefined) return null;
+    return MesaRoom.ranqueadasIniciadas.has(sala) ? 'jogando' : 'reservada';
   }
 
   private liberarConta(usuarioId: number): void {
@@ -176,6 +189,7 @@ export class MesaRoom extends Room {
       aoAplicar: (a, porHumano) => this.registro.acao(a, porHumano),
       aoIniciar: () => {
         this.lock().catch((e) => console.error('[MesaRoom] falha ao trancar a sala', e));
+        if (this.reservados) MesaRoom.ranqueadasIniciadas.add(this.roomId);
         this.registro.iniciou();
       },
       aoTerminar: (s) => {
@@ -241,6 +255,7 @@ export class MesaRoom extends Room {
 
   onDispose() {
     this.liberarReservados();
+    MesaRoom.ranqueadasIniciadas.delete(this.roomId);
     if (!this.mesa) return;
     // Começou e não terminou (todos os humanos saíram): fecha a partida como abandonada.
     if (this.mesa.iniciada && this.mesa.partida?.fase !== 'fimPartida') this.registro.encerrarAbandonada();

@@ -33,5 +33,11 @@ export function textoErroFila(msg: string): string {
     }
   }
   if (/entre na sua conta/.test(msg)) return 'Entre na sua conta para jogar ranqueada.';
+  if (/partida ranqueada em andamento \(mesa abrindo\)/.test(msg)) {
+    return 'Você acabou de ser pareado e a mesa está abrindo. Se ela não começar, a fila libera sozinha — tente de novo em alguns segundos.';
+  }
+  if (/partida ranqueada em andamento/.test(msg)) {
+    return 'Você já tem uma partida ranqueada em andamento (outra aba?). A fila libera sozinha quando ela acabar.';
+  }
   return `Não foi possível entrar na fila: ${msg}`;
 }

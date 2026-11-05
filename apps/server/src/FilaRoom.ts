@@ -28,8 +28,18 @@ export class FilaRoom extends Room {
     const s = FilaRoom.servicos;
     const u = await usuarioDaConexao(s, token, context.headers);
     if (!s || !u) throw new ServerError(ErrorCode.AUTH_FAILED, 'entre na sua conta para jogar ranqueada');
-    // Pareada há pouco (outra aba) ou ainda numa mesa ranqueada: termine aquela primeiro.
-    if (MesaRoom.emRanqueada(u.usuarioId)) throw new ServerError(ErrorCode.AUTH_FAILED, 'você já tem uma partida ranqueada em andamento');
+    // Pareada há pouco (outra aba) ou ainda numa mesa ranqueada: libera sozinha quando a mesa
+    // começa e acaba, ou quando é cancelada (até `MesaRoom.esperaRanqueadaMs`).
+    const situacao = MesaRoom.situacaoRanqueada(u.usuarioId);
+    if (situacao === 'reservada') {
+      throw new ServerError(
+        ErrorCode.AUTH_FAILED,
+        'você já tem uma partida ranqueada em andamento (mesa abrindo); se ela não começar, libera sozinha — tente de novo em alguns segundos',
+      );
+    }
+    if (situacao === 'jogando') {
+      throw new ServerError(ErrorCode.AUTH_FAILED, 'você já tem uma partida ranqueada em andamento; a fila libera sozinha quando ela acabar');
+    }
     const ate = await bloqueioAte(s.banco, u.usuarioId, s.agora());
     if (ate) throw new ServerError(ErrorCode.AUTH_FAILED, `fila bloqueada até ${ate.toISOString()} por abandono de partida ranqueada`);
     return u;
