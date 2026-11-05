@@ -33,8 +33,18 @@ export function App() {
   if (snap.status === 'conectando') tela = <p className="aviso-centro">Conectando…</p>;
   else if (snap.status !== 'fora') {
     if (!snap.msg) tela = <p className="aviso-centro">Entrando na mesa…</p>;
-    else if (!snap.msg.visao) tela = <SalaEspera msg={snap.msg} aoIniciar={loja.iniciar} aoSair={() => void loja.sair()} />;
-    else tela = <TelaMesa snap={snap} acoes={loja} />;
+    else if (!snap.msg.visao)
+      tela = (
+        <SalaEspera
+          msg={snap.msg}
+          aoIniciar={loja.iniciar}
+          aoSair={() => void loja.sair()}
+          salaId={snap.salaId}
+          chat={snap.chat}
+          aoChat={loja.enviarChat}
+        />
+      );
+    else tela = <TelaMesa snap={snap} acoes={loja} aoChat={loja.enviarChat} />;
   } else {
     let conteudo;
     switch (rota.tela) {

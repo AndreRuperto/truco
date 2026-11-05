@@ -12,6 +12,13 @@ export interface ClienteLike {
   reconnect(token: string): Promise<unknown>;
 }
 
+/** O resto do `Client` do SDK que as mesas privadas, a lista de salas e a fila usam. */
+export interface ClienteSala extends ClienteLike {
+  create(nomeSala: string, opcoes: object): Promise<unknown>;
+  joinById(id: string, opcoes: object): Promise<unknown>;
+  consumeSeatReservation(reserva: any): Promise<unknown>;
+}
+
 export function lerToken(): string | null {
   try {
     return sessionStorage.getItem(CHAVE_TOKEN);
@@ -33,11 +40,11 @@ export function gravarToken(token: string | null): void {
 const _roomEhSala: Room extends SalaLike ? true : never = true;
 void _roomEhSala;
 
-let padrao: Promise<ClienteLike> | null = null;
+let padrao: Promise<ClienteSala> | null = null;
 
 /** Carrega o SDK só quando precisa. O `Room` que ele devolve satisfaz `SalaLike`. */
-function clientePadrao(): Promise<ClienteLike> {
-  padrao ??= import('@colyseus/sdk').then(({ Client }) => new Client(urlServidor()) as unknown as ClienteLike);
+function clientePadrao(): Promise<ClienteSala> {
+  padrao ??= import('@colyseus/sdk').then(({ Client }) => new Client(urlServidor()) as unknown as ClienteSala);
   return padrao;
 }
 
@@ -83,4 +90,38 @@ export function tentarReconectar(loja: Loja, cliente?: ClienteLike): Promise<boo
     }
   })();
   return emAndamento;
+}
+
+async function conectarCom(
+  loja: Loja,
+  abrir: (c: ClienteSala) => Promise<unknown>,
+  cliente: ClienteSala | undefined,
+  falha: string,
+): Promise<void> {
+  if (loja.getSnapshot().status !== 'fora') return;
+  loja.marcarConectando();
+  try {
+    const c = cliente ?? (await clientePadrao());
+    loja.conectar((await abrir(c)) as SalaLike);
+  } catch (e) {
+    loja.falhouConexao(`${falha}: ${mensagem(e)}`);
+  }
+}
+
+/** Mesa privada nova: não aparece na lista nem no joinOrCreate; o `roomId` é o convite. */
+export const criarMesaPrivada = (loja: Loja, opcoes: OpcoesEntrada, cliente?: ClienteSala) =>
+  conectarCom(loja, (c) => c.create('mesa', { ...opcoes, modo: 'privada' }), cliente, 'Não foi possível criar a mesa');
+
+/** Mesa por código (link de convite ou lista de salas). */
+export const entrarPorCodigo = (loja: Loja, codigo: string, nome: string, cliente?: ClienteSala) =>
+  conectarCom(loja, (c) => c.joinById(codigo, { nome }), cliente, 'Não foi possível entrar na mesa');
+
+/** Mesa ranqueada criada pela fila (reserva vinda da mensagem `pareado`). */
+export const entrarComReserva = (loja: Loja, reserva: unknown, cliente?: ClienteSala) =>
+  conectarCom(loja, (c) => c.consumeSeatReservation(reserva), cliente, 'Não foi possível abrir a mesa ranqueada');
+
+/** Sala `fila` (quem cuida dela é a loja da fila). */
+export async function abrirFila(opcoes: object, cliente?: ClienteSala): Promise<unknown> {
+  const c = cliente ?? (await clientePadrao());
+  return c.joinOrCreate('fila', opcoes);
 }

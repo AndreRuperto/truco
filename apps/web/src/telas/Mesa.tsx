@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { Assento } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
 import { CartaVisual } from '../componentes/CartaVisual';
+import { modoDaMesa } from '../api/protocolo-provisorio';
 import { CentroMesa } from '../componentes/CentroMesa';
+import { Chat } from '../componentes/Chat';
 import { Cronometro } from '../componentes/Cronometro';
 import { Mao } from '../componentes/Mao';
 import { FimDeMao, FimDePartida } from '../componentes/Overlays';
@@ -32,12 +34,15 @@ interface Props {
   /** Precisa ter `msg.visao` (a App só mostra a mesa depois que a partida começa). */
   snap: EstadoLoja;
   acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'>;
+  aoChat?: (texto: string) => void;
 }
 
-export function TelaMesa({ snap, acoes }: Props) {
+export function TelaMesa({ snap, acoes, aoChat }: Props) {
   const agora = useAgora(250);
-  const [painel, setPainel] = useState<'sinais' | 'falas' | null>(null);
+  const [painel, setPainel] = useState<'sinais' | 'falas' | 'chat' | null>(null);
+  const [confirmarSaida, setConfirmarSaida] = useState(false);
   const msg = snap.msg!;
+  const modo = modoDaMesa(msg);
   const v = msg.visao!;
   const m = v.mao;
   const minha = msg.minhaCadeira;
@@ -58,7 +63,7 @@ export function TelaMesa({ snap, acoes }: Props) {
     const a = msg.minhasAcoes.find((x) => x.tipo === 'jogar' && x.indice === indice && !!x.coberta === coberta);
     if (a) acoes.enviarAcao(a);
   };
-  const alternar = (p: 'sinais' | 'falas') => setPainel((atual) => (atual === p ? null : p));
+  const alternar = (p: 'sinais' | 'falas' | 'chat') => setPainel((atual) => (atual === p ? null : p));
 
   const entreMaos = !m && v.fase === 'aguardandoDistribuicao';
   const familia = entreMaos ? textoFamilia(v, nome) : null;
@@ -109,6 +114,14 @@ export function TelaMesa({ snap, acoes }: Props) {
         <button type="button" aria-pressed={painel === 'falas'} onClick={() => alternar('falas')}>
           Falas
         </button>
+        {modo === 'privada' && aoChat && (
+          <button type="button" aria-pressed={painel === 'chat'} onClick={() => alternar('chat')}>
+            Chat
+          </button>
+        )}
+        <button type="button" onClick={() => setConfirmarSaida(true)}>
+          Sair
+        </button>
       </nav>
       {painel === 'sinais' && (
         <PainelSinais
@@ -127,6 +140,22 @@ export function TelaMesa({ snap, acoes }: Props) {
             setPainel(null);
           }}
         />
+      )}
+      {painel === 'chat' && aoChat && <Chat mensagens={snap.chat} aoEnviar={aoChat} />}
+      {confirmarSaida && (
+        <div className="confirmar-saida" role="alertdialog" aria-label="Sair da mesa">
+          <p>
+            {modo === 'ranqueada'
+              ? 'Sair agora conta como derrota e bloqueia a fila ranqueada por 5 minutos.'
+              : 'Um bot assume o seu lugar até o fim da partida.'}
+          </p>
+          <button type="button" className="botao-principal" onClick={() => void acoes.sair()}>
+            Sair da mesa
+          </button>
+          <button type="button" onClick={() => setConfirmarSaida(false)}>
+            Continuar jogando
+          </button>
+        </div>
       )}
       {painel !== 'sinais' && sinal && agora - sinal.em < DURACAO_SINAL_MS && (
         <div className="sinal-flutuante" role="status">

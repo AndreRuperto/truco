@@ -8,7 +8,7 @@ import { reduce } from '@truco/engine';
 import { distribuida, jogar, MINEIRO, msgEstado, PAULISTA } from './fixtures';
 
 const acoesFalsas = () => ({ enviarAcao: vi.fn(), enviarSinal: vi.fn(), enviarFala: vi.fn(), sair: vi.fn() });
-const snap = (msg: EstadoLoja['msg'], eventos: Evento[] = []): EstadoLoja => ({ status: 'na-mesa', msg, eventos, erro: null });
+const snap = (msg: EstadoLoja['msg'], eventos: Evento[] = []): EstadoLoja => ({ status: 'na-mesa', msg, eventos, erro: null, chat: [], salaId: 'r1' });
 
 describe('TelaMesa', () => {
   test('mostra placar, valor da mão e minha mão; clicar joga a carta', async () => {

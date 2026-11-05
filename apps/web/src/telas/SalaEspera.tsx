@@ -1,4 +1,8 @@
 import type { MsgEstado } from '@truco/protocolo';
+import { useState } from 'react';
+import { type MsgChat, modoDaMesa } from '../api/protocolo-provisorio';
+import { Chat } from '../componentes/Chat';
+import { linkConvite } from '../logica/rotas';
 import { souDono } from '../logica/sala';
 import { resumoRegras } from '../logica/textos';
 
@@ -6,10 +10,17 @@ interface Props {
   msg: MsgEstado;
   aoIniciar: () => void;
   aoSair: () => void;
+  /** `roomId` (código do convite). */
+  salaId?: string | null;
+  /** Origem da página (testes passam uma fixa). */
+  origem?: string;
+  chat?: MsgChat[];
+  aoChat?: (texto: string) => void;
 }
 
-export function SalaEspera({ msg, aoIniciar, aoSair }: Props) {
+export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = window.location.origin, chat = [], aoChat }: Props) {
   const dono = souDono(msg);
+  const modo = modoDaMesa(msg);
   // Faltam humanos, não cadeiras: as vazias que sobrarem viram bots ao começar.
   const sentados = msg.cadeiras.filter((c) => c.tipo === 'humano').length;
   const faltam = Math.max(0, msg.humanosEsperados - sentados);
@@ -33,7 +44,11 @@ export function SalaEspera({ msg, aoIniciar, aoSair }: Props) {
           <li key={t}>{t}</li>
         ))}
       </ul>
-      {dono ? (
+      {modo === 'privada' && salaId && <Convite link={linkConvite(origem, salaId)} />}
+      {modo === 'privada' && aoChat && <Chat mensagens={chat} aoEnviar={aoChat} />}
+      {modo === 'ranqueada' ? (
+        <p>Partida ranqueada: começa quando todos entrarem.</p>
+      ) : dono ? (
         <button type="button" className="botao-principal" onClick={aoIniciar}>
           Começar com bots
         </button>
@@ -46,5 +61,18 @@ export function SalaEspera({ msg, aoIniciar, aoSair }: Props) {
         </button>
       </p>
     </main>
+  );
+}
+
+function Convite({ link }: { link: string }) {
+  const [copiado, setCopiado] = useState(false);
+  return (
+    <div className="convite">
+      <label htmlFor="link-convite">Link de convite</label>
+      <input id="link-convite" type="text" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
+      <button type="button" onClick={() => void navigator.clipboard?.writeText(link).then(() => setCopiado(true), () => {})}>
+        {copiado ? 'Copiado!' : 'Copiar'}
+      </button>
+    </div>
   );
 }

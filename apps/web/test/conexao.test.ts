@@ -1,6 +1,15 @@
 import { describe, expect, test, vi } from 'vitest';
 import { formPadrao, opcoesDeEntrada } from '../src/logica/lobby';
-import { CHAVE_TOKEN, entrarNaMesa, gravarToken, lerToken, tentarReconectar } from '../src/rede/conexao';
+import {
+  CHAVE_TOKEN,
+  criarMesaPrivada,
+  entrarComReserva,
+  entrarNaMesa,
+  entrarPorCodigo,
+  gravarToken,
+  lerToken,
+  tentarReconectar,
+} from '../src/rede/conexao';
 import { criarLoja } from '../src/rede/loja';
 import { SalaFalsa } from './sala-falsa';
 
@@ -94,5 +103,41 @@ describe('tentarReconectar', () => {
     expect(await tentarReconectar(loja, cliente)).toBe(false);
     expect(lerToken()).toBeNull();
     expect(loja.getSnapshot()).toMatchObject({ status: 'fora', erro: null });
+  });
+});
+
+describe('mesa privada e reserva', () => {
+  const clienteFalso = (sala: SalaFalsa) => ({
+    joinOrCreate: vi.fn(),
+    reconnect: vi.fn(),
+    create: vi.fn(async () => sala),
+    joinById: vi.fn(async () => sala),
+    consumeSeatReservation: vi.fn(async () => sala),
+  });
+
+  test('criarMesaPrivada usa create com modo privada', async () => {
+    const sala = new SalaFalsa();
+    const c = clienteFalso(sala);
+    const loja = novaLoja();
+    await criarMesaPrivada(loja, opcoes, c);
+    expect(c.create).toHaveBeenCalledWith('mesa', { ...opcoes, modo: 'privada' });
+    expect(loja.getSnapshot()).toMatchObject({ status: 'na-mesa', salaId: 'r1' });
+  });
+
+  test('entrarPorCodigo usa joinById; entrarComReserva consome a reserva', async () => {
+    const c = clienteFalso(new SalaFalsa());
+    await entrarPorCodigo(novaLoja(), 'abcd1234', 'Bia', c);
+    expect(c.joinById).toHaveBeenCalledWith('abcd1234', { nome: 'Bia' });
+    const reserva = { roomId: 'r9', sessionId: 's1' };
+    await entrarComReserva(novaLoja(), reserva, c);
+    expect(c.consumeSeatReservation).toHaveBeenCalledWith(reserva);
+  });
+
+  test('código inválido volta ao lobby com toast', async () => {
+    const c = { ...clienteFalso(new SalaFalsa()), joinById: vi.fn(async () => Promise.reject(new Error('room "x" not found'))) };
+    const loja = novaLoja();
+    await entrarPorCodigo(loja, 'xxxx', 'Bia', c);
+    expect(loja.getSnapshot().status).toBe('fora');
+    expect(loja.getSnapshot().erro?.mensagem).toBe('Não foi possível entrar na mesa: room "x" not found');
   });
 });

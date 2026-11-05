@@ -16,7 +16,7 @@ describe('loja', () => {
     const { loja, sala, tokens } = montar();
     loja.conectar(sala);
     expect(sala.enviados).toEqual([['sincronizar', undefined]]);
-    expect(sala.ouvintesNoEnvio[0]).toEqual({ estado: 1, acao: 1, sinal: 1, fala: 1, erro: 1 });
+    expect(sala.ouvintesNoEnvio[0]).toEqual({ estado: 1, acao: 1, sinal: 1, fala: 1, erro: 1, chat: 1 });
     expect(loja.getSnapshot().status).toBe('na-mesa');
     expect(tokens).toEqual(['r1:t1']);
   });

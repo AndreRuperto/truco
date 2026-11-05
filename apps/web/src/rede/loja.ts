@@ -1,5 +1,6 @@
 import type { AcaoJogador } from '@truco/engine';
-import type { Fala, MsgAcao, MsgErro, MsgEstado, MsgFala, MsgSinal, Sinal } from '@truco/protocolo';
+import { type Fala, type MsgAcao, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
+import type { MsgChat } from '../api/protocolo-provisorio';
 import { type Evento, FALA_TEXTO, type NovoEvento, textoDaAcao } from '../logica/eventos';
 
 /**
@@ -18,7 +19,7 @@ export interface SalaLike {
 }
 
 /** Todas as mensagens servidor → cliente; os handlers são registrados antes de `sincronizar`. */
-export const TIPOS_MENSAGEM = ['estado', 'acao', 'sinal', 'fala', 'erro'] as const;
+export const TIPOS_MENSAGEM = ['estado', 'acao', 'sinal', 'fala', 'erro', 'chat'] as const;
 
 export type Status = 'fora' | 'conectando' | 'na-mesa' | 'reconectando';
 
@@ -32,6 +33,10 @@ export interface EstadoLoja {
    */
   eventos: Evento[];
   erro: { id: number; mensagem: string } | null;
+  /** Chat da mesa privada (últimas 50). */
+  chat: MsgChat[];
+  /** `roomId` da sala atual (código do convite da mesa privada). */
+  salaId: string | null;
 }
 
 export interface OpcoesLoja {
@@ -44,7 +49,7 @@ export interface OpcoesLoja {
 /** `CloseCode.CONSENTED` do @colyseus/sdk 0.18: saída pedida (leave(true) ou o servidor). */
 export const SAIDA_CONSENTIDA = 4000;
 
-const INICIAL: EstadoLoja = { status: 'fora', msg: null, eventos: [], erro: null };
+const INICIAL: EstadoLoja = { status: 'fora', msg: null, eventos: [], erro: null, chat: [], salaId: null };
 
 export function criarLoja(o: OpcoesLoja = {}) {
   const agora = o.agora ?? Date.now;
@@ -67,7 +72,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
   const largar = (esquecerToken = true) => {
     sala = null;
     if (esquecerToken) persistir(null);
-    mudar({ status: 'fora', msg: null, eventos: [] });
+    mudar({ status: 'fora', msg: null, eventos: [], chat: [], salaId: null });
   };
 
   function conectar(s: SalaLike): void {
@@ -92,6 +97,9 @@ export function criarLoja(o: OpcoesLoja = {}) {
     s.onMessage('erro', (e: MsgErro) => {
       if (sala === s) erro(e.mensagem);
     });
+    s.onMessage('chat', (m: MsgChat) => {
+      if (sala === s) mudar({ chat: [...estado.chat, m].slice(-50) });
+    });
     s.onDrop(() => {
       if (sala === s) mudar({ status: 'reconectando' });
     });
@@ -107,13 +115,18 @@ export function criarLoja(o: OpcoesLoja = {}) {
     });
     s.onLeave((code) => {
       if (sala !== s) return;
+      if (code === SAIDA_PARTIDA_CANCELADA) {
+        largar(true);
+        erro('Partida ranqueada cancelada: nem todos entraram a tempo');
+        return;
+      }
       const consentida = code === SAIDA_CONSENTIDA;
       const terminou = estado.msg?.visao?.fase === 'fimPartida';
       largar(consentida || terminou);
       if (!consentida) erro('Conexão com a mesa perdida');
     });
     persistir(s.reconnectionToken);
-    mudar({ status: 'na-mesa', msg: null, eventos: [] });
+    mudar({ status: 'na-mesa', msg: null, eventos: [], chat: [], salaId: s.roomId });
     s.send('sincronizar');
   }
 
@@ -135,6 +148,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
     enviarAcao: (a: AcaoJogador) => sala?.send('acao', a),
     enviarSinal: (x: Sinal) => sala?.send('sinal', x),
     enviarFala: (f: Fala) => sala?.send('fala', f),
+    enviarChat: (texto: string) => sala?.send('chat', texto),
     iniciar: () => sala?.send('iniciar'),
     /**
      * Saída definitiva (o servidor põe um bot no lugar). Larga o estado local antes do
