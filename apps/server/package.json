@@ -8,7 +8,8 @@
     "start": "tsx src/main.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "db:gerar": "drizzle-kit generate"
+    "db:gerar": "drizzle-kit generate",
+    "fumaca": "tsx scripts/fumaca.ts"
   },
   "dependencies": {
     "@colyseus/core": "^0.18.26",

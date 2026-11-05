@@ -3,6 +3,8 @@
   "private": true,
   "packageManager": "pnpm@9.12.0",
   "scripts": {
+    "build": "pnpm --filter @truco/web build",
+    "start": "pnpm --filter @truco/server start",
     "dev:server": "pnpm --filter @truco/server dev",
     "dev:web": "pnpm --filter @truco/web dev",
     "test": "pnpm -r test",
