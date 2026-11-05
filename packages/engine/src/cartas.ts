@@ -35,13 +35,16 @@ const MANILHAS_BAIXAS_MINEIRO: readonly Readonly<Carta>[] = [
 
 export const ehCoringa = (c: Carta): boolean => c.valor === 'C';
 
+/** As cartas baixas (4, 5, 6, 7) que a mão limpa tira do baralho. */
+const VALORES_FORA_DA_MAO_LIMPA: readonly Valor[] = VALORES.slice(0, 4);
+
 /**
  * Baralho completo da mesa. Mão limpa (só no mineiro): Q, J, K, A, 2, 3 dos quatro
  * naipes, as manilhas 4♣, 7♥ e 7♦ e os dois coringas — 29 cartas. Senão, as 40 de `novoBaralho`.
  */
 export function baralhoDaMesa(regras: Pick<RegrasMesa, 'variante' | 'maoLimpa'>): Carta[] {
   if (regras.variante !== 'mineiro' || regras.maoLimpa !== true) return novoBaralho();
-  const altas = novoBaralho().filter((c) => !['4', '5', '6', '7'].includes(c.valor));
+  const altas = novoBaralho().filter((c) => !VALORES_FORA_DA_MAO_LIMPA.includes(c.valor));
   return [...altas, ...MANILHAS_BAIXAS_MINEIRO, ...CORINGAS].map((c) => ({ ...c }));
 }
 
