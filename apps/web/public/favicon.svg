@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Zap — 4 de paus</title>
+  <g transform="rotate(-8 32 32)">
+    <rect x="12" y="5" width="40" height="55" rx="7" fill="#fbf8f1" stroke="#1c1916" stroke-width="3.5"/>
+    <text x="16.5" y="21" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="17" fill="#1c1916">4</text>
+    <g fill="#1c1916">
+      <circle cx="35" cy="29" r="7"/>
+      <circle cx="27.5" cy="40" r="7"/>
+      <circle cx="42.5" cy="40" r="7"/>
+      <path d="M35 35 L31 54 H39 Z"/>
+    </g>
+  </g>
+</svg>
