@@ -31,6 +31,18 @@ describe('Mao', () => {
     expect(alternar).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('modo coberta desliga quando deixa de poder cobrir', async () => {
+    const user = userEvent.setup();
+    const props = { cartas: CARTAS, jogaveis: [0, 1, 2], variante: 'mineiro' as const, vira: null, aoJogar: vi.fn() };
+    const { rerender } = render(<Mao {...props} cobriveis={[0, 1, 2]} />);
+    await user.click(screen.getByRole('button', { name: 'Jogar coberta' }));
+    rerender(<Mao {...props} cobriveis={[]} />);
+    expect(screen.queryByRole('button', { name: 'Jogar coberta' })).toBeNull();
+    rerender(<Mao {...props} cobriveis={[0, 1, 2]} />);
+    expect(screen.getByRole('button', { name: 'Jogar coberta' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: '4 de ouros' })).toBeEnabled();
+  });
+
   test('mão de ferro: três versos, escolho um às cegas', async () => {
     const user = userEvent.setup();
     const aoJogar = vi.fn();

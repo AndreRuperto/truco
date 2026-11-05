@@ -1,5 +1,5 @@
 import { type Carta, idCarta, type Variante } from '@truco/engine';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { rotuloCarta } from '../logica/cartas';
 import { CartaVisual } from './CartaVisual';
 import { cx } from './cx';
@@ -18,6 +18,10 @@ export function Mao({ cartas, jogaveis, cobriveis, variante, vira, aoJogar }: Pr
   const [cobrir, setCobrir] = useState(false);
   const podeCobrir = cobriveis.length > 0;
   const cobrindo = cobrir && podeCobrir;
+  // Sem cartas cobríveis (ex.: a vez passou) o modo desliga, para não voltar ligado depois.
+  useEffect(() => {
+    if (!podeCobrir) setCobrir(false);
+  }, [podeCobrir]);
 
   return (
     <div className="minha-mao" data-testid="minha-mao">
