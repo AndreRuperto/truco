@@ -1,8 +1,10 @@
+import type { Variante } from '@truco/engine';
 import { sql } from 'drizzle-orm';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import type { SalaAberta } from '../api/tipos';
-import { emailDoLink } from '../auth/emails';
+import { emailDoLink, extrairLink } from '../auth/emails';
 import { LimiteTaxa } from '../auth/limite';
+import { VARIANTES } from '../banco/schema';
 import { bearer, COOKIE_SESSAO, cookieApagado, cookieSessao, lerCookie } from '../auth/tokens';
 import {
   consumirLinkMagico,
@@ -18,6 +20,7 @@ import {
   usuarioDaSessao,
   usuarioPorId,
 } from '../repo/usuarios';
+import { historico, perfil, ranking } from '../repo/partidas';
 import type { Servicos } from '../servicos';
 
 export interface ExtrasApp {
@@ -128,14 +131,56 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     res.status(204).end();
   });
 
-  // (Tarefa 10: perfil, histórico, ranking, salas e caixa de teste entram aqui.)
+  api.get('/perfil', async (req, res) => {
+    const u = await usuarioDe(req);
+    if (!u) return void res.status(401).json({ erro: 'entre na sua conta' });
+    res.json(await perfil(s.banco, u.id));
+  });
+
+  api.get('/perfil/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return void res.status(400).json({ erro: 'id inválido' });
+    const p = await perfil(s.banco, id);
+    if (!p) return void res.status(404).json({ erro: 'jogador não encontrado' });
+    res.json(p);
+  });
+
+  api.get('/historico', async (req, res) => {
+    const u = await usuarioDe(req);
+    if (!u) return void res.status(401).json({ erro: 'entre na sua conta' });
+    res.json({ partidas: await historico(s.banco, u.id) });
+  });
+
+  api.get('/ranking/:variante', async (req, res) => {
+    const v = req.params.variante;
+    if (!(VARIANTES as readonly string[]).includes(v)) return void res.status(400).json({ erro: 'variante inválida' });
+    res.json({ linhas: await ranking(s.banco, v as Variante) });
+  });
+
+  api.get('/salas', async (_req, res) => {
+    res.json({ salas: x.listarSalas ? await x.listarSalas() : [] });
+  });
+
+  api.get('/teste/emails', (_req, res) => {
+    if (!s.caixaTeste) return void res.status(404).json({ erro: 'não encontrado' });
+    res.json({ emails: s.caixaTeste.enviados.map((e) => ({ para: e.para, assunto: e.assunto, link: extrairLink(e.texto) })) });
+  });
 
   api.use((_req, res) => {
     res.status(404).json({ erro: 'não encontrado' });
   });
   app.use('/api', api);
 
-  // (Tarefa 10: estáticos e fallback da SPA entram aqui.)
+  if (x.pastaWeb) {
+    const pasta = x.pastaWeb;
+    // Os arquivos do Vite em /assets têm hash no nome: podem ficar em cache.
+    app.use(express.static(pasta, { index: false, maxAge: '7d' }));
+    // `/{*caminho}` (Express 5) casa também "/": sem isso o Colyseus responderia "/" com a própria versão.
+    app.get('/{*caminho}', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-cache');
+      res.sendFile('index.html', { root: pasta });
+    });
+  }
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const tipo = (err as { type?: string } | null)?.type;
