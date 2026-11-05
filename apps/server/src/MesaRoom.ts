@@ -14,13 +14,14 @@ export class MesaRoom extends Room {
    * MESMO objeto de opções que vai para o filtro e para `createRoom`: reescreve nele os
    * campos do `filterBy` com os valores validados. Quem omite um campo procura a sala
    * padrão, não "qualquer sala". Mesas ranqueadas só nascem pela fila (sem onAuth).
+   * Opções que não são objeto (texto, número, null) não têm onde receber o filtro (o
+   * Colyseus filtraria por nada e casaria com qualquer sala): recusadas.
    */
   static async onAuth(_token: string, options: unknown, _context: AuthContext): Promise<unknown> {
-    if (options && typeof options === 'object') {
-      const o = options as Record<string, unknown>;
-      if (o.modo === 'ranqueada') throw new ServerError(ErrorCode.AUTH_FAILED, 'mesa ranqueada só pela fila');
-      Object.assign(o, filtroDaSala(opcoesDaSala(o)));
-    }
+    if (!options || typeof options !== 'object') throw new ServerError(ErrorCode.MATCHMAKE_INVALID_CRITERIA, 'opções da sala inválidas');
+    const o = options as Record<string, unknown>;
+    if (o.modo === 'ranqueada') throw new ServerError(ErrorCode.AUTH_FAILED, 'mesa ranqueada só pela fila');
+    Object.assign(o, filtroDaSala(opcoesDaSala(o)));
     return true;
   }
 
