@@ -1,4 +1,4 @@
-import { type Carta, idCarta, type Naipe, type ValorComum, VALORES } from './cartas';
+import { type Carta, ehCoringa, idCarta, type Naipe, type ValorComum, VALORES } from './cartas';
 import type { Variante } from './regras';
 
 /**
@@ -20,7 +20,7 @@ export function valorManilhaPaulista(vira: Carta): ValorComum {
 }
 
 export function forca(c: Carta, variante: Variante, vira: Carta | null): number {
-  if (c.valor === 'C') return FORCA_CORINGA;
+  if (ehCoringa(c)) return FORCA_CORINGA;
   if (variante === 'mineiro') {
     const m = MANILHAS_MINEIRO[idCarta(c)];
     if (m) return m;
