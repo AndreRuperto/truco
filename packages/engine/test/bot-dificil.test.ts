@@ -153,6 +153,29 @@ describe('dica do parceiro', () => {
     expect(jaJogada.mao!.maos[3].map(idCarta)).not.toContain('4p');
   });
 
+  test('dica é ignorada se o parceiro já jogou carta coberta (pode ter sido a sinalizada)', () => {
+    const coberta = (cadeira: Cadeira) => ({ cadeira, carta: null, coberta: true, forca: 0 });
+    const comCoberta = (cadeira: Cadeira, onde: 'mesa' | 'rodadasJogadas') => {
+      const x = structuredClone(v);
+      x.mao!.qtdCartas[cadeira] -= 1;
+      if (onde === 'mesa') x.mao!.mesa = [coberta(cadeira)];
+      else x.mao!.rodadasJogadas = [[coberta(cadeira)]];
+      return x;
+    };
+    const dica = { parceiroTem: c('7c') };
+    for (const onde of ['mesa', 'rodadasJogadas'] as const) {
+      const vp = comCoberta(3, onde);
+      for (let seed = 1; seed <= 10; seed++) {
+        expect(amostrarMundo(vp, mulberry32(seed), dica)).toEqual(amostrarMundo(vp, mulberry32(seed)));
+      }
+      // coberta de adversário não muda nada: a dica continua valendo
+      const va = comCoberta(0, onde);
+      for (let seed = 1; seed <= 10; seed++) {
+        expect(amostrarMundo(va, mulberry32(seed), dica).mao!.maos[3].map(idCarta)).toContain('7c');
+      }
+    }
+  });
+
   test('botDificil aceita a dica e continua legal e determinístico', () => {
     const v0 = visaoDoJogador(s, 0);
     const opcoes = { amostras: 8, dica: { parceiroTem: c('7c') } };

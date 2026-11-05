@@ -51,9 +51,11 @@ export function amostrarMundo(v: Visao, rand: () => number, dica: DicaAmostra = 
 
   const parceiro = parceiroDe(v.cadeira);
   // O monte só tem cartas desconhecidas: se a carta sinalizada não está nele, a dica é impossível e é ignorada.
+  // Também é ignorada se o parceiro já jogou coberta: a carta sinalizada pode ter sido essa.
   let reservada: Carta | null = null;
   const alvo = dica.parceiroTem;
-  if (alvo && !m.maoParceiro && m.qtdCartas[parceiro] > 0) {
+  const parceiroCobriu = [...m.mesa, ...m.rodadasJogadas.flat()].some((j) => j.cadeira === parceiro && j.coberta);
+  if (alvo && !m.maoParceiro && !parceiroCobriu && m.qtdCartas[parceiro] > 0) {
     const i = monte.findIndex((x) => idCarta(x) === idCarta(alvo));
     if (i >= 0) reservada = monte.splice(i, 1)[0];
   }
