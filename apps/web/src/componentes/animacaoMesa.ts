@@ -59,6 +59,21 @@ export function movimentoReduzido(): boolean {
 
 const podeAnimar = (el: Element): el is HTMLElement => typeof (el as HTMLElement).animate === 'function';
 
+export const DUR_DESLIZE = 380;
+
+/** FLIP: `el` já está no lugar novo; desliza de onde estava (`de`). Movimento reduzido: nada. */
+export function deslizarDe(el: HTMLElement, de: DOMRect): void {
+  if (movimentoReduzido() || !podeAnimar(el)) return;
+  const para = el.getBoundingClientRect();
+  const dx = de.left - para.left;
+  const dy = de.top - para.top;
+  if (dx === 0 && dy === 0) return;
+  el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0px, 0px)' }], {
+    duration: DUR_DESLIZE,
+    easing: EASE_ARREMESSO,
+  });
+}
+
 interface Ponto {
   x: number;
   y: number;

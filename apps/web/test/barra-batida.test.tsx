@@ -23,7 +23,7 @@ function barraComSeis() {
   const aoBater = vi.fn((_forca: number) => ordem.push('batida'));
   render(
     <BarraAcoes
-      botoes={agruparAcoes(acoesValidas(s, 1), v.mao).botoes}
+      botoes={agruparAcoes(acoesValidas(s, 1), v).botoes}
       pedido={null}
       aoEscolher={aoEscolher}
       bate={(b) => botaoBate(b, v.mao)}
@@ -111,7 +111,7 @@ describe('BarraAcoes: bater na mesa', () => {
     const aoEscolher = vi.fn();
     const aoBater = vi.fn();
     render(
-      <BarraAcoes botoes={agruparAcoes(acoesValidas(s, 0), v.mao).botoes} pedido={null} aoEscolher={aoEscolher} bate={(b) => botaoBate(b, v.mao)} aoBater={aoBater} />,
+      <BarraAcoes botoes={agruparAcoes(acoesValidas(s, 0), v).botoes} pedido={null} aoEscolher={aoEscolher} bate={(b) => botaoBate(b, v.mao)} aoBater={aoBater} />,
     );
     const truco = screen.getByRole('button', { name: 'Truco!' });
     fireEvent.pointerDown(truco, { button: 0, pointerId: 1 });

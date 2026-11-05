@@ -1402,12 +1402,6 @@ button:disabled {
 .overlay-caixa .botao-secundario:hover {
   border-color: var(--giz);
 }
-.cartas-familia {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 10px;
-}
 .toast {
   position: fixed;
   bottom: calc(96px + env(safe-area-inset-bottom));
@@ -1498,6 +1492,139 @@ button:disabled {
   .placar-num {
     font-size: var(--t3);
   }
+}
+
+/* ---------- Ritual: monte, linha de estado, abertas e famílias ---------- */
+.centro {
+  position: relative;
+}
+.monte {
+  --monte-l: calc(var(--carta-c) * 0.8);
+  position: absolute;
+  z-index: 2;
+  width: var(--monte-l);
+  aspect-ratio: 5 / 7;
+  pointer-events: none;
+}
+.monte .monte-camada {
+  --carta-l: var(--monte-l);
+  position: absolute;
+  inset: 0;
+  transform: translate(calc(var(--i) * -1.5px), calc(var(--i) * -1.5px));
+  box-shadow: 0 1px 2px rgba(11, 8, 6, 0.35);
+}
+.monte[data-anim] .monte-camada {
+  opacity: 0.55;
+}
+.monte-qtd {
+  position: absolute;
+  right: -0.7em;
+  bottom: -0.7em;
+  min-width: 1.9em;
+  padding: 0.1em 0.35em;
+  border: 1px solid var(--giz-suave);
+  border-radius: 999px;
+  background: var(--lousa);
+  color: var(--giz);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+}
+.monte-meio {
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+}
+.monte-baixo {
+  left: 50%;
+  bottom: 0;
+  translate: -50% 0;
+}
+.monte-cima {
+  left: 50%;
+  top: 0;
+  translate: -50% 0;
+}
+.monte-esquerda {
+  left: 0;
+  top: 50%;
+  translate: 0 -50%;
+}
+.monte-direita {
+  right: 0;
+  top: 50%;
+  translate: 0 -50%;
+}
+.etapa {
+  position: absolute;
+  left: 50%;
+  bottom: -1.9em;
+  translate: -50% 0;
+  margin: 0;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--giz);
+  font-size: 0.8rem;
+  text-shadow: 0 1px 2px var(--sombra);
+}
+.familias {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.familia {
+  position: absolute;
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+.familia-cartas {
+  display: flex;
+}
+.familia-cartas .carta + .carta {
+  margin-left: calc(var(--carta-c) * -0.35);
+}
+.familia figcaption {
+  max-width: 42vw;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--lousa) 85%, transparent);
+  color: var(--giz);
+  font-size: 0.72rem;
+  text-align: center;
+}
+.familia[data-conferida='sim'] figcaption {
+  color: var(--grito);
+}
+.familia.pos-cima {
+  top: 20%;
+  left: 50%;
+  translate: -50% 0;
+}
+.familia.pos-baixo {
+  bottom: 22%;
+  left: 50%;
+  translate: -50% 0;
+}
+.familia.pos-esquerda {
+  left: 3%;
+  top: 50%;
+  translate: 0 -50%;
+}
+.familia.pos-direita {
+  right: 3%;
+  top: 50%;
+  translate: 0 -50%;
+}
+.familia.abertas-corte {
+  top: 50%;
+  left: 50%;
+  translate: 55% -160%;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,5 @@
 import { type Cadeira, valorManilhaPaulista, type Variante, type VisaoMao, type VisaoResultadoMao } from '@truco/engine';
-import { useRef } from 'react';
+import { type ReactNode, useRef } from 'react';
 import { nomeValor } from '../logica/cartas';
 import { exibicaoMesa } from '../logica/jogadas';
 import { posicaoRelativa } from '../logica/posicoes';
@@ -17,13 +17,15 @@ interface Props {
   ultimaMao: VisaoResultadoMao | null;
   minha: Cadeira;
   variante: Variante;
+  /** Monte e linha de estado do ritual (por cima da cruz). */
+  extra?: ReactNode;
 }
 
 /**
  * Cartas da rodada (ou, com a mesa vazia, as da rodada anterior esmaecidas), vira e rodadas
  * vencidas. Entre mãos, o mesmo da mão que acabou (última rodada esmaecida).
  */
-export function CentroMesa({ mao, ultimaMao, minha, variante }: Props) {
+export function CentroMesa({ mao, ultimaMao, minha, variante, extra }: Props) {
   const centro = useRef<HTMLDivElement>(null);
   const camada = useRef<HTMLDivElement>(null);
   const exibicao = exibicaoMesa(mao, ultimaMao);
@@ -34,7 +36,9 @@ export function CentroMesa({ mao, ultimaMao, minha, variante }: Props) {
   if (!fonte)
     return (
       <>
-        <div ref={centro} className="centro" />
+        <div ref={centro} className="centro" data-testid="centro">
+          {extra}
+        </div>
         {capa}
       </>
     );
@@ -43,6 +47,7 @@ export function CentroMesa({ mao, ultimaMao, minha, variante }: Props) {
   return (
     <>
       <div ref={centro} className="centro" data-testid="centro">
+        {extra}
         {vira && (
           <div className="vira">
             <CartaVisual carta={vira} variante={variante} vira={vira} />

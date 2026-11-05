@@ -16,6 +16,11 @@ const inicio = () => distribuida(PAULISTA, MAOS, [0, 0], '7o');
 const jogadaDe = (pos: string) => document.querySelector(`.jogada.pos-${pos}`) as HTMLElement | null;
 
 describe('CentroMesa', () => {
+  test('sem mão nem última mão o centro existe e mostra o extra (monte)', () => {
+    render(<CentroMesa mao={null} ultimaMao={null} minha={0} variante="paulista" extra={<span>monte aqui</span>} />);
+    expect(screen.getByTestId('centro')).toHaveTextContent('monte aqui');
+  });
+
   test('cada jogada fica na posição da cadeira, relativa a mim', () => {
     const s = jogar(inicio(), [[0, 0], [1, 0], [2, 0]]);
     const v = visaoDoJogador(s, 1);

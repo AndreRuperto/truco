@@ -1,13 +1,14 @@
-import { type Cadeira, parceiroDe, quemDeveAgir } from '@truco/engine';
+import { type Cadeira, ehFaseRitual, parceiroDe, quemDeveAgir } from '@truco/engine';
 import { useState } from 'react';
 import { Assento } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
-import { CartaVisual } from '../componentes/CartaVisual';
 import { CentroMesa } from '../componentes/CentroMesa';
 import { Chat } from '../componentes/Chat';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { Cronometro } from '../componentes/Cronometro';
+import { FamiliasNaMesa } from '../componentes/FamiliasNaMesa';
 import { Mao } from '../componentes/Mao';
+import { Monte } from '../componentes/Monte';
 import { FimDeMao, FimDePartida } from '../componentes/Overlays';
 import { PainelFalas } from '../componentes/PainelFalas';
 import { PainelSinais } from '../componentes/PainelSinais';
@@ -18,15 +19,9 @@ import { botaoBate } from '../logica/batida';
 import { baloesAtivos } from '../logica/eventos';
 import { cadeiraNaPosicao } from '../logica/posicoes';
 import { prazoEhMeu } from '../logica/prazo';
+import { donoDoMonte, mostrarResumoMao, textoEtapa } from '../logica/ritual';
 import { type SinalRecebido, temCoringa, textoSinalRecebido } from '../logica/sinais';
-import {
-  placarRelativo,
-  resumoFimMao,
-  resumoFimPartida,
-  textoFamilia,
-  textoPedidoPendente,
-  valorMao,
-} from '../logica/textos';
+import { placarRelativo, resumoFimMao, resumoFimPartida, textoPedidoPendente, valorMao } from '../logica/textos';
 import { useAgora } from '../rede/hooks';
 import type { EstadoLoja, Loja } from '../rede/loja';
 
@@ -52,7 +47,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   const minha = msg.minhaCadeira;
   const variante = v.regras.variante;
   const vira = m?.vira ?? null;
-  const ui = agruparAcoes(msg.minhasAcoes, m);
+  const ui = agruparAcoes(msg.minhasAcoes, v);
   const baloes = baloesAtivos(snap.eventos, agora);
   const { nos, eles } = placarRelativo(v);
   const nome = (c: Cadeira) => msg.cadeiras[c]?.nome ?? `Cadeira ${c + 1}`;
@@ -69,9 +64,11 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   };
   const alternar = (p: 'sinais' | 'falas' | 'chat') => setPainel((atual) => (atual === p ? null : p));
 
-  const entreMaos = !m && v.fase === 'aguardandoDistribuicao';
-  const familia = entreMaos ? textoFamilia(v, nome) : null;
-  const resumoMao = entreMaos && !familia && v.ultimaMao ? resumoFimMao(v.ultimaMao, minha) : null;
+  const emRitual = ehFaseRitual(v.fase) || v.fase === 'aguardandoMonte';
+  const resumoMao = mostrarResumoMao(v) && v.ultimaMao ? resumoFimMao(v.ultimaMao, minha) : null;
+  // No ritual a última rodada só fica no centro enquanto o resumo está na tela (depois as cartas já voltaram ao monte).
+  const ultimaVisivel = emRitual && !resumoMao ? null : v.ultimaMao;
+  const etapa = textoEtapa(v, nome);
   const fim = v.fase === 'fimPartida' ? resumoFimPartida(v) : null;
   const pedido = textoPedidoPendente(v);
 
@@ -97,7 +94,23 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
             />
           );
         })}
-        <CentroMesa mao={m} ultimaMao={v.ultimaMao} minha={minha} variante={variante} />
+        <CentroMesa
+          mao={m}
+          ultimaMao={ultimaVisivel}
+          minha={minha}
+          variante={variante}
+          extra={
+            <>
+              <Monte qtd={v.qtdMonte} dono={donoDoMonte(v)} minha={minha} />
+              {etapa && (
+                <p className="etapa" role="status">
+                  {etapa}
+                </p>
+              )}
+            </>
+          }
+        />
+        <FamiliasNaMesa visao={v} nome={nome} />
         <Assento
           posicao="baixo"
           info={msg.cadeiras[minha]}
@@ -161,17 +174,6 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
         <div className="sinal-flutuante" role="status">
           {textoSinalRecebido(sinal)}
         </div>
-      )}
-      {familia && (
-        <FimDeMao titulo="Família!" detalhe={familia}>
-          {v.ultimaFamilia?.cartas && (
-            <div className="cartas-familia" aria-label="Cartas da família">
-              {v.ultimaFamilia.cartas.map((c, i) => (
-                <CartaVisual key={i} carta={c} variante={variante} vira={null} tamanho="pequena" />
-              ))}
-            </div>
-          )}
-        </FimDeMao>
       )}
       {resumoMao && <FimDeMao titulo={resumoMao.titulo} detalhe={resumoMao.detalhe} />}
       {fim && <FimDePartida titulo={fim.titulo} placar={fim.placar} venceu={fim.venceu} aoJogarDeNovo={aoJogarDeNovo} aoVoltar={() => void acoes.sair()} />}

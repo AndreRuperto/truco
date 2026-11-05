@@ -5,7 +5,7 @@ import type { Evento } from '../src/logica/eventos';
 import type { EstadoLoja } from '../src/rede/loja';
 import { TelaMesa } from '../src/telas/Mesa';
 import { reduce } from '@truco/engine';
-import { distribuida, jogar, MINEIRO, msgEstado, PAULISTA } from './fixtures';
+import { distribuida, jogar, MINEIRO, msgEstado, noRitual, PAULISTA } from './fixtures';
 
 const acoesFalsas = () => ({ enviarAcao: vi.fn(), enviarSinal: vi.fn(), enviarFala: vi.fn(), sair: vi.fn() });
 const snap = (msg: EstadoLoja['msg'], eventos: Evento[] = []): EstadoLoja => ({ status: 'na-mesa', msg, eventos, erro: null, chat: [], salaId: 'r1' });
@@ -117,34 +117,13 @@ describe('TelaMesa', () => {
       ['4p', '5p', '6p'],
     ];
     const s = jogar(distribuida(PAULISTA, maos, [0, 0], '7o'), [[0, 0], [1, 0], [2, 0], [3, 0], [0, 0], [1, 0], [2, 0], [3, 0]]);
-    expect(s.fase).toBe('aguardandoDistribuicao');
+    expect(s.fase).toBe('embaralhando');
     render(<TelaMesa snap={snap(msgEstado(s, 0))} acoes={acoesFalsas()} />);
     const fim = screen.getByTestId('fim-mao');
     expect(fim).toHaveTextContent('Nós levamos!');
     expect(fim).toHaveTextContent('+1 ponto — nas rodadas');
     expect(within(screen.getByTestId('centro')).getByRole('img', { name: /^3 de espadas/ })).toHaveClass('esmaecida');
     expect(screen.queryByTestId('minha-mao')).toBeNull();
-  });
-
-  test('família aberta: o aviso mostra as 3 cartas de quem pediu', () => {
-    const regras = { ...PAULISTA, familia: 'aberta' as const };
-    const s = reduce(distribuida(regras, [['Qo', 'Je', 'Kc']]), { tipo: 'familia', cadeira: 0 });
-    expect(s.ultimaFamilia?.cartas).toHaveLength(3);
-    render(<TelaMesa snap={snap(msgEstado(s, 1))} acoes={acoesFalsas()} />);
-    const fim = screen.getByTestId('fim-mao');
-    expect(fim).toHaveTextContent('Família!');
-    expect(within(fim).getAllByRole('img')).toHaveLength(3);
-    expect(within(fim).getByRole('img', { name: /^Dama de ouros/ })).toBeInTheDocument();
-    expect(within(fim).getByRole('img', { name: /^Rei de copas/ })).toBeInTheDocument();
-  });
-
-  test('família fechada: só o aviso, sem cartas', () => {
-    const regras = { ...PAULISTA, familia: 'fechada' as const };
-    const s = reduce(distribuida(regras, [['Qo', 'Je', 'Kc']]), { tipo: 'familia', cadeira: 0 });
-    render(<TelaMesa snap={snap(msgEstado(s, 1))} acoes={acoesFalsas()} />);
-    const fim = screen.getByTestId('fim-mao');
-    expect(fim).toHaveTextContent('pediu família');
-    expect(within(fim).queryAllByRole('img')).toHaveLength(0);
   });
 
   test('fim de partida: "Jogar de novo" começa outra partida e "Voltar ao início" só sai', async () => {
@@ -174,5 +153,82 @@ describe('TelaMesa', () => {
     expect(within(fim).queryByRole('button', { name: 'Jogar de novo' })).toBeNull();
     await user.click(within(fim).getByRole('button', { name: 'Voltar ao início' }));
     expect(acoes.sair).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TelaMesa no ritual e na família', () => {
+  test('quem embaralha: monte com a contagem do seu lado, linha de estado e os dois botões', async () => {
+    const user = userEvent.setup();
+    const acoes = acoesFalsas();
+    render(<TelaMesa snap={snap(msgEstado(noRitual(), 3))} acoes={acoes} />);
+    const monte = screen.getByTestId('monte');
+    expect(monte).toHaveAccessibleName('Monte com 40 cartas');
+    expect(monte).toHaveClass('monte-baixo');
+    expect(screen.getByText('Sua vez de embaralhar')).toBeInTheDocument();
+    const barra = screen.getByRole('toolbar', { name: 'Ações' });
+    expect(within(barra).getAllByRole('button').map((b) => b.textContent)).toEqual(['Embaralhar', 'Passar pra cortar']);
+    await user.click(screen.getByRole('button', { name: 'Passar pra cortar' }));
+    expect(acoes.enviarAcao).toHaveBeenCalledWith({ tipo: 'passarCorte', cadeira: 3 });
+    expect(screen.queryByTestId('minha-mao')).toBeNull();
+  });
+
+  test('quem corta: as 5 opções e o monte com ele', () => {
+    const t = reduce(noRitual(), { tipo: 'passarCorte', cadeira: 3 });
+    render(<TelaMesa snap={snap(msgEstado(t, 2))} acoes={acoesFalsas()} />);
+    const barra = screen.getByRole('toolbar', { name: 'Ações' });
+    expect(within(barra).getAllByRole('button').map((b) => b.textContent)).toEqual(['Cortar', 'Embaralhar', 'Abrir 3', 'Dar 3', 'Devolver']);
+    expect(screen.getByTestId('monte')).toHaveClass('monte-baixo');
+    expect(screen.getByText('Sua vez de cortar — 3 movimentos')).toBeInTheDocument();
+  });
+
+  test('quem dá escolhe o modo', async () => {
+    const user = userEvent.setup();
+    const acoes = acoesFalsas();
+    const u = reduce(reduce(noRitual(), { tipo: 'passarCorte', cadeira: 3 }), { tipo: 'devolver', cadeira: 2 });
+    render(<TelaMesa snap={snap(msgEstado(u, 3))} acoes={acoes} />);
+    await user.click(screen.getByRole('button', { name: 'Subindo alternado' }));
+    expect(acoes.enviarAcao).toHaveBeenCalledWith({ tipo: 'distribuir', cadeira: 3, modo: 'subindo' });
+  });
+
+  test('abrir 3: as abertas aparecem para todos ao lado do monte', () => {
+    const t = reduce(reduce(noRitual(), { tipo: 'passarCorte', cadeira: 3 }), { tipo: 'abrir3', cadeira: 2 });
+    render(<TelaMesa snap={snap(msgEstado(t, 0))} acoes={acoesFalsas()} />);
+    const abertas = screen.getByTestId('abertas-corte');
+    expect(within(abertas).getByRole('img', { name: /^4 de ouros/ })).toBeInTheDocument();
+    expect(within(abertas).getAllByRole('img')).toHaveLength(3);
+  });
+
+  test('família fechada: 3 versos na frente de quem pediu; a dupla adversária confere', async () => {
+    const user = userEvent.setup();
+    const acoes = acoesFalsas();
+    const t = reduce(distribuida(MINEIRO, [['Qo', 'Jo', 'Ko']]), { tipo: 'familia', cadeira: 0 });
+    render(<TelaMesa snap={snap(msgEstado(t, 1))} acoes={acoes} />);
+    const fam = screen.getByTestId('familia');
+    expect(fam).toHaveClass('pos-esquerda');
+    expect(within(fam).getAllByRole('img', { name: 'carta virada' })).toHaveLength(3);
+    expect(fam).toHaveTextContent('Ana: família fechada');
+    expect(screen.getByText('Ana pediu família fechada. Conferir?')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Conferir' }));
+    expect(acoes.enviarAcao).toHaveBeenCalledWith({ tipo: 'conferir', cadeira: 1, conferir: true });
+  });
+
+  test('conferida: todos veem as 3 cartas e o resultado', () => {
+    const t = reduce(distribuida(MINEIRO, [['Qo', 'Jo', 'Ko']]), { tipo: 'familia', cadeira: 0 });
+    const u = reduce(t, { tipo: 'conferir', cadeira: 1, conferir: true });
+    render(<TelaMesa snap={snap(msgEstado(u, 2))} acoes={acoesFalsas()} />);
+    const fam = screen.getByTestId('familia-conferida');
+    expect(fam).toHaveTextContent('Bot Zé conferiu: era família! +2 pra nós');
+    expect(within(fam).getByRole('img', { name: /^Dama de ouros/ })).toBeInTheDocument();
+    expect(within(fam).queryAllByRole('img', { name: 'carta virada' })).toHaveLength(0);
+  });
+
+  test('entre mãos: o resumo fica até o pé novo embaralhar', () => {
+    let s = distribuida(PAULISTA);
+    s = reduce(reduce(s, { tipo: 'truco', cadeira: 0 }), { tipo: 'correr', cadeira: 1 });
+    const { rerender } = render(<TelaMesa snap={snap(msgEstado(s, 0))} acoes={acoesFalsas()} />);
+    expect(screen.getByTestId('fim-mao')).toBeInTheDocument();
+    const e = reduce(s, { tipo: 'embaralhar', cadeira: s.pe, bits: s.monte.map(() => 0 as const) });
+    rerender(<TelaMesa snap={snap(msgEstado(e, 0))} acoes={acoesFalsas()} />);
+    expect(screen.queryByTestId('fim-mao')).toBeNull();
   });
 });
