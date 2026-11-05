@@ -7,7 +7,7 @@ import { type Cadeira, type EstadoPartida, novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';
 import { embaralhar, mulberry32 } from '../src/rng';
 import { visaoDoJogador } from '../src/visao';
-import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, distribuida } from './helpers';
+import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, c, distribuida, jogarSeq } from './helpers';
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
 
@@ -120,4 +120,44 @@ describe('botDificil', () => {
     }
     expect(s.vencedor).not.toBeNull();
   }, 60_000);
+});
+
+describe('dica do parceiro', () => {
+  // MAOS_DUPLA0_VENCE no mineiro: ninguém recebeu o 7♥ (copas); a cadeira 1 tem 3e 5e 6e; o parceiro dela é a 3.
+  const s = distribuida(MINEIRO, MAOS_DUPLA0_VENCE);
+  const v = visaoDoJogador(s, 1);
+
+  test('a carta sinalizada vai para a mão do parceiro', () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const mundo = amostrarMundo(v, mulberry32(seed), { parceiroTem: c('7c') });
+      expect(mundo.mao!.maos[3].map(idCarta)).toContain('7c');
+      expect(visaoDoJogador(mundo, 1).mao).toEqual(v.mao);
+    }
+  });
+
+  test('sem dica, a carta só cai com o parceiro por acaso', () => {
+    let vezes = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      if (amostrarMundo(v, mulberry32(seed)).mao!.maos[3].some((x) => idCarta(x) === '7c')) vezes++;
+    }
+    expect(vezes).toBeLessThan(30);
+  });
+
+  test('dica impossível é ignorada', () => {
+    const naMinhaMao = amostrarMundo(v, mulberry32(1), { parceiroTem: c('3e') });
+    expect(naMinhaMao.mao!.maos[1].map(idCarta)).toEqual(['3e', '5e', '6e']);
+    expect(naMinhaMao.mao!.maos[3].map(idCarta)).not.toContain('3e');
+
+    const s2 = jogarSeq(s, [[0, 0]]); // a cadeira 0 joga o zap (4p) aberto
+    const jaJogada = amostrarMundo(visaoDoJogador(s2, 1), mulberry32(2), { parceiroTem: c('4p') });
+    expect(jaJogada.mao!.maos[3].map(idCarta)).not.toContain('4p');
+  });
+
+  test('botDificil aceita a dica e continua legal e determinístico', () => {
+    const v0 = visaoDoJogador(s, 0);
+    const opcoes = { amostras: 8, dica: { parceiroTem: c('7c') } };
+    const a = botDificil(v0, mulberry32(5), opcoes);
+    expect(botDificil(v0, mulberry32(5), opcoes)).toEqual(a);
+    expect(acoesValidas(s, 0)).toContainEqual(a);
+  });
 });

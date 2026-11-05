@@ -14,12 +14,18 @@ import { embaralhar } from '../rng';
 import type { JogadaVisivel, Visao } from '../visao';
 import { botFacil } from './facil';
 
+/** O que o bot sabe por sinal do parceiro. */
+export interface DicaAmostra {
+  /** Carta que o parceiro sinalizou ter (ex.: o zap). */
+  parceiroTem?: Carta;
+}
+
 /**
  * Monta um estado completo coerente com tudo que `v.cadeira` enxerga:
  * cartas desconhecidas (mãos alheias, cartas cobertas alheias e, na mão de
  * ferro, a própria mão) são sorteadas do que sobrou do baralho.
  */
-export function amostrarMundo(v: Visao, rand: () => number): EstadoPartida {
+export function amostrarMundo(v: Visao, rand: () => number, dica: DicaAmostra = {}): EstadoPartida {
   const m = v.mao;
   if (!m) throw new Error('não há mão em andamento');
 
@@ -44,9 +50,18 @@ export function amostrarMundo(v: Visao, rand: () => number): EstadoPartida {
   };
 
   const parceiro = parceiroDe(v.cadeira);
+  // O monte só tem cartas desconhecidas: se a carta sinalizada não está nele, a dica é impossível e é ignorada.
+  let reservada: Carta | null = null;
+  const alvo = dica.parceiroTem;
+  if (alvo && !m.maoParceiro && m.qtdCartas[parceiro] > 0) {
+    const i = monte.findIndex((x) => idCarta(x) === idCarta(alvo));
+    if (i >= 0) reservada = monte.splice(i, 1)[0];
+  }
+
   const maos: Carta[][] = ([0, 1, 2, 3] as Cadeira[]).map((c) => {
     if (c === v.cadeira) return m.minhaMao.map((x) => x ?? tirar());
     if (c === parceiro && m.maoParceiro) return m.maoParceiro.map((x) => ({ ...x }));
+    if (c === parceiro && reservada) return [reservada, ...Array.from({ length: m.qtdCartas[c] - 1 }, tirar)];
     return Array.from({ length: m.qtdCartas[c] }, tirar);
   });
   const revelar = (j: JogadaVisivel): Jogada => ({ ...j, carta: j.carta ?? tirar() });
@@ -81,6 +96,8 @@ export interface OpcoesBotDificil {
   orcamentoMs?: number;
   /** Mínimo de amostras mesmo com o orçamento estourado (padrão 4, limitado a `amostras`). */
   minAmostras?: number;
+  /** Dica vinda do sinal do parceiro; usada em toda amostragem. */
+  dica?: DicaAmostra;
 }
 
 /** Joga o resto da mão com o bot fácil em todas as cadeiras; devolve o saldo de pontos da `dupla`. */
@@ -102,13 +119,13 @@ function simularResto(inicio: EstadoPartida, dupla: Dupla): number {
  * Recebe só a `Visao` — não tem como "roubar" olhando cartas alheias.
  */
 export function botDificil(v: Visao, rand: () => number, opcoes: OpcoesBotDificil = {}): AcaoJogador | null {
-  const { amostras = 24, chanceBlefe = 0.08, orcamentoMs, minAmostras = 4 } = opcoes;
+  const { amostras = 24, chanceBlefe = 0.08, orcamentoMs, minAmostras = 4, dica } = opcoes;
   if (!v.mao) return null;
   const inicio = orcamentoMs === undefined ? 0 : performance.now();
   const estourou = (k: number) =>
     orcamentoMs !== undefined && k >= minAmostras && performance.now() - inicio >= orcamentoMs;
 
-  const primeiro = amostrarMundo(v, rand);
+  const primeiro = amostrarMundo(v, rand, dica);
   const candidatas = acoesValidas(primeiro, v.cadeira);
   if (candidatas.length <= 1) return candidatas[0] ?? null;
 
@@ -118,7 +135,7 @@ export function botDificil(v: Visao, rand: () => number, opcoes: OpcoesBotDifici
   const dupla = duplaDe(v.cadeira);
   const soma = candidatas.map(() => 0);
   for (let k = 0; k < amostras && !estourou(k); k++) {
-    const mundo = k === 0 ? primeiro : amostrarMundo(v, rand);
+    const mundo = k === 0 ? primeiro : amostrarMundo(v, rand, dica);
     candidatas.forEach((a, i) => {
       soma[i] += simularResto(reduce(mundo, a), dupla);
     });
