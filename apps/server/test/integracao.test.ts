@@ -168,6 +168,22 @@ describe('MesaRoom', () => {
     await esperar(() => saiu);
   });
 
+  test('quem omite os campos do filtro procura a sala padrão, não qualquer sala', async () => {
+    const a = await colyseus.sdk.joinOrCreate('mesa', { variante: 'mineiro', humanos: 2, nivelBot: 'dificil', nome: 'Ana' });
+    coletor(a);
+    const b = await colyseus.sdk.joinOrCreate('mesa', { nome: 'Bia' });
+    const mb = coletor(b);
+    expect(b.roomId).not.toBe(a.roomId);
+    await esperar(() => !!mb.estado?.length);
+    expect(mb.estado.at(-1).regras.variante).toBe('paulista');
+    const [sala] = await matchMaker.query({ roomId: a.roomId });
+    expect(sala.metadata).toMatchObject({ modo: 'desafio', variante: 'mineiro', humanos: 2, nivelBot: 'dificil' });
+  });
+
+  test('cliente não cria mesa ranqueada', async () => {
+    await expect(colyseus.sdk.create('mesa', { modo: 'ranqueada', nome: 'Ana' })).rejects.toThrow(/fila/);
+  });
+
   test('iniciar antes de lotar tranca a sala', async () => {
     const a = await colyseus.sdk.joinOrCreate('mesa', { humanos: 2, nome: 'Ana' });
     const ma = coletor(a);

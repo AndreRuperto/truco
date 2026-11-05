@@ -1,7 +1,7 @@
-import { type Client, Room, type RoomException, type RoomMethodName } from '@colyseus/core';
+import { type AuthContext, type Client, ErrorCode, Room, type RoomException, type RoomMethodName, ServerError } from '@colyseus/core';
 import { randomInt } from 'node:crypto';
 import { Mesa, type Tempos } from './mesa/Mesa';
-import { chaveRegras, opcoesDaSala } from './mesa/protocolo';
+import { filtroDaSala, opcoesDaSala } from './mesa/protocolo';
 
 const randCripto = () => randomInt(0, 2 ** 32) / 2 ** 32;
 
@@ -9,21 +9,31 @@ export class MesaRoom extends Room {
   /** Sobrescrito nos testes para acelerar. */
   static tempos: Partial<Tempos> = {};
 
+  /**
+   * Roda no pedido HTTP de matchmaking, ANTES de o Colyseus procurar sala, e recebe o
+   * MESMO objeto de opções que vai para o filtro e para `createRoom`: reescreve nele os
+   * campos do `filterBy` com os valores validados. Quem omite um campo procura a sala
+   * padrão, não "qualquer sala". Mesas ranqueadas só nascem pela fila (sem onAuth).
+   */
+  static async onAuth(_token: string, options: unknown, _context: AuthContext): Promise<unknown> {
+    if (options && typeof options === 'object') {
+      const o = options as Record<string, unknown>;
+      if (o.modo === 'ranqueada') throw new ServerError(ErrorCode.AUTH_FAILED, 'mesa ranqueada só pela fila');
+      Object.assign(o, filtroDaSala(opcoesDaSala(o)));
+    }
+    return true;
+  }
+
   private mesa!: Mesa;
 
   onCreate(options: unknown) {
-    const { regras, humanos, nivelBot, chanceInterceptarSinal } = opcoesDaSala(options);
+    const opcoes = opcoesDaSala(options);
+    const { regras, humanos, nivelBot, chanceInterceptarSinal } = opcoes;
     this.maxClients = humanos;
     // O Colyseus 0.18 copia os campos do `filterBy` das opções cruas de criação para
-    // `metadata`, e o `joinOrCreate` compara com `metadata`. Trocar pelos valores
-    // validados faz quem pede as regras reais achar esta sala mesmo que o criador
-    // tenha mandado lixo (o `setMetadata` substitui, não mescla).
-    void this.setMetadata({
-      variante: regras.variante,
-      humanos,
-      nivelBot,
-      chaveRegras: chaveRegras(regras, chanceInterceptarSinal),
-    });
+    // `metadata`, e o `joinOrCreate` compara com `metadata`: trocar pelos valores
+    // validados (o `setMetadata` substitui, não mescla).
+    void this.setMetadata({ ...filtroDaSala(opcoes) });
     // Acima disso o Colyseus derruba o cliente (sinais/falas já têm limite próprio na Mesa).
     this.maxMessagesPerSecond = 20;
     this.mesa = new Mesa({

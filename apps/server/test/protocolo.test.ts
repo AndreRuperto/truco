@@ -1,6 +1,6 @@
 import { REGRAS_RANQUEADA } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
-import { chaveRegras, ehFala, ehSinal, limparNome, opcoesDaSala } from '../src/mesa/protocolo';
+import { chaveRegras, ehFala, ehSinal, filtroDaSala, limparNome, opcoesDaSala } from '../src/mesa/protocolo';
 
 describe('chaveRegras', () => {
   const base = REGRAS_RANQUEADA.paulista;
@@ -22,7 +22,7 @@ describe('chaveRegras', () => {
 
 describe('opcoesDaSala', () => {
   test('padrão: paulista ranqueado, 1 humano, bot fácil', () => {
-    expect(opcoesDaSala(undefined)).toEqual({ regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0 });
+    expect(opcoesDaSala(undefined)).toEqual({ modo: 'classica', regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0 });
   });
 
   test('mistura variante com regras customizadas', () => {
@@ -40,7 +40,7 @@ describe('opcoesDaSala', () => {
 
   test('valores inválidos caem no padrão', () => {
     const o = opcoesDaSala({ variante: 'gaucho', humanos: 9, nivelBot: 'deus', regras: { maoDe10: 'sim', familia: 'talvez' }, chanceInterceptarSinal: 2 });
-    expect(o).toEqual({ regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0 });
+    expect(o).toEqual({ modo: 'classica', regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0 });
   });
 });
 
@@ -69,5 +69,34 @@ describe('sinais e falas', () => {
     expect(ehSinal('olhar feio')).toBe(false);
     expect(ehFala('truco')).toBe(true);
     expect(ehFala(42)).toBe(false);
+  });
+});
+
+describe('modo da mesa', () => {
+  test('sem modo: clássica com bot fácil, desafio com bot difícil', () => {
+    expect(opcoesDaSala({}).modo).toBe('classica');
+    expect(opcoesDaSala({ nivelBot: 'dificil' })).toMatchObject({ modo: 'desafio', nivelBot: 'dificil' });
+  });
+
+  test('o modo manda no nível do bot nas casuais; na privada vale o pedido', () => {
+    expect(opcoesDaSala({ modo: 'classica', nivelBot: 'dificil' }).nivelBot).toBe('facil');
+    expect(opcoesDaSala({ modo: 'desafio', nivelBot: 'facil' }).nivelBot).toBe('dificil');
+    expect(opcoesDaSala({ modo: 'privada', nivelBot: 'dificil' })).toMatchObject({ modo: 'privada', nivelBot: 'dificil' });
+  });
+
+  test('ranqueada: regras fixas da variante, 2 ou 4 humanos, bot difícil, sem interceptação', () => {
+    const o = opcoesDaSala({ modo: 'ranqueada', variante: 'mineiro', humanos: 3, regras: { familia: 'off' }, chanceInterceptarSinal: 0.5 });
+    expect(o).toEqual({ modo: 'ranqueada', regras: REGRAS_RANQUEADA.mineiro, humanos: 2, nivelBot: 'dificil', chanceInterceptarSinal: 0 });
+    expect(opcoesDaSala({ modo: 'ranqueada', humanos: 4 }).humanos).toBe(4);
+  });
+
+  test('filtroDaSala: todos os campos do filterBy, sempre preenchidos', () => {
+    expect(filtroDaSala(opcoesDaSala({}))).toEqual({
+      modo: 'classica',
+      variante: 'paulista',
+      humanos: 1,
+      nivelBot: 'facil',
+      chaveRegras: chaveRegras(REGRAS_RANQUEADA.paulista, 0),
+    });
   });
 });

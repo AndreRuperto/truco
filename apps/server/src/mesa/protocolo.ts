@@ -1,4 +1,4 @@
-import { type AcaoJogador, type Cadeira, REGRAS_RANQUEADA, type RegrasMesa, type Visao } from '@truco/engine';
+import { type AcaoJogador, type Cadeira, REGRAS_RANQUEADA, type RegrasMesa, type Variante, type Visao } from '@truco/engine';
 
 export const SINAIS = ['zap', 'copas', 'espadilha', 'picafumo', 'tres', 'dois', 'as', 'nada'] as const;
 export type Sinal = (typeof SINAIS)[number];
@@ -7,6 +7,12 @@ export const FALAS = ['truco', 'seis', 'nove', 'doze', 'desce', 'corro', 'boa', 
 export type Fala = (typeof FALAS)[number];
 
 export type NivelBot = 'facil' | 'dificil';
+
+export const MODOS_MESA = ['classica', 'desafio', 'privada', 'ranqueada'] as const;
+export type ModoMesa = (typeof MODOS_MESA)[number];
+
+/** Close code (4000–4999 são da aplicação): mesa ranqueada cancelada antes de começar. */
+export const SAIDA_PARTIDA_CANCELADA = 4010;
 
 export const ehSinal = (x: unknown): x is Sinal => (SINAIS as readonly unknown[]).includes(x);
 export const ehFala = (x: unknown): x is Fala => (FALAS as readonly unknown[]).includes(x);
@@ -72,6 +78,7 @@ export interface MsgErro {
 }
 
 export interface OpcoesSala {
+  modo: ModoMesa;
   regras: RegrasMesa;
   humanos: number;
   nivelBot: NivelBot;
@@ -118,5 +125,30 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
   const humanos = typeof h === 'number' && Number.isInteger(h) && h >= 1 && h <= 4 ? h : 1;
   const ch = o.chanceInterceptarSinal;
   const chanceInterceptarSinal = typeof ch === 'number' && ch >= 0 && ch <= 1 ? ch : 0;
-  return { regras, humanos, nivelBot: um(o.nivelBot, ['facil', 'dificil'] as const, 'facil'), chanceInterceptarSinal };
+  const nivelPedido = um(o.nivelBot, ['facil', 'dificil'] as const, 'facil');
+  const modo = um(o.modo, MODOS_MESA, nivelPedido === 'dificil' ? 'desafio' : 'classica');
+  if (modo === 'ranqueada') {
+    return { modo, regras: { ...REGRAS_RANQUEADA[variante] }, humanos: h === 4 ? 4 : 2, nivelBot: 'dificil', chanceInterceptarSinal: 0 };
+  }
+  const nivelBot: NivelBot = modo === 'classica' ? 'facil' : modo === 'desafio' ? 'dificil' : nivelPedido;
+  return { modo, regras, humanos, nivelBot, chanceInterceptarSinal };
+}
+
+/** Campos do `filterBy` da sala `mesa`, sempre preenchidos com valores validados. */
+export interface FiltroSala {
+  modo: ModoMesa;
+  variante: Variante;
+  humanos: number;
+  nivelBot: NivelBot;
+  chaveRegras: string;
+}
+
+export function filtroDaSala(o: OpcoesSala): FiltroSala {
+  return {
+    modo: o.modo,
+    variante: o.regras.variante,
+    humanos: o.humanos,
+    nivelBot: o.nivelBot,
+    chaveRegras: chaveRegras(o.regras, o.chanceInterceptarSinal),
+  };
 }
