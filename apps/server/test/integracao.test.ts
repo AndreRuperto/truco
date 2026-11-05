@@ -92,6 +92,33 @@ describe('MesaRoom', () => {
     expect(msgs.erro[0]).toEqual({ mensagem: 'ação inválida' });
   });
 
+  test('ritual pela sala: as etapas chegam sem a sorte, a visão não traz o monte e a mão sai', async () => {
+    const sala = await colyseus.createRoom('mesa', { variante: 'mineiro', humanos: 1 });
+    const cliente = await colyseus.connectTo(sala, { nome: 'Ana' });
+    const msgs = coletor(cliente);
+    await esperar(() => !!msgs.acao?.some((a) => a.tipo === 'distribuir'), 10_000);
+    const tipos: string[] = msgs.acao.map((a) => a.tipo);
+    expect(tipos.indexOf('passarCorte')).toBeGreaterThanOrEqual(0);
+    expect(tipos.indexOf('passarCorte')).toBeLessThan(tipos.indexOf('distribuir'));
+    expect(JSON.stringify(msgs.acao)).not.toMatch(/"bits"|"ponto"/);
+    const dist = msgs.acao.find((a) => a.tipo === 'distribuir');
+    expect(['porCima', 'porBaixo', 'subindo']).toContain(dist.modo);
+    await esperar(() => !!msgs.estado?.some((m) => m.visao?.mao));
+    const ultimo = msgs.estado.at(-1);
+    expect(typeof ultimo.visao.qtdMonte).toBe('number');
+    expect(JSON.stringify(ultimo)).not.toContain('"monte"');
+  });
+
+  test('bits mandados pelo cliente não quebram nada: ou é a vez dele e o servidor sorteia, ou é erro de vez', async () => {
+    const sala = await colyseus.createRoom('mesa', { variante: 'paulista', humanos: 1 });
+    const cliente = await colyseus.connectTo(sala, { nome: 'Ana' });
+    const msgs = coletor(cliente);
+    await esperar(() => !!msgs.estado?.some((m) => m.visao?.ritual));
+    cliente.send('acao', { tipo: 'embaralhar', bits: new Array(40).fill(0) });
+    await esperar(() => !!msgs.erro?.length || !!msgs.acao?.some((a) => a.cadeira === 0 && a.tipo === 'embaralhar'));
+    expect(JSON.stringify(msgs.acao ?? [])).not.toMatch(/"bits"/);
+  });
+
   test('sala cheia recusa mais gente', async () => {
     const sala = await colyseus.createRoom('mesa', { humanos: 1 });
     coletor(await colyseus.connectTo(sala, { nome: 'Ana' }));
