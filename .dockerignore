@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.dados
+.git
+**/test-results
+**/playwright-report
+coverage
+*.log
+.env
+.claude
