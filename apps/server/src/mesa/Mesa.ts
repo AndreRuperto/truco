@@ -17,7 +17,7 @@ import {
   type RegrasMesa,
   visaoDoJogador,
 } from '@truco/engine';
-import { ehFala, ehSinal, type InfoCadeira, type MsgEstado, type NivelBot } from './protocolo';
+import { ehFala, ehSinal, type InfoCadeira, limparNome, type MsgEstado, type NivelBot } from './protocolo';
 
 export interface Relogio {
   /** Agenda `fn` e devolve uma função que cancela. */
@@ -144,13 +144,13 @@ export class Mesa {
 
   // ---------- lobby ----------
 
-  sentar(id: string, nome: string): Cadeira | null {
+  sentar(id: string, nome: unknown): Cadeira | null {
     if (this.iniciada || this.cadeiraDe(id) !== null) return null;
     const cad = ORDEM_SENTAR.find((c) => this.ocupantes[c].id === null);
     if (cad === undefined) return null;
     this.ocupantes[cad] = {
       id,
-      nome: nome.trim().slice(0, 20) || 'Jogador',
+      nome: limparNome(nome),
       humano: true,
       conectado: true,
       ultimaMensagem: -Infinity,

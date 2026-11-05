@@ -11,6 +11,21 @@ export type NivelBot = 'facil' | 'dificil';
 export const ehSinal = (x: unknown): x is Sinal => (SINAIS as readonly unknown[]).includes(x);
 export const ehFala = (x: unknown): x is Fala => (FALAS as readonly unknown[]).includes(x);
 
+/**
+ * Nome exibido de um humano: sem caracteres de controle/invisíveis, aparado,
+ * até 20 caracteres e sem o prefixo "Bot " (reservado aos bots).
+ */
+export function limparNome(cru: unknown): string {
+  if (typeof cru !== 'string') return 'Jogador';
+  const nome = cru
+    .replace(/[\p{Cc}\p{Cf}]/gu, '')
+    .trim()
+    .replace(/^(bot(\s+|$))+/iu, '')
+    .slice(0, 20)
+    .trim();
+  return nome || 'Jogador';
+}
+
 export interface InfoCadeira {
   tipo: 'vazia' | 'humano' | 'bot';
   nome: string | null;

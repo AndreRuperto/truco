@@ -36,6 +36,12 @@ describe('lobby', () => {
     expect(estado('b')!.cadeiras[2].nome).toHaveLength(20);
   });
 
+  test('nome de humano não pode imitar bot nem ter caracteres invisíveis', () => {
+    const { mesa, estado } = criarMesa({ humanosEsperados: 2 });
+    mesa.sentar('a', 'Bot Z​é');
+    expect(estado('a')!.cadeiras[0].nome).toBe('Zé');
+  });
+
   test('sair antes do início libera a cadeira', () => {
     const { mesa, estado } = criarMesa({ humanosEsperados: 3 });
     mesa.sentar('a', 'Ana');

@@ -47,8 +47,7 @@ export class MesaRoom extends Room {
   }
 
   onJoin(client: Client, options?: { nome?: unknown }) {
-    const nome = typeof options?.nome === 'string' ? options.nome : 'Jogador';
-    if (this.mesa.sentar(client.sessionId, nome) === null) throw new Error('mesa cheia ou já iniciada');  }
+    if (this.mesa.sentar(client.sessionId, options?.nome) === null) throw new Error('mesa cheia ou já iniciada');  }
 
   onDrop(client: Client) {
     // Cliente cujo onJoin falhou (nunca sentou) também passa por aqui.

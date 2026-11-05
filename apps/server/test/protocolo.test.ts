@@ -1,6 +1,6 @@
 import { REGRAS_RANQUEADA } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
-import { ehFala, ehSinal, opcoesDaSala } from '../src/mesa/protocolo';
+import { ehFala, ehSinal, limparNome, opcoesDaSala } from '../src/mesa/protocolo';
 
 describe('opcoesDaSala', () => {
   test('padrão: paulista ranqueado, 1 humano, bot fácil', () => {
@@ -17,6 +17,25 @@ describe('opcoesDaSala', () => {
   test('valores inválidos caem no padrão', () => {
     const o = opcoesDaSala({ variante: 'gaucho', humanos: 9, nivelBot: 'deus', regras: { maoDe10: 'sim', familia: 'talvez' } });
     expect(o).toEqual({ regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil' });
+  });
+});
+
+describe('limparNome', () => {
+  test('tira caracteres de controle e invisíveis, apara e corta em 20', () => {
+    expect(limparNome('  A\u0000n​a‮\n ')).toBe('Ana');
+    expect(limparNome('x'.repeat(50))).toHaveLength(20);
+    expect(limparNome('  João  da Silva ')).toBe('João  da Silva');
+  });
+  test('vazio ou não-texto vira Jogador', () => {
+    expect(limparNome('   ')).toBe('Jogador');
+    expect(limparNome('​\u0007')).toBe('Jogador');
+    expect(limparNome(42)).toBe('Jogador');
+  });
+  test('não deixa se passar por bot', () => {
+    expect(limparNome('Bot Zé')).toBe('Zé');
+    expect(limparNome('bOt  bot Tião')).toBe('Tião');
+    expect(limparNome('Bot ')).toBe('Jogador');
+    expect(limparNome('Botafogo')).toBe('Botafogo');
   });
 });
 
