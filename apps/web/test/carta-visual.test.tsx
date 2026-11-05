@@ -17,7 +17,7 @@ describe('CartaVisual', () => {
     expect(carta).toHaveClass('coringa', 'vermelha');
     expect(carta).not.toHaveClass('manilha');
     expect(carta.querySelectorAll('.canto')).toHaveLength(2);
-    for (const canto of carta.querySelectorAll('.canto')) expect(canto).toHaveTextContent('C★');
+    for (const canto of carta.querySelectorAll('.canto')) expect(canto.textContent).toBe('★');
     expect(carta.querySelector('.naipe-central')).toHaveTextContent('★');
     expect(carta.querySelector('.selo')).toBeNull();
     expect(carta).not.toHaveTextContent('♥');

@@ -18,7 +18,10 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
   const manilha = nomeManilha(carta, variante, vira);
   const coringa = ehCoringa(carta);
   const simbolo = simboloCarta(carta);
-  const canto: ReactNode = (
+  // O coringa não tem valor impresso: o canto mostra só a estrela.
+  const canto: ReactNode = coringa ? (
+    simbolo
+  ) : (
     <>
       {carta.valor}
       <br />
