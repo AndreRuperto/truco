@@ -90,6 +90,23 @@ describe('TelaMesa', () => {
     expect(acoes.enviarSinal).toHaveBeenCalledWith('zap');
   });
 
+  test('entre mãos: resumo da última mão e as cartas que decidiram no centro', () => {
+    const maos = [
+      ['3o', '3e', '2o'],
+      ['4e', '5e', '6e'],
+      ['4c', '5c', '6c'],
+      ['4p', '5p', '6p'],
+    ];
+    const s = jogar(distribuida(PAULISTA, maos, [0, 0], '7o'), [[0, 0], [1, 0], [2, 0], [3, 0], [0, 0], [1, 0], [2, 0], [3, 0]]);
+    expect(s.fase).toBe('aguardandoDistribuicao');
+    render(<TelaMesa snap={snap(msgEstado(s, 0))} acoes={acoesFalsas()} />);
+    const fim = screen.getByTestId('fim-mao');
+    expect(fim).toHaveTextContent('Nós levamos!');
+    expect(fim).toHaveTextContent('+1 ponto — nas rodadas');
+    expect(within(screen.getByTestId('centro')).getByRole('img', { name: /^3 de espadas/ })).toHaveClass('esmaecida');
+    expect(screen.queryByTestId('minha-mao')).toBeNull();
+  });
+
   test('fim de partida: vencedor e "Jogar de novo"', async () => {
     const user = userEvent.setup();
     const acoes = acoesFalsas();
