@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import type { EstadoFila, LojaFila } from './fila';
 import type { EstadoLoja, Loja } from './loja';
 import type { EstadoSessao, Sessao } from './sessao';
 
@@ -13,6 +14,8 @@ export function useAgora(intervaloMs = 250): number {
   }, [intervaloMs]);
   return agora;
 }
+
+export const useFila = (f: LojaFila): EstadoFila => useSyncExternalStore(f.subscribe, f.getSnapshot);
 
 export const useSessao = (s: Sessao): EstadoSessao => useSyncExternalStore(s.subscribe, s.getSnapshot);
 

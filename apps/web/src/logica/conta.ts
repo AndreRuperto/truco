@@ -18,3 +18,20 @@ export function textoDelta(d: number | null): string {
   if (d > 0) return `+${d}`;
   return d < 0 ? `−${-d}` : '0';
 }
+
+export function formatarEspera(s: number): string {
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** Mensagens do `onAuth` da sala `fila` em português de gente. */
+export function textoErroFila(msg: string): string {
+  const m = msg.match(/bloqueada até (\S+)/);
+  if (m) {
+    const d = new Date(m[1]);
+    if (!Number.isNaN(d.getTime())) {
+      return `Fila bloqueada até ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} por abandono de partida ranqueada.`;
+    }
+  }
+  if (/entre na sua conta/.test(msg)) return 'Entre na sua conta para jogar ranqueada.';
+  return `Não foi possível entrar na fila: ${msg}`;
+}

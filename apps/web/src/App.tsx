@@ -4,11 +4,12 @@ import { Cabecalho } from './componentes/Cabecalho';
 import { Toast } from './componentes/Toast';
 import { lerApelido } from './logica/lobby';
 import { criarMesaPrivada, entrarNaMesa, entrarPorCodigo, tentarReconectar } from './rede/conexao';
-import { useLoja, useSessao } from './rede/hooks';
-import { api, loja, sessao } from './rede/instancia';
+import { useFila, useLoja, useSessao } from './rede/hooks';
+import { api, loja, lojaFila, sessao } from './rede/instancia';
 import { navegar, useRota } from './rede/rota';
 import { TelaEntrar } from './telas/Entrar';
 import { TelaEntrarPrivada } from './telas/EntrarPrivada';
+import { TelaFila } from './telas/Fila';
 import { TelaHistorico } from './telas/Historico';
 import { Lobby } from './telas/Lobby';
 import { TelaMesa } from './telas/Mesa';
@@ -21,6 +22,7 @@ export function App() {
   const snap = useLoja(loja);
   const ses = useSessao(sessao);
   const rota = useRota();
+  const fila = useFila(lojaFila);
   const nomePadrao = () => ses.usuario?.apelido ?? (lerApelido() || 'Jogador');
 
   useEffect(() => {
@@ -80,6 +82,19 @@ export function App() {
             }}
           />
         );
+        break;
+      case 'fila':
+        conteudo =
+          ses.pronta && !ses.usuario ? (
+            <main className="tela-conta">
+              <h1>Ranqueada</h1>
+              <p>
+                Para jogar ranqueada, <a href="#/entrar">entre na sua conta</a>.
+              </p>
+            </main>
+          ) : (
+            <TelaFila estado={fila} aoEntrar={(o) => void lojaFila.entrar(o)} aoCancelar={() => void lojaFila.cancelar()} />
+          );
         break;
       default:
         conteudo = (
