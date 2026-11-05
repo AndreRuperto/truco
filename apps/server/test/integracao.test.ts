@@ -267,9 +267,9 @@ describe('contas, privadas e HTTP no mesmo servidor', () => {
     await esperar(() => !!ma.estado?.length);
     expect(ma.estado.at(-1).modo).toBe('privada');
     expect((await salasAbertas()).map((s) => s.id)).not.toContain(a.roomId);
-    const outro = await colyseus.sdk.joinOrCreate('mesa', { modo: 'privada', humanos: 2, nome: 'Cid' });
-    coletor(outro);
-    expect(outro.roomId).not.toBe(a.roomId);
+    // Mesa privada só nasce por `create` e se entra por `joinById`; `joinOrCreate`/`join` recusam.
+    await expect(colyseus.sdk.joinOrCreate('mesa', { modo: 'privada', humanos: 2, nome: 'Cid' })).rejects.toThrow(/privada/);
+    await expect(colyseus.sdk.join('mesa', { modo: 'privada', humanos: 2, nome: 'Cid' })).rejects.toThrow(/privada/);
 
     const b = await colyseus.sdk.joinById(a.roomId, { nome: 'Bia' });
     const mb = coletor(b);

@@ -15,6 +15,17 @@ export interface JogadorReservado {
   cadeira: Cadeira;
 }
 
+/** Método do matchmaking (`create`, `joinOrCreate`, `join`, `joinById`...) ou '' se não veio por HTTP. */
+function metodoDoPedido(context: AuthContext | undefined): string {
+  const url: unknown = context?.req?.url;
+  if (typeof url !== 'string') return '';
+  try {
+    return new URL(url, 'http://x').pathname.match(/\/matchmake\/([^/]+)\//)?.[1] ?? '';
+  } catch {
+    return '';
+  }
+}
+
 function jogadoresReservados(cru: unknown): JogadorReservado[] {
   if (!Array.isArray(cru)) return [];
   return cru.filter((j): j is JogadorReservado => {
@@ -62,6 +73,11 @@ export class MesaRoom extends Room {
     if (!options || typeof options !== 'object') throw new ServerError(ErrorCode.MATCHMAKE_INVALID_CRITERIA, 'opções da sala inválidas');
     const o = options as Record<string, unknown>;
     if (o.modo === 'ranqueada') throw new ServerError(ErrorCode.AUTH_FAILED, 'mesa ranqueada só pela fila');
+    // Privada nasce por `create` e se entra por `joinById`. `context.req` é o pedido HTTP de
+    // matchmaking (`/matchmake/<método>/<sala>`); chamadas internas não o têm.
+    if (o.modo === 'privada' && /^(join|joinOrCreate)$/.test(metodoDoPedido(context))) {
+      throw new ServerError(ErrorCode.MATCHMAKE_INVALID_CRITERIA, 'mesa privada: crie uma ou entre pelo código do convite');
+    }
     delete o.fichaInterna;
     delete o.jogadores;
     Object.assign(o, filtroDaSala(opcoesDaSala(o)));
