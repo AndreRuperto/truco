@@ -1,4 +1,4 @@
-import { type Carta, idCarta, type Naipe, novoBaralho, type Valor } from '../src/cartas';
+import { baralhoDaMesa, type Carta, idCarta, type Naipe, novoBaralho, type Valor } from '../src/cartas';
 import { type Cadeira, type EstadoPartida, novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';
 import type { RegrasMesa } from '../src/regras';
@@ -12,6 +12,7 @@ export const PAULISTA: RegrasMesa = {
   maoDe10: false,
   maoDe11: 'qualquerDupla',
   familia: 'off',
+  maoLimpa: false,
 };
 export const MINEIRO: RegrasMesa = {
   variante: 'mineiro',
@@ -19,15 +20,17 @@ export const MINEIRO: RegrasMesa = {
   maoDe10: true,
   maoDe11: 'off',
   familia: 'fechada',
+  maoLimpa: false,
 };
+export const MINEIRO_LIMPA: RegrasMesa = { ...MINEIRO, maoLimpa: true };
 
-/** Baralho que entrega `maos[cadeira]` com pe = 3 (cadeira 0 começa). */
-export function baralhoCom(maos: string[][], vira?: string): Carta[] {
-  const fixas: (Carta | undefined)[] = new Array(40).fill(undefined);
+/** Baralho que entrega `maos[cadeira]` com pe = 3 (cadeira 0 começa). `base` = baralho completo da mesa. */
+export function baralhoCom(maos: string[][], vira?: string, base: Carta[] = novoBaralho()): Carta[] {
+  const fixas: (Carta | undefined)[] = new Array(base.length).fill(undefined);
   maos.forEach((mao, cad) => mao.forEach((s, i) => (fixas[i * 4 + cad] = c(s))));
   if (vira) fixas[12] = c(vira);
   const usadas = new Set(fixas.filter((x): x is Carta => !!x).map(idCarta));
-  const resto = novoBaralho().filter((x) => !usadas.has(idCarta(x)));
+  const resto = base.filter((x) => !usadas.has(idCarta(x)));
   return fixas.map((x) => x ?? resto.shift()!);
 }
 
@@ -38,7 +41,7 @@ export function partida(regras: RegrasMesa, placar: [number, number] = [0, 0]): 
 }
 
 export function distribuida(regras: RegrasMesa, maos: string[][], vira?: string, placar?: [number, number]) {
-  return reduce(partida(regras, placar), { tipo: 'distribuir', baralho: baralhoCom(maos, vira) });
+  return reduce(partida(regras, placar), { tipo: 'distribuir', baralho: baralhoCom(maos, vira, baralhoDaMesa(regras)) });
 }
 
 export function jogarSeq(s: EstadoPartida, seq: [Cadeira, number][]): EstadoPartida {

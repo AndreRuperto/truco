@@ -2,12 +2,12 @@ import fc from 'fast-check';
 import { describe, expect, test } from 'vitest';
 import { acoesValidas, todasAcoesValidas } from '../src/acoes';
 import { amostrarMundo, botDificil } from '../src/bots/dificil';
-import { type Carta, idCarta, novoBaralho } from '../src/cartas';
+import { baralhoDaMesa, type Carta, idCarta } from '../src/cartas';
 import { type Cadeira, type EstadoPartida, novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';
 import { embaralhar, mulberry32 } from '../src/rng';
 import { visaoDoJogador } from '../src/visao';
-import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, c, distribuida, jogarSeq } from './helpers';
+import { MAOS_DUPLA0_VENCE, MINEIRO, MINEIRO_LIMPA, PAULISTA, c, distribuida, jogarSeq } from './helpers';
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
 
@@ -18,8 +18,9 @@ function cartasDoMundo(s: EstadoPartida): Carta[] {
 
 function estadoAleatorio(seed: number): EstadoPartida | null {
   const rand = mulberry32(seed);
-  const regras = rand() < 0.5 ? PAULISTA : MINEIRO;
-  let s = reduce(novaPartida(regras), { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), rand) });
+  const sorteio = rand();
+  const regras = sorteio < 0.34 ? PAULISTA : sorteio < 0.67 ? MINEIRO : MINEIRO_LIMPA;
+  let s = reduce(novaPartida(regras), { tipo: 'distribuir', baralho: embaralhar(baralhoDaMesa(regras), rand) });
   const passos = Math.floor(rand() * 9);
   for (let i = 0; i < passos && s.mao; i++) {
     const acoes = todasAcoesValidas(s);
@@ -104,13 +105,16 @@ describe('botDificil', () => {
     expect(botDificil(v, mulberry32(4), { amostras: 5, minAmostras: 2 })).toEqual(botDificil(v, mulberry32(4), { amostras: 5 }));
   });
 
-  test('quatro bots difíceis terminam uma partida', () => {
+  test.each([
+    ['mineiro', MINEIRO],
+    ['mineiro com mão limpa', MINEIRO_LIMPA],
+  ])('quatro bots difíceis terminam uma partida (%s)', (_nome, regras) => {
     const rand = mulberry32(77);
-    let s = novaPartida(MINEIRO);
+    let s = novaPartida(regras);
     for (let passos = 0; s.fase !== 'fimPartida'; passos++) {
       if (passos > 3000) throw new Error('não terminou');
       if (s.fase === 'aguardandoDistribuicao') {
-        s = reduce(s, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), rand) });
+        s = reduce(s, { tipo: 'distribuir', baralho: embaralhar(baralhoDaMesa(regras), rand) });
         continue;
       }
       const atual = s;

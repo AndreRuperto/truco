@@ -1,5 +1,5 @@
 import { acoesValidas } from '../acoes';
-import { type Carta, idCarta, novoBaralho } from '../cartas';
+import { baralhoDaMesa, type Carta, idCarta } from '../cartas';
 import {
   type AcaoJogador,
   type Cadeira,
@@ -40,7 +40,7 @@ export function amostrarMundo(v: Visao, rand: () => number, dica: DicaAmostra = 
   m.rodadasJogadas.flat().forEach((j) => marcar(j.carta));
 
   const monte = embaralhar(
-    novoBaralho().filter((c) => !conhecidas.has(idCarta(c))),
+    baralhoDaMesa(v.regras).filter((c) => !conhecidas.has(idCarta(c))),
     rand,
   );
   const tirar = (): Carta => {

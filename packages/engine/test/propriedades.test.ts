@@ -1,19 +1,21 @@
 import fc from 'fast-check';
 import { describe, expect, test } from 'vitest';
 import { acoesValidas, todasAcoesValidas } from '../src/acoes';
-import { type Carta, idCarta, novoBaralho } from '../src/cartas';
+import { baralhoDaMesa, type Carta, idCarta } from '../src/cartas';
 import { type EstadoPartida, novaPartida } from '../src/estado';
 import { escada, reduce } from '../src/reducer';
 import { NIVEL_MAXIMO } from '../src/regras';
 import type { RegrasMesa } from '../src/regras';
 import { embaralhar, mulberry32 } from '../src/rng';
-import { MINEIRO, PAULISTA, distribuida, MAOS_DUPLA0_VENCE } from './helpers';
+import { MINEIRO, MINEIRO_LIMPA, PAULISTA, distribuida, MAOS_DUPLA0_VENCE } from './helpers';
 
 const TODAS_REGRAS: RegrasMesa[] = [
   PAULISTA,
   MINEIRO,
   { ...PAULISTA, pontuacao: '2-4-8-10-12', maoDe10: true, familia: 'aberta' },
   { ...MINEIRO, pontuacao: '1-3-6-9-12', maoDe11: 'onzeAOnze', familia: 'off' },
+  MINEIRO_LIMPA,
+  { ...MINEIRO_LIMPA, familia: 'aberta', maoDe11: 'qualquerDupla' },
 ];
 
 function cartasEmJogo(s: EstadoPartida): Carta[] {
@@ -62,7 +64,7 @@ describe('propriedades: partidas aleatórias', () => {
         while (s.fase !== 'fimPartida') {
           if (++passos > 5000) throw new Error('partida não terminou');
           if (s.fase === 'aguardandoDistribuicao') {
-            s = reduce(s, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), rand) });
+            s = reduce(s, { tipo: 'distribuir', baralho: embaralhar(baralhoDaMesa(regras), rand) });
           } else {
             const acoes = todasAcoesValidas(s);
             expect(acoes.length).toBeGreaterThan(0);
@@ -75,6 +77,8 @@ describe('propriedades: partidas aleatórias', () => {
           }
           const ids = cartasEmJogo(s).map(idCarta);
           expect(new Set(ids).size).toBe(ids.length);
+          const doBaralho = new Set(baralhoDaMesa(regras).map(idCarta));
+          expect(ids.every((id) => doBaralho.has(id))).toBe(true);
           if (s.mao) {
             const m = s.mao;
             expect(m.maos.flat().length + m.mesa.length + m.rodadasJogadas.flat().length).toBe(12);
@@ -85,7 +89,7 @@ describe('propriedades: partidas aleatórias', () => {
         expect(Math.max(...s.placar)).toBeGreaterThanOrEqual(12);
         expect(s.vencedor).not.toBeNull();
       }),
-      { numRuns: 200 },
+      { numRuns: 300 },
     );
-  }, 30_000);
+  }, 60_000);
 });

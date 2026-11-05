@@ -9,6 +9,8 @@ export interface RegrasMesa {
   /** Mão de ferro: todos jogam às cegas, sem truco. */
   maoDe11: 'off' | 'qualquerDupla' | 'onzeAOnze';
   familia: 'off' | 'aberta' | 'fechada';
+  /** Mão limpa (só no mineiro): sem 4 a 7 comuns, com 2 coringas. Ver `baralhoDaMesa`. */
+  maoLimpa: boolean;
 }
 
 /** Valor da mão por nível de aposta: [mão, truco, seis, nove, doze]. */
@@ -27,6 +29,7 @@ export const REGRAS_RANQUEADA: Readonly<Record<Variante, Readonly<RegrasMesa>>> 
     maoDe10: false,
     maoDe11: 'qualquerDupla',
     familia: 'off',
+    maoLimpa: false,
   }),
   mineiro: Object.freeze({
     variante: 'mineiro',
@@ -34,5 +37,6 @@ export const REGRAS_RANQUEADA: Readonly<Record<Variante, Readonly<RegrasMesa>>> 
     maoDe10: true,
     maoDe11: 'off',
     familia: 'fechada',
+    maoLimpa: false,
   }),
 });

@@ -1,4 +1,4 @@
-import { type Carta, idCarta, NAIPES, novoBaralho, VALORES } from './cartas';
+import { baralhoDaMesa, type Carta, idCarta, NAIPES } from './cartas';
 import {
   type Acao,
   type AcaoJogador,
@@ -14,7 +14,7 @@ import {
 import { ehFamilia } from './familia';
 import { forca } from './forca';
 import { resolverRodada, vencedorMao } from './mao';
-import { ESCADAS, NIVEL_MAXIMO, PONTOS_VITORIA } from './regras';
+import { ESCADAS, NIVEL_MAXIMO, PONTOS_VITORIA, type RegrasMesa } from './regras';
 
 export class ErroJogada extends Error {
   /** Permite reconhecer o erro sem instanceof (ex.: depois de serializar). */
@@ -73,23 +73,23 @@ export function ehAcaoJogador(x: unknown): x is AcaoJogador {
   return problemaDeFormato(x) === null && (x as Acao).tipo !== 'distribuir';
 }
 
-const IDS_BARALHO = new Set(novoBaralho().map(idCarta));
-
 function idSeCarta(x: unknown): string | null {
   if (typeof x !== 'object' || x === null) return null;
   const { valor, naipe } = x as Record<string, unknown>;
   if (typeof valor !== 'string' || typeof naipe !== 'string') return null;
-  if (!(VALORES as readonly string[]).includes(valor) || !(NAIPES as readonly string[]).includes(naipe)) return null;
+  if (!(NAIPES as readonly string[]).includes(naipe)) return null;
   return idCarta({ valor, naipe } as Carta);
 }
 
-/** Exige exatamente as 40 cartas distintas de `novoBaralho()`. */
-function validarBaralho(baralho: unknown[]): asserts baralho is Carta[] {
-  if (baralho.length !== 40) falha('baralho deve ter 40 cartas');
+/** Exige exatamente as cartas distintas de `baralhoDaMesa(regras)` (40, ou 29 na mão limpa). */
+function validarBaralho(baralho: unknown[], regras: RegrasMesa): asserts baralho is Carta[] {
+  const esperado = baralhoDaMesa(regras);
+  if (baralho.length !== esperado.length) falha(`baralho deve ter ${esperado.length} cartas`);
+  const ids = new Set(esperado.map(idCarta));
   const vistas = new Set<string>();
   for (const x of baralho) {
     const id = idSeCarta(x);
-    if (id === null || !IDS_BARALHO.has(id)) falha('baralho contém carta inválida');
+    if (id === null || !ids.has(id)) falha('baralho contém carta inválida');
     if (vistas.has(id)) falha(`baralho contém carta repetida: ${id}`);
     vistas.add(id);
   }
@@ -140,7 +140,7 @@ export function tipoDaMao(s: EstadoPartida): TipoMao {
 
 function distribuir(s: EstadoPartida, baralho: Carta[]): void {
   if (s.fase !== 'aguardandoDistribuicao') falha('não é hora de distribuir');
-  validarBaralho(baralho);
+  validarBaralho(baralho, s.regras);
 
   const maos: Carta[][] = [[], [], [], []];
   let i = 0;
