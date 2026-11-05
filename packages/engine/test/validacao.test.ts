@@ -132,4 +132,14 @@ describe('ehAcaoJogador', () => {
   ])('lixo %j → false', (x) => {
     expect(ehAcaoJogador(x)).toBe(false);
   });
+
+  test('rejeita sorte vinda do cliente (bits/ponto só entram por completarSorte no servidor)', () => {
+    expect(ehAcaoJogador({ tipo: 'embaralhar', cadeira: 3, bits: [0, 1] })).toBe(false);
+    expect(ehAcaoJogador({ tipo: 'cortar', cadeira: 2, ponto: 15 })).toBe(false);
+    expect(ehAcaoJogador({ tipo: 'cortar', cadeira: 2 })).toBe(true);
+    expect(ehAcaoJogador({ tipo: 'truco', cadeira: 0, bits: 'x' })).toBe(false);
+    // Não percorre arrays enormes: rejeita pela presença do campo.
+    const enorme = { tipo: 'embaralhar', cadeira: 3, bits: { length: 1e9, every: () => { throw new Error('percorreu'); } } };
+    expect(ehAcaoJogador(enorme)).toBe(false);
+  });
 });

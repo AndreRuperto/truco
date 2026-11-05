@@ -101,6 +101,9 @@ function validarAcao(acao: unknown): asserts acao is Acao {
  * se a ação é legal no estado atual — isso é papel do `reduce`.
  */
 export function ehAcaoJogador(x: unknown): x is AcaoJogador {
+  // A sorte (bits do riffle, ponto do corte) só entra por `completarSorte` no servidor: vinda do
+  // cliente, a ação é recusada sem percorrer o que veio (pode ser um array enorme).
+  if (typeof x === 'object' && x !== null && ('bits' in x || 'ponto' in x)) return false;
   return problemaDeFormato(x) === null && (x as Acao).tipo !== 'monte';
 }
 
