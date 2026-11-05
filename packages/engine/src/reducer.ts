@@ -10,6 +10,7 @@ import {
   duplaDe,
   proximaCadeira,
 } from './estado';
+import { ehFamilia } from './familia';
 import { forca } from './forca';
 import { resolverRodada, vencedorMao } from './mao';
 import { ESCADAS, NIVEL_MAXIMO, PONTOS_VITORIA } from './regras';
@@ -39,6 +40,9 @@ export function reduce(estado: EstadoPartida, acao: Acao): EstadoPartida {
       break;
     case 'mao10':
       decidirMao10(s, acao.cadeira, acao.jogar);
+      break;
+    case 'familia':
+      pedirFamilia(s, acao.cadeira);
       break;
     default:
       falha(`ação desconhecida: ${(acao as Acao).tipo}`);
@@ -189,4 +193,16 @@ function decidirMao10(s: EstadoPartida, cadeira: Cadeira, jogarMao: boolean): vo
   }
   m.nivel = 1;
   s.fase = 'jogando';
+}
+
+function pedirFamilia(s: EstadoPartida, cadeira: Cadeira): void {
+  const m = maoAtual(s);
+  if (s.regras.familia === 'off') falha('família desligada nesta mesa');
+  if (s.fase !== 'jogando' || m.tipo !== 'normal') falha('não é hora de pedir família');
+  if (m.rodadas.length > 0 || m.mesa.length > 0 || m.nivel > 0) falha('família só antes da 1ª carta');
+  const mao = m.maos[cadeira];
+  if (!ehFamilia(mao)) falha('isso não é família');
+  s.ultimaFamilia = { cadeira, cartas: s.regras.familia === 'aberta' ? [...mao] : null };
+  s.mao = null;
+  s.fase = 'aguardandoDistribuicao';
 }
