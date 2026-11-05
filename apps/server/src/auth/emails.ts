@@ -1,3 +1,5 @@
+import { htmlDoLinkMagico } from './templateEmail';
+
 export interface Email {
   para: string;
   assunto: string;
@@ -9,14 +11,13 @@ export interface Emails {
   enviar(e: Email): Promise<void>;
 }
 
-const escapar = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export function emailDoLink(url: string, para: string): Email {
   return {
     para,
     assunto: 'Seu link para entrar no Truco',
     texto: `Para entrar no Truco, abra este link (vale por 15 minutos, uma vez só):\n\n${url}\n\nSe não foi você, ignore este e-mail.`,
-    html: `<p>Para entrar no Truco, clique no link abaixo (vale por 15 minutos, uma vez só):</p><p><a href="${escapar(url)}">Entrar no Truco</a></p><p>Se não foi você, ignore este e-mail.</p>`,
+    html: htmlDoLinkMagico(url),
   };
 }
 

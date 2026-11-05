@@ -43,6 +43,17 @@ describe('e-mails', () => {
     expect(extrairLink(e.texto)).toBe('http://x.test/#/entrar?token=abc');
   });
 
+  test('template HTML do link: botão, link por extenso, logo da mesma origem e escape', () => {
+    const e = emailDoLink('https://truco.test/#/entrar?token=a"b<c', 'ana@x.com');
+    expect(e.html).toContain('<!doctype html>');
+    expect(e.html).toContain('Entrar no Truco');
+    expect(e.html).toContain('src="https://truco.test/email-zap.png"');
+    expect(e.html).toContain('href="https://truco.test/#/entrar?token=a&quot;b&lt;c"');
+    expect(e.html).not.toContain('token=a"b<c');
+    expect(e.html).toMatch(/15 minutos/);
+    expect(e.html).toMatch(/Se não foi você/);
+  });
+
   test('caixa de teste guarda em memória', async () => {
     const c = new CaixaDeTeste();
     await c.enviar(emailDoLink('http://l', 'a@x.com'));
