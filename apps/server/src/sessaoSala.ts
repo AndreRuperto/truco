@@ -15,8 +15,12 @@ export async function usuarioDaConexao(
   headers: Headers | undefined,
 ): Promise<UsuarioConexao | null> {
   if (!s) return null;
-  const bruto = lerCookie(headers?.get('cookie'), COOKIE_SESSAO) ?? (token || null);
-  if (!bruto) return null;
-  const u = await usuarioDaSessao(s.banco, bruto, s.agora());
-  return u ? { usuarioId: u.id, apelido: u.apelido } : null;
+  // Tenta o cookie e depois o Bearer: um cookie vencido não pode esconder um Bearer válido.
+  const candidatos = [lerCookie(headers?.get('cookie'), COOKIE_SESSAO), token || null];
+  for (const bruto of new Set(candidatos)) {
+    if (!bruto) continue;
+    const u = await usuarioDaSessao(s.banco, bruto, s.agora());
+    if (u) return { usuarioId: u.id, apelido: u.apelido };
+  }
+  return null;
 }
