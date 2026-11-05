@@ -1,0 +1,178 @@
+import { and, eq, gt } from 'drizzle-orm';
+import { randomInt } from 'node:crypto';
+import type { PerfilGoogle } from '../auth/google';
+import { gerarToken, hashToken } from '../auth/tokens';
+import type { Banco } from '../banco/banco';
+import { linksMagicos, sessoes, usuarios } from '../banco/schema';
+import { limparNome } from '../mesa/protocolo';
+
+export interface Usuario {
+  id: number;
+  apelido: string;
+  email: string | null;
+}
+
+export const DURACAO_SESSAO_MS = 30 * 24 * 60 * 60 * 1000;
+export const DURACAO_LINK_MS = 15 * 60 * 1000;
+
+const COLUNAS = { id: usuarios.id, apelido: usuarios.apelido, email: usuarios.email };
+
+const ehViolacaoUnica = (e: unknown) => {
+  const x = e as { code?: string; cause?: { code?: string } } | null;
+  return x?.code === '23505' || x?.cause?.code === '23505';
+};
+
+export function normalizarEmail(cru: unknown): string | null {
+  if (typeof cru !== 'string') return null;
+  const e = cru.trim().toLowerCase();
+  return e.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : null;
+}
+
+/** Apelido escolhido pelo usuário: as regras de `limparNome` e 3 a 20 caracteres. */
+export function apelidoValido(cru: unknown): string | null {
+  if (typeof cru !== 'string' || !cru.trim()) return null;
+  const n = limparNome(cru);
+  return n.length >= 3 ? n : null;
+}
+
+/** Base de apelido a partir de e-mail ou nome: só letras, números e _. */
+export function baseDeApelido(texto: string): string {
+  const fonte = texto.includes('@') ? texto.split('@')[0] : texto;
+  const base = fonte.replace(/[^\p{L}\p{N}_]/gu, '').slice(0, 16);
+  return base.length >= 3 ? base : 'jogador';
+}
+
+async function apelidoExiste(db: Banco, apelido: string): Promise<boolean> {
+  const [x] = await db.select({ id: usuarios.id }).from(usuarios).where(eq(usuarios.apelido, apelido)).limit(1);
+  return !!x;
+}
+
+async function apelidoLivre(db: Banco, base: string): Promise<string> {
+  for (let i = 1; i <= 50; i++) {
+    const sufixo = i === 1 ? '' : String(i);
+    const cand = base.slice(0, 20 - sufixo.length) + sufixo;
+    if (!(await apelidoExiste(db, cand))) return cand;
+  }
+  return base.slice(0, 14) + randomInt(100_000, 1_000_000);
+}
+
+export async function criarUsuario(
+  db: Banco,
+  o: { apelidoBase: string; email?: string | null; googleSub?: string | null },
+): Promise<Usuario> {
+  for (let tentativa = 0; ; tentativa++) {
+    const apelido = await apelidoLivre(db, o.apelidoBase);
+    try {
+      const [u] = await db
+        .insert(usuarios)
+        .values({ apelido, email: o.email ?? null, googleSub: o.googleSub ?? null })
+        .returning(COLUNAS);
+      return u;
+    } catch (e) {
+      // corrida com outro cadastro do mesmo apelido: tenta o próximo
+      if (!ehViolacaoUnica(e) || tentativa >= 3) throw e;
+    }
+  }
+}
+
+export async function usuarioPorId(db: Banco, id: number): Promise<Usuario | null> {
+  const [u] = await db.select(COLUNAS).from(usuarios).where(eq(usuarios.id, id));
+  return u ?? null;
+}
+
+export async function usuarioPorEmail(db: Banco, email: string): Promise<Usuario | null> {
+  const [u] = await db.select(COLUNAS).from(usuarios).where(eq(usuarios.email, email));
+  return u ?? null;
+}
+
+/** Login por link mágico: acha pelo e-mail ou cria a conta. */
+export async function entrarComEmail(db: Banco, email: string): Promise<Usuario> {
+  const existente = await usuarioPorEmail(db, email);
+  if (existente) return existente;
+  try {
+    return await criarUsuario(db, { apelidoBase: baseDeApelido(email), email });
+  } catch (e) {
+    // dois cliques simultâneos no link: o outro criou primeiro
+    const u = ehViolacaoUnica(e) ? await usuarioPorEmail(db, email) : null;
+    if (u) return u;
+    throw e;
+  }
+}
+
+/** Login Google: acha por `sub`; senão liga ao e-mail (se verificado); senão cria. */
+export async function entrarComGoogle(db: Banco, g: PerfilGoogle): Promise<Usuario> {
+  const [porSub] = await db.select(COLUNAS).from(usuarios).where(eq(usuarios.googleSub, g.sub));
+  if (porSub) return porSub;
+  const email = g.emailVerificado ? normalizarEmail(g.email) : null;
+  if (email) {
+    const u = await usuarioPorEmail(db, email);
+    if (u) {
+      await db.update(usuarios).set({ googleSub: g.sub }).where(eq(usuarios.id, u.id));
+      return u;
+    }
+  }
+  return criarUsuario(db, { apelidoBase: baseDeApelido(g.nome ?? email ?? 'jogador'), email, googleSub: g.sub });
+}
+
+export async function trocarApelido(db: Banco, id: number, cru: unknown): Promise<'ok' | 'invalido' | 'em-uso'> {
+  const apelido = apelidoValido(cru);
+  if (!apelido) return 'invalido';
+  try {
+    await db.update(usuarios).set({ apelido }).where(eq(usuarios.id, id));
+    return 'ok';
+  } catch (e) {
+    if (ehViolacaoUnica(e)) return 'em-uso';
+    throw e;
+  }
+}
+
+// ---------- sessões ----------
+
+export async function criarSessao(db: Banco, usuarioId: number, agora: Date): Promise<string> {
+  const token = gerarToken();
+  await db.insert(sessoes).values({
+    tokenHash: hashToken(token),
+    usuarioId,
+    expiraEm: new Date(agora.getTime() + DURACAO_SESSAO_MS),
+    criadaEm: agora,
+  });
+  return token;
+}
+
+export async function usuarioDaSessao(db: Banco, token: string | null | undefined, agora: Date): Promise<Usuario | null> {
+  if (!token || token.length > 200) return null;
+  const [u] = await db
+    .select(COLUNAS)
+    .from(sessoes)
+    .innerJoin(usuarios, eq(sessoes.usuarioId, usuarios.id))
+    .where(and(eq(sessoes.tokenHash, hashToken(token)), gt(sessoes.expiraEm, agora)));
+  return u ?? null;
+}
+
+export async function encerrarSessao(db: Banco, token: string): Promise<void> {
+  await db.delete(sessoes).where(eq(sessoes.tokenHash, hashToken(token)));
+}
+
+// ---------- links mágicos ----------
+
+export async function criarLinkMagico(db: Banco, email: string, agora: Date): Promise<string> {
+  const token = gerarToken();
+  await db.insert(linksMagicos).values({
+    tokenHash: hashToken(token),
+    email,
+    expiraEm: new Date(agora.getTime() + DURACAO_LINK_MS),
+    criadoEm: agora,
+  });
+  return token;
+}
+
+/** Marca como usado e devolve o e-mail, numa única instrução (dois cliques não entram duas vezes). */
+export async function consumirLinkMagico(db: Banco, token: string, agora: Date): Promise<string | null> {
+  if (!token || token.length > 200) return null;
+  const [l] = await db
+    .update(linksMagicos)
+    .set({ usado: true })
+    .where(and(eq(linksMagicos.tokenHash, hashToken(token)), eq(linksMagicos.usado, false), gt(linksMagicos.expiraEm, agora)))
+    .returning({ email: linksMagicos.email });
+  return l?.email ?? null;
+}
