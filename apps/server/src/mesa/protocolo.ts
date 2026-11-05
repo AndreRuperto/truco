@@ -48,6 +48,13 @@ export interface MsgEstado {
 export interface MsgAcao {
   cadeira: Cadeira;
   tipo: AcaoJogador['tipo'];
+  /** Só em `mao10`: true = jogou a mão, false = correu. */
+  jogar?: boolean;
+}
+
+/** O aviso público de uma ação (sem índice/carta: a jogada em si chega pelo `estado`). */
+export function msgDaAcao(a: AcaoJogador): MsgAcao {
+  return a.tipo === 'mao10' ? { cadeira: a.cadeira, tipo: a.tipo, jogar: a.jogar } : { cadeira: a.cadeira, tipo: a.tipo };
 }
 export interface MsgSinal {
   de: Cadeira;

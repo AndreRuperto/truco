@@ -41,6 +41,8 @@ export function textoDaAcao(a: MsgAcao, anterior: Visao | null): string | null {
       return 'Corro!';
     case 'familia':
       return 'Família!';
+    case 'mao10':
+      return a.jogar === undefined ? null : a.jogar ? 'Vamos!' : 'Corro!';
     default:
       return null;
   }

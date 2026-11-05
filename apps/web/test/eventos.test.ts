@@ -19,6 +19,9 @@ describe('texto dos balões de ação', () => {
     expect(textoDaAcao({ cadeira: 1, tipo: 'correr' }, null)).toBe('Corro!');
     expect(textoDaAcao({ cadeira: 1, tipo: 'familia' }, null)).toBe('Família!');
     expect(textoDaAcao({ cadeira: 1, tipo: 'jogar' }, null)).toBeNull();
+    expect(textoDaAcao({ cadeira: 1, tipo: 'mao10', jogar: true }, null)).toBe('Vamos!');
+    expect(textoDaAcao({ cadeira: 1, tipo: 'mao10', jogar: false }, null)).toBe('Corro!');
+    // servidor antigo, sem `jogar`: sem balão
     expect(textoDaAcao({ cadeira: 1, tipo: 'mao10' }, null)).toBeNull();
   });
 

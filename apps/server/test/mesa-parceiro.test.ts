@@ -56,7 +56,16 @@ describe('parceiro bot não responde pelo humano', () => {
     vi.advanceTimersByTime(TEMPOS.botMs * 10);
     expect(t.mesa.partida!.fase).toBe('decisaoMao10');
     t.mesa.acao('a', { tipo: 'mao10', jogar: true });
-    expect(t.de('a', 'acao')[antes]).toEqual({ cadeira: 0, tipo: 'mao10' });
+    expect(t.de('a', 'acao')[antes]).toEqual({ cadeira: 0, tipo: 'mao10', jogar: true });
+  });
+
+  test('mão de 10: correr também vai no aviso de ação (jogar: false)', () => {
+    const t = mesaComParceiroBot();
+    t.mesa.partida!.placar = [10, 0];
+    avancarAte(() => t.mesa.partida!.fase === 'decisaoMao10');
+    const antes = t.de('a', 'acao').length;
+    t.mesa.acao('a', { tipo: 'mao10', jogar: false });
+    expect(t.de('a', 'acao')[antes]).toEqual({ cadeira: 0, tipo: 'mao10', jogar: false });
   });
 
   test('mão de 10: sem resposta, o parceiro bot decide', () => {
@@ -67,6 +76,6 @@ describe('parceiro bot não responde pelo humano', () => {
     vi.advanceTimersByTime(JOGADA - 1);
     expect(t.de('a', 'acao')).toHaveLength(antes);
     vi.advanceTimersByTime(1);
-    expect(t.de('a', 'acao')[antes].cadeira).toBe(2);
+    expect(t.de('a', 'acao')[antes]).toMatchObject({ cadeira: 2, tipo: 'mao10', jogar: expect.any(Boolean) });
   });
 });

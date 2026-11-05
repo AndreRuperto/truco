@@ -18,7 +18,7 @@ import {
   type RegrasMesa,
   visaoDoJogador,
 } from '@truco/engine';
-import { ehFala, ehSinal, type InfoCadeira, limparNome, type MsgEstado, type NivelBot, type Sinal } from './protocolo';
+import { ehFala, ehSinal, type InfoCadeira, limparNome, msgDaAcao, type MsgEstado, type NivelBot, type Sinal } from './protocolo';
 import { cartaDoSinal, falaDaRodada, rodadaFechada, sinalDaMao } from './social';
 
 export interface Relogio {
@@ -254,7 +254,7 @@ export class Mesa {
       return false;
     }
     this.versao++;
-    this.paraHumanos((destino) => this.o.enviar(destino, 'acao', { cadeira: acao.cadeira, tipo: acao.tipo }));
+    this.paraHumanos((destino) => this.o.enviar(destino, 'acao', msgDaAcao(acao)));
     if (acao.tipo === 'jogar') this.comentarRodada(antes, this.estado);
     this.atualizar();
     return true;
