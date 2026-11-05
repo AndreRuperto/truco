@@ -13,6 +13,8 @@ export type ModoMesa = (typeof MODOS_MESA)[number];
 
 /** Close code (4000–4999 são da aplicação): mesa ranqueada cancelada antes de começar. */
 export const SAIDA_PARTIDA_CANCELADA = 4010;
+/** Close code: o mesmo usuário entrou na fila por outra aba (a entrada antiga é derrubada). */
+export const SAIDA_FILA_SUBSTITUIDA = 4011;
 
 export const ehSinal = (x: unknown): x is Sinal => (SINAIS as readonly unknown[]).includes(x);
 export const ehFala = (x: unknown): x is Fala => (FALAS as readonly unknown[]).includes(x);

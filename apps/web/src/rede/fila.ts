@@ -1,5 +1,6 @@
 import type { Formato, MsgPareado, MsgStatusFila } from '@truco/api';
 import type { Variante } from '@truco/engine';
+import { SAIDA_FILA_SUBSTITUIDA } from '@truco/protocolo';
 import { textoErroFila } from '../logica/conta';
 
 export interface OpcoesFila {
@@ -23,9 +24,6 @@ export interface EstadoFila {
   info: MsgStatusFila | null;
   erro: string | null;
 }
-
-/** Close code do server quando o mesmo usuário entra na fila por outra aba (`SAIDA_FILA_SUBSTITUIDA`). */
-const SAIDA_FILA_SUBSTITUIDA = 4011;
 
 const INICIAL: EstadoFila = { status: 'fora', opcoes: null, info: null, erro: null };
 

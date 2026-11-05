@@ -2,13 +2,12 @@ import { type AuthContext, type Client, ErrorCode, matchMaker, Room, ServerError
 import type { Variante } from '@truco/engine';
 import type { Formato, MsgPareado } from './api/tipos';
 import { cadeirasDoPareamento, Fila, normalizarCodigoDupla, type Pareamento } from './fila/fila';
+import { SAIDA_FILA_SUBSTITUIDA } from './mesa/protocolo';
 import { MesaRoom } from './MesaRoom';
 import { bloqueioAte, ratingDe } from './repo/partidas';
 import type { Servicos } from './servicos';
 import { type UsuarioConexao, usuarioDaConexao } from './sessaoSala';
 
-/** Close code: o mesmo usuário entrou na fila por outra aba. */
-export const SAIDA_FILA_SUBSTITUIDA = 4011;
 
 /**
  * Uma sala só (sem filtro) com todo mundo que está na fila. A cada `intervaloMs` pareia,

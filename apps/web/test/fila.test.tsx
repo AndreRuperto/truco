@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { SAIDA_FILA_SUBSTITUIDA } from '@truco/protocolo';
 import { EventEmitter } from 'node:events';
 import { describe, expect, test, vi } from 'vitest';
 import { criarLojaFila, type EstadoFila, type SalaFilaLike } from '../src/rede/fila';
@@ -54,6 +55,14 @@ describe('loja da fila', () => {
     await g.entrar(OPC);
     outra.emit('leave', 1006);
     expect(g.getSnapshot()).toMatchObject({ status: 'fora', erro: 'Você saiu da fila.' });
+  });
+
+  test('servidor derruba com SAIDA_FILA_SUBSTITUIDA (outra aba): avisa', async () => {
+    const sala = new FilaFalsa();
+    const f = criarLojaFila({ abrir: vi.fn(async () => sala), aoParear: vi.fn() });
+    await f.entrar(OPC);
+    sala.emit('leave', SAIDA_FILA_SUBSTITUIDA);
+    expect(f.getSnapshot()).toMatchObject({ status: 'fora', erro: 'Você entrou na fila em outra aba.' });
   });
 
   test('cancelar e entrar de novo antes da primeira abrir: a sala atrasada é largada', async () => {
