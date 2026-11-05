@@ -8,12 +8,14 @@ async function novaPagina(browser: Browser): Promise<Page> {
 /** Mesmas regras nos dois: só assim o matchmaking junta (variante/humanos/bots/chaveRegras). */
 async function entrar(page: Page, nome: string) {
   await page.goto('/');
+  // As regras ficam num <details> recolhido no celular.
+  await page.getByText('Regras da mesa', { exact: true }).click();
   await page.getByLabel('Apelido').fill(nome);
   await page.getByLabel('Variante').selectOption('paulista');
   await page.getByLabel('Humanos').selectOption('2');
   await page.getByLabel('Bots').selectOption('facil');
   await page.getByLabel('Adversários podem interceptar sinais').selectOption({ label: 'Nunca' });
-  await page.getByRole('button', { name: 'Jogar', exact: true }).click();
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
 }
 
 /**

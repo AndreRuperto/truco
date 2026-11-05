@@ -17,7 +17,7 @@ describe('Lobby', () => {
     await user.selectOptions(screen.getByLabelText('Mão de 11'), 'onzeAOnze');
     await user.selectOptions(screen.getByLabelText('Humanos'), '2');
     await user.selectOptions(screen.getByLabelText('Bots'), 'dificil');
-    await user.click(screen.getByRole('button', { name: 'Jogar' }));
+    await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
     expect(aoJogar).toHaveBeenCalledWith({
       nome: 'Ana',
       variante: 'mineiro',
@@ -38,7 +38,7 @@ describe('Lobby', () => {
     await user.click(screen.getByLabelText('Mão de 10'));
     await user.selectOptions(screen.getByLabelText('Pontuação'), '2-4-8-10-12');
     await user.selectOptions(screen.getByLabelText('Família'), 'aberta');
-    await user.click(screen.getByRole('button', { name: 'Jogar' }));
+    await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
     expect(aoJogar.mock.calls[0][0]).toMatchObject({
       nome: 'Jogador',
       variante: 'paulista',
@@ -53,10 +53,10 @@ describe('Lobby', () => {
     const campo = screen.getByLabelText('Adversários podem interceptar sinais');
     expect(campo).toHaveDisplayValue('Nunca');
     await user.selectOptions(campo, 'Às vezes');
-    await user.click(screen.getByRole('button', { name: 'Jogar' }));
+    await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
     expect(aoJogar.mock.calls[0][0]).toMatchObject({ chanceInterceptarSinal: 0.25, chaveRegras: expect.stringMatching(/\|int:0\.25$/) });
     await user.selectOptions(campo, 'Fácil');
-    await user.click(screen.getByRole('button', { name: 'Jogar' }));
+    await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
     expect(aoJogar.mock.calls[1][0]).toMatchObject({ chanceInterceptarSinal: 0.5 });
   });
 
@@ -68,6 +68,16 @@ describe('Lobby', () => {
     expect(screen.getByLabelText('Apelido')).toHaveValue('Bia');
     await user.click(screen.getByRole('button', { name: 'Ranqueada' }));
     expect(aoRanqueada).toHaveBeenCalled();
+  });
+
+  test('regras ficam num bloco recolhível com o resumo de uma linha', async () => {
+    const user = userEvent.setup();
+    render(<Lobby aoJogar={vi.fn()} />);
+    const resumo = screen.getByText('Regras da mesa').closest('summary')!;
+    expect(resumo.closest('details')).not.toHaveAttribute('open');
+    expect(resumo).toHaveTextContent('Paulista, 1-3-6-9-12, mão de 11, sem família, 3 bots fáceis');
+    await user.selectOptions(screen.getByLabelText('Humanos'), '2');
+    expect(resumo).toHaveTextContent('2 bots fáceis');
   });
 
   test('mesa privada: chama aoCriarPrivada em vez de aoJogar', async () => {

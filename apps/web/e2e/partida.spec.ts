@@ -2,11 +2,13 @@ import { expect, test } from '@playwright/test';
 
 test('1 humano + 3 bots fáceis jogam até o fim da partida', async ({ page }) => {
   await page.goto('/');
+  // As regras ficam num <details> recolhido no celular.
+  await page.getByText('Regras da mesa', { exact: true }).click();
   await page.getByLabel('Apelido').fill('Teste E2E');
   await page.getByLabel('Variante').selectOption('paulista');
   await page.getByLabel('Humanos').selectOption('1');
   await page.getByLabel('Bots').selectOption('facil');
-  await page.getByRole('button', { name: 'Jogar', exact: true }).click();
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
 
   const fim = page.getByTestId('fim-partida');
   const aceitar = page.getByRole('button', { name: 'Aceitar', exact: true });
@@ -40,5 +42,5 @@ test('1 humano + 3 bots fáceis jogam até o fim da partida', async ({ page }) =
   await expect(fim).toContainText(/Vitória!|Derrota/);
   expect(viuFimDeMao).toBe(true);
   await page.getByRole('button', { name: 'Jogar de novo' }).click();
-  await expect(page.getByRole('button', { name: 'Jogar', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Jogar agora', exact: true })).toBeVisible();
 });

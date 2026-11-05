@@ -20,6 +20,8 @@ interface Props {
 
 export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada }: Props) {
   const [f, setF] = useState<FormLobby>(() => formPadrao('paulista', lerApelido()));
+  // Regras abertas de cara só em tela larga; no celular o "Jogar agora" fica na primeira dobra.
+  const [regrasAbertas, setRegrasAbertas] = useState(() => window.matchMedia?.('(min-width: 900px)').matches ?? false);
   const mudar = <K extends keyof FormLobby>(k: K, v: FormLobby[K]) => setF((x) => ({ ...x, [k]: v }));
 
   const enviar = (e: FormEvent) => {
@@ -32,99 +34,131 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada }: Props) {
 
   return (
     <main className="lobby">
-      <h1>Truco</h1>
+      <h1 className="letreiro">Truco</h1>
+      <p className="letreiro-sub">Senta, que a mesa tá posta.</p>
       <form className="formulario" onSubmit={enviar}>
-        <div className="campo">
-          <label htmlFor="apelido">Apelido</label>
-          <input
-            id="apelido"
-            type="text"
-            value={f.nome}
-            maxLength={20}
-            autoComplete="nickname"
-            placeholder="Como te chamam na mesa"
-            onChange={(e) => mudar('nome', e.target.value)}
-          />
-        </div>
-        <div className="campo">
-          <label htmlFor="variante">Variante</label>
-          <select id="variante" value={f.variante} onChange={(e) => setF((x) => trocarVariante(x, e.target.value as Variante))}>
-            <option value="paulista">Paulista (com vira)</option>
-            <option value="mineiro">Mineiro (manilhas fixas)</option>
-          </select>
-        </div>
-        <div className="campo">
-          <label htmlFor="pontuacao">Pontuação</label>
-          <select id="pontuacao" value={f.pontuacao} onChange={(e) => mudar('pontuacao', e.target.value as Pontuacao)}>
-            <option value="1-3-6-9-12">1 · 3 · 6 · 9 · 12</option>
-            <option value="2-4-8-10-12">2 · 4 · 8 · 10 · 12</option>
-          </select>
-        </div>
-        <label className="campo-check">
-          <input type="checkbox" checked={f.maoDe10} onChange={(e) => mudar('maoDe10', e.target.checked)} />
-          Mão de 10
-        </label>
-        <div className="campo">
-          <label htmlFor="mao11">Mão de 11</label>
-          <select id="mao11" value={f.maoDe11} onChange={(e) => mudar('maoDe11', e.target.value as RegrasMesa['maoDe11'])}>
-            <option value="off">Desligada</option>
-            <option value="qualquerDupla">Qualquer dupla com 11</option>
-            <option value="onzeAOnze">Só no 11 a 11</option>
-          </select>
-        </div>
-        <div className="campo">
-          <label htmlFor="familia">Família</label>
-          <select id="familia" value={f.familia} onChange={(e) => mudar('familia', e.target.value as RegrasMesa['familia'])}>
-            <option value="off">Desligada</option>
-            <option value="aberta">Aberta (mostra as cartas)</option>
-            <option value="fechada">Fechada</option>
-          </select>
-        </div>
-        <div className="campo">
-          <label htmlFor="humanos">Humanos</label>
-          <select id="humanos" value={String(f.humanos)} onChange={(e) => mudar('humanos', Number(e.target.value))}>
-            <option value="1">Só eu (3 bots)</option>
-            <option value="2">2 humanos</option>
-            <option value="3">3 humanos</option>
-            <option value="4">4 humanos</option>
-          </select>
-        </div>
-        <div className="campo">
-          <label htmlFor="bots">Bots</label>
-          <select id="bots" value={f.nivelBot} onChange={(e) => mudar('nivelBot', e.target.value as NivelBot)}>
-            <option value="facil">Fácil</option>
-            <option value="dificil">Difícil</option>
-          </select>
-        </div>
-        <div className="campo">
-          <label htmlFor="interceptar">Adversários podem interceptar sinais</label>
-          <select
-            id="interceptar"
-            value={String(f.chanceInterceptarSinal)}
-            onChange={(e) => mudar('chanceInterceptarSinal', Number(e.target.value))}
-          >
-            {OPCOES_INTERCEPTACAO.map((o) => (
-              <option key={o.valor} value={String(o.valor)}>
-                {o.rotulo}
-              </option>
-            ))}
-          </select>
-        </div>
-        {aoCriarPrivada && (
-          <label className="campo-check">
-            <input type="checkbox" checked={f.privada} onChange={(e) => mudar('privada', e.target.checked)} />
-            Mesa privada (só entra quem tiver o link)
-          </label>
-        )}
-        <div className="botoes-lobby">
+        <div className="lobby-principal">
+          <div className="campo">
+            <label htmlFor="apelido">Apelido</label>
+            <input
+              id="apelido"
+              type="text"
+              value={f.nome}
+              maxLength={20}
+              autoComplete="nickname"
+              placeholder="Como te chamam na mesa"
+              onChange={(e) => mudar('nome', e.target.value)}
+            />
+          </div>
           <button type="submit" className="botao-principal">
-            {f.privada && aoCriarPrivada ? 'Criar mesa privada' : 'Jogar'}
+            {f.privada && aoCriarPrivada ? 'Criar mesa privada' : 'Jogar agora'}
           </button>
-          <button type="button" onClick={aoRanqueada} disabled={!aoRanqueada}>
-            Ranqueada
-          </button>
+          <div className="lobby-outros">
+            <button type="button" onClick={aoRanqueada} disabled={!aoRanqueada}>
+              Ranqueada
+            </button>
+            {aoCriarPrivada && (
+              <label className="alternar-privada">
+                <input type="checkbox" checked={f.privada} onChange={(e) => mudar('privada', e.target.checked)} />
+                <span>
+                  Mesa privada <small>(só entra quem tiver o link)</small>
+                </span>
+              </label>
+            )}
+          </div>
         </div>
+        <details className="regras-mesa" open={regrasAbertas} onToggle={(e) => setRegrasAbertas(e.currentTarget.open)}>
+          <summary>
+            <span>Regras da mesa</span>
+            <small>{resumoLobby(f)}</small>
+          </summary>
+          <div className="regras-grade">
+            <div className="campo">
+              <label htmlFor="variante">Variante</label>
+              <select id="variante" value={f.variante} onChange={(e) => setF((x) => trocarVariante(x, e.target.value as Variante))}>
+                <option value="paulista">Paulista (com vira)</option>
+                <option value="mineiro">Mineiro (manilhas fixas)</option>
+              </select>
+            </div>
+            <div className="campo">
+              <label htmlFor="pontuacao">Pontuação</label>
+              <select id="pontuacao" value={f.pontuacao} onChange={(e) => mudar('pontuacao', e.target.value as Pontuacao)}>
+                <option value="1-3-6-9-12">1, 3, 6, 9, 12</option>
+                <option value="2-4-8-10-12">2, 4, 8, 10, 12</option>
+              </select>
+            </div>
+            <div className="campo">
+              <label htmlFor="mao11">Mão de 11</label>
+              <select id="mao11" value={f.maoDe11} onChange={(e) => mudar('maoDe11', e.target.value as RegrasMesa['maoDe11'])}>
+                <option value="off">Desligada</option>
+                <option value="qualquerDupla">Qualquer dupla com 11</option>
+                <option value="onzeAOnze">Só no 11 a 11</option>
+              </select>
+            </div>
+            <div className="campo">
+              <label htmlFor="familia">Família</label>
+              <select id="familia" value={f.familia} onChange={(e) => mudar('familia', e.target.value as RegrasMesa['familia'])}>
+                <option value="off">Desligada</option>
+                <option value="aberta">Aberta (mostra as cartas)</option>
+                <option value="fechada">Fechada</option>
+              </select>
+            </div>
+            <div className="campo">
+              <label htmlFor="humanos">Humanos</label>
+              <select id="humanos" value={String(f.humanos)} onChange={(e) => mudar('humanos', Number(e.target.value))}>
+                <option value="1">Só eu (3 bots)</option>
+                <option value="2">2 humanos</option>
+                <option value="3">3 humanos</option>
+                <option value="4">4 humanos</option>
+              </select>
+            </div>
+            <div className="campo">
+              <label htmlFor="bots">Bots</label>
+              <select id="bots" value={f.nivelBot} onChange={(e) => mudar('nivelBot', e.target.value as NivelBot)}>
+                <option value="facil">Fácil</option>
+                <option value="dificil">Difícil</option>
+              </select>
+            </div>
+            <div className="campo largo">
+              <label htmlFor="interceptar">Adversários podem interceptar sinais</label>
+              <select
+                id="interceptar"
+                value={String(f.chanceInterceptarSinal)}
+                onChange={(e) => mudar('chanceInterceptarSinal', Number(e.target.value))}
+              >
+                {OPCOES_INTERCEPTACAO.map((o) => (
+                  <option key={o.valor} value={String(o.valor)}>
+                    {o.rotulo}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label className="campo-check largo">
+              <input type="checkbox" checked={f.maoDe10} onChange={(e) => mudar('maoDe10', e.target.checked)} />
+              Mão de 10
+            </label>
+          </div>
+        </details>
       </form>
     </main>
   );
+}
+
+const TEXTO_FAMILIA: Record<RegrasMesa['familia'], string> = { off: 'sem família', aberta: 'família aberta', fechada: 'família fechada' };
+const TEXTO_MAO11: Record<RegrasMesa['maoDe11'], string | null> = { off: null, qualquerDupla: 'mão de 11', onzeAOnze: 'mão de 11 só no 11 a 11' };
+
+/** Uma linha com as regras escolhidas, para o bloco recolhido. */
+function resumoLobby(f: FormLobby): string {
+  const bots = 4 - f.humanos;
+  const nivel = f.nivelBot === 'facil' ? (bots === 1 ? 'fácil' : 'fáceis') : bots === 1 ? 'difícil' : 'difíceis';
+  const partes = [
+    f.variante === 'paulista' ? 'Paulista' : 'Mineiro',
+    f.pontuacao,
+    f.maoDe10 ? 'mão de 10' : null,
+    TEXTO_MAO11[f.maoDe11],
+    TEXTO_FAMILIA[f.familia],
+    bots > 0 ? `${bots} ${bots === 1 ? 'bot' : 'bots'} ${nivel}` : 'só humanos',
+    f.chanceInterceptarSinal > 0 ? 'sinais interceptáveis' : null,
+  ];
+  return partes.filter(Boolean).join(', ');
 }
