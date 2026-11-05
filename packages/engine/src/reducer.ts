@@ -10,6 +10,7 @@ import {
   type ResultadoMao,
   type TipoMao,
   duplaDe,
+  parceiroDe,
   proximaCadeira,
 } from './estado';
 import { ehFamilia } from './familia';
@@ -144,6 +145,10 @@ export function reduce(estado: EstadoPartida, acao: Acao): EstadoPartida {
     case 'devolver':
       devolver(s, acao.cadeira);
       break;
+    case 'abrir3':
+    case 'dar3':
+      cortarDe3(s, acao.cadeira, acao.tipo);
+      break;
     case 'distribuir':
       distribuir(s, acao.cadeira, acao.modo);
       break;
@@ -247,6 +252,17 @@ function cortar(s: EstadoPartida, cadeira: Cadeira, ponto: number | undefined): 
 
 function devolver(s: EstadoPartida, cadeira: Cadeira): void {
   exigirCortador(s, cadeira);
+  s.fase = 'escolhendoDistribuicao';
+}
+
+/** Abrir 3 / dar 3: gastam os 3 movimentos de uma vez (só como primeiro movimento) e encerram o corte. */
+function cortarDe3(s: EstadoPartida, cadeira: Cadeira, tipo: 'abrir3' | 'dar3'): void {
+  const r = exigirCortador(s, cadeira);
+  if (r.movimentos > 0) falha(`${tipo === 'abrir3' ? 'abrir' : 'dar'} 3 gasta os 3 movimentos: só no começo do corte`);
+  const tres = s.monte.splice(0, 3);
+  if (tipo === 'abrir3') r.abertas = tres;
+  else r.dadas = { cadeira: parceiroDe(cadeira), cartas: tres };
+  r.movimentos = MOVIMENTOS_CORTE;
   s.fase = 'escolhendoDistribuicao';
 }
 
