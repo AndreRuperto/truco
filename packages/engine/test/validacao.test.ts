@@ -143,3 +143,13 @@ describe('ehAcaoJogador', () => {
     expect(ehAcaoJogador(enorme)).toBe(false);
   });
 });
+
+describe('ritual fora de hora', () => {
+  test('embaralhar fora do ritual: "não é hora de embaralhar"', () => {
+    const s = distribuida(MINEIRO, MAOS_DUPLA0_VENCE);
+    expect(() => reduce(s, { tipo: 'embaralhar', cadeira: 3, bits: s.monte.map(() => 0 as const) })).toThrow(
+      /não é hora de embaralhar/,
+    );
+    expect(() => reduce(partida(MINEIRO), { tipo: 'embaralhar', cadeira: 3, bits: [] })).toThrow(/não é hora de embaralhar/);
+  });
+});

@@ -221,8 +221,8 @@ function gastarMovimento(s: EstadoPartida, r: EstadoRitual): void {
 }
 
 function embaralharMonte(s: EstadoPartida, cadeira: Cadeira, bits: (0 | 1)[] | undefined): void {
-  const r = ritualAtual(s);
   if (s.fase !== 'embaralhando' && s.fase !== 'cortando') falha('não é hora de embaralhar');
+  const r = ritualAtual(s);
   if (s.fase === 'embaralhando' && cadeira !== r.embaralhador) falha('só quem dá as cartas embaralha');
   if (s.fase === 'cortando' && cadeira !== r.cortador) falha('agora quem mexe no monte é quem corta');
   if (s.fase === 'embaralhando' && r.embaralhadas >= LIMITE_EMBARALHADAS) falha('já embaralhou demais');
@@ -234,15 +234,15 @@ function embaralharMonte(s: EstadoPartida, cadeira: Cadeira, bits: (0 | 1)[] | u
 }
 
 function passarCorte(s: EstadoPartida, cadeira: Cadeira): void {
-  const r = ritualAtual(s);
   if (s.fase !== 'embaralhando') falha('não é hora de passar pra cortar');
+  const r = ritualAtual(s);
   if (cadeira !== r.embaralhador) falha('só quem embaralha passa o monte');
   s.fase = 'cortando';
 }
 
 function exigirCortador(s: EstadoPartida, cadeira: Cadeira): EstadoRitual {
-  const r = ritualAtual(s);
   if (s.fase !== 'cortando') falha('não é hora de cortar');
+  const r = ritualAtual(s);
   if (cadeira !== r.cortador) falha('não é você quem corta');
   return r;
 }
@@ -273,8 +273,8 @@ function cortarDe3(s: EstadoPartida, cadeira: Cadeira, tipo: 'abrir3' | 'dar3'):
 }
 
 function distribuir(s: EstadoPartida, cadeira: Cadeira, modo: ModoDistribuicao): void {
-  const r = ritualAtual(s);
   if (s.fase !== 'escolhendoDistribuicao') falha('não é hora de distribuir');
+  const r = ritualAtual(s);
   if (cadeira !== r.embaralhador) falha('só quem embaralhou dá as cartas');
   const pulada = r.dadas?.cadeira ?? null;
   const dadas = darCartas(s.monte, ordemDistribuicao(s.pe, pulada), modo, s.regras.variante === 'paulista');
