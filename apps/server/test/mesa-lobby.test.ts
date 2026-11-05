@@ -1,0 +1,52 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { criarMesa } from './mesa-helpers';
+
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
+
+describe('lobby', () => {
+  test('os dois primeiros humanos ficam na mesma dupla', () => {
+    const { mesa } = criarMesa({ humanosEsperados: 4 });
+    expect(['a', 'b', 'c', 'd'].map((id) => mesa.sentar(id, id))).toEqual([0, 2, 1, 3]);
+    expect(mesa.iniciada).toBe(true);
+  });
+
+  test('espera os humanos; só o dono inicia completando com bots', () => {
+    const { mesa, estado } = criarMesa({ humanosEsperados: 3 });
+    mesa.sentar('a', 'Ana');
+    mesa.sentar('b', 'Bia');
+    expect(mesa.iniciada).toBe(false);
+    expect(estado('a')!.visao).toBeNull();
+    expect(estado('a')!.cadeiras.map((c) => c.tipo)).toEqual(['humano', 'vazia', 'humano', 'vazia']);
+
+    mesa.iniciar('b');
+    expect(mesa.iniciada).toBe(false);
+    mesa.iniciar('a');
+    expect(mesa.iniciada).toBe(true);
+    expect(estado('b')!.cadeiras.map((c) => c.tipo)).toEqual(['humano', 'bot', 'humano', 'bot']);
+    expect(mesa.sentar('c', 'Cid')).toBeNull();
+  });
+
+  test('não senta o mesmo id duas vezes e limpa o nome', () => {
+    const { mesa, estado } = criarMesa({ humanosEsperados: 2 });
+    expect(mesa.sentar('a', '   ')).toBe(0);
+    expect(mesa.sentar('a', 'Ana')).toBeNull();
+    expect(estado('a')!.cadeiras[0].nome).toBe('Jogador');
+    mesa.sentar('b', 'x'.repeat(50));
+    expect(estado('b')!.cadeiras[2].nome).toHaveLength(20);
+  });
+
+  test('sair antes do início libera a cadeira', () => {
+    const { mesa, estado } = criarMesa({ humanosEsperados: 3 });
+    mesa.sentar('a', 'Ana');
+    mesa.sentar('b', 'Bia');
+    mesa.sair('b');
+    expect(estado('a')!.cadeiras[2].tipo).toBe('vazia');
+    expect(mesa.sentar('c', 'Cid')).toBe(2);
+  });
+
+  test('humanosEsperados fora de 1..4 é erro', () => {
+    expect(() => criarMesa({ humanosEsperados: 0 })).toThrow();
+    expect(() => criarMesa({ humanosEsperados: 5 })).toThrow();
+  });
+});
