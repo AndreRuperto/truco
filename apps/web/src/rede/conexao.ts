@@ -59,11 +59,14 @@ let emAndamento: Promise<boolean> | null = null;
  * Depois de recarregar a página: se há token, volta para a mesma cadeira (o servidor a
  * guarda por 60 s). Quedas de rede sem recarregar o SDK 0.18 já reconecta sozinho.
  * Chamadas simultâneas (o StrictMode roda o efeito duas vezes) compartilham a tentativa.
+ * Se a loja já está conectada/conectando (re-render, Fast Refresh), não faz nada: tentar
+ * de novo com o token da sala atual falharia e apagaria o token, mandando ao lobby.
  */
 export function tentarReconectar(loja: Loja, cliente?: ClienteLike): Promise<boolean> {
+  if (emAndamento) return emAndamento;
   const token = lerToken();
-  if (!token) return Promise.resolve(false);
-  emAndamento ??= (async () => {
+  if (!token || loja.getSnapshot().status !== 'fora') return Promise.resolve(false);
+  emAndamento = (async () => {
     loja.marcarConectando();
     try {
       const c = cliente ?? (await clientePadrao());

@@ -65,6 +65,20 @@ describe('tentarReconectar', () => {
     expect(cliente.reconnect).toHaveBeenCalledTimes(1);
   });
 
+  test('com a loja já na mesa (re-render/Fast Refresh) não reconecta nem apaga o token', async () => {
+    gravarToken('r1:t1');
+    const cliente = { joinOrCreate: vi.fn(), reconnect: vi.fn(async () => new SalaFalsa()) };
+    const loja = novaLoja();
+    loja.conectar(new SalaFalsa());
+    loja.marcarConectando();
+    expect(await tentarReconectar(loja, cliente)).toBe(false);
+    loja.conectar(new SalaFalsa());
+    expect(await tentarReconectar(loja, cliente)).toBe(false);
+    expect(cliente.reconnect).not.toHaveBeenCalled();
+    expect(lerToken()).toBe('r1:t1');
+    expect(loja.getSnapshot().status).toBe('na-mesa');
+  });
+
   test('token vencido é apagado e fica no lobby sem toast', async () => {
     gravarToken('r1:velho');
     const cliente = { joinOrCreate: vi.fn(), reconnect: vi.fn(async () => Promise.reject(new Error('expirou'))) };
