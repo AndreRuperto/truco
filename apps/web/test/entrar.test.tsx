@@ -104,14 +104,21 @@ describe('BotaoGoogle', () => {
 describe('Cabecalho', () => {
   test('convidado vê Entrar; logado vê apelido, Perfil, Histórico e Sair da conta', async () => {
     const user = userEvent.setup();
-    const { rerender } = render(<Cabecalho usuario={null} aoSair={vi.fn()} />);
+    const { rerender } = render(<Cabecalho pronta usuario={null} aoSair={vi.fn()} />);
     expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '#/entrar');
     expect(screen.queryByRole('link', { name: 'Perfil' })).toBeNull();
     const aoSair = vi.fn();
-    rerender(<Cabecalho usuario={USUARIO} aoSair={aoSair} />);
+    rerender(<Cabecalho pronta usuario={USUARIO} aoSair={aoSair} />);
     expect(screen.getByTestId('usuario-logado')).toHaveTextContent('ana');
     expect(screen.getByRole('link', { name: 'Histórico' })).toHaveAttribute('href', '#/historico');
     await user.click(screen.getByRole('button', { name: 'Sair da conta' }));
     expect(aoSair).toHaveBeenCalled();
+  });
+
+  test('antes de a sessão ficar pronta não mostra Entrar nem a conta (sem piscar)', () => {
+    render(<Cabecalho pronta={false} usuario={null} aoSair={vi.fn()} />);
+    expect(screen.queryByRole('link', { name: 'Entrar' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Sair da conta' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Início' })).toBeInTheDocument();
   });
 });

@@ -1,4 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { PerfilApi } from '@truco/api';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { App } from '../src/App';
 import { api, loja, sessao } from '../src/rede/instancia';
@@ -17,6 +19,8 @@ afterEach(async () => {
 });
 
 const USUARIO = { id: 1, apelido: 'ana', email: 'ana@x.com' };
+const RV = { elo: 1000, pontos: 0, patente: 'Bronze', proxima: null, partidasRanqueadas: 0, jogos: 0, vitorias: 0, pctTrucoAceito: null, corridas: 0 };
+const PERFIL: PerfilApi = { usuario: { id: 1, apelido: 'ana' }, variantes: { paulista: RV, mineiro: RV } };
 
 describe('App: telas conforme o status da loja', () => {
   test('lobby → conectando → entrando → sala de espera → mesa → reconectando → lobby', async () => {
@@ -69,5 +73,41 @@ describe('App: conta', () => {
     expect(api.confirmarLink).toHaveBeenCalledWith('tok');
     expect(window.history.length).toBe(comprimento);
     expect(await screen.findByTestId('usuario-logado')).toHaveTextContent('ana');
+  });
+
+  test('sair da conta volta ao início e não deixa dados do usuário anterior na tela', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, 'config').mockResolvedValue({ google: null, emailTeste: false });
+    vi.spyOn(api, 'eu').mockResolvedValue({ usuario: USUARIO });
+    vi.spyOn(api, 'perfil').mockResolvedValue(PERFIL);
+    vi.spyOn(api, 'sair').mockResolvedValue(undefined);
+    window.history.replaceState(null, '', '/#/perfil');
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'ana' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sair da conta' }));
+    await waitFor(() => expect(window.location.hash).toBe('#/'));
+    expect(screen.queryByRole('heading', { name: 'ana' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Entrar' })).toBeInTheDocument();
+  });
+
+  test('convidado em Perfil/Histórico (ou sessão expirada) recebe link para entrar', async () => {
+    vi.spyOn(api, 'config').mockResolvedValue({ google: null, emailTeste: false });
+    vi.spyOn(api, 'eu').mockResolvedValue({ usuario: null });
+    const historico = vi.spyOn(api, 'historico').mockResolvedValue({ partidas: [] });
+    window.history.replaceState(null, '', '/#/historico');
+    render(<App />);
+    expect(await screen.findByRole('link', { name: 'entre na sua conta' })).toHaveAttribute('href', '#/entrar');
+    expect(historico).not.toHaveBeenCalled();
+    act(() => {
+      window.location.hash = '#/perfil';
+    });
+    expect(await screen.findByRole('link', { name: 'entre na sua conta' })).toHaveAttribute('href', '#/entrar');
+    act(() => sessao.definirUsuario(USUARIO));
+    act(() => {
+      window.location.hash = '#/historico';
+    });
+    expect(await screen.findByText('Nenhuma partida ainda.')).toBeInTheDocument();
+    act(() => sessao.definirUsuario(null)); // o que o 401 faz
+    expect(await screen.findByRole('link', { name: 'entre na sua conta' })).toBeInTheDocument();
   });
 });

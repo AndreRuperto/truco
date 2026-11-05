@@ -1,5 +1,5 @@
 import type { UsuarioApi } from '@truco/api';
-import { useCallback, useEffect } from 'react';
+import { Fragment, useCallback, useEffect } from 'react';
 import { Cabecalho } from './componentes/Cabecalho';
 import { Toast } from './componentes/Toast';
 import { lerApelido } from './logica/lobby';
@@ -17,6 +17,22 @@ import { TelaPerfil } from './telas/Perfil';
 import { TelaRanking } from './telas/Ranking';
 import { SalaEspera } from './telas/SalaEspera';
 import { TelaSalas } from './telas/Salas';
+
+/** Tela que exige login: espera a sessão; convidado (ou sessão expirada) recebe o link para entrar. */
+function PedirLogin({ titulo, pronta }: { titulo: string; pronta: boolean }) {
+  return (
+    <main className="tela-conta">
+      <h1>{titulo}</h1>
+      {pronta ? (
+        <p>
+          Para ver isto, <a href="#/entrar">entre na sua conta</a>.
+        </p>
+      ) : (
+        <p role="status">Carregando…</p>
+      )}
+    </main>
+  );
+}
 
 export function App() {
   const snap = useLoja(loja);
@@ -59,10 +75,15 @@ export function App() {
         conteudo = <TelaEntrar token={rota.token} config={ses.config} api={api} aoEntrar={aoEntrar} />;
         break;
       case 'perfil':
-        conteudo = <TelaPerfil key={rota.id ?? 'eu'} id={rota.id} api={api} aoTrocarApelido={(u) => sessao.definirUsuario(u)} />;
+        conteudo =
+          rota.id === null && !ses.usuario ? (
+            <PedirLogin titulo="Perfil" pronta={ses.pronta} />
+          ) : (
+            <TelaPerfil key={rota.id ?? 'eu'} id={rota.id} api={api} aoTrocarApelido={(u) => sessao.definirUsuario(u)} />
+          );
         break;
       case 'historico':
-        conteudo = <TelaHistorico api={api} />;
+        conteudo = ses.usuario ? <TelaHistorico api={api} /> : <PedirLogin titulo="Histórico" pronta={ses.pronta} />;
         break;
       case 'ranking':
         conteudo = <TelaRanking variante={rota.variante} api={api} />;
@@ -108,8 +129,16 @@ export function App() {
     }
     tela = (
       <>
-        <Cabecalho usuario={ses.usuario} aoSair={() => void sessao.sair()} />
-        {conteudo}
+        <Cabecalho
+          pronta={ses.pronta}
+          usuario={ses.usuario}
+          aoSair={() => {
+            navegar({ tela: 'inicio' });
+            void sessao.sair();
+          }}
+        />
+        {/* trocar de conta remonta a tela: nada do usuário anterior sobrevive em estado local */}
+        <Fragment key={ses.usuario?.id ?? 'anon'}>{conteudo}</Fragment>
       </>
     );
   }
