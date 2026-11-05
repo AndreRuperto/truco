@@ -1,5 +1,5 @@
 import type { AcaoJogador } from '@truco/engine';
-import { type Fala, type MsgAcao, type MsgChat, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
+import { type Fala, type MsgAcao, type MsgBatida, type MsgChat, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
 import { type Evento, FALA_TEXTO, type NovoEvento, textoDaAcao } from '../logica/eventos';
 
 /**
@@ -18,7 +18,7 @@ export interface SalaLike {
 }
 
 /** Todas as mensagens servidor → cliente; os handlers são registrados antes de `sincronizar`. */
-export const TIPOS_MENSAGEM = ['estado', 'acao', 'sinal', 'fala', 'erro', 'chat'] as const;
+export const TIPOS_MENSAGEM = ['estado', 'acao', 'sinal', 'fala', 'erro', 'chat', 'batida'] as const;
 
 export type Status = 'fora' | 'conectando' | 'na-mesa' | 'reconectando';
 
@@ -36,6 +36,8 @@ export interface EstadoLoja {
   chat: MsgChat[];
   /** `roomId` da sala atual (código do convite da mesa privada). */
   salaId: string | null;
+  /** Última batida na mesa (animação); `id` muda a cada uma, `em` = epoch ms local de chegada. */
+  batida?: (MsgBatida & { id: number; em: number }) | null;
 }
 
 export interface OpcoesLoja {
@@ -77,7 +79,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
   const largar = (esquecerToken = true) => {
     sala = null;
     if (esquecerToken) persistir(null);
-    mudar({ status: 'fora', msg: null, eventos: [], chat: [], salaId: null });
+    mudar({ status: 'fora', msg: null, eventos: [], chat: [], salaId: null, batida: null });
   };
 
   function conectar(s: SalaLike): void {
@@ -104,6 +106,9 @@ export function criarLoja(o: OpcoesLoja = {}) {
     });
     s.onMessage('chat', (m: MsgChat) => {
       if (sala === s) mudar({ chat: [...estado.chat, m].slice(-50) });
+    });
+    s.onMessage('batida', (b: MsgBatida) => {
+      if (sala === s) mudar({ batida: { ...b, id: ++seq, em: agora() } });
     });
     s.onDrop(() => {
       if (sala === s) mudar({ status: 'reconectando' });
@@ -136,7 +141,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
       if (!consentida) erro('Conexão com a mesa perdida');
     });
     persistir(s.reconnectionToken);
-    mudar({ status: 'na-mesa', msg: null, eventos: [], chat: [], salaId: s.roomId });
+    mudar({ status: 'na-mesa', msg: null, eventos: [], chat: [], salaId: s.roomId, batida: null });
     s.send('sincronizar');
   }
 
@@ -159,6 +164,8 @@ export function criarLoja(o: OpcoesLoja = {}) {
     enviarSinal: (x: Sinal) => sala?.send('sinal', x),
     enviarFala: (f: Fala) => sala?.send('fala', f),
     enviarChat: (texto: string) => sala?.send('chat', texto),
+    /** Logo depois do pedido de seis/nove/doze (o servidor só aceita nessa janela). */
+    enviarBatida: (forca: number) => sala?.send('batida', { forca }),
     iniciar: () => sala?.send('iniciar'),
     /**
      * Saída definitiva (o servidor põe um bot no lugar). Larga o estado local antes do
