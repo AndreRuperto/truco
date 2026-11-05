@@ -147,16 +147,32 @@ describe('TelaMesa', () => {
     expect(within(fim).queryAllByRole('img')).toHaveLength(0);
   });
 
-  test('fim de partida: vencedor e "Jogar de novo"', async () => {
+  test('fim de partida: "Jogar de novo" começa outra partida e "Voltar ao início" só sai', async () => {
     const user = userEvent.setup();
     const acoes = acoesFalsas();
+    const aoJogarDeNovo = vi.fn();
     const base = msgEstado(distribuida(PAULISTA));
     const msg = { ...base, minhasAcoes: [], visao: { ...base.visao!, fase: 'fimPartida' as const, mao: null, vencedor: 0 as const, placar: [12, 4] as [number, number] } };
-    render(<TelaMesa snap={snap(msg)} acoes={acoes} />);
+    render(<TelaMesa snap={snap(msg)} acoes={acoes} aoJogarDeNovo={aoJogarDeNovo} />);
     const fim = screen.getByTestId('fim-partida');
     expect(fim).toHaveTextContent('Vitória!');
     expect(fim).toHaveTextContent('Nós 12 × 4 Eles');
     await user.click(within(fim).getByRole('button', { name: 'Jogar de novo' }));
-    expect(acoes.sair).toHaveBeenCalled();
+    expect(aoJogarDeNovo).toHaveBeenCalledTimes(1);
+    expect(acoes.sair).not.toHaveBeenCalled();
+    await user.click(within(fim).getByRole('button', { name: 'Voltar ao início' }));
+    expect(acoes.sair).toHaveBeenCalledTimes(1);
+  });
+
+  test('fim de partida sem "jogar de novo" disponível: o botão principal volta ao início', async () => {
+    const user = userEvent.setup();
+    const acoes = acoesFalsas();
+    const base = msgEstado(distribuida(PAULISTA));
+    const msg = { ...base, minhasAcoes: [], visao: { ...base.visao!, fase: 'fimPartida' as const, mao: null, vencedor: 1 as const, placar: [4, 12] as [number, number] } };
+    render(<TelaMesa snap={snap(msg)} acoes={acoes} />);
+    const fim = screen.getByTestId('fim-partida');
+    expect(within(fim).queryByRole('button', { name: 'Jogar de novo' })).toBeNull();
+    await user.click(within(fim).getByRole('button', { name: 'Voltar ao início' }));
+    expect(acoes.sair).toHaveBeenCalledTimes(1);
   });
 });

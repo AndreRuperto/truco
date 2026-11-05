@@ -3,6 +3,7 @@ import { Fragment, useCallback, useEffect } from 'react';
 import { Cabecalho } from './componentes/Cabecalho';
 import { Toast } from './componentes/Toast';
 import { lerApelido } from './logica/lobby';
+import type { OpcoesEntrada } from './logica/lobby';
 import { criarMesaPrivada, entrarNaMesa, entrarPorCodigo, tentarReconectar } from './rede/conexao';
 import { useFila, useLoja, useSessao } from './rede/hooks';
 import { api, loja, lojaFila, sessao } from './rede/instancia';
@@ -32,6 +33,25 @@ function PedirLogin({ titulo, pronta }: { titulo: string; pronta: boolean }) {
       )}
     </main>
   );
+}
+
+/** Como o jogador entrou na última mesa, para "Jogar de novo" repetir (vale até recarregar a página). */
+let ultimaEntrada: { tipo: 'mesa' | 'privada'; opcoes: OpcoesEntrada } | null = null;
+
+function jogarDeNovo(): void {
+  const modo = loja.getSnapshot().msg?.modo;
+  const entrada = ultimaEntrada;
+  // `sair` larga o estado local na hora; não precisa esperar o servidor fechar a sala antiga.
+  void loja.sair();
+  if (modo === 'ranqueada') {
+    navegar({ tela: 'fila' });
+    void lojaFila.reentrar();
+  } else if (entrada?.tipo === 'privada') void criarMesaPrivada(loja, entrada.opcoes);
+  else if (entrada) void entrarNaMesa(loja, entrada.opcoes);
+}
+
+function podeJogarDeNovo(modo: string | undefined): boolean {
+  return modo === 'ranqueada' ? lojaFila.getSnapshot().opcoes !== null : ultimaEntrada !== null;
 }
 
 export function App() {
@@ -67,7 +87,15 @@ export function App() {
           aoChat={loja.enviarChat}
         />
       );
-    else tela = <TelaMesa snap={snap} acoes={loja} aoChat={loja.enviarChat} />;
+    else
+      tela = (
+        <TelaMesa
+          snap={snap}
+          acoes={loja}
+          aoChat={loja.enviarChat}
+          aoJogarDeNovo={podeJogarDeNovo(snap.msg.modo) ? jogarDeNovo : undefined}
+        />
+      );
   } else {
     let conteudo;
     switch (rota.tela) {
@@ -121,8 +149,14 @@ export function App() {
       default:
         conteudo = (
           <Lobby
-            aoJogar={(o) => void entrarNaMesa(loja, o)}
-            aoCriarPrivada={(o) => void criarMesaPrivada(loja, o)}
+            aoJogar={(o) => {
+              ultimaEntrada = { tipo: 'mesa', opcoes: o };
+              void entrarNaMesa(loja, o);
+            }}
+            aoCriarPrivada={(o) => {
+              ultimaEntrada = { tipo: 'privada', opcoes: o };
+              void criarMesaPrivada(loja, o);
+            }}
             aoRanqueada={() => navegar(ses.usuario ? { tela: 'fila' } : { tela: 'entrar', token: null })}
           />
         );

@@ -1390,6 +1390,18 @@ button:disabled {
 .overlay-caixa .botao-principal {
   width: 100%;
 }
+.overlay-caixa .botao-secundario {
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--e2);
+  border-color: var(--giz-suave);
+  background: transparent;
+  color: var(--giz);
+  font-weight: 600;
+}
+.overlay-caixa .botao-secundario:hover {
+  border-color: var(--giz);
+}
 .cartas-familia {
   display: flex;
   justify-content: center;

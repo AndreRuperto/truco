@@ -12,7 +12,9 @@ import { FimDeMao, FimDePartida } from '../componentes/Overlays';
 import { PainelFalas } from '../componentes/PainelFalas';
 import { PainelSinais } from '../componentes/PainelSinais';
 import { Placar } from '../componentes/Placar';
+import { Tampo } from '../componentes/Tampo';
 import { agruparAcoes } from '../logica/acoes';
+import { botaoBate } from '../logica/batida';
 import { baloesAtivos } from '../logica/eventos';
 import { cadeiraNaPosicao } from '../logica/posicoes';
 import { prazoEhMeu } from '../logica/prazo';
@@ -33,11 +35,13 @@ const DURACAO_SINAL_MS = 4_000;
 interface Props {
   /** Precisa ter `msg.visao` (a App só mostra a mesa depois que a partida começa). */
   snap: EstadoLoja;
-  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'>;
+  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida'>>;
   aoChat?: (texto: string) => void;
+  /** Começa outra partida com as mesmas opções (a App decide como). Sem ele, o fim só volta ao início. */
+  aoJogarDeNovo?: () => void;
 }
 
-export function TelaMesa({ snap, acoes, aoChat }: Props) {
+export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   const agora = useAgora(250);
   const [painel, setPainel] = useState<'sinais' | 'falas' | 'chat' | null>(null);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
@@ -74,7 +78,7 @@ export function TelaMesa({ snap, acoes, aoChat }: Props) {
   return (
     <main className="tela-mesa">
       <Placar nos={nos} eles={eles} valor={m ? valorMao(v.regras, m.nivel) : null} pedido={pedido?.replace(/\.$/, '') ?? null} />
-      <div className="tampo">
+      <Tampo fisica={msg.mesaFisica} minha={minha} batida={snap.batida}>
         {(['cima', 'esquerda', 'direita'] as const).map((pos) => {
           const c = cadeiraNaPosicao(minha, pos);
           return (
@@ -104,11 +108,17 @@ export function TelaMesa({ snap, acoes, aoChat }: Props) {
           variante={variante}
           vira={vira}
         />
-      </div>
+      </Tampo>
       {prazoEhMeu(msg) && msg.prazo && <Cronometro prazo={msg.prazo} agora={agora} />}
       {m ? <Mao cartas={m.minhaMao} jogaveis={ui.jogaveis} cobriveis={ui.cobriveis} variante={variante} vira={vira} aoJogar={jogar} /> : <div />}
       <div className="rodape-mesa">
-        <BarraAcoes botoes={ui.botoes} pedido={pedido} aoEscolher={acoes.enviarAcao} />
+        <BarraAcoes
+          botoes={ui.botoes}
+          pedido={pedido}
+          aoEscolher={acoes.enviarAcao}
+          bate={(b) => botaoBate(b, m)}
+          aoBater={acoes.enviarBatida}
+        />
         <nav className="barra-social" aria-label="Sinais e falas">
           <button type="button" aria-pressed={painel === 'sinais'} onClick={() => alternar('sinais')}>
             Sinais
@@ -164,7 +174,7 @@ export function TelaMesa({ snap, acoes, aoChat }: Props) {
         </FimDeMao>
       )}
       {resumoMao && <FimDeMao titulo={resumoMao.titulo} detalhe={resumoMao.detalhe} />}
-      {fim && <FimDePartida titulo={fim.titulo} placar={fim.placar} venceu={fim.venceu} aoJogarDeNovo={() => void acoes.sair()} />}
+      {fim && <FimDePartida titulo={fim.titulo} placar={fim.placar} venceu={fim.venceu} aoJogarDeNovo={aoJogarDeNovo} aoVoltar={() => void acoes.sair()} />}
     </main>
   );
 }

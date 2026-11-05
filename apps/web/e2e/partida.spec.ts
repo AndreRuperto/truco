@@ -41,6 +41,8 @@ test('1 humano + 3 bots fáceis jogam até o fim da partida', async ({ page }) =
 
   await expect(fim).toContainText(/Vitória!|Derrota/);
   expect(viuFimDeMao).toBe(true);
+  // "Jogar de novo" abre outra partida com as mesmas regras, placar zerado.
   await page.getByRole('button', { name: 'Jogar de novo' }).click();
-  await expect(page.getByRole('button', { name: 'Jogar agora', exact: true })).toBeVisible();
+  await expect(page.getByTestId('fim-partida')).toHaveCount(0);
+  await expect(page.getByRole('group', { name: /^Placar: Nós 0, Eles 0/ })).toBeVisible({ timeout: 15_000 });
 });

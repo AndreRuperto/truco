@@ -18,17 +18,29 @@ interface PropsFim {
   titulo: string;
   placar: string;
   venceu: boolean;
-  aoJogarDeNovo: () => void;
+  /** Começa outra partida igual; sem ele, só dá para voltar ao início. */
+  aoJogarDeNovo?: () => void;
+  aoVoltar: () => void;
 }
 
-export function FimDePartida({ titulo, placar, venceu, aoJogarDeNovo }: PropsFim) {
+export function FimDePartida({ titulo, placar, venceu, aoJogarDeNovo, aoVoltar }: PropsFim) {
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-labelledby="titulo-fim" data-testid="fim-partida">
       <div className={cx('overlay-caixa', venceu && 'vitoria')}>
         <h2 id="titulo-fim">{titulo}</h2>
         <p>{placar}</p>
-        <button type="button" className="botao-principal" onClick={aoJogarDeNovo} autoFocus>
-          Jogar de novo
+        {aoJogarDeNovo && (
+          <button type="button" className="botao-principal" onClick={aoJogarDeNovo} autoFocus>
+            Jogar de novo
+          </button>
+        )}
+        <button
+          type="button"
+          className={aoJogarDeNovo ? 'botao-secundario' : 'botao-principal'}
+          onClick={aoVoltar}
+          autoFocus={!aoJogarDeNovo}
+        >
+          Voltar ao início
         </button>
       </div>
     </div>
