@@ -7,11 +7,12 @@ import {
   type EstadoPartida,
   type ResultadoMao,
   type TipoMao,
+  duplaDe,
   proximaCadeira,
 } from './estado';
 import { forca } from './forca';
 import { resolverRodada, vencedorMao } from './mao';
-import { ESCADAS, PONTOS_VITORIA } from './regras';
+import { ESCADAS, NIVEL_MAXIMO, PONTOS_VITORIA } from './regras';
 
 export class ErroJogada extends Error {}
 
@@ -27,6 +28,14 @@ export function reduce(estado: EstadoPartida, acao: Acao): EstadoPartida {
       break;
     case 'jogar':
       jogar(s, acao.cadeira, acao.indice, acao.coberta ?? false);
+      break;
+    case 'truco':
+      pedirTruco(s, acao.cadeira);
+      break;
+    case 'aceitar':
+    case 'correr':
+    case 'aumentar':
+      responderTruco(s, acao.cadeira, acao.tipo);
       break;
     default:
       falha(`ação desconhecida: ${(acao as Acao).tipo}`);
@@ -129,4 +138,39 @@ function jogar(s: EstadoPartida, cadeira: Cadeira, indice: number, coberta: bool
     return;
   }
   finalizarMao(s, v, escada(s)[m.nivel], 'rodadas');
+}
+
+function pedirTruco(s: EstadoPartida, cadeira: Cadeira): void {
+  const m = maoAtual(s);
+  if (s.fase !== 'jogando') falha('não é hora de trucar');
+  if (m.vez !== cadeira) falha('só pode trucar na sua vez');
+  if (m.tipo !== 'normal') falha('não se truca nesta mão');
+  const dupla = duplaDe(cadeira);
+  if (m.ultimoAumento === dupla) falha('sua dupla não pode aumentar agora');
+  if (m.nivel >= NIVEL_MAXIMO) falha('aposta já está no máximo');
+  m.trucoPendente = { dupla, proposto: m.nivel + 1 };
+  s.fase = 'respondendoTruco';
+}
+
+function responderTruco(s: EstadoPartida, cadeira: Cadeira, resposta: 'aceitar' | 'correr' | 'aumentar'): void {
+  const m = maoAtual(s);
+  const p = m.trucoPendente;
+  if (s.fase !== 'respondendoTruco' || !p) falha('não há truco para responder');
+  const dupla = duplaDe(cadeira);
+  if (dupla === p.dupla) falha('quem pediu não responde');
+
+  if (resposta === 'correr') {
+    finalizarMao(s, p.dupla, escada(s)[m.nivel], 'correu');
+    return;
+  }
+  if (resposta === 'aceitar') {
+    m.nivel = p.proposto;
+    m.ultimoAumento = p.dupla;
+    m.trucoPendente = null;
+    s.fase = 'jogando';
+    return;
+  }
+  if (p.proposto >= NIVEL_MAXIMO) falha('aposta já está no máximo');
+  m.nivel = p.proposto;
+  m.trucoPendente = { dupla, proposto: p.proposto + 1 };
 }
