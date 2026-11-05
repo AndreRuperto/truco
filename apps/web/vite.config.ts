@@ -13,8 +13,7 @@ export default defineConfig({
     alias: {
       '@truco/engine': caminho('../../packages/engine/src/index.ts'),
       '@truco/protocolo': caminho('../server/src/mesa/protocolo.ts'),
-      // TEMPORÁRIO: trocar por caminho('../server/src/api/tipos.ts') quando a frente servidor criar o arquivo.
-      '@truco/api': caminho('./src/api/tipos.ts'),
+      '@truco/api': caminho('../server/src/api/tipos.ts'),
     },
   },
   // host: true expõe na rede local para testar no celular (o WebSocket vai a <mesmo-host>:2567).
