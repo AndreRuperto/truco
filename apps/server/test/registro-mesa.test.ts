@@ -88,4 +88,28 @@ describe('RegistroMesa', () => {
     await quebrado.ocioso();
     expect(aoErro).toHaveBeenCalledTimes(1);
   });
+
+  // Regra: só `onLeave` (saída consentida ou fim dos 60 s de reconexão) chama `abandonou`,
+  // e a sala não o chama se a partida já estava em `fimPartida`. Quem caiu e não voltou,
+  // mas viu a partida terminar dentro dos 60 s, conta como quem ficou: vitória/derrota e Elo.
+  test('quem caiu e não reconectou, mas a partida terminou dentro dos 60 s, conta normalmente', async () => {
+    const s = servicosDeTeste(b.db, { agora: () => T0 });
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia' });
+    const r = new RegistroMesa(s, { variante: 'paulista', modo: 'ranqueada', formato: '1x1' });
+    r.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+    r.sentou({ cadeira: 1, usuarioId: bia.id, nome: 'bia' });
+    r.iniciou();
+    // ana (cadeira 0) caiu: nenhum `abandonou`; a partida termina com vitória dela.
+    r.terminou(fimDe(0, [12, 7]));
+    await r.ocioso();
+    expect(await ratingDe(b.db, ana.id, 'paulista')).toEqual({ elo: 1016, pontos: 16, partidas: 1 });
+    expect(await ratingDe(b.db, bia.id, 'paulista')).toEqual({ elo: 984, pontos: 0, partidas: 1 });
+    expect(await bloqueioAte(b.db, ana.id, T0)).toBeNull();
+    const ps = await b.db.select().from(participacoes).orderBy(asc(participacoes.cadeira));
+    expect(ps.slice(0, 2).map((p) => [p.venceu, p.abandonou])).toEqual([
+      [true, false],
+      [false, false],
+    ]);
+  });
 });
