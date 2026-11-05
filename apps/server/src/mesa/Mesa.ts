@@ -55,6 +55,10 @@ export interface OpcoesMesa {
   aoTerminar?: (s: EstadoPartida) => void;
   /** Chamado uma vez, quando a partida começa (manual ou automaticamente). */
   aoIniciar?: () => void;
+  /** Erros internos (bot, timers). A mesa se recupera sozinha; isto só registra. */
+  aoErro?: (e: unknown) => void;
+  /** Decisão dos bots. Padrão: bot fácil ou difícil conforme `nivelBot`. */
+  decidirBot?: (s: EstadoPartida, cadeira: Cadeira) => AcaoJogador | null;
 }
 
 interface Ocupante {
@@ -105,6 +109,7 @@ export class Mesa {
   private readonly relogio: Relogio;
   private readonly rand: () => number;
   private readonly tempos: Tempos;
+  private readonly decidirBot: (s: EstadoPartida, cadeira: Cadeira) => AcaoJogador | null;
 
   constructor(private readonly o: OpcoesMesa) {
     const h = o.humanosEsperados;
@@ -112,6 +117,9 @@ export class Mesa {
     this.relogio = o.relogio ?? relogioReal;
     this.rand = o.rand ?? Math.random;
     this.tempos = { ...TEMPOS_PADRAO, ...o.tempos };
+    this.decidirBot =
+      o.decidirBot ??
+      ((s, c) => (o.nivelBot === 'dificil' ? botDificil(visaoDoJogador(s, c), this.rand) : botFacil(s, c)));
   }
 
   get iniciada(): boolean {
@@ -222,19 +230,19 @@ export class Mesa {
 
   // ---------- internos ----------
 
-  private aplicar(acao: AcaoJogador, idHumano?: string): void {
-    if (!this.estado) return;
+  /** Aplica a ação; devolve se deu certo. Erro de humano vai para ele; de bot, para `aoErro`. */
+  private aplicar(acao: AcaoJogador, idHumano?: string): boolean {
+    if (!this.estado) return false;
     try {
       this.estado = reduce(this.estado, acao);
     } catch (e) {
-      if (e instanceof ErroJogada) {
-        if (idHumano) this.erro(idHumano, e.message);
-        return;
-      }
-      throw e;
+      if (idHumano) this.erro(idHumano, e instanceof ErroJogada ? e.message : 'erro interno');
+      if (!idHumano || !(e instanceof ErroJogada)) this.falha(e);
+      return false;
     }
     this.paraHumanos((destino) => this.o.enviar(destino, 'acao', { cadeira: acao.cadeira, tipo: acao.tipo }));
     this.atualizar();
+    return true;
   }
 
   private atualizar(): void {
@@ -276,19 +284,56 @@ export class Mesa {
 
   private distribuir(): void {
     if (!this.estado) return;
-    this.estado = reduce(this.estado, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), this.rand) });
+    try {
+      this.estado = reduce(this.estado, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), this.rand) });
+    } catch (e) {
+      this.falha(e);
+    }
     this.atualizar();
   }
 
   private jogarBot(c: Cadeira): void {
     const s = this.estado;
     if (!s) return;
-    const escolhida = this.o.nivelBot === 'dificil' ? botDificil(visaoDoJogador(s, c), this.rand) : botFacil(s, c);
-    this.aplicar(escolhida ?? jogadaAutomatica(s, c));
+    let escolhida: AcaoJogador | null = null;
+    try {
+      escolhida = this.decidirBot(s, c);
+    } catch (e) {
+      this.falha(e);
+    }
+    if (escolhida && escolhida.cadeira !== c) {
+      this.falha(new Error(`bot da cadeira ${c} tentou agir pela ${escolhida.cadeira}`));
+      escolhida = null;
+    }
+    if (escolhida && this.aplicar(escolhida)) return;
+    this.agirPor(c);
   }
 
   private estourouTempo(c: Cadeira): void {
-    if (this.estado) this.aplicar(jogadaAutomatica(this.estado, c));
+    this.agirPor(c);
+  }
+
+  /** Jogada automática; se até ela falhar, a primeira ação legal; senão reagenda. */
+  private agirPor(c: Cadeira): void {
+    const s = this.estado;
+    if (!s) return;
+    let opcoes: AcaoJogador[] = [];
+    try {
+      opcoes = [jogadaAutomatica(s, c), ...acoesValidas(s, c)];
+    } catch (e) {
+      this.falha(e);
+    }
+    for (const a of opcoes) if (this.aplicar(a)) return;
+    this.atualizar();
+  }
+
+  private falha(e: unknown): void {
+    try {
+      if (this.o.aoErro) this.o.aoErro(e);
+      else console.error('[Mesa]', e);
+    } catch {
+      // registrar nunca pode derrubar a mesa
+    }
   }
 
   private enviarEstados(): void {
@@ -354,8 +399,22 @@ export class Mesa {
     this.o.enviar(id, 'erro', { mensagem });
   }
 
+  /** Callbacks de timer nunca deixam exceção escapar: registram e reagendam. */
   private agendar(ms: number, fn: () => void): void {
-    this.cancelamentos.push(this.relogio.agendar(ms, fn));
+    this.cancelamentos.push(
+      this.relogio.agendar(ms, () => {
+        try {
+          fn();
+        } catch (e) {
+          this.falha(e);
+          try {
+            this.atualizar();
+          } catch (e2) {
+            this.falha(e2);
+          }
+        }
+      }),
+    );
   }
 
   private cancelarTimers(): void {

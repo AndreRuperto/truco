@@ -1,4 +1,4 @@
-import { type Client, Room } from '@colyseus/core';
+import { type Client, Room, type RoomException, type RoomMethodName } from '@colyseus/core';
 import { randomInt } from 'node:crypto';
 import { Mesa, type Tempos } from './mesa/Mesa';
 import { opcoesDaSala } from './mesa/protocolo';
@@ -28,6 +28,7 @@ export class MesaRoom extends Room {
         agora: () => Date.now(),
       },
       enviar: (id, tipo, payload) => this.clients.get(id)?.send(tipo, payload),
+      aoErro: (e) => console.error(`[MesaRoom ${this.roomId}] erro na mesa`, e),
       aoIniciar: () => {
         this.lock().catch((e) => console.error('[MesaRoom] falha ao trancar a sala', e));
       },
@@ -63,5 +64,15 @@ export class MesaRoom extends Room {
 
   onDispose() {
     this.mesa.dispose();
+  }
+
+  /** Sem isto, uma exceção num timer do `clock` derruba o processo inteiro. */
+  onUncaughtException(err: RoomException, method: RoomMethodName) {
+    // onJoin recusado ("mesa cheia ou já iniciada") é esperado e o erro já volta ao cliente.
+    if (method === 'onJoin') {
+      console.warn(`[MesaRoom ${this.roomId}] entrada recusada: ${err.message}`);
+      return;
+    }
+    console.error(`[MesaRoom ${this.roomId}] exceção em ${method}`, err.cause ?? err);
   }
 }
