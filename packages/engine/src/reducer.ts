@@ -145,12 +145,12 @@ function distribuir(s: EstadoPartida, baralho: Carta[]): void {
   const maos: Carta[][] = [[], [], [], []];
   let i = 0;
   for (let rodada = 0; rodada < 3; rodada++) {
-    for (let k = 1; k <= 4; k++) maos[(s.pe + k) % 4].push(baralho[i++]);
+    for (let k = 1; k <= 4; k++) maos[(s.pe + k) % 4].push({ ...baralho[i++] });
   }
   const tipo = tipoDaMao(s);
   const mao: EstadoMao = {
     tipo,
-    vira: s.regras.variante === 'paulista' ? baralho[12] : null,
+    vira: s.regras.variante === 'paulista' ? { ...baralho[12] } : null,
     maos,
     mesa: [],
     rodadasJogadas: [],

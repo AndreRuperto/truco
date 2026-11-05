@@ -12,27 +12,27 @@ export interface RegrasMesa {
 }
 
 /** Valor da mão por nível de aposta: [mão, truco, seis, nove, doze]. */
-export const ESCADAS: Record<Pontuacao, readonly number[]> = {
-  '1-3-6-9-12': [1, 3, 6, 9, 12],
-  '2-4-8-10-12': [2, 4, 8, 10, 12],
-};
+export const ESCADAS: Readonly<Record<Pontuacao, readonly number[]>> = Object.freeze({
+  '1-3-6-9-12': Object.freeze([1, 3, 6, 9, 12]),
+  '2-4-8-10-12': Object.freeze([2, 4, 8, 10, 12]),
+});
 
 export const NIVEL_MAXIMO = 4;
 export const PONTOS_VITORIA = 12;
 
-export const REGRAS_RANQUEADA: Record<Variante, RegrasMesa> = {
-  paulista: {
+export const REGRAS_RANQUEADA: Readonly<Record<Variante, Readonly<RegrasMesa>>> = Object.freeze({
+  paulista: Object.freeze({
     variante: 'paulista',
     pontuacao: '1-3-6-9-12',
     maoDe10: false,
     maoDe11: 'qualquerDupla',
     familia: 'off',
-  },
-  mineiro: {
+  }),
+  mineiro: Object.freeze({
     variante: 'mineiro',
     pontuacao: '2-4-8-10-12',
     maoDe10: true,
     maoDe11: 'off',
     familia: 'fechada',
-  },
-};
+  }),
+});

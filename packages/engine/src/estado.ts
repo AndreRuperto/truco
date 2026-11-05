@@ -79,7 +79,7 @@ export type Acao = AcaoJogador | AcaoServidor;
 
 export function novaPartida(regras: RegrasMesa, pe: Cadeira = 0): EstadoPartida {
   return {
-    regras,
+    regras: { ...regras },
     placar: [0, 0],
     pe,
     fase: 'aguardandoDistribuicao',
