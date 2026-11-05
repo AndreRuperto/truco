@@ -6,6 +6,7 @@
     "dev:server": "pnpm --filter @truco/server dev",
     "dev:web": "pnpm --filter @truco/web dev",
     "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @truco/web test:e2e",
     "typecheck": "pnpm -r typecheck"
   }
 }
