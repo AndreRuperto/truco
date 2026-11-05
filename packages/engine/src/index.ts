@@ -3,6 +3,7 @@ export * from './rng';
 export * from './regras';
 export * from './forca';
 export * from './manilhas';
+export * from './ritual';
 export * from './estado';
 export * from './mao';
 export * from './familia';
