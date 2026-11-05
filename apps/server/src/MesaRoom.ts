@@ -14,6 +14,8 @@ export class MesaRoom extends Room {
   onCreate(options: unknown) {
     const { regras, humanos, nivelBot } = opcoesDaSala(options);
     this.maxClients = humanos;
+    // Acima disso o Colyseus derruba o cliente (sinais/falas já têm limite próprio na Mesa).
+    this.maxMessagesPerSecond = 20;
     this.mesa = new Mesa({
       regras,
       nivelBot,

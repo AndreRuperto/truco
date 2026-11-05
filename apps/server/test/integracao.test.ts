@@ -104,6 +104,19 @@ describe('MesaRoom', () => {
     expect(d.roomId).toBe(a.roomId);
   });
 
+  test('cliente que inunda mensagens é desconectado', async () => {
+    const sala = await colyseus.createRoom('mesa', { humanos: 1 });
+    expect(sala.maxMessagesPerSecond).toBe(20);
+    const a = await colyseus.connectTo(sala, { nome: 'Ana' });
+    coletor(a);
+    let saiu = false;
+    a.onLeave(() => {
+      saiu = true;
+    });
+    for (let i = 0; i < 50; i++) a.send('fala', 'boa');
+    await esperar(() => saiu);
+  });
+
   test('iniciar antes de lotar tranca a sala', async () => {
     const a = await colyseus.sdk.joinOrCreate('mesa', { humanos: 2, nome: 'Ana' });
     const ma = coletor(a);
