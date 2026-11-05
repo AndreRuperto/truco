@@ -2,6 +2,9 @@ import { type Carta, ehCoringa, type Variante } from '@truco/engine';
 import type { ReactNode } from 'react';
 import { ehVermelha, nomeManilha, rotuloCarta, simboloCarta } from '../logica/cartas';
 import { cx } from './cx';
+import { type Figura, FiguraCarta, OrnamentoAs } from './FiguraCarta';
+
+const FIGURA: Partial<Record<Carta['valor'], Figura>> = { K: 'rei', Q: 'dama', J: 'valete' };
 
 interface Props {
   /** null = verso (carta virada/escondida). */
@@ -18,6 +21,8 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
   const manilha = nomeManilha(carta, variante, vira);
   const coringa = ehCoringa(carta);
   const simbolo = simboloCarta(carta);
+  const figura = coringa ? undefined : FIGURA[carta.valor];
+  const as = !coringa && carta.valor === 'A';
   // O coringa não tem valor impresso: o canto mostra só a estrela.
   const canto: ReactNode = coringa ? (
     simbolo
@@ -30,7 +35,13 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
   );
   return (
     <span
-      className={cx(base, ehVermelha(carta) ? 'vermelha' : 'preta', manilha && 'manilha', coringa && 'coringa')}
+      className={cx(
+        base,
+        ehVermelha(carta) ? 'vermelha' : 'preta',
+        manilha && 'manilha',
+        coringa && 'coringa',
+        (figura || as) && 'figurada',
+      )}
       role="img"
       aria-label={rotuloCarta(carta, variante, vira)}
     >
@@ -43,6 +54,17 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
       <span className="naipe-central" aria-hidden="true">
         {simbolo}
       </span>
+      {/* Figura/ornamento por cima do naipe simples; o CSS volta ao naipe em carta estreita. */}
+      {figura && (
+        <span className="figura">
+          <FiguraCarta figura={figura} naipe={carta.naipe} />
+        </span>
+      )}
+      {as && (
+        <span className="figura figura-as">
+          <OrnamentoAs naipe={carta.naipe} />
+        </span>
+      )}
       {manilha && (
         <span className="selo" aria-hidden="true">
           {manilha}

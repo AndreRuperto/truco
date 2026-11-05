@@ -907,6 +907,83 @@ button:disabled {
   border-radius: 50%;
   font-size: calc(var(--carta-l) * 0.36);
 }
+/*
+ * Figuras (Rei, Dama, Valete) e o Ás ornamentado: SVG de FiguraCarta.tsx entre os cantos.
+ * Carta estreita (< 48px) volta ao naipe simples: a figura não se lê nesse tamanho.
+ */
+.carta.figurada {
+  container-type: inline-size;
+}
+/* Os cantos ficam por cima da figura, num recorte de papel. */
+.carta.figurada .canto {
+  z-index: 1;
+  padding: 0 1px 2px;
+  border-radius: 3px;
+  background: var(--papel);
+}
+.carta.figurada .naipe-central {
+  display: none;
+}
+.carta .figura {
+  position: absolute;
+  inset: 15% 16% 17%;
+  display: grid;
+  place-items: center;
+}
+.carta .figura-as {
+  inset: 22% 10%;
+}
+.carta .figura svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+@container (max-width: 47.98px) {
+  .carta.figurada .naipe-central {
+    display: grid;
+  }
+  .carta.figurada .figura {
+    display: none;
+  }
+}
+.fig-traco * {
+  stroke: var(--tinta);
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.fig-cor {
+  fill: currentColor;
+}
+.fig-papel {
+  fill: var(--papel);
+}
+.fig-tinta {
+  fill: var(--tinta);
+}
+.fig-ouro {
+  fill: var(--grito);
+  stroke: var(--tinta);
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+}
+.fig-so-traco {
+  fill: none;
+}
+.fig-traco .fig-sem-traco,
+.fig-traco .fig-sem-traco *,
+.fig-sem-traco {
+  stroke: none;
+}
+.fig-filete {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+.fig-tracejado {
+  stroke-dasharray: 2 3;
+}
 /* Verso: treliça de losangos em vermelho escuro, filete e borda branca. */
 .carta.verso {
   background:
@@ -933,6 +1010,7 @@ button:disabled {
 }
 .carta.pequena .canto-b,
 .carta.pequena .naipe-central,
+.carta.pequena .figura,
 .carta.pequena .selo {
   display: none;
 }
