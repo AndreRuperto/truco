@@ -1,4 +1,4 @@
-import { type Carta, ehManilha, type Naipe, type Valor, type Variante } from '@truco/engine';
+import { type Carta, ehCoringa, ehManilha, type Naipe, type Valor, type Variante } from '@truco/engine';
 
 export const SIMBOLO: Record<Naipe, string> = { ouros: '♦', espadas: '♠', copas: '♥', paus: '♣' };
 
@@ -13,6 +13,7 @@ const NOME_VALOR: Record<Valor, string> = {
   A: 'Ás',
   '2': '2',
   '3': '3',
+  C: 'Coringa',
 };
 
 /** "Dama", "Ás", "7"... */
@@ -23,7 +24,11 @@ const NOME_MANILHA: Record<Naipe, string> = { paus: 'Zap', copas: 'Copas', espad
 
 export const ehVermelha = (c: Carta): boolean => c.naipe === 'ouros' || c.naipe === 'copas';
 
-export const textoCarta = (c: Carta): string => `${c.valor}${SIMBOLO[c.naipe]}`;
+/** Símbolo da carta: o do naipe, ou a estrela do coringa (que só usa o naipe para a cor). */
+export const SIMBOLO_CORINGA = '★';
+export const simboloCarta = (c: Carta): string => (ehCoringa(c) ? SIMBOLO_CORINGA : SIMBOLO[c.naipe]);
+
+export const textoCarta = (c: Carta): string => (ehCoringa(c) ? NOME_VALOR.C : `${c.valor}${SIMBOLO[c.naipe]}`);
 
 export function nomeManilha(c: Carta, variante: Variante, vira: Carta | null): string | null {
   return ehManilha(c, variante, vira) ? NOME_MANILHA[c.naipe] : null;
@@ -31,6 +36,7 @@ export function nomeManilha(c: Carta, variante: Variante, vira: Carta | null): s
 
 /** Ex.: "Ás de espadas — Espadilha". Usado como nome acessível dos botões de carta. */
 export function rotuloCarta(c: Carta, variante: Variante, vira: Carta | null): string {
+  if (ehCoringa(c)) return NOME_VALOR.C;
   const base = `${NOME_VALOR[c.valor]} de ${c.naipe}`;
   const manilha = nomeManilha(c, variante, vira);
   return manilha ? `${base} — ${manilha}` : base;

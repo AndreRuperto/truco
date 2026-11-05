@@ -18,6 +18,14 @@ describe('Mao', () => {
     expect(screen.queryByRole('button', { name: 'Jogar coberta' })).toBeNull();
   });
 
+  test('coringa na mão vira botão "Coringa"', async () => {
+    const user = userEvent.setup();
+    const aoJogar = vi.fn();
+    render(<Mao cartas={[c('Cc'), c('3o'), c('4p')]} jogaveis={[0, 1, 2]} cobriveis={[]} variante="mineiro" vira={null} aoJogar={aoJogar} />);
+    await user.click(screen.getByRole('button', { name: 'Coringa' }));
+    expect(aoJogar).toHaveBeenCalledWith(0, false);
+  });
+
   test('modo coberta: liga, joga virada e desliga', async () => {
     const user = userEvent.setup();
     const aoJogar = vi.fn();

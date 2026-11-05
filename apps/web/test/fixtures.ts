@@ -6,6 +6,7 @@ import {
   idCarta,
   type Naipe,
   novaPartida,
+  baralhoDaMesa,
   novoBaralho,
   reduce,
   REGRAS_RANQUEADA,
@@ -26,19 +27,19 @@ export const MINEIRO: RegrasMesa = { ...REGRAS_RANQUEADA.mineiro };
  * ordem de `novoBaralho()`: cadeira 0 = 4♦ 5♦ 6♦, 1 = 4♠ 5♠ 6♠, 2 = 4♥ 5♥ 6♥,
  * 3 = 4♣ 5♣ 6♣ e vira 7♦ (no paulista a manilha é a Dama; no mineiro a 3 tem o zap).
  */
-export function baralhoCom(maos: string[][] = [], vira?: string): Carta[] {
-  const fixas: (Carta | undefined)[] = new Array(40).fill(undefined);
+export function baralhoCom(maos: string[][] = [], vira?: string, base: Carta[] = novoBaralho()): Carta[] {
+  const fixas: (Carta | undefined)[] = new Array(base.length).fill(undefined);
   maos.forEach((mao, cad) => mao.forEach((s, i) => (fixas[i * 4 + cad] = c(s))));
   if (vira) fixas[12] = c(vira);
   const usadas = new Set(fixas.filter((x): x is Carta => !!x).map(idCarta));
-  const resto = novoBaralho().filter((x) => !usadas.has(idCarta(x)));
+  const resto = base.filter((x) => !usadas.has(idCarta(x)));
   return fixas.map((x) => x ?? resto.shift()!);
 }
 
 export function distribuida(regras: RegrasMesa, maos?: string[][], placar: [number, number] = [0, 0], vira?: string): EstadoPartida {
   const s = novaPartida(regras, 3);
   s.placar = placar;
-  return reduce(s, { tipo: 'distribuir', baralho: baralhoCom(maos, vira) });
+  return reduce(s, { tipo: 'distribuir', baralho: baralhoCom(maos, vira, baralhoDaMesa(regras)) });
 }
 
 /** Joga em sequência [cadeira, índice] (cartas abertas). */

@@ -1,5 +1,6 @@
-import type { Carta, Variante } from '@truco/engine';
-import { ehVermelha, nomeManilha, rotuloCarta, SIMBOLO } from '../logica/cartas';
+import { type Carta, ehCoringa, type Variante } from '@truco/engine';
+import type { ReactNode } from 'react';
+import { ehVermelha, nomeManilha, rotuloCarta, simboloCarta } from '../logica/cartas';
 import { cx } from './cx';
 
 interface Props {
@@ -15,20 +16,29 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
   const base = cx('carta', tamanho === 'pequena' && 'pequena', esmaecida && 'esmaecida');
   if (!carta) return <span className={cx(base, 'verso')} role="img" aria-label="carta virada" />;
   const manilha = nomeManilha(carta, variante, vira);
+  const coringa = ehCoringa(carta);
+  const simbolo = simboloCarta(carta);
+  const canto: ReactNode = (
+    <>
+      {carta.valor}
+      <br />
+      {simbolo}
+    </>
+  );
   return (
-    <span className={cx(base, ehVermelha(carta) ? 'vermelha' : 'preta', manilha && 'manilha')} role="img" aria-label={rotuloCarta(carta, variante, vira)}>
+    <span
+      className={cx(base, ehVermelha(carta) ? 'vermelha' : 'preta', manilha && 'manilha', coringa && 'coringa')}
+      role="img"
+      aria-label={rotuloCarta(carta, variante, vira)}
+    >
       <span className="canto" aria-hidden="true">
-        {carta.valor}
-        <br />
-        {SIMBOLO[carta.naipe]}
+        {canto}
       </span>
       <span className="canto canto-b" aria-hidden="true">
-        {carta.valor}
-        <br />
-        {SIMBOLO[carta.naipe]}
+        {canto}
       </span>
       <span className="naipe-central" aria-hidden="true">
-        {SIMBOLO[carta.naipe]}
+        {simbolo}
       </span>
       {manilha && (
         <span className="selo" aria-hidden="true">
