@@ -1,5 +1,5 @@
-import { SINAIS, type Sinal } from '@truco/protocolo';
-import { INFO_SINAL, type SinalRecebido, textoSinalRecebido } from '../logica/sinais';
+import type { Sinal } from '@truco/protocolo';
+import { INFO_SINAL, type SinalRecebido, sinaisDisponiveis, textoSinalRecebido } from '../logica/sinais';
 import { useAgora } from '../rede/hooks';
 
 /** Depois disso o "último sinal recebido" já não diz respeito à jogada atual. */
@@ -11,9 +11,11 @@ interface Props {
   aoEnviar: (s: Sinal) => void;
   /** `em` = carimbo do evento no feed (relógio local). */
   ultimo: (SinalRecebido & { em: number }) | null;
+  /** Mesa mineira com mão limpa (`temCoringa`): oferece o sinal de coringa. */
+  maoLimpa?: boolean;
 }
 
-export function PainelSinais({ chanceInterceptar, aoEnviar, ultimo }: Props) {
+export function PainelSinais({ chanceInterceptar, aoEnviar, ultimo, maoLimpa = false }: Props) {
   const agora = useAgora(500);
   const recente = ultimo && agora - ultimo.em < VALIDADE_SINAL_MS ? ultimo : null;
   return (
@@ -22,7 +24,7 @@ export function PainelSinais({ chanceInterceptar, aoEnviar, ultimo }: Props) {
         {chanceInterceptar > 0 ? 'Só seu parceiro vê — mas os adversários podem interceptar.' : 'Só seu parceiro vê.'}
       </p>
       <div className="grade-sinais">
-        {SINAIS.map((s) => (
+        {sinaisDisponiveis(maoLimpa).map((s) => (
           <button key={s} type="button" aria-label={INFO_SINAL[s].descricao} title={INFO_SINAL[s].descricao} onClick={() => aoEnviar(s)}>
             <span aria-hidden="true">{INFO_SINAL[s].emoji}</span>
           </button>

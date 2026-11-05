@@ -16,7 +16,7 @@ import { agruparAcoes } from '../logica/acoes';
 import { baloesAtivos } from '../logica/eventos';
 import { cadeiraNaPosicao } from '../logica/posicoes';
 import { prazoEhMeu } from '../logica/prazo';
-import { type SinalRecebido, textoSinalRecebido } from '../logica/sinais';
+import { type SinalRecebido, temCoringa, textoSinalRecebido } from '../logica/sinais';
 import {
   placarRelativo,
   resumoFimMao,
@@ -130,6 +130,7 @@ export function TelaMesa({ snap, acoes, aoChat }: Props) {
         <PainelSinais
           chanceInterceptar={msg.chanceInterceptarSinal}
           ultimo={sinal}
+          maoLimpa={temCoringa(msg.regras)}
           aoEnviar={(s) => {
             acoes.enviarSinal(s);
             setPainel(null);

@@ -90,6 +90,16 @@ describe('TelaMesa', () => {
     expect(screen.getByRole('region', { name: 'Sinais' })).toHaveTextContent(/podem interceptar/);
   });
 
+  test('sinais: o de coringa só aparece no mineiro com mão limpa', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<TelaMesa snap={snap(msgEstado(distribuida(MINEIRO)))} acoes={acoesFalsas()} />);
+    await user.click(screen.getByRole('button', { name: 'Sinais' }));
+    expect(screen.queryByRole('button', { name: /Coringa/ })).toBeNull();
+    const limpa = { ...MINEIRO, maoLimpa: true };
+    rerender(<TelaMesa snap={snap(msgEstado(distribuida(limpa)))} acoes={acoesFalsas()} />);
+    expect(screen.getByRole('button', { name: 'Piscar os dois olhos — Coringa' })).toBeInTheDocument();
+  });
+
   test('sinais: abrir o painel e mandar', async () => {
     const user = userEvent.setup();
     const acoes = acoesFalsas();

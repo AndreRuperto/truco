@@ -16,6 +16,23 @@ describe('PainelSinais', () => {
     expect(painel).toHaveTextContent('Só seu parceiro vê — mas os adversários podem interceptar.');
   });
 
+  test('sem mão limpa: 8 sinais, sem o de coringa', () => {
+    render(<PainelSinais chanceInterceptar={0} aoEnviar={vi.fn()} ultimo={null} />);
+    const painel = screen.getByRole('region', { name: 'Sinais' });
+    expect(within(painel).getAllByRole('button')).toHaveLength(8);
+    expect(within(painel).queryByRole('button', { name: /Coringa/ })).toBeNull();
+  });
+
+  test('com mão limpa: 9 sinais; o de coringa envia "coringa"', async () => {
+    const user = userEvent.setup();
+    const aoEnviar = vi.fn();
+    render(<PainelSinais chanceInterceptar={0} aoEnviar={aoEnviar} ultimo={null} maoLimpa />);
+    const painel = screen.getByRole('region', { name: 'Sinais' });
+    expect(within(painel).getAllByRole('button')).toHaveLength(9);
+    await user.click(screen.getByRole('button', { name: 'Piscar os dois olhos — Coringa' }));
+    expect(aoEnviar).toHaveBeenCalledWith('coringa');
+  });
+
   test('8 sinais; clicar envia', async () => {
     const user = userEvent.setup();
     const aoEnviar = vi.fn();
@@ -32,6 +49,8 @@ describe('PainelSinais', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Bot Tião (parceiro): 😛 Língua — tenho 3');
     rerender(<PainelSinais chanceInterceptar={0} aoEnviar={vi.fn()} ultimo={{ sinal: 'zap', interceptado: true, nome: 'Bot Zé', em }} />);
     expect(screen.getByRole('status')).toHaveTextContent('Interceptado de Bot Zé: 😉 Piscar — Zap');
+    rerender(<PainelSinais chanceInterceptar={0} aoEnviar={vi.fn()} ultimo={{ sinal: 'coringa', interceptado: false, nome: 'Bot Tião', em }} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Bot Tião (parceiro): 😆 Piscar os dois olhos — Coringa');
   });
 
   test('o último sinal recebido some depois de ~8 s', () => {
