@@ -130,6 +130,17 @@ describe('sair, Bearer e apelido', () => {
     expect((await app.pedir('/api/eu', { auth: `Bearer ${token}` })).json.usuario.apelido).toBe('ana');
   });
 
+  test('cookie vencido não esconde um Bearer válido', async () => {
+    const cookie = await entrarPorLink('ana@x.com');
+    const token = cookie.split('=')[1];
+    const vencido = 'truco_sessao=sessao-vencida-ou-apagada';
+    expect((await app.pedir('/api/eu', { cookie: vencido, auth: `Bearer ${token}` })).json.usuario.apelido).toBe('ana');
+    expect((await app.pedir('/api/perfil', { cookie: vencido, auth: `Bearer ${token}` })).status).toBe(200);
+    // Sair com os dois encerra a sessão do Bearer também.
+    expect((await app.pedir('/api/auth/sair', { corpo: {}, cookie: vencido, auth: `Bearer ${token}` })).status).toBe(204);
+    expect((await app.pedir('/api/eu', { auth: `Bearer ${token}` })).json.usuario).toBeNull();
+  });
+
   test('trocar apelido: 401 sem login, 400 inválido, 409 em uso, 200 ok', async () => {
     await criarUsuario(b.db, { apelidoBase: 'bia' });
     expect((await app.pedir('/api/eu', { metodo: 'PATCH', corpo: { apelido: 'Novo' } })).status).toBe(401);

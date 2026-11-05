@@ -33,7 +33,11 @@ export interface ExtrasApp {
   limiteLinkEmail?: LimiteTaxa;
 }
 
-const tokenDe = (req: Request): string | null => lerCookie(req.headers.cookie, COOKIE_SESSAO) ?? bearer(req.headers.authorization);
+/** Cookie e depois Bearer (sem repetir): um cookie vencido não pode esconder um Bearer válido. */
+function tokensDe(req: Request): string[] {
+  const ts = [lerCookie(req.headers.cookie, COOKIE_SESSAO), bearer(req.headers.authorization)];
+  return [...new Set(ts.filter((t): t is string => !!t))];
+}
 
 /** Só fora de produção (sem URL pública): o link volta para quem pediu (o Vite em :5173 manda `Origin`). */
 function origemDoPedido(req: Request): string {
@@ -46,7 +50,13 @@ const temExtensao = (caminho: string) => /\.[^/]+$/.test(caminho);
 export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}): void {
   const limiteIp = x.limiteLinkIp ?? new LimiteTaxa(5, 15 * 60_000);
   const limiteEmail = x.limiteLinkEmail ?? new LimiteTaxa(3, 15 * 60_000);
-  const usuarioDe = (req: Request) => usuarioDaSessao(s.banco, tokenDe(req), s.agora());
+  const usuarioDe = async (req: Request): Promise<Usuario | null> => {
+    for (const t of tokensDe(req)) {
+      const u = await usuarioDaSessao(s.banco, t, s.agora());
+      if (u) return u;
+    }
+    return null;
+  };
   const entrar = async (res: Response, u: Usuario) => {
     const token = await criarSessao(s.banco, u.id, s.agora());
     res.setHeader('Set-Cookie', cookieSessao(token, { seguro: s.producao, maxAgeS: Math.floor(DURACAO_SESSAO_MS / 1000) }));
@@ -140,8 +150,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   });
 
   api.post('/auth/sair', async (req, res) => {
-    const t = tokenDe(req);
-    if (t) await encerrarSessao(s.banco, t);
+    for (const t of tokensDe(req)) await encerrarSessao(s.banco, t);
     res.setHeader('Set-Cookie', cookieApagado(s.producao));
     res.status(204).end();
   });
