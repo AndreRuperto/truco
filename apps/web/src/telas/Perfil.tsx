@@ -49,22 +49,37 @@ function CartaoVariante({ variante, r }: { variante: Variante; r: RatingVariante
     <section className="cartao-variante" aria-label={NOME_VARIANTE[variante]}>
       <h2>{NOME_VARIANTE[variante]}</h2>
       <p className="patente">
-        {r.patente} · <span data-testid={`pontos-${variante}`}>{r.pontos}</span> pontos
-        {r.proxima ? ` (faltam ${r.proxima.faltam} para ${r.proxima.nome})` : ''}
+        <span className="patente-faixa">{r.patente}</span>{' '}
+        <span className="patente-pontos">
+          <strong data-testid={`pontos-${variante}`}>{r.pontos}</strong> pontos
+        </span>
+        {r.proxima && <span className="patente-proxima">faltam {r.proxima.faltam} para {r.proxima.nome}</span>}
       </p>
       <dl className="estatisticas">
-        <dt>Elo</dt>
-        <dd data-testid={`elo-${variante}`}>{r.elo}</dd>
-        <dt>Ranqueadas</dt>
-        <dd>{r.partidasRanqueadas}</dd>
-        <dt>Partidas</dt>
-        <dd>{r.jogos}</dd>
-        <dt>Vitórias</dt>
-        <dd>{r.vitorias}</dd>
-        <dt>Truco aceito</dt>
-        <dd>{r.pctTrucoAceito === null ? '—' : `${r.pctTrucoAceito}%`}</dd>
-        <dt>Corridas</dt>
-        <dd>{r.corridas}</dd>
+        <div>
+          <dt>Elo</dt>
+          <dd data-testid={`elo-${variante}`}>{r.elo}</dd>
+        </div>
+        <div>
+          <dt>Ranqueadas</dt>
+          <dd>{r.partidasRanqueadas}</dd>
+        </div>
+        <div>
+          <dt>Partidas</dt>
+          <dd>{r.jogos}</dd>
+        </div>
+        <div>
+          <dt>Vitórias</dt>
+          <dd>{r.vitorias}</dd>
+        </div>
+        <div>
+          <dt>Truco aceito</dt>
+          <dd>{r.pctTrucoAceito === null ? '—' : `${r.pctTrucoAceito}%`}</dd>
+        </div>
+        <div>
+          <dt>Corridas</dt>
+          <dd>{r.corridas}</dd>
+        </div>
       </dl>
     </section>
   );

@@ -5,18 +5,21 @@ interface Props {
   pronta: boolean;
   usuario: UsuarioApi | null;
   aoSair: () => void;
+  /** Tela atual (`Rota['tela']`): a aba dela fica marcada com aria-current. */
+  atual?: string;
 }
 
-export function Cabecalho({ pronta, usuario, aoSair }: Props) {
+export function Cabecalho({ pronta, usuario, aoSair, atual }: Props) {
+  const aba = (tela: string) => (tela === atual ? ('page' as const) : undefined);
   return (
     <nav className="cabecalho" aria-label="Navegação">
-      <a href="#/">Início</a>
-      <a href="#/salas">Salas</a>
-      <a href="#/ranking/paulista">Ranking</a>
+      <a href="#/" aria-current={aba('inicio')}>Início</a>
+      <a href="#/salas" aria-current={aba('salas')}>Salas</a>
+      <a href="#/ranking/paulista" aria-current={aba('ranking')}>Ranking</a>
       {!pronta ? null : usuario ? (
         <>
-          <a href="#/perfil">Perfil</a>
-          <a href="#/historico">Histórico</a>
+          <a href="#/perfil" aria-current={aba('perfil')}>Perfil</a>
+          <a href="#/historico" aria-current={aba('historico')}>Histórico</a>
           <span className="cabecalho-usuario" data-testid="usuario-logado">
             {usuario.apelido}
           </span>
@@ -25,7 +28,7 @@ export function Cabecalho({ pronta, usuario, aoSair }: Props) {
           </button>
         </>
       ) : (
-        <a href="#/entrar">Entrar</a>
+        <a href="#/entrar" aria-current={aba('entrar')}>Entrar</a>
       )}
     </nav>
   );

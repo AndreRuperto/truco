@@ -132,6 +132,7 @@ export function App() {
         <Cabecalho
           pronta={ses.pronta}
           usuario={ses.usuario}
+          atual={rota.tela === 'perfil' && rota.id !== null ? undefined : rota.tela}
           aoSair={() => {
             navegar({ tela: 'inicio' });
             void sessao.sair();
