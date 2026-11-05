@@ -13,7 +13,7 @@ import {
   parceiroDe,
   proximaCadeira,
 } from './estado';
-import { ehFamilia } from './familia';
+import { ehFamilia, janelaDeFamilia, tipoDaProximaFamilia } from './familia';
 import { forca } from './forca';
 import { resolverRodada, vencedorMao } from './mao';
 import { ESCADAS, NIVEL_MAXIMO, PONTOS_VITORIA, type RegrasMesa } from './regras';
@@ -168,6 +168,9 @@ export function reduce(estado: EstadoPartida, acao: Acao): EstadoPartida {
       break;
     case 'familia':
       pedirFamilia(s, acao.cadeira);
+      break;
+    case 'conferir':
+      conferirFamilia(s, acao.cadeira, acao.conferir);
       break;
     default:
       falha(`ação desconhecida: ${(acao as Acao).tipo}`);
@@ -345,7 +348,6 @@ function jogar(s: EstadoPartida, cadeira: Cadeira, indice: number, coberta: bool
     coberta,
     forca: coberta ? 0 : forca(carta, s.regras.variante, m.vira),
   });
-  s.ultimaFamilia = null;
 
   if (m.mesa.length < 4) {
     m.vez = proximaCadeira(cadeira);
@@ -415,13 +417,38 @@ function decidirMao10(s: EstadoPartida, cadeira: Cadeira, jogarMao: boolean): vo
 function pedirFamilia(s: EstadoPartida, cadeira: Cadeira): void {
   const m = maoAtual(s);
   if (s.regras.familia === 'off') falha('família desligada nesta mesa');
-  if (s.fase !== 'jogando' || m.tipo !== 'normal') falha('não é hora de pedir família');
-  if (m.rodadas.length > 0 || m.mesa.length > 0 || m.nivel > 0) falha('família só antes da 1ª carta');
+  if (!janelaDeFamilia(s)) falha('família só antes da 1ª carta, em mão normal');
+  const tipo = tipoDaProximaFamilia(s)!;
+  if (s.monte.length < 3) falha('o monte não tem cartas para repor a família');
   const mao = m.maos[cadeira];
-  if (!ehFamilia(mao)) falha('isso não é família');
-  s.ultimaFamilia = { cadeira, cartas: s.regras.familia === 'aberta' ? [...mao] : null };
-  // Provisório (a Task 5 troca): a família ainda "redistribui" — tudo volta ao monte e o mesmo pé refaz o ritual.
-  s.monte = [...recolher(m), ...s.monte];
-  s.mao = null;
-  comecarRitual(s);
+  if (tipo === 'aberta' && !ehFamilia(mao)) falha('isso não é família');
+  m.familias.push({ cadeira, tipo, cartas: mao.splice(0, mao.length), conferida: null });
+  m.maos[cadeira] = s.monte.splice(0, 3);
+  if (tipo === 'fechada') {
+    m.familiaPendente = m.familias.length - 1;
+    s.fase = 'conferindoFamilia';
+  }
+}
+
+function conferirFamilia(s: EstadoPartida, cadeira: Cadeira, conferir: boolean): void {
+  const m = maoAtual(s);
+  if (s.fase !== 'conferindoFamilia' || m.familiaPendente === null) falha('não há família para conferir');
+  const f = m.familias[m.familiaPendente];
+  if (duplaDe(cadeira) === duplaDe(f.cadeira)) falha('só a dupla adversária confere');
+  m.familiaPendente = null;
+  s.fase = 'jogando';
+  if (!conferir) return;
+  const real = ehFamilia(f.cartas);
+  f.conferida = { por: cadeira, real };
+  pontuarFamilia(s, real ? duplaDe(f.cadeira) : duplaDe(cadeira));
+}
+
+/** Valor base da mão para a dupla; se fechar a partida, encerra pela via normal (recolhe tudo). */
+function pontuarFamilia(s: EstadoPartida, dupla: Dupla): void {
+  const base = escada(s)[0];
+  if (s.placar[dupla] + base >= PONTOS_VITORIA) {
+    finalizarMao(s, dupla, base, 'familia');
+    return;
+  }
+  s.placar[dupla] += base;
 }

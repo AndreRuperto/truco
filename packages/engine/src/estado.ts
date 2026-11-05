@@ -110,8 +110,6 @@ export interface EstadoPartida {
   ritual: EstadoRitual | null;
   mao: EstadoMao | null;
   ultimaMao: ResultadoMao | null;
-  /** Último pedido de família; cartas só aparecem na família aberta. (Sai na Task 5.) */
-  ultimaFamilia: { cadeira: Cadeira; cartas: Carta[] | null } | null;
   vencedor: Dupla | null;
 }
 
@@ -151,7 +149,6 @@ export function novaPartida(regras: RegrasMesa, pe: Cadeira = 0): EstadoPartida 
     ritual: null,
     mao: null,
     ultimaMao: null,
-    ultimaFamilia: null,
     vencedor: null,
   };
 }

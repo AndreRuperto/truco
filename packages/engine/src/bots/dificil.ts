@@ -83,7 +83,6 @@ export function amostrarMundo(v: Visao, rand: () => number, dica: DicaAmostra = 
     monte,
     ritual: null,
     ultimaMao: null,
-    ultimaFamilia: null,
     vencedor: v.vencedor,
     mao: {
       ...structuredClone(resto),

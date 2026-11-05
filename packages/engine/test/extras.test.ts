@@ -133,17 +133,16 @@ describe('rotação do pé', () => {
     expect(pes).toEqual([0, 1, 2]);
   });
 
-  test('família mantém o mesmo pé', () => {
+  test('família não encerra a mão nem troca o pé', () => {
     const FAMILIA = [
       ['Qo', 'Jo', 'Ae'],
       ['3e', '5e', '6e'],
       ['4p', '7c', 'Ko'],
       ['2e', '5c', '6c'],
     ];
-    let s = reduce(distribuida(MINEIRO, FAMILIA), { tipo: 'familia', cadeira: 0 });
+    let s = reduce(distribuida({ ...MINEIRO, familia: 'aberta' }, FAMILIA), { tipo: 'familia', cadeira: 0 });
     expect(s.pe).toBe(3);
-    s = ritualMinimo(s);
-    expect(s.pe).toBe(3);
+    expect(s.fase).toBe('jogando');
     expect(s.mao!.vez).toBe(0);
     s = encerrar(s);
     expect(s.pe).toBe(0);
