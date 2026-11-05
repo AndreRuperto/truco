@@ -1,6 +1,6 @@
 import { baralhoDaMesa, idCarta, REGRAS_RANQUEADA } from '@truco/engine';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { avancarAte, criarMesa } from './mesa-helpers';
+import { avancarAte, criarMesa, vezDeJogar } from './mesa-helpers';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -8,7 +8,7 @@ afterEach(() => vi.useRealTimers());
 function mesaComHumanoNaVez() {
   const t = criarMesa();
   t.mesa.sentar('a', 'Ana');
-  avancarAte(() => !!t.estado('a')?.prazo?.cadeiras.includes(0));
+  avancarAte(() => vezDeJogar(t));
   return t;
 }
 
@@ -50,9 +50,9 @@ describe('ações', () => {
     expect(acoes.every((a) => a.cadeira === 0)).toBe(true);
   });
 
-  test('cliente não pode distribuir', () => {
+  test('cliente não pode pôr o monte', () => {
     const { mesa, de } = mesaComHumanoNaVez();
-    mesa.acao('a', { tipo: 'distribuir', baralho: [] });
+    mesa.acao('a', { tipo: 'monte', baralho: [] });
     expect(de('a', 'erro')).toEqual([{ mensagem: 'ação inválida' }]);
   });
 

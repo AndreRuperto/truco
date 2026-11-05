@@ -19,7 +19,7 @@ let banco: BancoDeTeste;
 let servicos: Servicos;
 
 beforeAll(async () => {
-  MesaRoom.tempos = { botMs: 20, pausaMaoMs: 50, jogadaMs: 2_000 };
+  MesaRoom.tempos = { botMs: 20, pausaMaoMs: 50, jogadaMs: 2_000, ritualMs: 300, conferirMs: 200, janelaFamiliaMs: 20 };
   FilaRoom.intervaloMs = 100;
   banco = await bancoDeTeste();
   servicos = servicosDeTeste(banco.db);
@@ -83,11 +83,11 @@ describe('MesaRoom', () => {
     expect(JSON.stringify(ultimo)).not.toContain('"maos"');
   });
 
-  test('cliente não consegue distribuir', async () => {
+  test('cliente não consegue pôr o monte', async () => {
     const sala = await colyseus.createRoom('mesa', { humanos: 1 });
     const cliente = await colyseus.connectTo(sala, { nome: 'Ana' });
     const msgs = coletor(cliente);
-    cliente.send('acao', { tipo: 'distribuir', baralho: [] });
+    cliente.send('acao', { tipo: 'monte', baralho: [] });
     await esperar(() => !!msgs.erro?.length);
     expect(msgs.erro[0]).toEqual({ mensagem: 'ação inválida' });
   });
@@ -395,7 +395,7 @@ describe('fila ranqueada', () => {
   test('caminho feliz: 1x1 jogada até o fim (jogadas por tempo esgotado) soma Elo e aparece no ranking e no histórico', async () => {
     const tempos = MesaRoom.tempos;
     // Ninguém joga: o prazo de cada humano esgota em 5 ms e a jogada automática decide.
-    MesaRoom.tempos = { botMs: 1, pausaMaoMs: 1, jogadaMs: 5 };
+    MesaRoom.tempos = { botMs: 1, pausaMaoMs: 1, jogadaMs: 5, ritualMs: 5, conferirMs: 5, janelaFamiliaMs: 1 };
     try {
       const ana = await logado('ana@x.com');
       const bia = await logado('bia@x.com');

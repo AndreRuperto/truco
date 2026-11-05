@@ -1,4 +1,4 @@
-import { type EstadoPartida, novaPartida, novoBaralho, reduce, REGRAS_RANQUEADA } from '@truco/engine';
+import { distribuirSemRitual, type EstadoPartida, novaPartida, novoBaralho, reduce, REGRAS_RANQUEADA } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
 import { jogadaAutomatica } from '../src/mesa/Mesa';
 
@@ -9,10 +9,25 @@ import { jogadaAutomatica } from '../src/mesa/Mesa';
 function inicio(placar: [number, number] = [0, 0]): EstadoPartida {
   const s = novaPartida(REGRAS_RANQUEADA.mineiro, 3);
   s.placar = placar;
-  return reduce(s, { tipo: 'distribuir', baralho: novoBaralho() });
+  return distribuirSemRitual(s, novoBaralho());
 }
 
 describe('jogadaAutomatica', () => {
+  test('no ritual: embaralha até 3 vezes e passa; corta e devolve; dá por cima; não confere', () => {
+    let s = reduce(novaPartida(REGRAS_RANQUEADA.mineiro, 3), { tipo: 'monte', baralho: novoBaralho() });
+    expect(jogadaAutomatica(s, 3)).toEqual({ tipo: 'embaralhar', cadeira: 3 });
+    s.ritual!.embaralhadas = 3;
+    expect(jogadaAutomatica(s, 3)).toEqual({ tipo: 'passarCorte', cadeira: 3 });
+    s = reduce(s, { tipo: 'passarCorte', cadeira: 3 });
+    expect(jogadaAutomatica(s, 2)).toEqual({ tipo: 'cortar', cadeira: 2 });
+    s = reduce(s, { tipo: 'cortar', cadeira: 2, ponto: 20 });
+    expect(jogadaAutomatica(s, 2)).toEqual({ tipo: 'devolver', cadeira: 2 });
+    s = reduce(s, { tipo: 'devolver', cadeira: 2 });
+    expect(jogadaAutomatica(s, 3)).toEqual({ tipo: 'distribuir', cadeira: 3, modo: 'porCima' });
+    const f = reduce(inicio(), { tipo: 'familia', cadeira: 0 });
+    expect(jogadaAutomatica(f, 1)).toEqual({ tipo: 'conferir', cadeira: 1, conferir: false });
+  });
+
   test('joga a carta mais fraca', () => {
     let s = inicio();
     s = reduce(s, { tipo: 'jogar', cadeira: 0, indice: 2 }); // 6o

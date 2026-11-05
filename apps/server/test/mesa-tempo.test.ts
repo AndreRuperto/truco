@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { TEMPOS, avancarAte, criarMesa } from './mesa-helpers';
+import { TEMPOS, avancarAte, criarMesa, vezDeJogar } from './mesa-helpers';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
-const minhaVez = (t: ReturnType<typeof criarMesa>) => !!t.estado('a')?.prazo?.cadeiras.includes(0);
+const minhaVez = (t: ReturnType<typeof criarMesa>) => vezDeJogar(t);
 
 describe('tempo e bots', () => {
   test('bots jogam sozinhos', () => {

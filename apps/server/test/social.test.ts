@@ -1,5 +1,6 @@
 import {
   type Cadeira,
+  distribuirSemRitual,
   type Carta,
   type EstadoPartida,
   type Naipe,
@@ -71,7 +72,7 @@ describe('falaDaRodada', () => {
 
 describe('rodadaFechada', () => {
   // novoBaralho() com pe = 3: cadeira 0 = 4o 5o 6o, 1 = 4e 5e 6e, 2 = 4c 5c 6c, 3 = 4p 5p 6p (4p = zap no mineiro)
-  const inicio = reduce(novaPartida(REGRAS_RANQUEADA.mineiro, 3), { tipo: 'distribuir', baralho: novoBaralho() });
+  const inicio = distribuirSemRitual(novaPartida(REGRAS_RANQUEADA.mineiro, 3), novoBaralho());
   const jogar = (s: EstadoPartida, cadeira: Cadeira) => reduce(s, { tipo: 'jogar', cadeira, indice: 0 });
 
   test('só há resultado quando a 4ª carta fecha a rodada', () => {

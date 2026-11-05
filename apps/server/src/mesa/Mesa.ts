@@ -1,21 +1,25 @@
+import { webcrypto } from 'node:crypto';
 import {
   type AcaoJogador,
+  acoesValidas,
   baralhoDaMesa,
   botDificil,
   botFacil,
   type Cadeira,
   type Carta,
+  completarSorte,
   ehAcaoJogador,
+  ehFaseRitual,
   embaralhar,
   ErroJogada,
   type EstadoPartida,
   forca,
-  acoesValidas,
   novaPartida,
   parceiroDe,
   quemDeveAgir,
   reduce,
   type RegrasMesa,
+  semSorte,
   visaoDoJogador,
 } from '@truco/engine';
 import {
@@ -47,6 +51,11 @@ export const relogioReal: Relogio = {
   },
   agora: () => Date.now(),
 };
+
+/** Sorte do servidor (CSPRNG): monte inicial, riffles, cortes, quem começa. */
+export function randCripto(): number {
+  return webcrypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+}
 
 export interface Tempos {
   jogadaMs: number;
@@ -117,8 +126,17 @@ const NOMES_BOT = ['Zé', 'Tião', 'Dita', 'Nhô'];
 
 const vazio = (): Ocupante => ({ id: null, nome: null, humano: false, conectado: false, ultimaMensagem: -Infinity });
 
-/** Jogada quando o tempo estoura: corre, ou joga a carta mais fraca. */
+/**
+ * Jogada quando o tempo estoura: no ritual, a etapa padrão (embaralha até 3 vezes e passa;
+ * corta uma vez e devolve; dá por cima); não confere família; corre do truco e da mão de 10;
+ * senão joga a carta mais fraca.
+ */
 export function jogadaAutomatica(s: EstadoPartida, cadeira: Cadeira): AcaoJogador {
+  const r = s.ritual;
+  if (s.fase === 'embaralhando') return r && r.embaralhadas < 3 ? { tipo: 'embaralhar', cadeira } : { tipo: 'passarCorte', cadeira };
+  if (s.fase === 'cortando') return r && r.movimentos === 0 ? { tipo: 'cortar', cadeira } : { tipo: 'devolver', cadeira };
+  if (s.fase === 'escolhendoDistribuicao') return { tipo: 'distribuir', cadeira, modo: 'porCima' };
+  if (s.fase === 'conferindoFamilia') return { tipo: 'conferir', cadeira, conferir: false };
   if (s.fase === 'respondendoTruco') return { tipo: 'correr', cadeira };
   if (s.fase === 'decisaoMao10') return { tipo: 'mao10', cadeira, jogar: false };
   const m = s.mao;
@@ -155,7 +173,7 @@ export class Mesa {
     const h = o.humanosEsperados;
     if (!Number.isInteger(h) || h < 1 || h > 4) throw new Error('humanosEsperados deve ser 1..4');
     this.relogio = o.relogio ?? relogioReal;
-    this.rand = o.rand ?? Math.random;
+    this.rand = o.rand ?? randCripto;
     this.tempos = { ...TEMPOS_PADRAO, ...o.tempos };
     this.decidirBot =
       o.decidirBot ??
@@ -267,7 +285,12 @@ export class Mesa {
   acao(id: string, bruto: unknown): void {
     const cad = this.cadeiraDe(id);
     if (cad === null || !this.estado) return;
-    const comCadeira = bruto && typeof bruto === 'object' ? { ...(bruto as Record<string, unknown>), cadeira: cad } : bruto;
+    // A sorte é sempre do servidor: bits/ponto que venham do cliente são descartados (sem percorrê-los).
+    let comCadeira: unknown = bruto;
+    if (bruto && typeof bruto === 'object') {
+      const { bits: _b, ponto: _p, ...resto } = bruto as Record<string, unknown>;
+      comCadeira = { ...resto, cadeira: cad };
+    }
     if (!ehAcaoJogador(comCadeira)) {
       this.erro(id, 'ação inválida');
       return;
@@ -321,10 +344,11 @@ export class Mesa {
 
   // ---------- internos ----------
 
-  /** Aplica a ação; devolve se deu certo. Erro de humano vai para ele; de bot, para `aoErro`. */
-  private aplicar(acao: AcaoJogador, idHumano?: string): boolean {
+  /** Aplica a ação com a sorte do servidor; devolve se deu certo. Erro de humano vai para ele; de bot, para `aoErro`. */
+  private aplicar(pedida: AcaoJogador, idHumano?: string): boolean {
     if (!this.estado) return false;
     const antes = this.estado;
+    const acao = completarSorte(semSorte(pedida), antes, this.rand);
     try {
       this.estado = reduce(antes, acao);
     } catch (e) {
@@ -334,11 +358,11 @@ export class Mesa {
     }
     this.versao++;
     try {
-      this.o.aoAplicar?.(acao, idHumano !== undefined);
+      this.o.aoAplicar?.(semSorte(acao), idHumano !== undefined);
     } catch (e) {
       this.falha(e);
     }
-    this.paraHumanos((destino) => this.o.enviar(destino, 'acao', msgDaAcao(acao)));
+    this.paraHumanos((destino) => this.o.enviar(destino, 'acao', msgDaAcao(acao, antes)));
     this.pedidoBatida = null;
     if (pedidoQueBate(acao, this.estado)) {
       if (idHumano !== undefined) this.pedidoBatida = { cadeira: acao.cadeira, ate: this.relogio.agora() + JANELA_BATIDA_MS };
@@ -348,6 +372,10 @@ export class Mesa {
       }
     }
     if (acao.tipo === 'jogar') this.comentarRodada(antes, this.estado);
+    if (acao.tipo === 'distribuir') {
+      this.dicas = [null, null, null, null];
+      this.sinaisDosBots();
+    }
     this.atualizar();
     return true;
   }
@@ -380,23 +408,23 @@ export class Mesa {
       }
       return;
     }
-    if (s.fase === 'aguardandoDistribuicao') {
-      this.agendar(this.tempos.pausaMaoMs, () => this.distribuir());
+    if (s.fase === 'aguardandoMonte') {
+      this.agendar(this.tempos.pausaMaoMs, () => this.porMonte());
       this.enviarEstados();
       return;
     }
-    // Os agentes são sempre de uma só dupla. Havendo humano ativo entre eles, ninguém
-    // decide por ele: espera o prazo; no fim, o parceiro bot (se houver) decide.
+    // Os agentes são sempre de uma só dupla (ou uma cadeira, no ritual). Havendo humano ativo
+    // entre eles, ninguém decide por ele: espera o prazo; no fim, o parceiro bot (se houver) decide.
     const agentes = quemDeveAgir(s);
     const humanos = agentes.filter((c) => this.humanoAtivo(c));
     if (humanos.length > 0) {
+      const ms = this.prazoMs(s);
       const substituto = agentes.find((c) => !this.humanoAtivo(c));
-      this.prazo = { cadeiras: humanos, ate: this.relogio.agora() + this.tempos.jogadaMs };
-      this.agendar(this.tempos.jogadaMs, () =>
-        substituto !== undefined ? this.jogarBot(substituto) : this.estourouTempo(humanos[0]),
-      );
+      this.prazo = { cadeiras: humanos, ate: this.relogio.agora() + ms };
+      this.agendar(ms, () => (substituto !== undefined ? this.jogarBot(substituto) : this.estourouTempo(humanos[0])));
     } else {
-      for (const c of agentes) this.agendar(this.tempos.botMs, () => this.jogarBot(c));
+      const ms = this.atrasoBot(s);
+      for (const c of agentes) this.agendar(ms, () => this.jogarBot(c));
     }
     this.enviarEstados();
   }
@@ -416,13 +444,25 @@ export class Mesa {
     return `${this.versao}|${s.fase}|${agentes.join(',')}`;
   }
 
-  private distribuir(): void {
+  /** Prazo do humano: etapa do ritual, conferir família ou jogada. */
+  private prazoMs(s: EstadoPartida): number {
+    if (ehFaseRitual(s.fase)) return this.tempos.ritualMs;
+    if (s.fase === 'conferindoFamilia') return this.tempos.conferirMs;
+    return this.tempos.jogadaMs;
+  }
+
+  /** Espera do bot. A 1ª embaralhada de uma mão nova espera a pausa (o resumo da mão anterior aparece). */
+  private atrasoBot(s: EstadoPartida): number {
+    if (s.fase === 'embaralhando' && s.ritual?.embaralhadas === 0 && s.ultimaMao) return this.tempos.pausaMaoMs;
+    return this.tempos.botMs;
+  }
+
+  /** 1ª mão: o servidor põe o monte sorteado na mesa. */
+  private porMonte(): void {
     if (!this.estado) return;
     try {
-      this.estado = reduce(this.estado, { tipo: 'distribuir', baralho: embaralhar(baralhoDaMesa(this.estado.regras), this.rand) });
+      this.estado = reduce(this.estado, { tipo: 'monte', baralho: embaralhar(baralhoDaMesa(this.estado.regras), this.rand) });
       this.versao++;
-      this.dicas = [null, null, null, null];
-      this.sinaisDosBots();
     } catch (e) {
       this.falha(e);
     }
@@ -446,8 +486,14 @@ export class Mesa {
     this.agirPor(c);
   }
 
+  /** Tempo esgotado. No ritual faz a etapa inteira de uma vez (ex.: 3 embaralhadas e passa). */
   private estourouTempo(c: Cadeira): void {
-    this.agirPor(c);
+    for (let i = 0; i < 8; i++) {
+      const versao = this.versao;
+      this.agirPor(c);
+      const s = this.estado;
+      if (!s || this.versao === versao || !ehFaseRitual(s.fase) || !quemDeveAgir(s).includes(c)) return;
+    }
   }
 
   /** Jogada automática; se até ela falhar, a primeira ação legal; senão reagenda. */
