@@ -4,6 +4,8 @@ import { defineConfig } from 'vitest/config';
 
 const caminho = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
+const alvoApi = process.env.TRUCO_PROXY_API ?? 'http://localhost:2567';
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -11,10 +13,13 @@ export default defineConfig({
     alias: {
       '@truco/engine': caminho('../../packages/engine/src/index.ts'),
       '@truco/protocolo': caminho('../server/src/mesa/protocolo.ts'),
+      // TEMPORÁRIO: trocar por caminho('../server/src/api/tipos.ts') quando a frente servidor criar o arquivo.
+      '@truco/api': caminho('./src/api/tipos.ts'),
     },
   },
-  // host: true expõe na rede local para testar no celular (o servidor é procurado em <mesmo-host>:2567).
-  server: { port: 5173, host: true },
+  // host: true expõe na rede local para testar no celular (o WebSocket vai a <mesmo-host>:2567).
+  // /api e /saude passam pelo proxy: o cookie de sessão fica na origem da página.
+  server: { port: 5173, host: true, proxy: { '/api': alvoApi, '/saude': alvoApi } },
   test: {
     environment: 'jsdom',
     include: ['test/**/*.test.{ts,tsx}'],
