@@ -4,8 +4,9 @@ import { botFacil } from '../src/bots/facil';
 import { baralhoDaMesa } from '../src/cartas';
 import { type Cadeira, novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';
+import { completarSorte } from '../src/ritual';
 import { embaralhar, mulberry32 } from '../src/rng';
-import { MAOS_DUPLA0_VENCE, MINEIRO, MINEIRO_LIMPA, PAULISTA, avancarSemJogadas, distribuida } from './helpers';
+import { MAOS_DUPLA0_VENCE, MINEIRO, MINEIRO_LIMPA, PAULISTA, distribuida } from './helpers';
 
 describe('botFacil', () => {
   test('aceita truco com manilha, corre sem', () => {
@@ -29,15 +30,14 @@ describe('botFacil', () => {
       let s = novaPartida(regras);
       for (let passos = 0; s.fase !== 'fimPartida'; passos++) {
         if (passos > 2000) throw new Error('não terminou');
-        const semJogada = avancarSemJogadas(s, rand);
-        if (semJogada) {
-          s = semJogada;
+        if (s.fase === 'aguardandoMonte') {
+          s = reduce(s, { tipo: 'monte', baralho: embaralhar(baralhoDaMesa(regras), rand) });
           continue;
         }
         const acao = ([0, 1, 2, 3] as Cadeira[]).map((c) => botFacil(s, c)).find((a) => a !== null);
         expect(acao).toBeDefined();
         expect(acoesValidas(s, acao!.cadeira)).toContainEqual(acao);
-        s = reduce(s, acao!);
+        s = reduce(s, completarSorte(acao!, s, rand));
       }
       expect(s.vencedor).not.toBeNull();
     }

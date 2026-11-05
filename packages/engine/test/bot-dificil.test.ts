@@ -6,9 +6,10 @@ import { amostrarMundo, botDificil } from '../src/bots/dificil';
 import { baralhoDaMesa, type Carta, idCarta } from '../src/cartas';
 import { type Cadeira, type EstadoPartida, novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';
+import { completarSorte } from '../src/ritual';
 import { embaralhar, mulberry32 } from '../src/rng';
 import { visaoDoJogador } from '../src/visao';
-import { MAOS_DUPLA0_VENCE, MINEIRO, MINEIRO_LIMPA, PAULISTA, avancarSemJogadas, c, distribuida, jogarSeq } from './helpers';
+import { MAOS_DUPLA0_VENCE, MINEIRO, MINEIRO_LIMPA, PAULISTA, c, distribuida, jogarSeq } from './helpers';
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
 
@@ -83,7 +84,9 @@ describe('botDificil', () => {
         for (const cad of CADEIRAS) {
           const a = botDificil(visaoDoJogador(s, cad), mulberry32(seed), { amostras: 3 });
           const legais = acoesValidas(s, cad);
-          if (legais.length === 0) expect(a).toBeNull();
+          // Pedir família é opcional: sem outra ação, o bot pode não fazer nada.
+          const obrigatorias = legais.filter((x) => x.tipo !== 'familia');
+          if (a === null) expect(obrigatorias).toEqual([]);
           else expect(legais).toContainEqual(a);
         }
       }),
@@ -113,16 +116,15 @@ describe('botDificil', () => {
     const rand = mulberry32(77);
     let s = novaPartida(regras);
     for (let passos = 0; s.fase !== 'fimPartida'; passos++) {
-      if (passos > 3000) throw new Error('não terminou');
-      const semJogada = avancarSemJogadas(s, rand);
-      if (semJogada) {
-        s = semJogada;
+      if (passos > 6000) throw new Error('não terminou');
+      if (s.fase === 'aguardandoMonte') {
+        s = reduce(s, { tipo: 'monte', baralho: embaralhar(baralhoDaMesa(regras), rand) });
         continue;
       }
       const atual = s;
       const acao = CADEIRAS.map((c) => botDificil(visaoDoJogador(atual, c), rand, { amostras: 3 })).find((a) => a !== null);
       expect(acao).toBeDefined();
-      s = reduce(s, acao!);
+      s = reduce(s, completarSorte(acao!, s, rand));
     }
     expect(s.vencedor).not.toBeNull();
   }, 60_000);

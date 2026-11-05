@@ -13,6 +13,7 @@ import { reduce } from '../reducer';
 import { embaralhar } from '../rng';
 import type { JogadaVisivel, Visao } from '../visao';
 import { botFacil } from './facil';
+import { decidirEtapa, querFamilia } from './ritual';
 
 /** O que o bot sabe por sinal do parceiro. */
 export interface DicaAmostra {
@@ -130,13 +131,15 @@ function simularResto(inicio: EstadoPartida, dupla: Dupla): number {
  */
 export function botDificil(v: Visao, rand: () => number, opcoes: OpcoesBotDificil = {}): AcaoJogador | null {
   const { amostras = 24, chanceBlefe = 0.08, orcamentoMs, minAmostras = 4, dica } = opcoes;
-  if (!v.mao) return null;
+  if (!v.mao || v.fase === 'conferindoFamilia') return decidirEtapa(v, rand, 'dificil');
+  if (querFamilia(v, rand, 'dificil')) return { tipo: 'familia', cadeira: v.cadeira };
   const inicio = orcamentoMs === undefined ? 0 : performance.now();
   const estourou = (k: number) =>
     orcamentoMs !== undefined && k >= minAmostras && performance.now() - inicio >= orcamentoMs;
 
   const primeiro = amostrarMundo(v, rand, dica);
-  const candidatas = acoesValidas(primeiro, v.cadeira);
+  // Família é decidida pela política acima, não pela simulação.
+  const candidatas = acoesValidas(primeiro, v.cadeira).filter((a) => a.tipo !== 'familia');
   if (candidatas.length <= 1) return candidatas[0] ?? null;
 
   const truco = candidatas.find((a) => a.tipo === 'truco');

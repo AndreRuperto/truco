@@ -1,13 +1,16 @@
 import type { Carta } from '../cartas';
 import { type AcaoJogador, type Cadeira, duplaDe, type EstadoPartida, type Jogada, parceiroDe } from '../estado';
+import { janelaDeFamilia } from '../familia';
 import { FORCA_MANILHA_MIN, forca } from '../forca';
+import { visaoDoJogador } from '../visao';
+import { decidirEtapa, querFamilia } from './ritual';
 
 const MANILHA = FORCA_MANILHA_MIN;
 
-/** Bot fácil: nunca truca; aceita com manilha; joga a menor carta que vence a mesa. */
+/** Bot fácil: nunca truca; aceita com manilha; joga a menor carta que vence a mesa; ritual sempre igual. */
 export function botFacil(s: EstadoPartida, cadeira: Cadeira): AcaoJogador | null {
   const m = s.mao;
-  if (!m) return null;
+  if (!m || s.fase === 'conferindoFamilia') return decidirEtapa(visaoDoJogador(s, cadeira), () => 0, 'facil');
   const dupla = duplaDe(cadeira);
   const f = (c: Carta) => forca(c, s.regras.variante, m.vira);
   const minha = m.maos[cadeira];
@@ -23,6 +26,7 @@ export function botFacil(s: EstadoPartida, cadeira: Cadeira): AcaoJogador | null
     return { tipo: 'mao10', cadeira, jogar: boa };
   }
 
+  if (janelaDeFamilia(s) && querFamilia(visaoDoJogador(s, cadeira), () => 1, 'facil')) return { tipo: 'familia', cadeira };
   if (s.fase !== 'jogando' || m.vez !== cadeira) return null;
   if (m.tipo === 'mao11') return { tipo: 'jogar', cadeira, indice: 0 };
 

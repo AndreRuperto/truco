@@ -14,3 +14,4 @@ export * from './visao';
 export * from './vez';
 export * from './bots/facil';
 export * from './bots/dificil';
+export * from './bots/ritual';
