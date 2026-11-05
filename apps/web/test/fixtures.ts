@@ -64,6 +64,7 @@ export function msgEstado(s: EstadoPartida | null, minha: Cadeira = 0, extra: Pa
     visao: s ? visaoDoJogador(s, minha) : null,
     prazo: null,
     minhasAcoes: s ? acoesValidas(s, minha) : [],
+    modo: 'classica',
     ...extra,
   };
 }
