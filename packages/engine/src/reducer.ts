@@ -1,6 +1,7 @@
-import type { Carta } from './cartas';
+import { type Carta, idCarta, NAIPES, novoBaralho, VALORES } from './cartas';
 import {
   type Acao,
+  type AcaoJogador,
   type Cadeira,
   type Dupla,
   type EstadoMao,
@@ -31,32 +32,66 @@ function falha(msg: string): never {
 
 const ehCadeira = (x: unknown): x is Cadeira => Number.isInteger(x) && (x as number) >= 0 && (x as number) <= 3;
 
-/** Garante o formato da ação (a entrada pode vir crua de um cliente). */
-function validarAcao(acao: unknown): asserts acao is Acao {
-  if (typeof acao !== 'object' || acao === null) falha('ação malformada');
-  const a = acao as Record<string, unknown>;
+/** Motivo pelo qual `x` não tem o formato de uma ação, ou null se tem. */
+function problemaDeFormato(x: unknown): string | null {
+  if (typeof x !== 'object' || x === null) return 'ação malformada';
+  const a = x as Record<string, unknown>;
   switch (a.tipo) {
     case 'distribuir':
-      if (!Array.isArray(a.baralho)) falha('baralho malformado');
-      return;
+      return Array.isArray(a.baralho) ? null : 'baralho malformado';
     case 'jogar':
-      if (!ehCadeira(a.cadeira)) falha('cadeira inválida');
-      if (!Number.isInteger(a.indice)) falha('índice inválido');
-      if (a.coberta !== undefined && typeof a.coberta !== 'boolean') falha('coberta deve ser booleano');
-      return;
+      if (!ehCadeira(a.cadeira)) return 'cadeira inválida';
+      if (!Number.isInteger(a.indice)) return 'índice inválido';
+      if (a.coberta !== undefined && typeof a.coberta !== 'boolean') return 'coberta deve ser booleano';
+      return null;
     case 'mao10':
-      if (!ehCadeira(a.cadeira)) falha('cadeira inválida');
-      if (typeof a.jogar !== 'boolean') falha('jogar deve ser booleano');
-      return;
+      if (!ehCadeira(a.cadeira)) return 'cadeira inválida';
+      return typeof a.jogar === 'boolean' ? null : 'jogar deve ser booleano';
     case 'truco':
     case 'aceitar':
     case 'correr':
     case 'aumentar':
     case 'familia':
-      if (!ehCadeira(a.cadeira)) falha('cadeira inválida');
-      return;
+      return ehCadeira(a.cadeira) ? null : 'cadeira inválida';
     default:
-      falha(`ação desconhecida: ${String(a.tipo)}`);
+      return `ação desconhecida: ${String(a.tipo)}`;
+  }
+}
+
+/** Garante o formato da ação (a entrada pode vir crua de um cliente). */
+function validarAcao(acao: unknown): asserts acao is Acao {
+  const problema = problemaDeFormato(acao);
+  if (problema) falha(problema);
+}
+
+/**
+ * Verifica se uma mensagem crua (ex.: vinda de um cliente) é uma ação de jogador
+ * bem formada. Rejeita `distribuir`, que só o servidor pode emitir. Não verifica
+ * se a ação é legal no estado atual — isso é papel do `reduce`.
+ */
+export function ehAcaoJogador(x: unknown): x is AcaoJogador {
+  return problemaDeFormato(x) === null && (x as Acao).tipo !== 'distribuir';
+}
+
+const IDS_BARALHO = new Set(novoBaralho().map(idCarta));
+
+function idSeCarta(x: unknown): string | null {
+  if (typeof x !== 'object' || x === null) return null;
+  const { valor, naipe } = x as Record<string, unknown>;
+  if (typeof valor !== 'string' || typeof naipe !== 'string') return null;
+  if (!(VALORES as readonly string[]).includes(valor) || !(NAIPES as readonly string[]).includes(naipe)) return null;
+  return idCarta({ valor, naipe } as Carta);
+}
+
+/** Exige exatamente as 40 cartas distintas de `novoBaralho()`. */
+function validarBaralho(baralho: unknown[]): asserts baralho is Carta[] {
+  if (baralho.length !== 40) falha('baralho deve ter 40 cartas');
+  const vistas = new Set<string>();
+  for (const x of baralho) {
+    const id = idSeCarta(x);
+    if (id === null || !IDS_BARALHO.has(id)) falha('baralho contém carta inválida');
+    if (vistas.has(id)) falha(`baralho contém carta repetida: ${id}`);
+    vistas.add(id);
   }
 }
 
@@ -105,7 +140,7 @@ export function tipoDaMao(s: EstadoPartida): TipoMao {
 
 function distribuir(s: EstadoPartida, baralho: Carta[]): void {
   if (s.fase !== 'aguardandoDistribuicao') falha('não é hora de distribuir');
-  if (baralho.length !== 40) falha('baralho deve ter 40 cartas');
+  validarBaralho(baralho);
 
   const maos: Carta[][] = [[], [], [], []];
   let i = 0;

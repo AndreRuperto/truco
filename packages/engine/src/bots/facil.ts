@@ -1,11 +1,11 @@
 import type { Carta } from '../cartas';
-import { type Acao, type Cadeira, duplaDe, type EstadoPartida, type Jogada, parceiroDe } from '../estado';
+import { type AcaoJogador, type Cadeira, duplaDe, type EstadoPartida, type Jogada, parceiroDe } from '../estado';
 import { forca } from '../forca';
 
 const MANILHA = 11;
 
 /** Bot fácil: nunca truca; aceita com manilha; joga a menor carta que vence a mesa. */
-export function botFacil(s: EstadoPartida, cadeira: Cadeira): Acao | null {
+export function botFacil(s: EstadoPartida, cadeira: Cadeira): AcaoJogador | null {
   const m = s.mao;
   if (!m) return null;
   const dupla = duplaDe(cadeira);

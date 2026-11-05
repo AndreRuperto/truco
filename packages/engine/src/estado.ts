@@ -54,8 +54,8 @@ export interface EstadoPartida {
   vencedor: Dupla | null;
 }
 
-export type Acao =
-  | { tipo: 'distribuir'; baralho: Carta[] }
+/** Ações que um jogador (humano ou bot) pode enviar. */
+export type AcaoJogador =
   | { tipo: 'jogar'; cadeira: Cadeira; indice: number; coberta?: boolean }
   | { tipo: 'truco'; cadeira: Cadeira }
   | { tipo: 'aceitar'; cadeira: Cadeira }
@@ -63,6 +63,11 @@ export type Acao =
   | { tipo: 'aumentar'; cadeira: Cadeira }
   | { tipo: 'familia'; cadeira: Cadeira }
   | { tipo: 'mao10'; cadeira: Cadeira; jogar: boolean };
+
+/** Ações exclusivas do servidor; nunca aceite de um cliente. */
+export type AcaoServidor = { tipo: 'distribuir'; baralho: Carta[] };
+
+export type Acao = AcaoJogador | AcaoServidor;
 
 export function novaPartida(regras: RegrasMesa, pe: Cadeira = 0): EstadoPartida {
   return {

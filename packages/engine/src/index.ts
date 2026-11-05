@@ -5,7 +5,7 @@ export * from './forca';
 export * from './estado';
 export * from './mao';
 export * from './familia';
-export { reduce, ErroJogada, escada, tipoDaMao } from './reducer';
+export { reduce, ErroJogada, ehAcaoJogador, escada, tipoDaMao } from './reducer';
 export * from './acoes';
 export * from './visao';
 export * from './bots/facil';

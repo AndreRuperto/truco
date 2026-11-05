@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest';
+import { type Carta, novoBaralho } from '../src/cartas';
 import type { Acao } from '../src/estado';
-import { ErroJogada, reduce } from '../src/reducer';
-import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, distribuida, jogarSeq } from './helpers';
+import { ErroJogada, ehAcaoJogador, reduce } from '../src/reducer';
+import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, distribuida, jogarSeq, partida } from './helpers';
 
 /** Simula uma mensagem crua de cliente, sem garantias de tipo. */
 const cru = (x: unknown) => x as Acao;
@@ -63,5 +64,66 @@ describe('validação de ações em tempo de execução', () => {
     };
     expect(e.name).toBe('ErroJogada');
     expect(e.codigo).toBe('ERRO_JOGADA');
+  });
+});
+
+describe('distribuir valida o baralho', () => {
+  const s0 = () => partida(MINEIRO);
+
+  test('baralho válido embaralhado é aceito', () => {
+    expect(() => reduce(s0(), { tipo: 'distribuir', baralho: [...novoBaralho()].reverse() })).not.toThrow();
+  });
+
+  test('carta duplicada → ErroJogada', () => {
+    const b = novoBaralho();
+    b[39] = { ...b[0] };
+    expect(() => reduce(s0(), { tipo: 'distribuir', baralho: b })).toThrow(ErroJogada);
+  });
+
+  test('carta inexistente → ErroJogada', () => {
+    const b = novoBaralho();
+    b[5] = cru({ valor: '8', naipe: 'ouros' }) as unknown as Carta;
+    expect(() => reduce(s0(), { tipo: 'distribuir', baralho: b })).toThrow(ErroJogada);
+  });
+
+  test('entrada que não é carta → ErroJogada', () => {
+    const b: unknown[] = novoBaralho();
+    b[7] = null;
+    expect(() => reduce(s0(), cru({ tipo: 'distribuir', baralho: b }))).toThrow(ErroJogada);
+    const b2: unknown[] = novoBaralho();
+    b2[7] = { valor: '4', naipe: 'ouros', extra: { valor: 'A', naipe: 'paus' } };
+    // propriedades extras não importam para a identidade da carta, mas 4o já existe → duplicada
+    expect(() => reduce(s0(), cru({ tipo: 'distribuir', baralho: b2 }))).toThrow(ErroJogada);
+  });
+});
+
+describe('ehAcaoJogador', () => {
+  test('rejeita distribuir', () => {
+    expect(ehAcaoJogador({ tipo: 'distribuir', baralho: [] })).toBe(false);
+    expect(ehAcaoJogador({ tipo: 'distribuir', baralho: novoBaralho() })).toBe(false);
+  });
+
+  test('aceita ações de jogador bem formadas', () => {
+    expect(ehAcaoJogador({ tipo: 'jogar', cadeira: 0, indice: 1 })).toBe(true);
+    expect(ehAcaoJogador({ tipo: 'jogar', cadeira: 3, indice: 0, coberta: true })).toBe(true);
+    expect(ehAcaoJogador({ tipo: 'truco', cadeira: 2 })).toBe(true);
+    expect(ehAcaoJogador({ tipo: 'mao10', cadeira: 1, jogar: false })).toBe(true);
+  });
+
+  test.each([
+    null,
+    undefined,
+    42,
+    'jogar',
+    [],
+    {},
+    { tipo: 'jogar', cadeira: 0 },
+    { tipo: 'jogar', cadeira: 4, indice: 0 },
+    { tipo: 'jogar', cadeira: 0, indice: 0, coberta: 1 },
+    { tipo: 'mao10', cadeira: 0, jogar: 'false' },
+    { tipo: 'aceitar', cadeira: 5 },
+    { tipo: 'hackear', cadeira: 0 },
+  ])('lixo %j → false', (x) => {
+    expect(ehAcaoJogador(x)).toBe(false);
   });
 });
