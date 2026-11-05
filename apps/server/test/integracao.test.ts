@@ -252,6 +252,14 @@ describe('contas, privadas e HTTP no mesmo servidor', () => {
     expect(p).toMatchObject({ cadeira: 0, humano: true, nome: 'ana' });
   });
 
+  test('logado que cria mesa casual aparece em /api/salas com o apelido, não com o nome enviado', async () => {
+    const ana = await logado('ana@x.com');
+    const sala = await ana.cliente.joinOrCreate('mesa', { humanos: 2, nome: 'Impostor' });
+    coletor(sala);
+    await esperarAsync(async () => (await salasAbertas()).some((s) => s.id === sala.roomId));
+    expect((await salasAbertas()).find((s) => s.id === sala.roomId)?.dono).toBe('ana');
+  });
+
   test('token de sessão inválido entra como convidado', async () => {
     const c = new Client(URL_TESTE);
     c.auth.token = 'inventado';

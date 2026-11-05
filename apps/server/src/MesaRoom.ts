@@ -124,7 +124,11 @@ export class MesaRoom extends Room {
     delete o.fichaInterna;
     delete o.jogadores;
     Object.assign(o, filtroDaSala(opcoesDaSala(o)));
-    return (await usuarioDaConexao(MesaRoom.servicos, token, context.headers)) ?? true;
+    const u = await usuarioDaConexao(MesaRoom.servicos, token, context.headers);
+    // Logado aparece com o apelido da conta em todo lugar (assento, gravação e `dono` da
+    // lista de salas, que o onCreate tira destas opções), nunca com o `nome` do cliente.
+    if (u) o.nome = u.apelido;
+    return u ?? true;
   }
 
   onCreate(options: unknown) {
