@@ -155,7 +155,7 @@ Requisitos: Node 24+ e pnpm 9.12.0 (`npm install -g pnpm@9.12.0`). Nada de segre
 
 ```bash
 pnpm install
-pnpm dev:server   # servidor em http://localhost:2567 (PGlite em apps/server/.dados; link mágico no console)
+pnpm dev:server   # servidor em http://localhost:2567 (PGlite em ~/.truco/pglite; link mágico no console)
 pnpm dev:web      # web em http://localhost:5173 (proxy de /api e /saude para o servidor)
 ```
 

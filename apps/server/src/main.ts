@@ -1,3 +1,4 @@
+import { homedir } from 'node:os';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +11,8 @@ import { servicosDoAmbiente } from './servicos';
 import { temposDoAmbiente } from './tempos';
 
 const PASTA_WEB = fileURLToPath(new URL('../../web/dist/', import.meta.url));
-const PASTA_PGLITE = fileURLToPath(new URL('../.dados/pglite', import.meta.url));
+// Fora do repositório: o PGlite em disco falha em sistemas de arquivos como exFAT (errno 28).
+const PASTA_PGLITE = join(homedir(), '.truco', 'pglite');
 
 MesaRoom.tempos = temposDoAmbiente(process.env);
 const { servicos, config, fechar } = await servicosDoAmbiente(process.env, { pastaPglite: PASTA_PGLITE });
