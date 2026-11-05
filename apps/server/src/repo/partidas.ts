@@ -1,5 +1,5 @@
 import { type Cadeira, type Dupla, duplaDe, type Variante } from '@truco/engine';
-import { and, asc, desc, eq, gt, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNotNull, isNull, sql } from 'drizzle-orm';
 import type { Formato, ItemHistorico, LinhaRanking, PerfilApi, RatingVariante } from '../api/tipos';
 import type { Banco } from '../banco/banco';
 import { bloqueiosFila, participacoes, partidas, ratings, usuarios, VARIANTES } from '../banco/schema';
@@ -107,7 +107,9 @@ export async function registrarAbandono(
   o: OpcoesRanking & { bloqueioMs: number },
 ): Promise<number | null> {
   return db.transaction(async (tx) => {
-    const [p] = await tx.select().from(partidas).where(eq(partidas.id, partidaId));
+    // FOR UPDATE: serializa com outro abandono e com o fim da mesma partida (Postgres real
+    // roda transações em paralelo); o que vier depois relê o estado já gravado.
+    const [p] = await tx.select().from(partidas).where(eq(partidas.id, partidaId)).for('update');
     if (!p || p.terminadaEm) return null;
     const ps = await tx.select().from(participacoes).where(eq(participacoes.partidaId, partidaId));
     const eu = ps.find((x) => x.humano && x.usuarioId === usuarioId);
@@ -135,8 +137,14 @@ export async function registrarAbandono(
 export async function terminarPartida(db: Banco, partidaId: number, fim: FimPartida, o: OpcoesRanking): Promise<Map<number, number>> {
   return db.transaction(async (tx) => {
     const deltas = new Map<number, number>();
-    const [p] = await tx.select().from(partidas).where(eq(partidas.id, partidaId));
-    if (!p || p.terminadaEm) return deltas;
+    // Reivindica o fim numa instrução só: um segundo `terminarPartida` (ou um abandono
+    // concorrente, que trava a linha) não passa daqui com a partida já terminada.
+    const [p] = await tx
+      .update(partidas)
+      .set({ terminadaEm: o.agora })
+      .where(and(eq(partidas.id, partidaId), isNull(partidas.terminadaEm)))
+      .returning();
+    if (!p) return deltas;
     const ps = await tx.select().from(participacoes).where(eq(participacoes.partidaId, partidaId));
     const presentes = ps.filter((x) => x.humano && !x.abandonou);
     for (const x of ps) {

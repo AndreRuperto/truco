@@ -163,3 +163,29 @@ describe('partida casual', () => {
     expect(await perfil(b.db, 999)).toBeNull();
   });
 });
+
+describe('corridas (fim e abandono chamados duas vezes)', () => {
+  test('terminar duas vezes ao mesmo tempo soma o Elo uma vez só', async () => {
+    const { ana, bia } = await doisJogadores();
+    const id = await iniciarPartida(b.db, { variante: 'paulista', modo: 'ranqueada', formato: '1x1', assentos: assentos1x1(ana.id, bia.id) }, T0);
+    const [d1, d2] = await Promise.all([terminarPartida(b.db, id, fim(0, [12, 7]), OPC), terminarPartida(b.db, id, fim(0, [12, 7]), OPC)]);
+    expect([d1.size, d2.size].sort()).toEqual([0, 2]);
+    expect(await ratingDe(b.db, ana.id, 'paulista')).toEqual({ elo: 1016, pontos: 16, partidas: 1 });
+  });
+
+  test('abandonar duas vezes ao mesmo tempo penaliza uma vez só', async () => {
+    const { ana, bia } = await doisJogadores();
+    const id = await iniciarPartida(b.db, { variante: 'paulista', modo: 'ranqueada', formato: '1x1', assentos: assentos1x1(ana.id, bia.id) }, T0);
+    const r = await Promise.all([registrarAbandono(b.db, id, ana.id, OPC), registrarAbandono(b.db, id, ana.id, OPC)]);
+    expect(r.filter((x) => x !== null)).toEqual([-16]);
+    expect(await ratingDe(b.db, ana.id, 'paulista')).toEqual({ elo: 984, pontos: 0, partidas: 1 });
+  });
+
+  test('abandono depois do fim não penaliza; fim depois do abandono não repõe o Elo', async () => {
+    const { ana, bia } = await doisJogadores();
+    const id = await iniciarPartida(b.db, { variante: 'paulista', modo: 'ranqueada', formato: '1x1', assentos: assentos1x1(ana.id, bia.id) }, T0);
+    await Promise.all([terminarPartida(b.db, id, fim(1, [3, 12]), OPC), registrarAbandono(b.db, id, ana.id, OPC)]);
+    expect((await ratingDe(b.db, ana.id, 'paulista')).partidas).toBe(1);
+    expect((await ratingDe(b.db, bia.id, 'paulista')).partidas).toBeLessThanOrEqual(1);
+  });
+});
