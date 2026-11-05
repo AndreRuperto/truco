@@ -46,6 +46,16 @@ describe('Cronometro', () => {
 });
 
 describe('Toast', () => {
+  test('botão Fechar acessível pelo teclado', async () => {
+    const user = userEvent.setup();
+    const aoFechar = vi.fn();
+    render(<Toast erro={{ id: 3, mensagem: 'opa' }} aoFechar={aoFechar} />);
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Fechar' })).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(aoFechar).toHaveBeenCalledWith(3);
+  });
+
   test('some sozinho depois de 3,5 s', () => {
     vi.useFakeTimers();
     try {
