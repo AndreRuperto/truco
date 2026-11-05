@@ -9,6 +9,8 @@ import {
   type TipoMao,
   proximaCadeira,
 } from './estado';
+import { forca } from './forca';
+import { resolverRodada, vencedorMao } from './mao';
 import { ESCADAS, PONTOS_VITORIA } from './regras';
 
 export class ErroJogada extends Error {}
@@ -22,6 +24,9 @@ export function reduce(estado: EstadoPartida, acao: Acao): EstadoPartida {
   switch (acao.tipo) {
     case 'distribuir':
       distribuir(s, acao.baralho);
+      break;
+    case 'jogar':
+      jogar(s, acao.cadeira, acao.indice, acao.coberta ?? false);
       break;
     default:
       falha(`ação desconhecida: ${(acao as Acao).tipo}`);
@@ -85,4 +90,43 @@ export function finalizarMao(
   }
   s.pe = proximaCadeira(s.pe) as Cadeira;
   s.fase = 'aguardandoDistribuicao';
+}
+
+function maoAtual(s: EstadoPartida): EstadoMao {
+  if (!s.mao) falha('nenhuma mão em andamento');
+  return s.mao;
+}
+
+function jogar(s: EstadoPartida, cadeira: Cadeira, indice: number, coberta: boolean): void {
+  const m = maoAtual(s);
+  if (s.fase !== 'jogando') falha('não é hora de jogar carta');
+  if (m.vez !== cadeira) falha('não é sua vez');
+  const mao = m.maos[cadeira];
+  if (!Number.isInteger(indice) || indice < 0 || indice >= mao.length) falha('carta inválida');
+  if (coberta && (m.rodadas.length === 0 || m.tipo === 'mao11')) falha('carta coberta só a partir da 2ª rodada');
+
+  const [carta] = mao.splice(indice, 1);
+  m.mesa.push({
+    cadeira,
+    carta,
+    coberta,
+    forca: coberta ? 0 : forca(carta, s.regras.variante, m.vira),
+  });
+  s.ultimaFamilia = null;
+
+  if (m.mesa.length < 4) {
+    m.vez = proximaCadeira(cadeira);
+    return;
+  }
+
+  const { resultado, proximo } = resolverRodada(m.mesa);
+  m.rodadas.push(resultado);
+  m.rodadasJogadas.push(m.mesa);
+  m.mesa = [];
+  const v = vencedorMao(m.rodadas);
+  if (v === 'continua') {
+    m.vez = proximo;
+    return;
+  }
+  finalizarMao(s, v, escada(s)[m.nivel], 'rodadas');
 }
