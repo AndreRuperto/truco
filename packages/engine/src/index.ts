@@ -9,3 +9,4 @@ export { reduce, ErroJogada, ehAcaoJogador, escada, tipoDaMao } from './reducer'
 export * from './acoes';
 export * from './visao';
 export * from './bots/facil';
+export * from './bots/dificil';

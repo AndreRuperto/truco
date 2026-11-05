@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, test } from 'vitest';
-import { todasAcoesValidas } from '../src/acoes';
-import { amostrarMundo } from '../src/bots/dificil';
+import { acoesValidas, todasAcoesValidas } from '../src/acoes';
+import { amostrarMundo, botDificil } from '../src/bots/dificil';
 import { type Carta, idCarta, novoBaralho } from '../src/cartas';
 import { type Cadeira, type EstadoPartida, novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';
@@ -59,4 +59,50 @@ describe('amostrarMundo', () => {
   test('sem mão em andamento é erro', () => {
     expect(() => amostrarMundo(visaoDoJogador(novaPartida(MINEIRO), 0), mulberry32(1))).toThrow();
   });
+});
+
+describe('botDificil', () => {
+  test('é determinístico para a mesma visão e seed', () => {
+    const s = distribuida(MINEIRO, MAOS_DUPLA0_VENCE);
+    const v = visaoDoJogador(s, 0);
+    expect(botDificil(v, mulberry32(9), { amostras: 6 })).toEqual(botDificil(v, mulberry32(9), { amostras: 6 }));
+  });
+
+  test('não age fora da vez', () => {
+    const s = distribuida(MINEIRO, MAOS_DUPLA0_VENCE);
+    expect(botDificil(visaoDoJogador(s, 1), mulberry32(1), { amostras: 4 })).toBeNull();
+  });
+
+  test('sempre devolve uma ação legal', () => {
+    fc.assert(
+      fc.property(fc.integer(), (seed) => {
+        const s = estadoAleatorio(seed);
+        if (!s) return;
+        for (const cad of CADEIRAS) {
+          const a = botDificil(visaoDoJogador(s, cad), mulberry32(seed), { amostras: 3 });
+          const legais = acoesValidas(s, cad);
+          if (legais.length === 0) expect(a).toBeNull();
+          else expect(legais).toContainEqual(a);
+        }
+      }),
+      { numRuns: 40 },
+    );
+  }, 60_000);
+
+  test('quatro bots difíceis terminam uma partida', () => {
+    const rand = mulberry32(77);
+    let s = novaPartida(MINEIRO);
+    for (let passos = 0; s.fase !== 'fimPartida'; passos++) {
+      if (passos > 3000) throw new Error('não terminou');
+      if (s.fase === 'aguardandoDistribuicao') {
+        s = reduce(s, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), rand) });
+        continue;
+      }
+      const atual = s;
+      const acao = CADEIRAS.map((c) => botDificil(visaoDoJogador(atual, c), rand, { amostras: 3 })).find((a) => a !== null);
+      expect(acao).toBeDefined();
+      s = reduce(s, acao!);
+    }
+    expect(s.vencedor).not.toBeNull();
+  }, 60_000);
 });

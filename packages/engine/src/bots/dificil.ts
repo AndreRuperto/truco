@@ -1,7 +1,18 @@
+import { acoesValidas } from '../acoes';
 import { type Carta, idCarta, novoBaralho } from '../cartas';
-import { type Cadeira, type EstadoPartida, type Jogada, parceiroDe } from '../estado';
+import {
+  type AcaoJogador,
+  type Cadeira,
+  type Dupla,
+  duplaDe,
+  type EstadoPartida,
+  type Jogada,
+  parceiroDe,
+} from '../estado';
+import { reduce } from '../reducer';
 import { embaralhar } from '../rng';
 import type { JogadaVisivel, Visao } from '../visao';
+import { botFacil } from './facil';
 
 /**
  * Monta um estado completo coerente com tudo que `v.cadeira` enxerga:
@@ -56,4 +67,53 @@ export function amostrarMundo(v: Visao, rand: () => number): EstadoPartida {
       rodadasJogadas: rodadasJogadas.map((r) => r.map(revelar)),
     },
   };
+}
+
+export interface OpcoesBotDificil {
+  /** Mundos amostrados por decisão. Mais = mais forte e mais lento. */
+  amostras?: number;
+  /** Chance de trucar "no escuro" quando pode. */
+  chanceBlefe?: number;
+}
+
+/** Joga o resto da mão com o bot fácil em todas as cadeiras; devolve o saldo de pontos da `dupla`. */
+function simularResto(inicio: EstadoPartida, dupla: Dupla): number {
+  let s = inicio;
+  for (let guarda = 0; s.mao && guarda < 200; guarda++) {
+    const atual = s;
+    const a = ([0, 1, 2, 3] as Cadeira[]).map((c) => botFacil(atual, c)).find((x) => x !== null);
+    if (!a) break;
+    s = reduce(s, a);
+  }
+  const outra = (1 - dupla) as Dupla;
+  return s.placar[dupla] - inicio.placar[dupla] - (s.placar[outra] - inicio.placar[outra]);
+}
+
+/**
+ * Bot difícil: para cada ação legal, simula o resto da mão em vários mundos
+ * possíveis (coerentes com a própria visão) e escolhe a de melhor saldo médio.
+ * Recebe só a `Visao` — não tem como "roubar" olhando cartas alheias.
+ */
+export function botDificil(v: Visao, rand: () => number, opcoes: OpcoesBotDificil = {}): AcaoJogador | null {
+  const { amostras = 24, chanceBlefe = 0.08 } = opcoes;
+  if (!v.mao) return null;
+
+  const primeiro = amostrarMundo(v, rand);
+  const candidatas = acoesValidas(primeiro, v.cadeira);
+  if (candidatas.length <= 1) return candidatas[0] ?? null;
+
+  const truco = candidatas.find((a) => a.tipo === 'truco');
+  if (truco && rand() < chanceBlefe) return truco;
+
+  const dupla = duplaDe(v.cadeira);
+  const soma = candidatas.map(() => 0);
+  for (let k = 0; k < amostras; k++) {
+    const mundo = k === 0 ? primeiro : amostrarMundo(v, rand);
+    candidatas.forEach((a, i) => {
+      soma[i] += simularResto(reduce(mundo, a), dupla);
+    });
+  }
+  let melhor = 0;
+  for (let i = 1; i < soma.length; i++) if (soma[i] > soma[melhor]) melhor = i;
+  return candidatas[melhor];
 }
