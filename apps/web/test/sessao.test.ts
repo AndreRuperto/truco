@@ -42,4 +42,13 @@ describe('sessão', () => {
     await s.carregar().catch(() => undefined);
     expect(s.getSnapshot().pronta).toBe(true);
   });
+  test('login durante o carregar não é desfeito pela resposta atrasada de /api/eu', async () => {
+    let soltar!: (v: { usuario: null }) => void;
+    const s = criarSessao({ config: vi.fn(async () => ({ google: null, emailTeste: false })), eu: vi.fn(() => new Promise<{ usuario: null }>((ok) => (soltar = ok))), sair: vi.fn() });
+    const p = s.carregar();
+    s.definirUsuario(USUARIO);
+    soltar({ usuario: null });
+    await p;
+    expect(s.getSnapshot()).toMatchObject({ pronta: true, usuario: USUARIO });
+  });
 });

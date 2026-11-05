@@ -32,7 +32,8 @@ export function App() {
 
   const aoEntrar = useCallback((u: UsuarioApi) => {
     sessao.definirUsuario(u);
-    navegar({ tela: 'inicio' });
+    // substitui #/entrar: "voltar" depois de entrar não reabre a tela de login
+    navegar({ tela: 'inicio' }, { substituir: true });
   }, []);
 
   let tela;

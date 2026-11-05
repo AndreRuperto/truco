@@ -1,7 +1,7 @@
-import { act, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, test } from 'vitest';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { App } from '../src/App';
-import { loja } from '../src/rede/instancia';
+import { api, loja, sessao } from '../src/rede/instancia';
 import { distribuida, msgEstado, PAULISTA } from './fixtures';
 import { SalaFalsa } from './sala-falsa';
 
@@ -11,7 +11,12 @@ afterEach(async () => {
   const erro = loja.getSnapshot().erro;
   if (erro) act(() => loja.limparErro(erro.id));
   sessionStorage.clear();
+  act(() => sessao.definirUsuario(null));
+  vi.restoreAllMocks();
+  window.history.replaceState(null, '', '/');
 });
+
+const USUARIO = { id: 1, apelido: 'ana', email: 'ana@x.com' };
 
 describe('App: telas conforme o status da loja', () => {
   test('lobby → conectando → entrando → sala de espera → mesa → reconectando → lobby', async () => {
@@ -51,5 +56,18 @@ describe('App: telas conforme o status da loja', () => {
     act(() => sala.emit('leave', 1006));
     expect(screen.getByRole('heading', { name: 'Truco' })).toBeInTheDocument();
     expect(screen.getByText('Conexão com a mesa perdida')).toBeInTheDocument();
+  });
+});
+
+describe('App: conta', () => {
+  test('link mágico: entra e vai ao início substituindo a entrada do histórico', async () => {
+    vi.spyOn(api, 'confirmarLink').mockResolvedValue({ usuario: USUARIO });
+    window.history.replaceState(null, '', '/#/entrar?token=tok');
+    const comprimento = window.history.length;
+    render(<App />);
+    await waitFor(() => expect(window.location.hash).toBe('#/'));
+    expect(api.confirmarLink).toHaveBeenCalledWith('tok');
+    expect(window.history.length).toBe(comprimento);
+    expect(await screen.findByTestId('usuario-logado')).toHaveTextContent('ana');
   });
 });

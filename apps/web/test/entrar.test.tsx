@@ -48,6 +48,28 @@ describe('TelaEntrar', () => {
     expect(api.confirmarLink).toHaveBeenCalledTimes(1);
   });
 
+  test('tira o token da URL (sem novo item no histórico) antes de confirmar', async () => {
+    window.history.replaceState({ marca: 1 }, '', '/?x=1#/entrar?token=tok');
+    const comprimento = window.history.length;
+    let hashNaHora = '';
+    const api = {
+      ...apiFalsa(),
+      confirmarLink: vi.fn(async () => {
+        hashNaHora = window.location.hash;
+        return { usuario: USUARIO };
+      }),
+    };
+    const aoEntrar = vi.fn();
+    render(<TelaEntrar token="tok" config={SEM_GOOGLE} api={api} aoEntrar={aoEntrar} />);
+    await waitFor(() => expect(aoEntrar).toHaveBeenCalledWith(USUARIO));
+    expect(api.confirmarLink).toHaveBeenCalledWith('tok');
+    expect(hashNaHora).toBe('#/entrar');
+    expect(window.location.search).toBe('?x=1');
+    expect(window.history.state).toEqual({ marca: 1 });
+    expect(window.history.length).toBe(comprimento);
+    window.history.replaceState(null, '', '/');
+  });
+
   test('token inválido mostra o erro e volta ao formulário', async () => {
     const api = { ...apiFalsa(), confirmarLink: vi.fn(async () => Promise.reject(new ErroApi(400, 'link inválido ou expirado; peça outro'))) };
     render(<TelaEntrar token="velho" config={SEM_GOOGLE} api={api} aoEntrar={vi.fn()} />);

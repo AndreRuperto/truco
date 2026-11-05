@@ -13,6 +13,8 @@ export function useRota(): Rota {
   return useMemo(() => lerRota(hash), [hash]);
 }
 
-export function navegar(r: Rota): void {
-  window.location.hash = hrefDe(r).slice(1);
+/** Vai para a rota; `substituir` troca a entrada atual do histórico em vez de empilhar uma nova. */
+export function navegar(r: Rota, { substituir = false } = {}): void {
+  if (substituir) window.location.replace(hrefDe(r));
+  else window.location.hash = hrefDe(r).slice(1);
 }

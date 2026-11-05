@@ -17,13 +17,16 @@ export function TelaEntrar({ token, config, api, aoEntrar, carregarGoogle }: Pro
   const [email, setEmail] = useState('');
   const [estado, setEstado] = useState<'livre' | 'enviando' | 'enviado' | 'confirmando'>(token ? 'confirmando' : 'livre');
   const [erro, setErro] = useState<string | null>(null);
+  /** Token já tirado da URL e em confirmação (só uma vez por token). */
   const confirmado = useRef<string | null>(null);
 
   useEffect(() => {
     if (!token || confirmado.current === token) return;
     confirmado.current = token;
+    // O token é de uso único e não pode ficar na URL nem no histórico (voltar, compartilhar a aba).
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#/entrar`);
     setEstado('confirmando');
-    api.confirmarLink(token).then(
+    api.confirmarLink(confirmado.current).then(
       (r) => aoEntrar(r.usuario),
       (e: unknown) => {
         setErro(mensagemDe(e));
