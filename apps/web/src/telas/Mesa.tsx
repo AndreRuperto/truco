@@ -83,7 +83,7 @@ export function TelaMesa({ snap, acoes }: Props) {
             />
           );
         })}
-        <CentroMesa mao={m} minha={minha} variante={variante} />
+        <CentroMesa mao={m} ultimaMao={v.ultimaMao} minha={minha} variante={variante} />
         <Assento
           posicao="baixo"
           info={msg.cadeiras[minha]}
