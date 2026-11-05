@@ -4,7 +4,7 @@ import { ehFala, ehSinal, limparNome, opcoesDaSala } from '../src/mesa/protocolo
 
 describe('opcoesDaSala', () => {
   test('padrão: paulista ranqueado, 1 humano, bot fácil', () => {
-    expect(opcoesDaSala(undefined)).toEqual({ regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil' });
+    expect(opcoesDaSala(undefined)).toEqual({ regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0 });
   });
 
   test('mistura variante com regras customizadas', () => {
@@ -14,21 +14,27 @@ describe('opcoesDaSala', () => {
     expect(o.nivelBot).toBe('dificil');
   });
 
+  test('chance de interceptar sinal: número entre 0 e 1', () => {
+    expect(opcoesDaSala({ chanceInterceptarSinal: 0.25 }).chanceInterceptarSinal).toBe(0.25);
+    expect(opcoesDaSala({ chanceInterceptarSinal: 1 }).chanceInterceptarSinal).toBe(1);
+    for (const ruim of [-0.1, 1.5, NaN, '0.5', null]) expect(opcoesDaSala({ chanceInterceptarSinal: ruim }).chanceInterceptarSinal).toBe(0);
+  });
+
   test('valores inválidos caem no padrão', () => {
-    const o = opcoesDaSala({ variante: 'gaucho', humanos: 9, nivelBot: 'deus', regras: { maoDe10: 'sim', familia: 'talvez' } });
-    expect(o).toEqual({ regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil' });
+    const o = opcoesDaSala({ variante: 'gaucho', humanos: 9, nivelBot: 'deus', regras: { maoDe10: 'sim', familia: 'talvez' }, chanceInterceptarSinal: 2 });
+    expect(o).toEqual({ regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0 });
   });
 });
 
 describe('limparNome', () => {
   test('tira caracteres de controle e invisíveis, apara e corta em 20', () => {
-    expect(limparNome('  A\u0000n​a‮\n ')).toBe('Ana');
+    expect(limparNome('  A\u0000n\u200Ba\u202E\n ')).toBe('Ana');
     expect(limparNome('x'.repeat(50))).toHaveLength(20);
     expect(limparNome('  João  da Silva ')).toBe('João  da Silva');
   });
   test('vazio ou não-texto vira Jogador', () => {
     expect(limparNome('   ')).toBe('Jogador');
-    expect(limparNome('​\u0007')).toBe('Jogador');
+    expect(limparNome('\u200B\u0007')).toBe('Jogador');
     expect(limparNome(42)).toBe('Jogador');
   });
   test('não deixa se passar por bot', () => {

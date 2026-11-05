@@ -62,6 +62,8 @@ export interface OpcoesSala {
   regras: RegrasMesa;
   humanos: number;
   nivelBot: NivelBot;
+  /** Chance (0–1) de cada adversário ver um sinal. */
+  chanceInterceptarSinal: number;
 }
 
 function um<T extends string>(v: unknown, permitidos: readonly T[], padrao: T): T {
@@ -85,5 +87,7 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
   };
   const h = o.humanos;
   const humanos = typeof h === 'number' && Number.isInteger(h) && h >= 1 && h <= 4 ? h : 1;
-  return { regras, humanos, nivelBot: um(o.nivelBot, ['facil', 'dificil'] as const, 'facil') };
+  const ch = o.chanceInterceptarSinal;
+  const chanceInterceptarSinal = typeof ch === 'number' && ch >= 0 && ch <= 1 ? ch : 0;
+  return { regras, humanos, nivelBot: um(o.nivelBot, ['facil', 'dificil'] as const, 'facil'), chanceInterceptarSinal };
 }
