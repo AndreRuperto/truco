@@ -37,6 +37,9 @@ export function reduce(estado: EstadoPartida, acao: Acao): EstadoPartida {
     case 'aumentar':
       responderTruco(s, acao.cadeira, acao.tipo);
       break;
+    case 'mao10':
+      decidirMao10(s, acao.cadeira, acao.jogar);
+      break;
     default:
       falha(`ação desconhecida: ${(acao as Acao).tipo}`);
   }
@@ -173,4 +176,17 @@ function responderTruco(s: EstadoPartida, cadeira: Cadeira, resposta: 'aceitar' 
   if (p.proposto >= NIVEL_MAXIMO) falha('aposta já está no máximo');
   m.nivel = p.proposto;
   m.trucoPendente = { dupla, proposto: p.proposto + 1 };
+}
+
+function decidirMao10(s: EstadoPartida, cadeira: Cadeira, jogarMao: boolean): void {
+  const m = maoAtual(s);
+  if (s.fase !== 'decisaoMao10') falha('não há mão de 10 para decidir');
+  const dupla = duplaDe(cadeira);
+  if (dupla !== m.duplaNoDez) falha('só a dupla com 10 decide');
+  if (!jogarMao) {
+    finalizarMao(s, (1 - dupla) as Dupla, escada(s)[0], 'mao10Correu');
+    return;
+  }
+  m.nivel = 1;
+  s.fase = 'jogando';
 }
