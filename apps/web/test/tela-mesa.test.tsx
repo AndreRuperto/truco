@@ -107,6 +107,27 @@ describe('TelaMesa', () => {
     expect(screen.queryByTestId('minha-mao')).toBeNull();
   });
 
+  test('família aberta: o aviso mostra as 3 cartas de quem pediu', () => {
+    const regras = { ...PAULISTA, familia: 'aberta' as const };
+    const s = reduce(distribuida(regras, [['Qo', 'Je', 'Kc']]), { tipo: 'familia', cadeira: 0 });
+    expect(s.ultimaFamilia?.cartas).toHaveLength(3);
+    render(<TelaMesa snap={snap(msgEstado(s, 1))} acoes={acoesFalsas()} />);
+    const fim = screen.getByTestId('fim-mao');
+    expect(fim).toHaveTextContent('Família!');
+    expect(within(fim).getAllByRole('img')).toHaveLength(3);
+    expect(within(fim).getByRole('img', { name: /^Dama de ouros/ })).toBeInTheDocument();
+    expect(within(fim).getByRole('img', { name: /^Rei de copas/ })).toBeInTheDocument();
+  });
+
+  test('família fechada: só o aviso, sem cartas', () => {
+    const regras = { ...PAULISTA, familia: 'fechada' as const };
+    const s = reduce(distribuida(regras, [['Qo', 'Je', 'Kc']]), { tipo: 'familia', cadeira: 0 });
+    render(<TelaMesa snap={snap(msgEstado(s, 1))} acoes={acoesFalsas()} />);
+    const fim = screen.getByTestId('fim-mao');
+    expect(fim).toHaveTextContent('pediu família');
+    expect(within(fim).queryAllByRole('img')).toHaveLength(0);
+  });
+
   test('fim de partida: vencedor e "Jogar de novo"', async () => {
     const user = userEvent.setup();
     const acoes = acoesFalsas();

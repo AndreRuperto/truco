@@ -596,6 +596,12 @@ button:disabled {
 .overlay-caixa.vitoria h2 {
   color: var(--ouro);
 }
+.cartas-familia {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+}
 .toast {
   position: fixed;
   bottom: calc(80px + env(safe-area-inset-bottom));

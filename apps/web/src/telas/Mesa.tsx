@@ -2,6 +2,7 @@ import { type Cadeira, parceiroDe } from '@truco/engine';
 import { useState } from 'react';
 import { Assento } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
+import { CartaVisual } from '../componentes/CartaVisual';
 import { CentroMesa } from '../componentes/CentroMesa';
 import { Cronometro } from '../componentes/Cronometro';
 import { Mao } from '../componentes/Mao';
@@ -132,7 +133,17 @@ export function TelaMesa({ snap, acoes }: Props) {
           {textoSinalRecebido(sinal)}
         </div>
       )}
-      {familia && <FimDeMao titulo="Família!" detalhe={familia} />}
+      {familia && (
+        <FimDeMao titulo="Família!" detalhe={familia}>
+          {v.ultimaFamilia?.cartas && (
+            <div className="cartas-familia" aria-label="Cartas da família">
+              {v.ultimaFamilia.cartas.map((c, i) => (
+                <CartaVisual key={i} carta={c} variante={variante} vira={null} tamanho="pequena" />
+              ))}
+            </div>
+          )}
+        </FimDeMao>
+      )}
       {resumoMao && <FimDeMao titulo={resumoMao.titulo} detalhe={resumoMao.detalhe} />}
       {fim && <FimDePartida titulo={fim.titulo} placar={fim.placar} venceu={fim.venceu} aoJogarDeNovo={() => void acoes.sair()} />}
     </main>
