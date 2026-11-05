@@ -200,6 +200,12 @@ export class Mesa {
     this.atualizar();
   }
 
+  /** Reenvia o estado atual só para quem pediu (ex.: cliente perdeu mensagens). */
+  sincronizar(id: string): void {
+    const c = this.cadeiraDe(id);
+    if (c !== null && this.humanoAtivo(c)) this.enviarEstado(c);
+  }
+
   dispose(): void {
     this.cancelarTimers();
   }
@@ -365,19 +371,19 @@ export class Mesa {
 
   private enviarEstados(): void {
     const cadeiras = this.infoCadeiras();
+    for (const c of CADEIRAS) if (this.humanoAtivo(c)) this.enviarEstado(c, cadeiras);
+  }
+
+  private enviarEstado(c: Cadeira, cadeiras: InfoCadeira[] = this.infoCadeiras()): void {
     const s = this.estado;
-    for (const c of CADEIRAS) {
-      const o = this.ocupantes[c];
-      if (!o.humano || !o.conectado || !o.id) continue;
-      const msg: MsgEstado = {
-        minhaCadeira: c,
-        cadeiras,
-        visao: s ? visaoDoJogador(s, c) : null,
-        prazo: this.prazo,
-        minhasAcoes: s ? acoesValidas(s, c) : [],
-      };
-      this.o.enviar(o.id, 'estado', msg);
-    }
+    const msg: MsgEstado = {
+      minhaCadeira: c,
+      cadeiras,
+      visao: s ? visaoDoJogador(s, c) : null,
+      prazo: this.prazo,
+      minhasAcoes: s ? acoesValidas(s, c) : [],
+    };
+    this.o.enviar(this.ocupantes[c].id!, 'estado', msg);
   }
 
   private infoCadeiras(): InfoCadeira[] {

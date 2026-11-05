@@ -56,8 +56,19 @@ describe('MesaRoom', () => {
 
   test('sala cheia recusa mais gente', async () => {
     const sala = await colyseus.createRoom('mesa', { humanos: 1 });
-    await colyseus.connectTo(sala, { nome: 'Ana' });
+    coletor(await colyseus.connectTo(sala, { nome: 'Ana' }));
     await expect(colyseus.connectTo(sala, { nome: 'Bia' })).rejects.toThrow();
+  });
+
+  test('sincronizar reenvia o estado', async () => {
+    const sala = await colyseus.createRoom('mesa', { humanos: 2 });
+    const a = await colyseus.connectTo(sala, { nome: 'Ana' });
+    const ma = coletor(a);
+    await esperar(() => !!ma.estado?.length);
+    const n = ma.estado.length;
+    a.send('sincronizar');
+    await esperar(() => ma.estado.length > n);
+    expect(ma.estado.at(-1).minhaCadeira).toBe(0);
   });
 
   test('quem reservou lugar mas a partida já começou é recusado sem rejeição solta', async () => {

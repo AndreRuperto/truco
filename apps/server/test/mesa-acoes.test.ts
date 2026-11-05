@@ -59,6 +59,20 @@ describe('ações', () => {
     expect(de('a', 'erro')).toHaveLength(5);
   });
 
+  test('sincronizar reenvia o estado só para quem pediu', () => {
+    const t = criarMesa({ humanosEsperados: 2 });
+    t.mesa.sentar('a', 'Ana');
+    t.mesa.sentar('b', 'Bia');
+    const na = t.de('a', 'estado').length;
+    const nb = t.de('b', 'estado').length;
+    t.mesa.sincronizar('a');
+    expect(t.de('a', 'estado')).toHaveLength(na + 1);
+    expect(t.de('b', 'estado')).toHaveLength(nb);
+    expect(t.estado('a')!.minhaCadeira).toBe(0);
+    t.mesa.sincronizar('intruso');
+    expect(t.caixa.has('intruso')).toBe(false);
+  });
+
   test('id desconhecido é ignorado', () => {
     const { mesa, caixa } = mesaComHumanoNaVez();
     mesa.acao('intruso', { tipo: 'jogar', indice: 0 });

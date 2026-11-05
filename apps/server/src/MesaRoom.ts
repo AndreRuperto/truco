@@ -43,6 +43,7 @@ export class MesaRoom extends Room {
     this.onMessage('sinal', (client, payload) => this.mesa.sinal(client.sessionId, payload));
     this.onMessage('fala', (client, payload) => this.mesa.fala(client.sessionId, payload));
     this.onMessage('iniciar', (client) => this.mesa.iniciar(client.sessionId));
+    this.onMessage('sincronizar', (client) => this.mesa.sincronizar(client.sessionId));
   }
 
   onJoin(client: Client, options?: { nome?: unknown }) {
