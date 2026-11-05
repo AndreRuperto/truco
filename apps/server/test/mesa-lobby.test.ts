@@ -38,7 +38,7 @@ describe('lobby', () => {
 
   test('nome de humano não pode imitar bot nem ter caracteres invisíveis', () => {
     const { mesa, estado } = criarMesa({ humanosEsperados: 2 });
-    mesa.sentar('a', 'Bot Z​é');
+    mesa.sentar('a', 'Bot Z\u200Bé');
     expect(estado('a')!.cadeiras[0].nome).toBe('Zé');
   });
 
