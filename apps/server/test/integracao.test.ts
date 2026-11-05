@@ -7,7 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { bloqueiosFila, participacoes, partidas } from '../src/banco/schema';
 import { FilaRoom } from '../src/FilaRoom';
 import { MesaRoom } from '../src/MesaRoom';
-import { chaveRegras } from '../src/mesa/protocolo';
+import { chaveRegras, SAIDA_PARTIDA_CANCELADA } from '../src/mesa/protocolo';
 import { ratingDe } from '../src/repo/partidas';
 import { criarSessao, entrarComEmail } from '../src/repo/usuarios';
 import { criarServidor } from '../src/servidor';
@@ -463,6 +463,32 @@ describe('fila ranqueada', () => {
       const fila = await outraAba.joinOrCreate('fila', FILA_1X1);
       coletor(fila);
       expect(await banco.db.select().from(bloqueiosFila)).toEqual([]);
+    } finally {
+      MesaRoom.esperaRanqueadaMs = espera;
+    }
+  });
+
+  test('quem apareceu na ranqueada cancelada (o outro não veio) recebe SAIDA_PARTIDA_CANCELADA (não reconecta) e volta à fila na hora', async () => {
+    const espera = MesaRoom.esperaRanqueadaMs;
+    MesaRoom.esperaRanqueadaMs = 500;
+    try {
+      const ana = await logado('ana@x.com');
+      const bia = await logado('bia@x.com');
+      const fa = coletor(await ana.cliente.joinOrCreate('fila', FILA_1X1));
+      const fb = coletor(await bia.cliente.joinOrCreate('fila', FILA_1X1));
+      await esperar(() => !!fa.pareado?.length && !!fb.pareado?.length);
+      const mesa = await ana.cliente.consumeSeatReservation(fa.pareado[0].reserva);
+      coletor(mesa);
+      // Como o web faz: no 4010, entra na fila de novo na hora (sem esperar a sala sumir).
+      const volta = new Promise<unknown>((ok, erro) => {
+        mesa.onLeave((code) => {
+          if (code !== SAIDA_PARTIDA_CANCELADA) erro(new Error(`saída ${code}`));
+          else ana.cliente.joinOrCreate('fila', FILA_1X1).then(ok, erro);
+        });
+      });
+      coletor((await volta) as Parameters<typeof coletor>[0]);
+      expect(await banco.db.select().from(partidas)).toEqual([]);
+      await esperar(() => !matchMaker.getLocalRoomById(mesa.roomId));
     } finally {
       MesaRoom.esperaRanqueadaMs = espera;
     }

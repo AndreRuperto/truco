@@ -110,8 +110,9 @@ export class FilaRoom extends Room {
   /**
    * Quem foi reservado e não aparece não é penalizado: a mesa espera
    * `MesaRoom.esperaRanqueadaMs` (30 s) e, sem todos sentados, é cancelada
-   * (`SAIDA_PARTIDA_CANCELADA`) sem gravar partida, Elo ou bloqueio. Quem apareceu volta
-   * à fila pelo cliente. Partida só conta (e abandono só pune) depois de começar.
+   * (`SAIDA_PARTIDA_CANCELADA`) sem gravar partida, Elo ou bloqueio. A mesa libera as contas
+   * antes de derrubar; o web, ao receber esse código, entra na fila de novo sozinho com as
+   * mesmas opções. Partida só conta (e abandono só pune) depois de começar.
    */
   private async criarMesa(p: Pareamento): Promise<void> {
     const assentos = cadeirasDoPareamento(p);

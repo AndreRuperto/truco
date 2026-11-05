@@ -11,8 +11,12 @@ export type NivelBot = 'facil' | 'dificil';
 export const MODOS_MESA = ['classica', 'desafio', 'privada', 'ranqueada'] as const;
 export type ModoMesa = (typeof MODOS_MESA)[number];
 
-/** Close code (4000–4999 são da aplicação): mesa ranqueada cancelada antes de começar. */
-export const SAIDA_PARTIDA_CANCELADA = 4010;
+/**
+ * Close code (4000–4999 são da aplicação): mesa ranqueada cancelada antes de começar.
+ * Não pode ser um `CloseCode` do Colyseus 0.18 (4000–4003, 4010): 4010 é `MAY_TRY_RECONNECT`,
+ * e o SDK tentaria reconectar em vez de entregar o código ao `onLeave`.
+ */
+export const SAIDA_PARTIDA_CANCELADA = 4020;
 /** Close code: o mesmo usuário entrou na fila por outra aba (a entrada antiga é derrubada). */
 export const SAIDA_FILA_SUBSTITUIDA = 4011;
 

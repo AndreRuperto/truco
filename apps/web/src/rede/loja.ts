@@ -43,6 +43,12 @@ export interface OpcoesLoja {
   /** Guarda/apaga o `reconnectionToken` (sessionStorage na app real). */
   persistirToken?: (token: string | null) => void;
   maxEventos?: number;
+  /**
+   * Mesa ranqueada cancelada antes de começar (`SAIDA_PARTIDA_CANCELADA`: alguém não
+   * apareceu). Com isto, a loja avisa que está voltando à fila e chama (a app real entra
+   * na fila de novo com as mesmas opções); sem, só avisa do cancelamento.
+   */
+  aoCancelarRanqueada?: () => void;
 }
 
 /** `CloseCode.CONSENTED` do @colyseus/sdk 0.18: saída pedida (leave(true) ou o servidor). */
@@ -116,7 +122,12 @@ export function criarLoja(o: OpcoesLoja = {}) {
       if (sala !== s) return;
       if (code === SAIDA_PARTIDA_CANCELADA) {
         largar(true);
-        erro('Partida ranqueada cancelada: nem todos entraram a tempo');
+        if (o.aoCancelarRanqueada) {
+          erro('Alguém não apareceu; voltando à fila…');
+          o.aoCancelarRanqueada();
+        } else {
+          erro('Partida ranqueada cancelada: nem todos entraram a tempo');
+        }
         return;
       }
       const consentida = code === SAIDA_CONSENTIDA;

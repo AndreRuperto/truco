@@ -37,6 +37,27 @@ describe('loja da fila', () => {
     await vi.waitFor(() => expect(f.getSnapshot().status).toBe('fora'));
   });
 
+  test('reentrar: depois do pareamento, volta à fila com as mesmas opções', async () => {
+    const salas = [new FilaFalsa(), new FilaFalsa()];
+    const abrir = vi.fn(async () => salas.shift()!);
+    const f = criarLojaFila({ abrir, aoParear: vi.fn(async () => {}) });
+    const op = { variante: 'mineiro', formato: '2x2', codigoDupla: 'amigos' } as const;
+    await f.entrar(op);
+    (abrir.mock.results[0].value as Promise<FilaFalsa>).then((s) => s.emit('msg:pareado', { reserva: {} }));
+    await vi.waitFor(() => expect(f.getSnapshot().status).toBe('fora'));
+    await f.reentrar();
+    expect(abrir).toHaveBeenCalledTimes(2);
+    expect(abrir).toHaveBeenLastCalledWith(op);
+    expect(f.getSnapshot()).toMatchObject({ status: 'na-fila', opcoes: op });
+  });
+
+  test('reentrar sem nunca ter entrado não faz nada', async () => {
+    const abrir = vi.fn();
+    const f = criarLojaFila({ abrir, aoParear: vi.fn() });
+    await f.reentrar();
+    expect(abrir).not.toHaveBeenCalled();
+  });
+
   test('servidor recusa (bloqueio): fica fora com a mensagem traduzida', async () => {
     const f = criarLojaFila({ abrir: vi.fn(async () => Promise.reject(new Error('entre na sua conta para jogar ranqueada'))), aoParear: vi.fn() });
     await f.entrar(OPC);

@@ -110,6 +110,8 @@ export class MesaRoom extends Room {
   private mesa!: Mesa;
   private registro!: RegistroMesa;
   private reservados: JogadorReservado[] | null = null;
+  /** Ranqueada que não lotou a tempo e está sendo descartada. */
+  private cancelada = false;
 
   /**
    * Roda no pedido HTTP de matchmaking, ANTES de o Colyseus procurar sala, e recebe o
@@ -153,6 +155,8 @@ export class MesaRoom extends Room {
       this.reservados = jogadoresReservados(cru.jogadores);
       if (this.reservados.length !== humanos) throw new Error('reservas não batem com a quantidade de humanos');
       for (const r of this.reservados) MesaRoom.contasEmRanqueada.set(r.usuarioId, this.roomId);
+      // Reserva não sobrevive à espera: uma pendente seguraria o descarte da mesa cancelada.
+      this.seatReservationTimeout = Math.min(this.seatReservationTimeout, MesaRoom.esperaRanqueadaMs / 1000);
     }
     this.maxClients = humanos;
     // O Colyseus 0.18 copia os campos do `filterBy` das opções cruas de criação para
@@ -210,7 +214,12 @@ export class MesaRoom extends Room {
 
     if (this.reservados) {
       this.clock.setTimeout(() => {
-        if (!this.mesa.iniciada) void this.disconnect(SAIDA_PARTIDA_CANCELADA);
+        if (this.mesa.iniciada) return;
+        this.cancelada = true;
+        // Antes de derrubar: quem apareceu volta à fila assim que recebe o código, e a fila
+        // não pode mais vê-lo nesta mesa.
+        this.liberarReservados();
+        void this.disconnect(SAIDA_PARTIDA_CANCELADA);
       }, MesaRoom.esperaRanqueadaMs);
     }
   }
@@ -231,8 +240,9 @@ export class MesaRoom extends Room {
   }
 
   onDrop(client: Client) {
-    // Cliente cujo onJoin falhou (nunca sentou) também passa por aqui.
-    if (this.mesa.cadeiraDe(client.sessionId) === null) return;
+    // Cliente cujo onJoin falhou (nunca sentou) também passa por aqui. Mesa cancelada: o
+    // código de saída não é consentido (cai aqui), mas não há para onde reconectar.
+    if (this.cancelada || this.mesa.cadeiraDe(client.sessionId) === null) return;
     this.mesa.desconectar(client.sessionId);
     this.allowReconnection(client, 60).catch(() => {});
   }

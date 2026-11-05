@@ -41,6 +41,21 @@ describe('loja: chat, sala e cancelamento', () => {
     expect(loja.getSnapshot().status).toBe('fora');
     expect(loja.getSnapshot().erro?.mensagem).toBe('Partida ranqueada cancelada: nem todos entraram a tempo');
   });
+
+  test('ranqueada cancelada com volta à fila ligada: avisa e chama aoCancelarRanqueada', () => {
+    const aoCancelarRanqueada = vi.fn();
+    const loja = criarLoja({ aoCancelarRanqueada });
+    const sala = new SalaFalsa();
+    loja.conectar(sala);
+    sala.emit('leave', SAIDA_PARTIDA_CANCELADA);
+    expect(loja.getSnapshot().status).toBe('fora');
+    expect(loja.getSnapshot().erro?.mensagem).toBe('Alguém não apareceu; voltando à fila…');
+    expect(aoCancelarRanqueada).toHaveBeenCalledTimes(1);
+  });
+
+  test('o código de cancelamento não é um CloseCode do Colyseus (o SDK tentaria reconectar)', () => {
+    expect([4000, 4001, 4002, 4003, 4010]).not.toContain(SAIDA_PARTIDA_CANCELADA);
+  });
 });
 
 describe('SalaEspera', () => {
