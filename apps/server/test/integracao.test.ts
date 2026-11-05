@@ -1,11 +1,14 @@
 import { matchMaker } from '@colyseus/core';
 import { Client } from '@colyseus/sdk';
 import { boot, type ColyseusTestServer } from '@colyseus/testing';
+import { REGRAS_RANQUEADA } from '@truco/engine';
 import { eq } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
-import { participacoes } from '../src/banco/schema';
+import { bloqueiosFila, participacoes } from '../src/banco/schema';
+import { FilaRoom } from '../src/FilaRoom';
 import { MesaRoom } from '../src/MesaRoom';
 import { chaveRegras } from '../src/mesa/protocolo';
+import { ratingDe } from '../src/repo/partidas';
 import { criarSessao, entrarComEmail } from '../src/repo/usuarios';
 import { criarServidor } from '../src/servidor';
 import { type Servicos, servicosDeTeste } from '../src/servicos';
@@ -17,6 +20,7 @@ let servicos: Servicos;
 
 beforeAll(async () => {
   MesaRoom.tempos = { botMs: 20, pausaMaoMs: 50, jogadaMs: 2_000 };
+  FilaRoom.intervaloMs = 100;
   banco = await bancoDeTeste();
   servicos = servicosDeTeste(banco.db);
   colyseus = await boot(criarServidor(servicos));
@@ -287,5 +291,64 @@ describe('contas, privadas e HTTP no mesmo servidor', () => {
       ocupados: 1,
       dono: 'Ana',
     });
+  });
+});
+
+describe('fila ranqueada', () => {
+  const FILA_1X1 = { variante: 'paulista', formato: '1x1' };
+
+  test('convidado não entra na fila', async () => {
+    await expect(colyseus.sdk.joinOrCreate('fila', FILA_1X1)).rejects.toThrow(/entre na sua conta/);
+  });
+
+  test('1x1: pareados numa mesa ranqueada privada com bots parceiros; abandono custa Elo e bloqueia', async () => {
+    const ana = await logado('ana@x.com');
+    const bia = await logado('bia@x.com');
+    const fa = coletor(await ana.cliente.joinOrCreate('fila', FILA_1X1));
+    const fb = coletor(await bia.cliente.joinOrCreate('fila', FILA_1X1));
+    await esperar(() => !!fa.pareado?.length && !!fb.pareado?.length);
+
+    const mesaA = await ana.cliente.consumeSeatReservation(fa.pareado[0].reserva);
+    const ma = coletor(mesaA);
+    const mesaB = await bia.cliente.consumeSeatReservation(fb.pareado[0].reserva);
+    const mb = coletor(mesaB);
+    expect(mesaA.roomId).toBe(mesaB.roomId);
+    await esperar(() => !!ma.estado?.some((m) => m.visao) && !!mb.estado?.some((m) => m.visao));
+    const e = ma.estado.at(-1);
+    expect(e.modo).toBe('ranqueada');
+    expect(e.regras).toEqual(REGRAS_RANQUEADA.paulista);
+    expect(e.cadeiras.map((c: any) => c.tipo)).toEqual(['humano', 'humano', 'bot', 'bot']);
+    expect([e.cadeiras[0].nome, e.cadeiras[1].nome].sort()).toEqual(['ana', 'bia']);
+    expect((await salasAbertas()).map((s) => s.id)).not.toContain(mesaA.roomId);
+
+    await mesaA.leave(true);
+    await esperarAsync(async () => (await ratingDe(banco.db, ana.u.id, 'paulista')).elo === 984);
+    await expect(ana.cliente.joinOrCreate('fila', FILA_1X1)).rejects.toThrow(/bloqueada/);
+
+    await mesaB.leave(true);
+    await esperarAsync(async () => (await banco.db.select().from(bloqueiosFila)).length === 2);
+  });
+
+  test('2x2: quem usa o mesmo código fica parceiro', async () => {
+    const jogadores = [];
+    for (const email of ['ana1@x.com', 'ana2@x.com', 'bia1@x.com', 'bia2@x.com']) jogadores.push(await logado(email));
+    const filas: Record<string, any[]>[] = [];
+    for (const [i, j] of jogadores.entries()) {
+      const opcoes = { variante: 'mineiro', formato: '2x2', ...(i < 2 ? { codigoDupla: 'amigos' } : {}) };
+      filas.push(coletor(await j.cliente.joinOrCreate('fila', opcoes)));
+    }
+    await esperar(() => filas.every((f) => !!f.pareado?.length));
+    const mesas: Awaited<ReturnType<Client['consumeSeatReservation']>>[] = [];
+    for (const [i, j] of jogadores.entries()) mesas.push(await j.cliente.consumeSeatReservation(filas[i].pareado[0].reserva));
+    const m0 = coletor(mesas[0]);
+    for (const m of mesas.slice(1)) coletor(m);
+    await esperar(() => !!m0.estado?.some((x) => x.visao));
+    const nomes: string[] = m0.estado.at(-1).cadeiras.map((c: any) => c.nome);
+    expect(nomes.indexOf('ana1') % 2).toBe(nomes.indexOf('ana2') % 2);
+    expect(nomes.indexOf('bia1') % 2).toBe(nomes.indexOf('bia2') % 2);
+    expect(m0.estado.at(-1).regras).toEqual(REGRAS_RANQUEADA.mineiro);
+
+    for (const m of mesas) await m.leave(true);
+    await esperarAsync(async () => (await banco.db.select().from(bloqueiosFila)).length === 4);
   });
 });
