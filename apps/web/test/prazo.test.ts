@@ -16,7 +16,8 @@ describe('prazo', () => {
     expect(fracaoRestante(prazo, 0, 20_000)).toBe(0.5);
     expect(fracaoRestante(prazo, -20_000, 20_000)).toBe(1);
     expect(fracaoRestante(prazo, 11_000, 20_000)).toBe(0);
-    expect(fracaoRestante(null, 0)).toBe(0);
+    expect(fracaoRestante(null, 0, 20_000)).toBe(0);
+    expect(fracaoRestante(prazo, 10_000, 0)).toBe(0);
   });
 
   test('prazo é meu?', () => {

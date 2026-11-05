@@ -11,9 +11,9 @@ export function segundosRestantes(prazo: Prazo, agora: number): number | null {
   return Math.max(0, Math.ceil((prazo.ate - agora) / 1000));
 }
 
-/** Fração restante (0..1) para a barra, assumindo jogada de `totalMs`. */
-export function fracaoRestante(prazo: Prazo, agora: number, totalMs = 20_000): number {
-  if (!prazo) return 0;
+/** Fração restante (0..1) para a barra, num prazo que tinha `totalMs` ao começar. */
+export function fracaoRestante(prazo: Prazo, agora: number, totalMs: number): number {
+  if (!prazo || totalMs <= 0) return 0;
   return Math.min(1, Math.max(0, (prazo.ate - agora) / totalMs));
 }
 

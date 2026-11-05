@@ -45,6 +45,22 @@ describe('Cronometro', () => {
   });
 });
 
+describe('Cronometro: barra', () => {
+  const escala = (el: HTMLElement) => el.querySelector<HTMLElement>('.cronometro-barra')!.style.transform;
+
+  test('o total é o tempo que restava quando o prazo chegou, não 20 s fixos', () => {
+    const { container, rerender } = render(<Cronometro prazo={{ cadeiras: [0], ate: 30_000 }} agora={0} />);
+    expect(escala(container)).toBe('scaleX(1)');
+    rerender(<Cronometro prazo={{ cadeiras: [0], ate: 30_000 }} agora={15_000} />);
+    expect(escala(container)).toBe('scaleX(0.5)');
+    // prazo novo (outra decisão): recalcula o total
+    rerender(<Cronometro prazo={{ cadeiras: [0], ate: 40_000 }} agora={30_000} />);
+    expect(escala(container)).toBe('scaleX(1)');
+    rerender(<Cronometro prazo={{ cadeiras: [0], ate: 40_000 }} agora={35_000} />);
+    expect(escala(container)).toBe('scaleX(0.5)');
+  });
+});
+
 describe('Toast', () => {
   test('botão Fechar acessível pelo teclado', async () => {
     const user = userEvent.setup();
