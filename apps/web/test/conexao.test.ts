@@ -29,6 +29,14 @@ describe('entrarNaMesa', () => {
     expect(lerToken()).toBe('r1:t1');
   });
 
+  test('clique duplo não cria duas salas', async () => {
+    const cliente = { joinOrCreate: vi.fn(async () => new SalaFalsa()), reconnect: vi.fn() };
+    const loja = novaLoja();
+    await Promise.all([entrarNaMesa(loja, opcoes, cliente), entrarNaMesa(loja, opcoes, cliente)]);
+    expect(cliente.joinOrCreate).toHaveBeenCalledTimes(1);
+    expect(loja.getSnapshot().status).toBe('na-mesa');
+  });
+
   test('falha ao entrar volta ao lobby com erro', async () => {
     const cliente = { joinOrCreate: vi.fn(async () => Promise.reject(new Error('mesa cheia ou já iniciada'))), reconnect: vi.fn() };
     const loja = novaLoja();

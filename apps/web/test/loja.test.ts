@@ -129,6 +129,20 @@ describe('loja', () => {
     expect(tokens.at(-1)).toBeNull();
   });
 
+  test('conectar com outra sala aberta sai da antiga (consentido)', () => {
+    const { loja, sala, tokens } = montar();
+    loja.conectar(sala);
+    const nova = new SalaFalsa();
+    nova.reconnectionToken = 'r2:t1';
+    const sair = vi.spyOn(sala, 'leave');
+    loja.conectar(nova);
+    expect(sair).toHaveBeenCalledWith(true);
+    expect(loja.getSnapshot()).toMatchObject({ status: 'na-mesa', erro: null });
+    expect(tokens.at(-1)).toBe('r2:t1');
+    loja.iniciar();
+    expect(nova.enviados.at(-1)).toEqual(['iniciar', undefined]);
+  });
+
   test('envia ações, sinais, falas e iniciar', () => {
     const { loja, sala } = montar();
     loja.conectar(sala);

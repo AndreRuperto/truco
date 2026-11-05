@@ -43,7 +43,9 @@ function clientePadrao(): Promise<ClienteLike> {
 
 const mensagem = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
+/** Ignorada se a loja não está no lobby (clique duplo não cria duas salas). */
 export async function entrarNaMesa(loja: Loja, opcoes: OpcoesEntrada, cliente?: ClienteLike): Promise<void> {
+  if (loja.getSnapshot().status !== 'fora') return;
   loja.marcarConectando();
   try {
     const c = cliente ?? (await clientePadrao());

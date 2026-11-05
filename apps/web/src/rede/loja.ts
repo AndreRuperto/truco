@@ -71,7 +71,10 @@ export function criarLoja(o: OpcoesLoja = {}) {
   };
 
   function conectar(s: SalaLike): void {
+    const antiga = sala;
     sala = s;
+    // Uma sala antiga ainda aberta seria uma cadeira fantasma: sai dela (o onLeave dela é ignorado).
+    if (antiga && antiga !== s) antiga.leave(true).catch(() => {});
     // Todos os handlers ANTES de qualquer envio: mensagem sem handler o SDK descarta.
     s.onMessage('estado', (m: MsgEstado) => {
       if (sala === s) mudar({ msg: m });
