@@ -99,6 +99,8 @@ Quem recebeu "dar 3" fica com aquelas cartas e é pulado. A mão de 10 e a de fe
 
 `recolher(mao)` devolve, nesta ordem: cartas jogadas por rodada na ordem em que saíram (inclusive a rodada interrompida por "correr"), mãos não jogadas na ordem das cadeiras 0..3, abertas no corte, cartas das famílias na ordem dos pedidos, vira. `finalizarMao` faz `monte = [...recolher(m), ...monte]` — **a primeira carta recolhida fica no topo** (**Decisão**: a regra pede ordem determinística; esta é a mais simples de conferir). Depois: `pe = proximaCadeira(pe)`, `ritual = novoRitual(pe)`, fase `embaralhando`. Também recolhe quando a partida termina, para manter o invariante.
 
+**Nota:** o recolhimento é determinístico. Se ninguém embaralha nem corta (0 riffles, devolver direto), as mãos da mão seguinte ficam previsíveis a partir das cartas públicas da mão anterior (jogadas, vira, abertas, famílias reveladas) — é a consequência física de não embaralhar, aceita de propósito.
+
 **Invariante** (testado por propriedade): `cartasDaPartida(s)` = monte + abertas/dadas do ritual + `recolher(mao)` é sempre uma permutação de `baralhoDaMesa(regras)` depois do `monte` inicial.
 
 ### 2.5 Família
