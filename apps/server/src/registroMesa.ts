@@ -40,6 +40,12 @@ export class RegistroMesa {
     this.humanos.set(j.cadeira, j);
   }
 
+  /** A conta já está sentada nesta mesa (ex.: outra aba). */
+  temUsuario(usuarioId: number): boolean {
+    for (const j of this.humanos.values()) if (j.usuarioId === usuarioId) return true;
+    return false;
+  }
+
   saiuAntesDoInicio(c: Cadeira): void {
     this.humanos.delete(c);
   }

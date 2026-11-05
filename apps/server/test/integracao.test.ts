@@ -310,6 +310,19 @@ describe('MesaRoom: abandono total, outra aba e gravações no desligamento', ()
     expect(p.terminadaEm).not.toBeNull();
     expect(p.abandonada).toBe(true);
   });
+
+  test('a mesma conta não senta duas vezes na mesma mesa (outra aba)', async () => {
+    const ana = await logado('ana@x.com');
+    const a = await ana.cliente.create('mesa', { modo: 'privada', humanos: 2 });
+    coletor(a);
+    const outraAba = new Client(URL_TESTE);
+    outraAba.auth.token = ana.token;
+    await expect(outraAba.joinById(a.roomId, {})).rejects.toThrow(/já está nesta mesa/);
+    const bia = await logado('bia@x.com');
+    const b = await bia.cliente.joinById(a.roomId, {});
+    coletor(b);
+    expect(b.roomId).toBe(a.roomId);
+  });
 });
 
 describe('fila ranqueada', () => {

@@ -120,6 +120,16 @@ describe('RegistroMesa', () => {
     expect(p).toMatchObject({ abandonada: false, vencedora: 0, placar0: 12 });
   });
 
+  test('temUsuario: conta logada sentada (outra aba é recusada pela sala)', () => {
+    const r = new RegistroMesa(null, { variante: 'paulista', modo: 'classica', formato: null });
+    r.sentou({ cadeira: 0, usuarioId: 7, nome: 'ana' });
+    r.sentou({ cadeira: 1, usuarioId: null, nome: 'Convidado' });
+    expect(r.temUsuario(7)).toBe(true);
+    expect(r.temUsuario(8)).toBe(false);
+    r.saiuAntesDoInicio(0);
+    expect(r.temUsuario(7)).toBe(false);
+  });
+
   // Regra: só `onLeave` (saída consentida ou fim dos 60 s de reconexão) chama `abandonou`,
   // e a sala não o chama se a partida já estava em `fimPartida`. Quem caiu e não voltou,
   // mas viu a partida terminar dentro dos 60 s, conta como quem ficou: vitória/derrota e Elo.

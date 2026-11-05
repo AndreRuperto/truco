@@ -136,6 +136,7 @@ export class MesaRoom extends Room {
 
   onJoin(client: Client, options?: { nome?: unknown }) {
     const auth = client.auth as UsuarioConexao | undefined;
+    if (auth && this.registro.temUsuario(auth.usuarioId)) throw new Error('você já está nesta mesa (outra aba?)');
     let cadeira: Cadeira | null;
     if (this.reservados) {
       const r = auth ? this.reservados.find((j) => j.usuarioId === auth.usuarioId) : undefined;
