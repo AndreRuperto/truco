@@ -1,9 +1,9 @@
-import type { Acao, Cadeira, EstadoPartida } from './estado';
+import type { AcaoJogador, Cadeira, EstadoPartida } from './estado';
 import { ErroJogada, reduce } from './reducer';
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
 
-function candidatas(cadeira: Cadeira): Acao[] {
+function candidatas(cadeira: Cadeira): AcaoJogador[] {
   return [
     { tipo: 'jogar', cadeira, indice: 0 },
     { tipo: 'jogar', cadeira, indice: 1 },
@@ -21,10 +21,8 @@ function candidatas(cadeira: Cadeira): Acao[] {
   ];
 }
 
-/** Todas as ações legais (exceto distribuir). Opcionalmente filtra por cadeira. */
-export function acoesValidas(s: EstadoPartida, cadeira?: Cadeira): Acao[] {
-  const cadeiras = cadeira === undefined ? CADEIRAS : [cadeira];
-  return cadeiras.flatMap(candidatas).filter((a) => {
+function legais(s: EstadoPartida, acoes: AcaoJogador[]): AcaoJogador[] {
+  return acoes.filter((a) => {
     try {
       reduce(s, a);
       return true;
@@ -33,4 +31,20 @@ export function acoesValidas(s: EstadoPartida, cadeira?: Cadeira): Acao[] {
       throw e;
     }
   });
+}
+
+/** Ações legais da cadeira informada (exceto distribuir). Seguro para enviar a esse jogador. */
+export function acoesValidas(s: EstadoPartida, cadeira: Cadeira): AcaoJogador[] {
+  if (!CADEIRAS.includes(cadeira)) throw new ErroJogada('cadeira inválida');
+  return legais(s, candidatas(cadeira));
+}
+
+/**
+ * Ações legais de todas as cadeiras (exceto distribuir).
+ *
+ * ATENÇÃO: server/test only — never send to clients. Revela, por exemplo,
+ * quem tem família ou quantas cartas cada um pode jogar.
+ */
+export function todasAcoesValidas(s: EstadoPartida): AcaoJogador[] {
+  return legais(s, CADEIRAS.flatMap(candidatas));
 }

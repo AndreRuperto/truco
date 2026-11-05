@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, test } from 'vitest';
-import { acoesValidas } from '../src/acoes';
+import { acoesValidas, todasAcoesValidas } from '../src/acoes';
 import { type Carta, idCarta, novoBaralho } from '../src/cartas';
 import { type EstadoPartida, novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';
@@ -28,10 +28,26 @@ function cartasEmJogo(s: EstadoPartida): Carta[] {
 
 describe('acoesValidas', () => {
   test('início da mão: só quem está na vez joga ou truca', () => {
-    const acoes = acoesValidas(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'));
-    expect(acoes.every((a) => 'cadeira' in a && a.cadeira === 0)).toBe(true);
+    const acoes = todasAcoesValidas(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'));
+    expect(acoes.every((a) => a.cadeira === 0)).toBe(true);
     expect(acoes.filter((a) => a.tipo === 'jogar')).toHaveLength(3);
     expect(acoes.some((a) => a.tipo === 'truco')).toBe(true);
+  });
+
+  test('por cadeira: só devolve ações da cadeira pedida', () => {
+    const s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p');
+    expect(acoesValidas(s, 1)).toEqual([]);
+    expect(acoesValidas(s, 0)).toEqual(todasAcoesValidas(s));
+    const t = reduce(s, { tipo: 'truco', cadeira: 0 });
+    expect(acoesValidas(t, 0)).toEqual([]);
+    expect(acoesValidas(t, 3).every((a) => a.cadeira === 3)).toBe(true);
+    expect(acoesValidas(t, 3).map((a) => a.tipo).sort()).toEqual(['aceitar', 'aumentar', 'correr']);
+  });
+
+  test('cadeira é obrigatória', () => {
+    const s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p');
+    // @ts-expect-error sem cadeira devolveria ações de todos (vazamento)
+    expect(() => acoesValidas(s)).toThrow();
   });
 });
 
@@ -47,7 +63,7 @@ describe('propriedades: partidas aleatórias', () => {
           if (s.fase === 'aguardandoDistribuicao') {
             s = reduce(s, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), rand) });
           } else {
-            const acoes = acoesValidas(s);
+            const acoes = todasAcoesValidas(s);
             expect(acoes.length).toBeGreaterThan(0);
             const antes = [...s.placar];
             s = reduce(s, acoes[Math.floor(rand() * acoes.length)]);

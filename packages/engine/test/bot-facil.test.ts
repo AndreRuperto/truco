@@ -35,7 +35,7 @@ describe('botFacil', () => {
         }
         const acao = ([0, 1, 2, 3] as Cadeira[]).map((c) => botFacil(s, c)).find((a) => a !== null);
         expect(acao).toBeDefined();
-        expect(acoesValidas(s)).toContainEqual(acao);
+        expect(acoesValidas(s, acao!.cadeira)).toContainEqual(acao);
         s = reduce(s, acao!);
       }
       expect(s.vencedor).not.toBeNull();
