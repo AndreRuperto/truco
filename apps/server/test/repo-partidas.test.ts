@@ -5,6 +5,7 @@ import { contadoresZerados } from '../src/ranking/estatisticas';
 import {
   type AssentoRegistro,
   bloqueioAte,
+  encerrarOrfas,
   historico,
   iniciarPartida,
   perfil,
@@ -161,6 +162,30 @@ describe('partida casual', () => {
 
   test('perfil de usuário inexistente', async () => {
     expect(await perfil(b.db, 999)).toBeNull();
+  });
+});
+
+describe('partidas órfãs (o processo morreu no meio)', () => {
+  test('encerrarOrfas fecha só as sem fim, como abandonadas, sem Elo nem bloqueio', async () => {
+    const { ana, bia } = await doisJogadores();
+    const orfa = await iniciarPartida(b.db, { variante: 'paulista', modo: 'ranqueada', formato: '1x1', assentos: assentos1x1(ana.id, bia.id) }, T0);
+    const acabada = await iniciarPartida(b.db, { variante: 'paulista', modo: 'ranqueada', formato: '1x1', assentos: assentos1x1(ana.id, bia.id) }, T0);
+    await terminarPartida(b.db, acabada, fim(0, [12, 3]), OPC);
+    const fimAntes = (await b.db.select().from(partidas).where(eq(partidas.id, acabada)))[0].terminadaEm;
+    const depois = new Date(T0.getTime() + 60_000);
+
+    expect(await encerrarOrfas(b.db, depois)).toBe(1);
+
+    const [p] = await b.db.select().from(partidas).where(eq(partidas.id, orfa));
+    expect(p).toMatchObject({ abandonada: true, terminadaEm: depois, vencedora: null });
+    const [q] = await b.db.select().from(partidas).where(eq(partidas.id, acabada));
+    expect(q).toMatchObject({ abandonada: false, terminadaEm: fimAntes });
+    const ps = await b.db.select().from(participacoes).where(eq(participacoes.partidaId, orfa));
+    expect(ps.every((x) => x.eloDepois === null && !x.abandonou)).toBe(true);
+    // Só a partida que terminou mexeu no Elo; ninguém ficou bloqueado.
+    expect(await ratingDe(b.db, ana.id, 'paulista')).toEqual({ elo: 1016, pontos: 16, partidas: 1 });
+    expect(await bloqueioAte(b.db, ana.id, depois)).toBeNull();
+    expect(await encerrarOrfas(b.db, depois)).toBe(0);
   });
 });
 

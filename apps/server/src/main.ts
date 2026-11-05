@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { agendarLimpeza } from './limpeza';
 import { MesaRoom } from './MesaRoom';
+import { encerrarOrfas } from './repo/partidas';
 import { limparExpirados } from './repo/usuarios';
 import { criarServidor } from './servidor';
 import { servicosDoAmbiente } from './servicos';
@@ -14,6 +15,10 @@ const PASTA_PGLITE = fileURLToPath(new URL('../.dados/pglite', import.meta.url))
 MesaRoom.tempos = temposDoAmbiente(process.env);
 const { servicos, config, fechar } = await servicosDoAmbiente(process.env, { pastaPglite: PASTA_PGLITE });
 for (const a of config.avisos) console.warn(`truco: aviso: ${a}`);
+// Partidas que o processo anterior não fechou (crash/SIGKILL): abandonadas, sem Elo nem bloqueio.
+// Antes do `listen`: nenhuma partida viva existe ainda.
+const orfas = await encerrarOrfas(servicos.banco, servicos.agora());
+if (orfas > 0) console.warn(`truco: aviso: ${orfas} partida(s) sem fim do processo anterior fechada(s) como abandonada(s)`);
 
 const pastaWeb = existsSync(join(PASTA_WEB, 'index.html')) ? PASTA_WEB : null;
 const servidor = criarServidor(servicos, { pastaWeb });

@@ -73,6 +73,17 @@ Sem `DATABASE_URL` o servidor usa PGlite em disco dentro do container — os dad
 | `GOOGLE_CLIENT_ID` | para login Google | client ID (passo 6). Sem ela, o botão do Google não aparece. |
 | `TRUCO_ORIGENS` | raro | outras origens aceitas no CORS, separadas por vírgula |
 | `TRUCO_K_ELO` | não | K do Elo (inteiro de 1 a 100; padrão 32) |
+| `RAILWAY_DEPLOYMENT_DRAINING_SECONDS` | recomendada | `15` — tempo de desligamento gracioso (ver abaixo) |
+
+**Desligamento gracioso.** A cada redeploy o Railway manda `SIGTERM` ao deployment antigo e, passado o
+tempo de *draining*, o mata com `SIGKILL`. Segundo a documentação do Railway
+([Deployment Teardown](https://docs.railway.com/deployments/deployment-teardown) e
+[Troubleshooting slow deployments](https://docs.railway.com/guides/troubleshooting-slow-deployments),
+consultadas em 2026-11-05), esse tempo vem como **0 segundos** por padrão e é ajustável pela variável
+de serviço `RAILWAY_DEPLOYMENT_DRAINING_SECONDS` (ou em **Settings** do serviço). Com 0 s o processo
+pode morrer antes de fechar as partidas em andamento; com `15` o servidor tem tempo de fechá-las como
+abandonadas (sem Elo nem bloqueio), terminar as gravações e fechar o banco. Se mesmo assim o processo
+morrer no meio (crash, `SIGKILL`), o próximo boot fecha as partidas que ficaram sem fim do mesmo jeito.
 
 **Não** defina `PORT` (o Railway injeta). **Não** defina `TRUCO_PGLITE`, `TRUCO_TEMPOS` nem
 `TRUCO_EMAIL_TESTE` em produção (são de teste; a última é ignorada em produção).

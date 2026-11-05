@@ -184,6 +184,20 @@ export async function encerrarAbandonada(db: Banco, partidaId: number, agora: Da
   return r.length > 0;
 }
 
+/**
+ * Boot: partidas sem fim só existem se o processo anterior morreu no meio (crash, SIGKILL
+ * depois do prazo de desligamento). Fecha todas como `abandonadas`, sem placar, Elo nem
+ * bloqueio. Só pode rodar antes de o servidor aceitar conexões (1 réplica). Devolve quantas.
+ */
+export async function encerrarOrfas(db: Banco, agora: Date): Promise<number> {
+  const r = await db
+    .update(partidas)
+    .set({ terminadaEm: agora, abandonada: true })
+    .where(isNull(partidas.terminadaEm))
+    .returning({ id: partidas.id });
+  return r.length;
+}
+
 export async function bloqueioAte(db: Banco, usuarioId: number, agora: Date): Promise<Date | null> {
   const [x] = await db
     .select({ ate: bloqueiosFila.ate })
