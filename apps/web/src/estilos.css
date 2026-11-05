@@ -610,6 +610,20 @@ button:disabled {
   color: var(--grito);
   line-height: 1;
 }
+/* Nas laterais a vez já aparece no aro amarelo pulsando: o texto fica só para leitor de tela. */
+.assento.pos-esquerda .etiqueta.vez,
+.assento.pos-direita .etiqueta.vez {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.assento.pos-esquerda .assento-nome,
+.assento.pos-direita .assento-nome {
+  padding-inline: var(--e1);
+}
 .etiqueta.off {
   color: var(--giz);
   font-weight: 800;

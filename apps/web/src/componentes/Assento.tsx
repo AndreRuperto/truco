@@ -26,9 +26,9 @@ interface Props {
 export function Assento({ posicao, info, qtdCartas, daVez, balao, maoVisivel, variante, vira, prazo = null, agora = 0 }: Props) {
   return (
     <div className={cx('assento', `pos-${posicao}`, daVez && 'da-vez', info && !info.conectado && 'caiu')} data-testid={`assento-${posicao}`}>
+      {/* Sem etiqueta "bot": o server reserva o prefixo "Bot " aos nomes dos bots. */}
       <div className="assento-nome">
         <span>{info?.nome ?? '—'}</span>
-        {info?.tipo === 'bot' && <span className="etiqueta">bot</span>}
         {info && !info.conectado && <span className="etiqueta off">caiu</span>}
         {daVez && <span className="etiqueta vez">{posicao === 'baixo' ? 'sua vez' : 'vez'}</span>}
       </div>
