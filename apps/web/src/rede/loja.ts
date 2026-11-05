@@ -136,14 +136,18 @@ export function criarLoja(o: OpcoesLoja = {}) {
     enviarSinal: (x: Sinal) => sala?.send('sinal', x),
     enviarFala: (f: Fala) => sala?.send('fala', f),
     iniciar: () => sala?.send('iniciar'),
-    /** Saída definitiva (o servidor põe um bot no lugar). */
+    /**
+     * Saída definitiva (o servidor põe um bot no lugar). Larga o estado local antes do
+     * `leave`: com o socket meio aberto ele pode demorar, e a UI não deve esperar.
+     */
     sair: async (): Promise<void> => {
       const s = sala;
       if (!s) return;
+      largar();
       try {
         await s.leave(true);
-      } finally {
-        if (sala === s) largar();
+      } catch {
+        // já estamos fora; o servidor trata a queda como saída depois de 60 s
       }
     },
     limparErro: (id: number) => {

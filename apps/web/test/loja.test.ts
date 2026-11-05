@@ -169,6 +169,16 @@ describe('loja', () => {
     expect(sala.enviados).toHaveLength(1);
   });
 
+  test('sair não trava a UI se o leave nunca resolve (socket meio aberto)', () => {
+    const { loja, sala, tokens } = montar();
+    loja.conectar(sala);
+    vi.spyOn(sala, 'leave').mockReturnValue(new Promise(() => {}));
+    void loja.sair();
+    expect(sala.leave).toHaveBeenCalledWith(true);
+    expect(loja.getSnapshot().status).toBe('fora');
+    expect(tokens.at(-1)).toBeNull();
+  });
+
   test('falha de conexão volta ao lobby, com ou sem mensagem', () => {
     const { loja } = montar();
     loja.marcarConectando();
