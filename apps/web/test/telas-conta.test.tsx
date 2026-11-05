@@ -89,4 +89,10 @@ describe('TelaRanking', () => {
     expect(screen.getByRole('table', { name: 'Ranking Mineiro' })).toBeInTheDocument();
     for (const th of screen.getAllByRole('columnheader')) expect(th).toHaveAttribute('scope', 'col');
   });
+
+  test('vazio: explica o ranking da variante e leva para a fila', async () => {
+    render(<TelaRanking variante="paulista" api={{ ranking: vi.fn(async () => ({ linhas: [] })) }} />);
+    expect(await screen.findByRole('region', { name: 'O ranking Paulista ainda está em branco' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Jogar ranqueada' })).toHaveAttribute('href', '#/fila');
+  });
 });

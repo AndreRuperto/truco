@@ -1412,11 +1412,13 @@ button:disabled {
 .lista-dados a {
   color: var(--tinta);
 }
+/* Abas de fichário: a ativa é do mesmo papel do painel e encosta nele (cobre a borda de cima). */
 .abas {
   display: flex;
+  align-items: flex-end;
   gap: var(--e1);
   margin-bottom: 0;
-  padding: 0 var(--e2);
+  padding: 0 var(--e4);
 }
 .abas a {
   display: inline-flex;
@@ -1433,11 +1435,55 @@ button:disabled {
   --foco: var(--grito);
 }
 .abas a[aria-current='page'] {
+  position: relative;
+  z-index: 1;
+  min-height: 48px;
+  margin-bottom: -2px;
+  padding-bottom: 2px;
   border-color: var(--papel-borda);
   background: var(--papel);
   color: var(--tinta);
   font-weight: 800;
   --foco: var(--tinta);
+}
+.painel-abas {
+  overflow: hidden;
+  border: 2px solid var(--papel-borda);
+  border-radius: var(--raio-painel);
+  background: var(--papel);
+  color: var(--tinta);
+  --foco: var(--tinta);
+}
+.painel-abas > p {
+  margin: 0;
+  padding: var(--e4);
+}
+.painel-abas .erro-form {
+  color: var(--naipe-vermelho);
+}
+.painel-abas .tabela-ranking {
+  border: 0;
+  border-radius: 0;
+}
+.vazio {
+  padding: var(--e5) var(--e4);
+}
+.vazio h2 {
+  margin: 0 0 var(--e3);
+  font-size: var(--t2);
+}
+.vazio p {
+  margin: 0 0 var(--e3);
+  color: var(--tinta-suave);
+}
+.vazio .botao-principal {
+  display: inline-flex;
+  align-items: center;
+  margin-top: var(--e2);
+  padding: 0 var(--e5);
+  border: 2px solid var(--madeira-funda);
+  border-radius: var(--raio-botao);
+  text-decoration: none;
 }
 .tabela-ranking {
   width: 100%;

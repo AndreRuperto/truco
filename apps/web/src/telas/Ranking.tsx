@@ -16,40 +16,53 @@ export function TelaRanking({ api, variante }: { api: Pick<Api, 'ranking'>; vari
           </a>
         ))}
       </nav>
-      {carregando && !dados && <p role="status">Carregando…</p>}
-      {erro && (
-        <p className="erro-form" role="alert">
-          {erro}
-        </p>
-      )}
-      {dados && dados.linhas.length === 0 && <p>Ninguém jogou ranqueada nesta variante ainda.</p>}
-      {dados && dados.linhas.length > 0 && (
-        <table className="tabela-ranking">
-          <caption className="so-leitor">Ranking {NOME_VARIANTE[variante]}</caption>
-          <thead>
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col">Jogador</th>
-              <th scope="col">Patente</th>
-              <th scope="col">Pontos</th>
-              <th scope="col">Elo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dados.linhas.map((l) => (
-              <tr key={l.usuarioId}>
-                <td>{l.posicao}</td>
-                <td>
-                  <a href={hrefDe({ tela: 'perfil', id: l.usuarioId })}>{l.apelido}</a>
-                </td>
-                <td>{l.patente}</td>
-                <td>{l.pontos}</td>
-                <td>{l.elo}</td>
+      <div className="painel-abas">
+        {carregando && !dados && <p role="status">Carregando…</p>}
+        {erro && (
+          <p className="erro-form" role="alert">
+            {erro}
+          </p>
+        )}
+        {dados && dados.linhas.length === 0 && (
+          <section className="vazio" aria-labelledby="ranking-vazio">
+            <h2 id="ranking-vazio">O ranking {NOME_VARIANTE[variante]} ainda está em branco</h2>
+            <p>
+              Aqui entram os jogadores de partidas ranqueadas no {NOME_VARIANTE[variante]}, ordenados por pontos de patente (no empate, por Elo).
+            </p>
+            <p>Ninguém terminou uma ranqueada nesta variante ainda: o primeiro a terminar já aparece no topo.</p>
+            <a className="botao-principal" href={hrefDe({ tela: 'fila' })}>
+              Jogar ranqueada
+            </a>
+          </section>
+        )}
+        {dados && dados.linhas.length > 0 && (
+          <table className="tabela-ranking">
+            <caption className="so-leitor">Ranking {NOME_VARIANTE[variante]}</caption>
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Jogador</th>
+                <th scope="col">Patente</th>
+                <th scope="col">Pontos</th>
+                <th scope="col">Elo</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+            </thead>
+            <tbody>
+              {dados.linhas.map((l) => (
+                <tr key={l.usuarioId}>
+                  <td>{l.posicao}</td>
+                  <td>
+                    <a href={hrefDe({ tela: 'perfil', id: l.usuarioId })}>{l.apelido}</a>
+                  </td>
+                  <td>{l.patente}</td>
+                  <td>{l.pontos}</td>
+                  <td>{l.elo}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </main>
   );
 }
