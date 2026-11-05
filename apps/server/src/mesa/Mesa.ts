@@ -1,5 +1,6 @@
 import {
   type AcaoJogador,
+  baralhoDaMesa,
   botDificil,
   botFacil,
   type Cadeira,
@@ -11,7 +12,6 @@ import {
   forca,
   acoesValidas,
   novaPartida,
-  novoBaralho,
   parceiroDe,
   quemDeveAgir,
   reduce,
@@ -368,7 +368,7 @@ export class Mesa {
   private distribuir(): void {
     if (!this.estado) return;
     try {
-      this.estado = reduce(this.estado, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), this.rand) });
+      this.estado = reduce(this.estado, { tipo: 'distribuir', baralho: embaralhar(baralhoDaMesa(this.estado.regras), this.rand) });
       this.versao++;
       this.dicas = [null, null, null, null];
       this.sinaisDosBots();

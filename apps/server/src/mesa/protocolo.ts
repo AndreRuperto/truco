@@ -125,6 +125,7 @@ export function chaveRegras(regras: RegrasMesa, chanceInterceptarSinal: number):
     `m10:${regras.maoDe10 ? 1 : 0}`,
     `m11:${regras.maoDe11}`,
     `fam:${regras.familia}`,
+    `lim:${regras.maoLimpa === true ? 1 : 0}`,
     `int:${chanceInterceptarSinal}`,
   ].join('|');
 }
@@ -147,6 +148,8 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
     maoDe10: typeof r.maoDe10 === 'boolean' ? r.maoDe10 : base.maoDe10,
     maoDe11: um(r.maoDe11, ['off', 'qualquerDupla', 'onzeAOnze'] as const, base.maoDe11),
     familia: um(r.familia, ['off', 'aberta', 'fechada'] as const, base.familia),
+    // Mão limpa só existe no mineiro.
+    maoLimpa: variante === 'mineiro' && r.maoLimpa === true,
   };
   const h = o.humanos;
   const humanos = typeof h === 'number' && Number.isInteger(h) && h >= 1 && h <= 4 ? h : 1;

@@ -7,7 +7,7 @@ describe('chaveRegras', () => {
   test('determinística e igual para as mesmas regras (a variante fica de fora: tem filtro próprio)', () => {
     expect(chaveRegras(base, 0)).toBe(chaveRegras({ ...base }, 0));
     expect(chaveRegras(base, 0)).toBe(chaveRegras({ ...base, variante: 'mineiro' }, 0));
-    expect(chaveRegras(base, 0.25)).toBe('1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|int:0.25');
+    expect(chaveRegras(base, 0.25)).toBe('1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|lim:0|int:0.25');
   });
 
   test('muda com cada regra e com a chance de interceptar', () => {
@@ -16,6 +16,7 @@ describe('chaveRegras', () => {
     expect(chaveRegras({ ...base, maoDe10: !base.maoDe10 }, 0)).not.toBe(k);
     expect(chaveRegras({ ...base, maoDe11: 'off' }, 0)).not.toBe(k);
     expect(chaveRegras({ ...base, familia: 'aberta' }, 0)).not.toBe(k);
+    expect(chaveRegras({ ...base, maoLimpa: true }, 0)).not.toBe(k);
     expect(chaveRegras(base, 0.5)).not.toBe(k);
   });
 });
@@ -36,6 +37,15 @@ describe('opcoesDaSala', () => {
     expect(opcoesDaSala({ chanceInterceptarSinal: 0.25 }).chanceInterceptarSinal).toBe(0.25);
     expect(opcoesDaSala({ chanceInterceptarSinal: 1 }).chanceInterceptarSinal).toBe(1);
     for (const ruim of [-0.1, 1.5, NaN, '0.5', null]) expect(opcoesDaSala({ chanceInterceptarSinal: ruim }).chanceInterceptarSinal).toBe(0);
+  });
+
+  test('mão limpa: só no mineiro, só booleano; ranqueada nunca', () => {
+    expect(opcoesDaSala({ variante: 'mineiro', regras: { maoLimpa: true } }).regras.maoLimpa).toBe(true);
+    expect(opcoesDaSala({ variante: 'mineiro', regras: { maoLimpa: false } }).regras.maoLimpa).toBe(false);
+    expect(opcoesDaSala({ variante: 'mineiro', regras: {} }).regras.maoLimpa).toBe(false);
+    for (const ruim of ['sim', 1, null]) expect(opcoesDaSala({ variante: 'mineiro', regras: { maoLimpa: ruim } }).regras.maoLimpa).toBe(false);
+    expect(opcoesDaSala({ variante: 'paulista', regras: { maoLimpa: true } }).regras.maoLimpa).toBe(false);
+    expect(opcoesDaSala({ modo: 'ranqueada', variante: 'mineiro', humanos: 2, regras: { maoLimpa: true } }).regras.maoLimpa).toBe(false);
   });
 
   test('valores inválidos caem no padrão', () => {

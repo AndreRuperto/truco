@@ -1,3 +1,4 @@
+import { baralhoDaMesa, idCarta, REGRAS_RANQUEADA } from '@truco/engine';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { avancarAte, criarMesa } from './mesa-helpers';
 
@@ -20,6 +21,19 @@ describe('ações', () => {
     expect(e.minhaCadeira).toBe(0);
     expect(e.visao!.cadeira).toBe(0);
     expect(JSON.stringify(e)).not.toContain('"maos"');
+  });
+
+  test('mão limpa: distribui do baralho de 29 cartas da mesa', () => {
+    const regras = { ...REGRAS_RANQUEADA.mineiro, maoLimpa: true };
+    const permitidas = new Set(baralhoDaMesa(regras).map(idCarta));
+    const { mesa, estado, de } = criarMesa({ regras });
+    mesa.sentar('a', 'Ana');
+    avancarAte(() => !!estado('a')?.visao?.mao);
+    const mao = estado('a')!.visao!.mao!.minhaMao;
+    expect(mao).toHaveLength(3);
+    expect(mao.every((c) => c !== null && permitidas.has(idCarta(c)))).toBe(true);
+    expect(estado('a')!.regras.maoLimpa).toBe(true);
+    expect(de('a', 'erro')).toHaveLength(0);
   });
 
   test('a cadeira enviada pelo cliente é ignorada', () => {

@@ -154,7 +154,7 @@ describe('MesaRoom', () => {
   });
 
   test('matchmaking separa por regras (chaveRegras) e a sala guarda a chave recalculada', async () => {
-    const regras = { pontuacao: '1-3-6-9-12', maoDe10: false, maoDe11: 'qualquerDupla', familia: 'off' } as const;
+    const regras = { pontuacao: '1-3-6-9-12', maoDe10: false, maoDe11: 'qualquerDupla', familia: 'off', maoLimpa: false } as const;
     const chave = chaveRegras({ variante: 'paulista', ...regras }, 0);
     const a = await colyseus.sdk.joinOrCreate('mesa', { variante: 'paulista', humanos: 2, nivelBot: 'facil', regras, chaveRegras: chave, nome: 'Ana' });
     coletor(a);
@@ -177,7 +177,7 @@ describe('MesaRoom', () => {
   });
 
   test('chave mentirosa na criação é corrigida: quem pede as regras reais entra na sala', async () => {
-    const regras = { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'off', familia: 'fechada' } as const;
+    const regras = { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'off', familia: 'fechada', maoLimpa: false } as const;
     const a = await colyseus.sdk.joinOrCreate('mesa', { variante: 'mineiro', humanos: 2, nivelBot: 'facil', regras, chaveRegras: 'mentira', nome: 'Ana' });
     coletor(a);
     const b = await colyseus.sdk.joinOrCreate('mesa', {
@@ -190,6 +190,30 @@ describe('MesaRoom', () => {
     });
     coletor(b);
     expect(b.roomId).toBe(a.roomId);
+  });
+
+  test('mão limpa não se mistura com mesa mineira comum', async () => {
+    const comum = { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'off', familia: 'fechada', maoLimpa: false } as const;
+    const limpa = { ...comum, maoLimpa: true } as const;
+    const entrar = (regras: typeof comum | typeof limpa, nome: string) =>
+      colyseus.sdk.joinOrCreate('mesa', {
+        variante: 'mineiro',
+        humanos: 2,
+        nivelBot: 'facil',
+        regras,
+        chaveRegras: chaveRegras({ variante: 'mineiro', ...regras }, 0),
+        nome,
+      });
+    const a = await entrar(limpa, 'Ana');
+    const ma = coletor(a);
+    const b = await entrar(comum, 'Bia');
+    coletor(b);
+    expect(b.roomId).not.toBe(a.roomId);
+    const c = await entrar(limpa, 'Cid');
+    coletor(c);
+    expect(c.roomId).toBe(a.roomId);
+    await esperar(() => !!ma.estado?.length);
+    expect(ma.estado.at(-1).regras).toEqual({ variante: 'mineiro', ...limpa });
   });
 
   test('cliente que inunda mensagens é desconectado', async () => {

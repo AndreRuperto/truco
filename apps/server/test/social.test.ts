@@ -31,6 +31,12 @@ describe('sinalDaMao', () => {
     expect(sinalDaMao(cs('Qo', 'Jo', 'Ko'), 'mineiro', null)).toBe('nada');
   });
 
+  test('mão limpa: coringa não é sinal de manilha', () => {
+    expect(sinalDaMao(cs('Cc', 'Cp', 'Qo'), 'mineiro', null)).toBe('nada');
+    expect(sinalDaMao(cs('Cc', '3e', 'Ko'), 'mineiro', null)).toBe('tres');
+    expect(sinalDaMao(cs('Cp', '7o', '3e'), 'mineiro', null)).toBe('picafumo');
+  });
+
   test('paulista: a manilha depende da vira', () => {
     expect(sinalDaMao(cs('6c', '3e', '4o'), 'paulista', c('5p'))).toBe('copas');
     expect(sinalDaMao(cs('6o', '5e'), 'paulista', c('5p'))).toBe('picafumo');
