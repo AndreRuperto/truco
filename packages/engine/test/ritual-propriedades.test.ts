@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { todasAcoesValidas } from '../src/acoes';
 import { baralhoDaMesa, idCarta } from '../src/cartas';
 import { type Cadeira, novaPartida } from '../src/estado';
-import { fechadasUsadas } from '../src/familia';
+import { ehFamilia, fechadasUsadas, tipoDaProximaFamilia } from '../src/familia';
 import { escada, reduce } from '../src/reducer';
 import type { RegrasMesa } from '../src/regras';
 import { cartasDaPartida, completarSorte, LIMITE_FAMILIAS_FECHADAS } from '../src/ritual';
@@ -42,10 +42,22 @@ describe('propriedades do ritual', () => {
           expect(acoes.length).toBeGreaterThan(0);
           expect(quemDeveAgir(s).length).toBeGreaterThan(0);
           const antes = [...s.placar];
-          const a = acoes[Math.floor(rand() * acoes.length)];
-          const chave = `${a.tipo}:${regras.maoLimpa ? 'limpa' : 'cheia'}`;
-          vistas.set(chave, (vistas.get(chave) ?? 0) + 1);
+          // Família e conferir saem com mais frequência que o sorteio uniforme, para a amostra
+          // passar pelo limite de fechadas, pela conferência e pelo fim de partida por família.
+          const especiais = acoes.filter((x) => x.tipo === 'familia' || (x.tipo === 'conferir' && x.conferir));
+          const a =
+            especiais.length > 0 && rand() < 0.8
+              ? especiais[Math.floor(rand() * especiais.length)]
+              : acoes[Math.floor(rand() * acoes.length)];
+          const ver = (k: string) => vistas.set(k, (vistas.get(k) ?? 0) + 1);
+          ver(`${a.tipo}:${regras.maoLimpa ? 'limpa' : 'cheia'}`);
+          if (a.tipo === 'conferir') {
+            const m = s.mao!;
+            ver(a.conferir ? `conferir:true:${ehFamilia(m.familias[m.familiaPendente!].cartas) ? 'real' : 'blefe'}` : 'conferir:false');
+          }
+          if (a.tipo === 'familia' && regras.familia === 'fechada' && tipoDaProximaFamilia(s) === 'aberta') ver('familia:aberta');
           s = reduce(s, completarSorte(a, s, rand));
+          if (a.tipo === 'conferir' && !s.mao && s.ultimaMao?.motivo === 'familia') ver('fim:familia');
           for (const d of [0, 1] as const) {
             const delta = s.placar[d] - antes[d];
             if (delta !== 0) expect(escada(s)).toContain(delta);
@@ -68,12 +80,17 @@ describe('propriedades do ritual', () => {
         expect(Math.max(...s.placar)).toBeGreaterThanOrEqual(12);
         expect(cartasDaPartida(s).map(idCarta).sort()).toEqual(baralho);
       }),
-      { numRuns: 80 },
+      // Semente fixa: a amostra precisa cobrir casos raros (abaixo); sem ela o teste poderia oscilar.
+      { numRuns: 80, seed: 20261105 },
     );
     // A amostra precisa ter passado por abrir 3 / dar 3 e pela família, com baralho cheio e com mão limpa.
     for (const tipo of ['abrir3', 'dar3', 'familia']) {
       expect(vistas.get(`${tipo}:cheia`) ?? 0).toBeGreaterThan(0);
       expect(vistas.get(`${tipo}:limpa`) ?? 0).toBeGreaterThan(0);
+    }
+    // Conferência (real e blefe), deixar passar, aberta depois do limite e fim de partida por família.
+    for (const k of ['conferir:true:real', 'conferir:true:blefe', 'conferir:false', 'familia:aberta', 'fim:familia']) {
+      expect(vistas.get(k) ?? 0, k).toBeGreaterThan(0);
     }
   }, 180_000);
 
