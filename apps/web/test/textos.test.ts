@@ -7,7 +7,6 @@ import {
   resumoFimMao,
   resumoFimPartida,
   textoFamilia,
-  textoPedido,
   textoPedidoPendente,
   valorMao,
 } from '../src/logica/textos';
@@ -30,14 +29,11 @@ describe('pedido e valor da mão', () => {
 
   test('texto do pedido pendente', () => {
     const s = trucado();
-    expect(textoPedido(visaoDoJogador(s, 1).mao)).toBe('Truco!');
     expect(textoPedidoPendente(visaoDoJogador(s, 1))).toBe('Pediram Truco! Vale 3.');
     expect(textoPedidoPendente(visaoDoJogador(s, 0))).toBe('Pedimos Truco! Vale 3.');
     const s2 = reduce(s, { tipo: 'aumentar', cadeira: 1 });
-    expect(textoPedido(visaoDoJogador(s2, 0).mao)).toBe('Seis!');
     expect(textoPedidoPendente(visaoDoJogador(s2, 0))).toBe('Pediram Seis! Vale 6.');
-    expect(textoPedido(visaoDoJogador(distribuida(PAULISTA), 0).mao)).toBeNull();
-    expect(textoPedido(null)).toBeNull();
+    expect(textoPedidoPendente(visaoDoJogador(distribuida(PAULISTA), 0))).toBeNull();
   });
 });
 

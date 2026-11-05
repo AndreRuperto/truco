@@ -5,7 +5,6 @@ import {
   type RegrasMesa,
   type ResultadoRodada,
   type Visao,
-  type VisaoMao,
   type VisaoResultadoMao,
 } from '@truco/engine';
 
@@ -15,11 +14,6 @@ const NOMES_PEDIDO = ['Mão', 'Truco', 'Seis', 'Nove', 'Doze'] as const;
 export const nomePedido = (nivel: number): string => NOMES_PEDIDO[Math.max(0, Math.min(4, nivel))];
 
 export const valorMao = (regras: RegrasMesa, nivel: number): number => ESCADAS[regras.pontuacao][nivel];
-
-/** "Truco!", "Seis!"... do pedido pendente, ou null. */
-export function textoPedido(m: VisaoMao | null): string | null {
-  return m?.trucoPendente ? `${nomePedido(m.trucoPendente.proposto)}!` : null;
-}
 
 /** Frase da barra de ações durante um pedido: "Pediram Truco! Vale 3." / "Pedimos ...". */
 export function textoPedidoPendente(v: Visao): string | null {
