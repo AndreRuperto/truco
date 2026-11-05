@@ -62,6 +62,12 @@ function equilibrar(quatro: EntradaFila[]): [EntradaFila[], EntradaFila[]] {
   ];
 }
 
+/**
+ * Decisão: vale a MAIOR das duas faixas (não a menor). Quem espera há muito tempo puxa um
+ * novato de Elo mais distante — o novato aceita uma partida mais desigual que a faixa dele
+ * em troca de ninguém ficar preso na fila quando há pouca gente. A diferença continua
+ * limitada por `FAIXA_MAXIMA` e o Elo compensa (ganha mais quem vence o mais forte).
+ */
 function cabem(a: Grupo, b: Grupo, agora: number): boolean {
   return Math.abs(a.elo - b.elo) <= Math.max(faixa(agora - a.desde), faixa(agora - b.desde));
 }
