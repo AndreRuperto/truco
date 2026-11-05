@@ -1,4 +1,4 @@
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, isNull, lte, or, sql } from 'drizzle-orm';
 import { randomInt } from 'node:crypto';
 import type { PerfilGoogle } from '../auth/google';
 import { gerarToken, hashToken } from '../auth/tokens';
@@ -17,10 +17,37 @@ export const DURACAO_LINK_MS = 15 * 60 * 1000;
 
 const COLUNAS = { id: usuarios.id, apelido: usuarios.apelido, email: usuarios.email };
 
+type ErroPg = { code?: string; constraint?: string; cause?: ErroPg } | null;
+
 const ehViolacaoUnica = (e: unknown) => {
-  const x = e as { code?: string; cause?: { code?: string } } | null;
+  const x = e as ErroPg;
   return x?.code === '23505' || x?.cause?.code === '23505';
 };
+
+/** Nome da restrição única violada (node-postgres e PGlite; o Drizzle embrulha em `cause`), ou null. */
+export function restricaoViolada(e: unknown): string | null {
+  const x = e as ErroPg;
+  if (x?.code === '23505') return x.constraint ?? '';
+  if (x?.cause?.code === '23505') return x.cause.constraint ?? '';
+  return null;
+}
+
+const RESTRICOES_APELIDO = new Set(['usuarios_apelido_unique', 'usuarios_apelido_lower_idx']);
+const violouApelido = (e: unknown) => RESTRICOES_APELIDO.has(restricaoViolada(e) ?? '-');
+
+/** O e-mail já está ligado a outra conta Google (outro `sub`): não trocamos o dono da conta. */
+export class ErroGoogleOutraConta extends Error {
+  constructor() {
+    super('este e-mail já está ligado a outra conta Google');
+    this.name = 'ErroGoogleOutraConta';
+  }
+}
+
+function emailOuErro(cru: string): string {
+  const e = normalizarEmail(cru);
+  if (!e) throw new Error('e-mail inválido');
+  return e;
+}
 
 export function normalizarEmail(cru: unknown): string | null {
   if (typeof cru !== 'string') return null;
@@ -43,7 +70,11 @@ export function baseDeApelido(texto: string): string {
 }
 
 async function apelidoExiste(db: Banco, apelido: string): Promise<boolean> {
-  const [x] = await db.select({ id: usuarios.id }).from(usuarios).where(eq(usuarios.apelido, apelido)).limit(1);
+  const [x] = await db
+    .select({ id: usuarios.id })
+    .from(usuarios)
+    .where(sql`lower(${usuarios.apelido}) = lower(${apelido})`)
+    .limit(1);
   return !!x;
 }
 
@@ -69,8 +100,8 @@ export async function criarUsuario(
         .returning(COLUNAS);
       return u;
     } catch (e) {
-      // corrida com outro cadastro do mesmo apelido: tenta o próximo
-      if (!ehViolacaoUnica(e) || tentativa >= 3) throw e;
+      // corrida com outro cadastro do mesmo apelido: tenta o próximo (e-mail/sub repetido sobe)
+      if (!violouApelido(e) || tentativa >= 3) throw e;
     }
   }
 }
@@ -86,7 +117,8 @@ export async function usuarioPorEmail(db: Banco, email: string): Promise<Usuario
 }
 
 /** Login por link mágico: acha pelo e-mail ou cria a conta. */
-export async function entrarComEmail(db: Banco, email: string): Promise<Usuario> {
+export async function entrarComEmail(db: Banco, emailCru: string): Promise<Usuario> {
+  const email = emailOuErro(emailCru);
   const existente = await usuarioPorEmail(db, email);
   if (existente) return existente;
   try {
@@ -99,19 +131,48 @@ export async function entrarComEmail(db: Banco, email: string): Promise<Usuario>
   }
 }
 
+async function usuarioPorGoogle(db: Banco, sub: string): Promise<Usuario | null> {
+  const [u] = await db.select(COLUNAS).from(usuarios).where(eq(usuarios.googleSub, sub));
+  return u ?? null;
+}
+
+/**
+ * Liga o `sub` à conta do e-mail, só se ela ainda não tem Google. Se já tem OUTRO sub,
+ * lança `ErroGoogleOutraConta` (decisão: não sobrescrever nem criar conta paralela sem
+ * e-mail; o usuário entra pelo link mágico ou pela conta Google original).
+ */
+async function ligarGoogle(db: Banco, u: Usuario, sub: string): Promise<Usuario> {
+  const [ligado] = await db
+    .update(usuarios)
+    .set({ googleSub: sub })
+    .where(and(eq(usuarios.id, u.id), isNull(usuarios.googleSub)))
+    .returning(COLUNAS);
+  if (ligado) return ligado;
+  const [atual] = await db.select({ googleSub: usuarios.googleSub }).from(usuarios).where(eq(usuarios.id, u.id));
+  if (atual?.googleSub === sub) return u; // outro pedido do mesmo login ligou primeiro
+  throw new ErroGoogleOutraConta();
+}
+
 /** Login Google: acha por `sub`; senão liga ao e-mail (se verificado); senão cria. */
 export async function entrarComGoogle(db: Banco, g: PerfilGoogle): Promise<Usuario> {
-  const [porSub] = await db.select(COLUNAS).from(usuarios).where(eq(usuarios.googleSub, g.sub));
+  const porSub = await usuarioPorGoogle(db, g.sub);
   if (porSub) return porSub;
   const email = g.emailVerificado ? normalizarEmail(g.email) : null;
   if (email) {
     const u = await usuarioPorEmail(db, email);
-    if (u) {
-      await db.update(usuarios).set({ googleSub: g.sub }).where(eq(usuarios.id, u.id));
-      return u;
-    }
+    if (u) return ligarGoogle(db, u, g.sub);
   }
-  return criarUsuario(db, { apelidoBase: baseDeApelido(g.nome ?? email ?? 'jogador'), email, googleSub: g.sub });
+  try {
+    return await criarUsuario(db, { apelidoBase: baseDeApelido(g.nome ?? email ?? 'jogador'), email, googleSub: g.sub });
+  } catch (e) {
+    // corrida com outro login (mesmo sub, ou mesmo e-mail por link mágico): rebusca e segue
+    if (!ehViolacaoUnica(e) || violouApelido(e)) throw e;
+    const porSubAgora = await usuarioPorGoogle(db, g.sub);
+    if (porSubAgora) return porSubAgora;
+    const porEmail = email ? await usuarioPorEmail(db, email) : null;
+    if (porEmail) return ligarGoogle(db, porEmail, g.sub);
+    throw e;
+  }
 }
 
 export async function trocarApelido(db: Banco, id: number, cru: unknown): Promise<'ok' | 'invalido' | 'em-uso'> {
@@ -155,8 +216,13 @@ export async function encerrarSessao(db: Banco, token: string): Promise<void> {
 
 // ---------- links mágicos ----------
 
-export async function criarLinkMagico(db: Banco, email: string, agora: Date): Promise<string> {
+/** Cria um link novo; apaga os não usados daquele e-mail (só o último vale) e os vencidos. */
+export async function criarLinkMagico(db: Banco, emailCru: string, agora: Date): Promise<string> {
+  const email = emailOuErro(emailCru);
   const token = gerarToken();
+  await db
+    .delete(linksMagicos)
+    .where(or(and(eq(linksMagicos.email, email), eq(linksMagicos.usado, false)), lte(linksMagicos.expiraEm, agora)));
   await db.insert(linksMagicos).values({
     tokenHash: hashToken(token),
     email,
@@ -175,4 +241,16 @@ export async function consumirLinkMagico(db: Banco, token: string, agora: Date):
     .where(and(eq(linksMagicos.tokenHash, hashToken(token)), eq(linksMagicos.usado, false), gt(linksMagicos.expiraEm, agora)))
     .returning({ email: linksMagicos.email });
   return l?.email ?? null;
+}
+
+// ---------- limpeza ----------
+
+/** Apaga sessões vencidas e links vencidos ou já usados. */
+export async function limparExpirados(db: Banco, agora: Date): Promise<{ sessoes: number; links: number }> {
+  const s = await db.delete(sessoes).where(lte(sessoes.expiraEm, agora)).returning({ t: sessoes.tokenHash });
+  const l = await db
+    .delete(linksMagicos)
+    .where(or(lte(linksMagicos.expiraEm, agora), eq(linksMagicos.usado, true)))
+    .returning({ t: linksMagicos.tokenHash });
+  return { sessoes: s.length, links: l.length };
 }

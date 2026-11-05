@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { eq } from 'drizzle-orm';
 import { hashToken } from '../src/auth/tokens';
+import { linksMagicos, sessoes, usuarios } from '../src/banco/schema';
 import {
   apelidoValido,
   baseDeApelido,
@@ -12,7 +14,10 @@ import {
   encerrarSessao,
   entrarComEmail,
   entrarComGoogle,
+  ErroGoogleOutraConta,
+  limparExpirados,
   normalizarEmail,
+  restricaoViolada,
   trocarApelido,
   usuarioDaSessao,
 } from '../src/repo/usuarios';
@@ -75,6 +80,47 @@ describe('usuários', () => {
     expect(outro).toMatchObject({ apelido: 'BiaSouza', email: null });
   });
 
+  test('apelido é único sem diferenciar maiúsculas', async () => {
+    await criarUsuario(b.db, { apelidoBase: 'ana' });
+    expect((await criarUsuario(b.db, { apelidoBase: 'Ana' })).apelido).toBe('Ana2');
+    const erro = await b.db.insert(usuarios).values({ apelido: 'ANA' }).catch((e: unknown) => e);
+    expect(restricaoViolada(erro)).toBe('usuarios_apelido_lower_idx');
+    const c = await criarUsuario(b.db, { apelidoBase: 'caio' });
+    expect(await trocarApelido(b.db, c.id, 'ANA2')).toBe('em-uso');
+    expect(await trocarApelido(b.db, c.id, 'Caio')).toBe('ok');
+  });
+
+  test('entrarComEmail normaliza o e-mail e recusa inválido', async () => {
+    const u1 = await entrarComEmail(b.db, '  Ana@X.com ');
+    expect(u1.email).toBe('ana@x.com');
+    expect((await entrarComEmail(b.db, 'ana@x.com')).id).toBe(u1.id);
+    await expect(entrarComEmail(b.db, 'sem-arroba')).rejects.toThrow(/e-mail inválido/);
+  });
+
+  test('criarUsuario não tenta de novo quando o conflito é de e-mail', async () => {
+    await criarUsuario(b.db, { apelidoBase: 'ana', email: 'a@x.com' });
+    const erro = await criarUsuario(b.db, { apelidoBase: 'zeca', email: 'a@x.com' }).catch((e: unknown) => e);
+    expect(restricaoViolada(erro)).toBe('usuarios_email_unique');
+  });
+
+  test('logins simultâneos do mesmo e-mail ou Google viram uma conta só', async () => {
+    const [a, c] = await Promise.all([entrarComEmail(b.db, 'dup@x.com'), entrarComEmail(b.db, 'dup@x.com')]);
+    expect(a.id).toBe(c.id);
+    const g = { sub: 'g9', email: 'g9@x.com', emailVerificado: true, nome: 'Gil' };
+    const [g1, g2] = await Promise.all([entrarComGoogle(b.db, g), entrarComGoogle(b.db, g)]);
+    expect(g1.id).toBe(g2.id);
+    expect(await b.db.select().from(usuarios)).toHaveLength(2);
+  });
+
+  test('Google não sobrescreve outro sub já ligado ao e-mail', async () => {
+    const bia = await entrarComGoogle(b.db, { sub: 'g1', email: 'bia@x.com', emailVerificado: true, nome: 'Bia' });
+    await expect(entrarComGoogle(b.db, { sub: 'g2', email: 'bia@x.com', emailVerificado: true, nome: 'Bia' })).rejects.toBeInstanceOf(
+      ErroGoogleOutraConta,
+    );
+    const [linha] = await b.db.select().from(usuarios).where(eq(usuarios.id, bia.id));
+    expect(linha.googleSub).toBe('g1');
+  });
+
   test('trocarApelido', async () => {
     const a = await criarUsuario(b.db, { apelidoBase: 'ana' });
     await criarUsuario(b.db, { apelidoBase: 'bia' });
@@ -106,5 +152,37 @@ describe('links mágicos', () => {
     const t2 = await criarLinkMagico(b.db, 'ana@x.com', T0);
     expect(await consumirLinkMagico(b.db, t2, depois(DURACAO_LINK_MS + 1))).toBeNull();
     expect(await consumirLinkMagico(b.db, '', T0)).toBeNull();
+  });
+
+  test('normaliza o e-mail', async () => {
+    const t = await criarLinkMagico(b.db, ' ANA@x.com', T0);
+    expect(await consumirLinkMagico(b.db, t, depois(1000))).toBe('ana@x.com');
+    await expect(criarLinkMagico(b.db, 'nada', T0)).rejects.toThrow(/e-mail inválido/);
+  });
+
+  test('pedir outro link invalida os anteriores daquele e-mail e apaga os expirados', async () => {
+    const velho = await criarLinkMagico(b.db, 'bia@x.com', T0);
+    const t1 = await criarLinkMagico(b.db, 'ana@x.com', depois(DURACAO_LINK_MS));
+    const t2 = await criarLinkMagico(b.db, 'ana@x.com', depois(DURACAO_LINK_MS + 1));
+    expect(await consumirLinkMagico(b.db, t1, depois(DURACAO_LINK_MS + 2))).toBeNull();
+    expect(await consumirLinkMagico(b.db, t2, depois(DURACAO_LINK_MS + 2))).toBe('ana@x.com');
+    const restantes = await b.db.select().from(linksMagicos);
+    expect(restantes.map((l) => l.tokenHash)).toEqual([hashToken(t2)]);
+    expect(velho).toBeTruthy();
+  });
+});
+
+describe('limparExpirados', () => {
+  test('apaga sessões vencidas e links vencidos ou usados', async () => {
+    const u = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const viva = await criarSessao(b.db, u.id, depois(DURACAO_SESSAO_MS));
+    await criarSessao(b.db, u.id, T0);
+    const vivo = await criarLinkMagico(b.db, 'c@x.com', depois(DURACAO_SESSAO_MS));
+    const usado = await criarLinkMagico(b.db, 'a@x.com', T0);
+    await consumirLinkMagico(b.db, usado, depois(1));
+    await criarLinkMagico(b.db, 'b@x.com', T0);
+    expect(await limparExpirados(b.db, depois(DURACAO_SESSAO_MS + 1))).toEqual({ sessoes: 1, links: 2 });
+    expect((await b.db.select().from(sessoes)).map((x) => x.tokenHash)).toEqual([hashToken(viva)]);
+    expect((await b.db.select().from(linksMagicos)).map((x) => x.tokenHash)).toEqual([hashToken(vivo)]);
   });
 });

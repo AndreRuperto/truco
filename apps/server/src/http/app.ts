@@ -14,6 +14,7 @@ import {
   encerrarSessao,
   entrarComEmail,
   entrarComGoogle,
+  ErroGoogleOutraConta,
   normalizarEmail,
   trocarApelido,
   type Usuario,
@@ -121,7 +122,14 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     } catch {
       return void res.status(401).json({ erro: 'não foi possível validar o login do Google' });
     }
-    await entrar(res, await entrarComGoogle(s.banco, perfilGoogle));
+    let u: Usuario;
+    try {
+      u = await entrarComGoogle(s.banco, perfilGoogle);
+    } catch (e) {
+      if (e instanceof ErroGoogleOutraConta) return void res.status(409).json({ erro: `${e.message}; entre pelo link mágico` });
+      throw e;
+    }
+    await entrar(res, u);
   });
 
   api.post('/auth/sair', async (req, res) => {

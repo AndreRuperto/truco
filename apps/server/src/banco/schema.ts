@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { boolean, index, integer, pgTable, primaryKey, serial, smallint, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const VARIANTES = ['paulista', 'mineiro'] as const;
@@ -6,13 +7,19 @@ export const FORMATOS = ['1x1', '2x2'] as const;
 
 const quando = (nome: string) => timestamp(nome, { withTimezone: true, mode: 'date' });
 
-export const usuarios = pgTable('usuarios', {
-  id: serial('id').primaryKey(),
-  apelido: text('apelido').notNull().unique(),
-  email: text('email').unique(),
-  googleSub: text('google_sub').unique(),
-  criadoEm: quando('criado_em').notNull().defaultNow(),
-});
+export const usuarios = pgTable(
+  'usuarios',
+  {
+    id: serial('id').primaryKey(),
+    apelido: text('apelido').notNull().unique(),
+    /** Sempre minúsculo (`normalizarEmail`). */
+    email: text('email').unique(),
+    googleSub: text('google_sub').unique(),
+    criadoEm: quando('criado_em').notNull().defaultNow(),
+  },
+  // "Ana" e "ana" são o mesmo apelido.
+  (t) => [uniqueIndex('usuarios_apelido_lower_idx').on(sql`lower(${t.apelido})`)],
+);
 
 export const sessoes = pgTable(
   'sessoes',

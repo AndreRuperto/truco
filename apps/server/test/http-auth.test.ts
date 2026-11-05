@@ -128,4 +128,11 @@ describe('Google', () => {
     app = await subirApp({ ...s, google: null });
     expect((await app.pedir('/api/auth/google', { corpo: { credencial: 'credencial-boa' } })).status).toBe(404);
   });
+
+  test('e-mail já ligado a outro Google → 409', async () => {
+    await criarUsuario(b.db, { apelidoBase: 'bia', email: 'bia@x.com', googleSub: 'g-outro' });
+    const r = await app.pedir('/api/auth/google', { corpo: { credencial: 'credencial-boa' } });
+    expect(r.status).toBe(409);
+    expect(r.json.erro).toMatch(/outra conta Google/);
+  });
 });

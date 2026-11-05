@@ -8,6 +8,13 @@
       "when": 1793897955858,
       "tag": "0000_inicial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793899376954,
+      "tag": "0001_apelido_sem_caixa",
+      "breakpoints": true
     }
   ]
 }
