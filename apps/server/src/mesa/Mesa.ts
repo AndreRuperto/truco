@@ -105,6 +105,10 @@ export class Mesa {
   private cancelamentos: (() => void)[] = [];
   private prazo: MsgEstado['prazo'] = null;
   private terminou = false;
+  /** Sobe a cada mudança do estado do jogo (ação aplicada ou distribuição). */
+  private versao = 0;
+  /** Situação para a qual os timers atuais foram agendados (ver `atualizar`). */
+  private chaveTurno: string | null = null;
   private bots = 0;
   private readonly relogio: Relogio;
   private readonly rand: () => number;
@@ -162,6 +166,7 @@ export class Mesa {
     if (id !== undefined && this.cadeiraDe(id) !== this.dono()) return;
     for (const c of CADEIRAS) if (this.ocupantes[c].id === null) this.virarBot(c);
     this.estado = novaPartida(this.o.regras, Math.floor(this.rand() * 4) as Cadeira);
+    this.versao++;
     this.o.aoIniciar?.();
     this.atualizar();
   }
@@ -243,15 +248,28 @@ export class Mesa {
       if (!idHumano || !(e instanceof ErroJogada)) this.falha(e);
       return false;
     }
+    this.versao++;
     this.paraHumanos((destino) => this.o.enviar(destino, 'acao', { cadeira: acao.cadeira, tipo: acao.tipo }));
     this.atualizar();
     return true;
   }
 
-  private atualizar(): void {
+  /**
+   * Reagenda timers e prazo conforme quem deve agir e reenvia os estados.
+   * Se nada relevante mudou (mesma versão do jogo, mesmos agentes, mesmos
+   * humanos ativos) só reenvia — quem cai/volta sem ser da vez não mexe no
+   * prazo alheio. `forcar` reagenda mesmo assim (recuperação de falhas).
+   */
+  private atualizar(forcar = false): void {
+    const s = this.estado;
+    const chave = s ? this.chaveDoTurno(s) : null;
+    if (!forcar && chave !== null && chave === this.chaveTurno) {
+      this.enviarEstados();
+      return;
+    }
+    this.chaveTurno = chave;
     this.cancelarTimers();
     this.prazo = null;
-    const s = this.estado;
     if (!s) {
       this.enviarEstados();
       return;
@@ -285,14 +303,20 @@ export class Mesa {
     this.enviarEstados();
   }
 
+  private chaveDoTurno(s: EstadoPartida): string {
+    const agentes = quemDeveAgir(s).map((c) => `${c}${this.humanoAtivo(c) ? 'h' : 'b'}`);
+    return `${this.versao}|${s.fase}|${agentes.join(',')}`;
+  }
+
   private distribuir(): void {
     if (!this.estado) return;
     try {
       this.estado = reduce(this.estado, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), this.rand) });
+      this.versao++;
     } catch (e) {
       this.falha(e);
     }
-    this.atualizar();
+    this.atualizar(true);
   }
 
   private jogarBot(c: Cadeira): void {
@@ -327,7 +351,7 @@ export class Mesa {
       this.falha(e);
     }
     for (const a of opcoes) if (this.aplicar(a)) return;
-    this.atualizar();
+    this.atualizar(true);
   }
 
   private falha(e: unknown): void {
@@ -411,7 +435,7 @@ export class Mesa {
         } catch (e) {
           this.falha(e);
           try {
-            this.atualizar();
+            this.atualizar(true);
           } catch (e2) {
             this.falha(e2);
           }

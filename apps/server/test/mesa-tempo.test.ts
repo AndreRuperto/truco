@@ -56,6 +56,24 @@ describe('tempo e bots', () => {
     expect(t.estado('a')!.cadeiras[0]).toMatchObject({ tipo: 'humano', conectado: true });
   });
 
+  test('outro jogador cair e voltar não reinicia o prazo de quem está agindo', () => {
+    const t = criarMesa({ humanosEsperados: 2 });
+    t.mesa.sentar('a', 'Ana');
+    t.mesa.sentar('b', 'Bia');
+    avancarAte(() => minhaVez(t) && t.mesa.partida!.fase === 'jogando');
+    const ate = t.estado('a')!.prazo!.ate;
+    vi.advanceTimersByTime(300);
+    t.mesa.desconectar('b');
+    t.mesa.reconectar('b');
+    expect(t.estado('a')!.prazo!.ate).toBe(ate);
+    expect(t.estado('b')!.prazo!.ate).toBe(ate);
+    const antes = t.de('a', 'acao').length;
+    vi.advanceTimersByTime(ate - Date.now() - 1);
+    expect(t.de('a', 'acao')).toHaveLength(antes);
+    vi.advanceTimersByTime(1);
+    expect(t.de('a', 'acao')[antes]).toEqual({ cadeira: 0, tipo: 'jogar' });
+  });
+
   test('sair depois do início: bot permanente', () => {
     const t = criarMesa({ humanosEsperados: 2 });
     t.mesa.sentar('a', 'Ana');
