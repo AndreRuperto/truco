@@ -15,13 +15,53 @@ import { forca } from './forca';
 import { resolverRodada, vencedorMao } from './mao';
 import { ESCADAS, NIVEL_MAXIMO, PONTOS_VITORIA } from './regras';
 
-export class ErroJogada extends Error {}
+export class ErroJogada extends Error {
+  /** Permite reconhecer o erro sem instanceof (ex.: depois de serializar). */
+  readonly codigo = 'ERRO_JOGADA' as const;
+
+  constructor(message?: string) {
+    super(message);
+    this.name = 'ErroJogada';
+  }
+}
 
 function falha(msg: string): never {
   throw new ErroJogada(msg);
 }
 
+const ehCadeira = (x: unknown): x is Cadeira => Number.isInteger(x) && (x as number) >= 0 && (x as number) <= 3;
+
+/** Garante o formato da ação (a entrada pode vir crua de um cliente). */
+function validarAcao(acao: unknown): asserts acao is Acao {
+  if (typeof acao !== 'object' || acao === null) falha('ação malformada');
+  const a = acao as Record<string, unknown>;
+  switch (a.tipo) {
+    case 'distribuir':
+      if (!Array.isArray(a.baralho)) falha('baralho malformado');
+      return;
+    case 'jogar':
+      if (!ehCadeira(a.cadeira)) falha('cadeira inválida');
+      if (!Number.isInteger(a.indice)) falha('índice inválido');
+      if (a.coberta !== undefined && typeof a.coberta !== 'boolean') falha('coberta deve ser booleano');
+      return;
+    case 'mao10':
+      if (!ehCadeira(a.cadeira)) falha('cadeira inválida');
+      if (typeof a.jogar !== 'boolean') falha('jogar deve ser booleano');
+      return;
+    case 'truco':
+    case 'aceitar':
+    case 'correr':
+    case 'aumentar':
+    case 'familia':
+      if (!ehCadeira(a.cadeira)) falha('cadeira inválida');
+      return;
+    default:
+      falha(`ação desconhecida: ${String(a.tipo)}`);
+  }
+}
+
 export function reduce(estado: EstadoPartida, acao: Acao): EstadoPartida {
+  validarAcao(acao);
   const s = structuredClone(estado);
   switch (acao.tipo) {
     case 'distribuir':
