@@ -360,6 +360,50 @@ describe('fila ranqueada', () => {
     await esperarAsync(async () => (await banco.db.select().from(bloqueiosFila)).length === 2);
   });
 
+  test('caminho feliz: 1x1 jogada até o fim (jogadas por tempo esgotado) soma Elo e aparece no ranking e no histórico', async () => {
+    const tempos = MesaRoom.tempos;
+    // Ninguém joga: o prazo de cada humano esgota em 5 ms e a jogada automática decide.
+    MesaRoom.tempos = { botMs: 1, pausaMaoMs: 1, jogadaMs: 5 };
+    try {
+      const ana = await logado('ana@x.com');
+      const bia = await logado('bia@x.com');
+      const fa = coletor(await ana.cliente.joinOrCreate('fila', FILA_1X1));
+      const fb = coletor(await bia.cliente.joinOrCreate('fila', FILA_1X1));
+      await esperar(() => !!fa.pareado?.length && !!fb.pareado?.length);
+      const ma = coletor(await ana.cliente.consumeSeatReservation(fa.pareado[0].reserva));
+      const mb = coletor(await bia.cliente.consumeSeatReservation(fb.pareado[0].reserva));
+      const fim = (m: Record<string, any[]>) => !!m.estado?.some((x) => x.visao?.fase === 'fimPartida');
+      await esperar(() => fim(ma) && fim(mb), 25_000);
+      await esperarAsync(async () => (await banco.db.select().from(partidas))[0]?.terminadaEm != null);
+
+      const [p] = await banco.db.select().from(partidas);
+      expect(p).toMatchObject({ ranqueada: true, abandonada: false });
+      expect(p.vencedora === 0 || p.vencedora === 1).toBe(true);
+      const ps = await banco.db.select().from(participacoes).where(eq(participacoes.partidaId, p.id));
+      const vencedorId = ps.find((x) => x.humano && x.dupla === p.vencedora)!.usuarioId!;
+      const [vencedor, perdedor] = vencedorId === ana.u.id ? [ana, bia] : [bia, ana];
+
+      const { linhas } = (await (await fetch(`${URL_TESTE}/api/ranking/paulista`)).json()) as { linhas: any[] };
+      expect(linhas.map((l) => [l.posicao, l.usuarioId, l.elo, l.pontos, l.partidas])).toEqual([
+        [1, vencedor.u.id, 1016, 16, 1],
+        [2, perdedor.u.id, 984, 0, 1],
+      ]);
+      const hist = async (token: string) =>
+        ((await (await fetch(`${URL_TESTE}/api/historico`, { headers: { authorization: `Bearer ${token}` } })).json()) as { partidas: any[] })
+          .partidas;
+      const [hv] = await hist(vencedor.token);
+      expect(hv).toMatchObject({ partidaId: p.id, ranqueada: true, venceu: true, abandonou: false, deltaElo: 16 });
+      // Um truco aceito na mão de 11 pode passar dos 12.
+      expect(hv.nos).toBeGreaterThanOrEqual(12);
+      expect(hv.eles).toBeLessThan(hv.nos);
+      const [hp] = await hist(perdedor.token);
+      expect(hp).toMatchObject({ partidaId: p.id, ranqueada: true, venceu: false, abandonou: false, deltaElo: -16, nos: hv.eles, eles: hv.nos });
+      expect(await banco.db.select().from(bloqueiosFila)).toEqual([]);
+    } finally {
+      MesaRoom.tempos = tempos;
+    }
+  }, 30_000);
+
   test('desligamento do servidor (redeploy) no meio da ranqueada: ninguém perde Elo nem é bloqueado', async () => {
     const ana = await logado('ana@x.com');
     const bia = await logado('bia@x.com');
