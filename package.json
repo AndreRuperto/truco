@@ -4,6 +4,7 @@
   "packageManager": "pnpm@9.12.0",
   "scripts": {
     "dev:server": "pnpm --filter @truco/server dev",
+    "dev:web": "pnpm --filter @truco/web dev",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   }
