@@ -1074,6 +1074,369 @@ git -c "safe.directory=D:/01 Projetos/Projetos/truco" commit -m "feat(engine): m
 ```
 
 ---
+### Task 3: Engine — visão do ritual e das famílias; `amostrarMundo` com monte
+
+Ninguém vê a ordem do monte nem as cartas do "dar 3"; todos veem as abertas do corte; família fechada é verso para os outros (o dono continua vendo as próprias), aberta e conferida são de todos. O bot difícil passa a reconstruir monte e famílias.
+
+**Files:**
+- Modify: `packages/engine/src/visao.ts`, `packages/engine/src/bots/dificil.ts`
+- Test: `packages/engine/test/visao-ritual.test.ts`
+
+**Step 1: Teste que falha**
+
+`packages/engine/test/visao-ritual.test.ts`
+```ts
+import { describe, expect, test } from 'vitest';
+import { amostrarMundo } from '../src/bots/dificil';
+import { baralhoDaMesa, type Carta, idCarta, novoBaralho } from '../src/cartas';
+import type { Cadeira, EstadoPartida } from '../src/estado';
+import { reduce } from '../src/reducer';
+import { cartasDaPartida } from '../src/ritual';
+import { mulberry32 } from '../src/rng';
+import { visaoDoJogador } from '../src/visao';
+import { MINEIRO, distribuida, partida } from './helpers';
+
+const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
+const ids = (cs: readonly Carta[]) => cs.map(idCarta);
+const comMonte = () => reduce(partida(MINEIRO), { tipo: 'monte', baralho: novoBaralho() });
+
+/** Mão com uma família fechada (cadeira 0) já na mesa — montada à mão: a ação vem na Task 5. */
+function comFamiliaFechada(conferida: boolean): EstadoPartida {
+  const s = distribuida(MINEIRO, [['Qo', 'Jo', 'Ae']]);
+  const m = s.mao!;
+  m.familias.push({ cadeira: 0, tipo: 'fechada', cartas: m.maos[0], conferida: conferida ? { por: 1, real: true } : null });
+  m.maos[0] = s.monte.splice(0, 3);
+  return s;
+}
+
+describe('visão do ritual', () => {
+  test('ninguém vê o monte: só o tamanho; nenhuma carta aparece antes de dar', () => {
+    for (const c of CADEIRAS) {
+      const v = visaoDoJogador(comMonte(), c);
+      expect('monte' in v).toBe(false);
+      expect(v.qtdMonte).toBe(40);
+      expect(v.ritual).toEqual({ embaralhador: 3, cortador: 2, embaralhadas: 0, movimentos: 0, abertas: [], dadas: null });
+      expect(JSON.stringify(v)).not.toContain('"naipe"');
+    }
+  });
+
+  test('dar 3: todos sabem quem recebe, ninguém vê as cartas', () => {
+    const s = comMonte();
+    s.fase = 'escolhendoDistribuicao';
+    s.ritual!.dadas = { cadeira: 0, cartas: s.monte.splice(0, 3) };
+    for (const c of CADEIRAS) {
+      const v = visaoDoJogador(s, c);
+      expect(v.ritual!.dadas).toBe(0);
+      expect(JSON.stringify(v)).not.toContain('"naipe"');
+    }
+  });
+
+  test('abrir 3: as abertas são de todos', () => {
+    const s = comMonte();
+    s.ritual!.abertas = s.monte.splice(0, 3);
+    for (const c of CADEIRAS) expect(ids(visaoDoJogador(s, c).ritual!.abertas)).toEqual(['4o', '4e', '4c']);
+  });
+});
+
+describe('visão das famílias', () => {
+  test('fechada: 3 versos para os outros; o dono vê as próprias', () => {
+    const s = comFamiliaFechada(false);
+    expect(ids(visaoDoJogador(s, 0).mao!.familias[0].cartas!)).toEqual(['Qo', 'Jo', 'Ae']);
+    for (const c of [1, 2, 3] as Cadeira[]) expect(visaoDoJogador(s, c).mao!.familias[0].cartas).toBeNull();
+  });
+
+  test('conferida (ou aberta): todos veem', () => {
+    const s = comFamiliaFechada(true);
+    for (const c of CADEIRAS) expect(ids(visaoDoJogador(s, c).mao!.familias[0].cartas!)).toEqual(['Qo', 'Jo', 'Ae']);
+    const a = comFamiliaFechada(false);
+    a.mao!.familias[0].tipo = 'aberta';
+    expect(visaoDoJogador(a, 2).mao!.familias[0].cartas).not.toBeNull();
+  });
+});
+
+describe('amostrarMundo com monte e famílias', () => {
+  test('o mundo sorteado é coerente: mesma visão, mesmo tamanho de monte, 40 cartas sem repetir', () => {
+    const s = comFamiliaFechada(false);
+    const doBaralho = new Set(ids(baralhoDaMesa(MINEIRO)));
+    for (let seed = 1; seed <= 20; seed++) {
+      for (const c of CADEIRAS) {
+        const v = visaoDoJogador(s, c);
+        const mundo = amostrarMundo(v, mulberry32(seed));
+        expect(visaoDoJogador(mundo, c).mao).toEqual(v.mao);
+        expect(mundo.monte).toHaveLength(v.qtdMonte);
+        const todas = ids(cartasDaPartida(mundo));
+        expect(new Set(todas).size).toBe(40);
+        expect(todas.every((id) => doBaralho.has(id))).toBe(true);
+      }
+    }
+  });
+});
+```
+
+**Step 2: Rodar e ver falhar**
+
+Run: `pnpm --filter @truco/engine test visao-ritual`
+Expected: FAIL — `dadas` vem com as cartas, `familias[0].cartas` aparece para todos, `mundo.monte` tem 0 cartas.
+
+**Step 3: Implementação**
+
+`packages/engine/src/visao.ts` (arquivo inteiro):
+```ts
+import type { Carta } from './cartas';
+import {
+  type Cadeira,
+  duplaDe,
+  type EstadoMao,
+  type EstadoPartida,
+  type EstadoRitual,
+  type FamiliaPedida,
+  type Jogada,
+  parceiroDe,
+  type ResultadoMao,
+} from './estado';
+
+export type JogadaVisivel = Omit<Jogada, 'carta'> & { carta: Carta | null };
+
+export interface FamiliaVisivel extends Omit<FamiliaPedida, 'cartas'> {
+  /** null = fechada e não conferida, vista por quem não pediu (3 versos). */
+  cartas: Carta[] | null;
+}
+
+export interface VisaoMao extends Omit<EstadoMao, 'maos' | 'mesa' | 'rodadasJogadas' | 'familias'> {
+  /** null = carta virada (mão de ferro). */
+  minhaMao: (Carta | null)[];
+  maoParceiro: Carta[] | null;
+  qtdCartas: number[];
+  mesa: JogadaVisivel[];
+  rodadasJogadas: JogadaVisivel[][];
+  familias: FamiliaVisivel[];
+}
+
+export interface VisaoRitual extends Omit<EstadoRitual, 'dadas'> {
+  /** Quem vai receber o "dar 3"; as cartas ninguém vê. */
+  dadas: Cadeira | null;
+}
+
+export interface VisaoResultadoMao extends Omit<ResultadoMao, 'rodadasJogadas'> {
+  rodadasJogadas: JogadaVisivel[][];
+}
+
+export interface Visao extends Omit<EstadoPartida, 'mao' | 'ultimaMao' | 'monte' | 'ritual'> {
+  cadeira: Cadeira;
+  mao: VisaoMao | null;
+  ultimaMao: VisaoResultadoMao | null;
+  /** Cartas no monte (a ordem ninguém vê). */
+  qtdMonte: number;
+  ritual: VisaoRitual | null;
+}
+
+export function visaoDoJogador(estado: EstadoPartida, cadeira: Cadeira): Visao {
+  const { monte, ritual, ...s } = structuredClone(estado);
+  const esconder = (j: Jogada): JogadaVisivel =>
+    j.coberta && j.cadeira !== cadeira ? { ...j, carta: null } : j;
+  const ultimaMao: VisaoResultadoMao | null = s.ultimaMao && {
+    ...s.ultimaMao,
+    rodadasJogadas: s.ultimaMao.rodadasJogadas.map((r) => r.map(esconder)),
+  };
+  const base = {
+    ...s,
+    cadeira,
+    ultimaMao,
+    qtdMonte: monte.length,
+    ritual: ritual ? { ...ritual, dadas: ritual.dadas?.cadeira ?? null } : null,
+  };
+  if (!s.mao) return { ...base, mao: null };
+
+  const { maos, mesa, rodadasJogadas, familias, ...resto } = s.mao;
+  const veParceiro = resto.tipo === 'mao10' && resto.duplaNoDez === duplaDe(cadeira);
+  const familia = (f: FamiliaPedida): FamiliaVisivel => ({
+    ...f,
+    cartas: f.tipo === 'aberta' || f.conferida !== null || f.cadeira === cadeira ? f.cartas : null,
+  });
+
+  return {
+    ...base,
+    mao: {
+      ...resto,
+      minhaMao: resto.tipo === 'mao11' ? maos[cadeira].map(() => null) : maos[cadeira],
+      maoParceiro: veParceiro ? maos[parceiroDe(cadeira)] : null,
+      qtdCartas: maos.map((m) => m.length),
+      mesa: mesa.map(esconder),
+      rodadasJogadas: rodadasJogadas.map((r) => r.map(esconder)),
+      familias: familias.map(familia),
+    },
+  };
+}
+```
+
+`packages/engine/src/bots/dificil.ts` — em `amostrarMundo`, marque também o que é público (logo depois de `m.rodadasJogadas.flat().forEach((j) => marcar(j.carta));`):
+```ts
+  m.abertasNoCorte.forEach(marcar);
+  m.familias.forEach((f) => f.cartas?.forEach(marcar));
+```
+e troque o final da função (de `const revelar = ...` até o fim do `return`) por:
+```ts
+  const revelar = (j: JogadaVisivel): Jogada => ({ ...j, carta: j.carta ?? tirar() });
+  const { minhaMao: _a, maoParceiro: _b, qtdCartas: _c, mesa, rodadasJogadas, familias, ...resto } = m;
+  const mesaReal = mesa.map(revelar);
+  const rodadasReais = rodadasJogadas.map((r) => r.map(revelar));
+  const familiasReais = familias.map((f) => ({ ...f, cartas: f.cartas ? f.cartas.map((x) => ({ ...x })) : [tirar(), tirar(), tirar()] }));
+  // O que sobrou é o monte (a ordem não importa para a simulação).
+  if (monte.length !== v.qtdMonte) throw new Error('amostrarMundo: o monte não bate com a visão');
+  return {
+    regras: { ...v.regras },
+    placar: [v.placar[0], v.placar[1]],
+    pe: v.pe,
+    fase: v.fase,
+    monte,
+    ritual: null,
+    ultimaMao: null,
+    ultimaFamilia: null,
+    vencedor: v.vencedor,
+    mao: {
+      ...structuredClone(resto),
+      maos,
+      mesa: mesaReal,
+      rodadasJogadas: rodadasReais,
+      familias: familiasReais,
+    },
+  };
+```
+(As mãos já foram sorteadas antes, em `const maos = ...`; mantenha a ordem: mãos → cobertas → famílias escondidas → o resto é o monte. Isto substitui o `monte: [], ritual: v.ritual` provisório da Task 2.)
+
+**Step 4: Rodar e ver passar**
+
+Run: `pnpm --filter @truco/engine test` → PASS. Run: `pnpm --filter @truco/engine typecheck` → ok.
+
+**Step 5: Commit**
+```bash
+git -c "safe.directory=D:/01 Projetos/Projetos/truco" add -- packages/engine/test/visao-ritual.test.ts
+git -c "safe.directory=D:/01 Projetos/Projetos/truco" commit -m "feat(engine): visão esconde o monte, o dar 3 e as famílias fechadas" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- packages/engine/src/visao.ts packages/engine/src/bots/dificil.ts packages/engine/test/visao-ritual.test.ts
+```
+
+---
+
+### Task 4: Engine — abrir 3 e dar 3
+
+**Files:**
+- Modify: `packages/engine/src/reducer.ts`
+- Test: `packages/engine/test/ritual-corte.test.ts`
+
+**Step 1: Teste que falha**
+
+`packages/engine/test/ritual-corte.test.ts`
+```ts
+import { describe, expect, test } from 'vitest';
+import { type Carta, idCarta, novoBaralho } from '../src/cartas';
+import { ErroJogada, reduce } from '../src/reducer';
+import type { RegrasMesa } from '../src/regras';
+import type { ModoDistribuicao } from '../src/ritual';
+import { MINEIRO, PAULISTA, partida } from './helpers';
+
+const ids = (cs: readonly Carta[]) => cs.map(idCarta);
+const B = novoBaralho().map(idCarta);
+/** pe = 3: embaralhador 3, cortador 2, parceiro do cortador 0. */
+const cortando = (regras: RegrasMesa = PAULISTA) =>
+  reduce(reduce(partida(regras), { tipo: 'monte', baralho: novoBaralho() }), { tipo: 'passarCorte', cadeira: 3 });
+const dar = (regras: RegrasMesa, corte: 'abrir3' | 'dar3', modo: ModoDistribuicao = 'porCima') =>
+  reduce(reduce(cortando(regras), { tipo: corte, cadeira: 2 }), { tipo: 'distribuir', cadeira: 3, modo });
+
+describe('abrir 3', () => {
+  test('as 3 de cima ficam viradas, gastam os 3 movimentos e saem da mão', () => {
+    const t = reduce(cortando(), { tipo: 'abrir3', cadeira: 2 });
+    expect(ids(t.ritual!.abertas)).toEqual(B.slice(0, 3));
+    expect(t.ritual!.movimentos).toBe(3);
+    expect(t.fase).toBe('escolhendoDistribuicao');
+    expect(t.monte).toHaveLength(37);
+    const s = dar(PAULISTA, 'abrir3');
+    expect(ids(s.mao!.abertasNoCorte)).toEqual(B.slice(0, 3));
+    expect(s.mao!.maos.map(ids)).toEqual([B.slice(3, 6), B.slice(6, 9), B.slice(9, 12), B.slice(12, 15)]);
+    expect(idCarta(s.mao!.vira!)).toBe(B[15]);
+  });
+
+  test('só como primeiro movimento e só o cortador', () => {
+    const t = reduce(cortando(), { tipo: 'cortar', cadeira: 2, ponto: 20 });
+    expect(() => reduce(t, { tipo: 'abrir3', cadeira: 2 })).toThrow(ErroJogada);
+    expect(() => reduce(cortando(), { tipo: 'abrir3', cadeira: 3 })).toThrow(ErroJogada);
+  });
+
+  test('no fim da mão as abertas voltam ao monte depois das mãos', () => {
+    let s = dar(MINEIRO, 'abrir3');
+    s = reduce(s, { tipo: 'truco', cadeira: 0 });
+    s = reduce(s, { tipo: 'correr', cadeira: 1 });
+    expect(ids(s.monte)).toEqual([...B.slice(3, 15), ...B.slice(0, 3), ...B.slice(15)]);
+  });
+});
+
+describe('dar 3', () => {
+  test('as 3 de cima viram a mão do parceiro do cortador, que é pulado', () => {
+    const t = reduce(cortando(), { tipo: 'dar3', cadeira: 2 });
+    expect(t.ritual!.dadas!.cadeira).toBe(0);
+    expect(t.fase).toBe('escolhendoDistribuicao');
+    const s = dar(PAULISTA, 'dar3');
+    expect(s.mao!.pulada).toBe(0);
+    expect(s.mao!.maos.map(ids)).toEqual([B.slice(0, 3), B.slice(3, 6), B.slice(6, 9), B.slice(9, 12)]);
+    expect(idCarta(s.mao!.vira!)).toBe(B[12]);
+  });
+
+  test('subindo alternado com dar 3: só os outros três recebem, do fundo', () => {
+    const s = dar(PAULISTA, 'dar3', 'subindo');
+    expect(s.mao!.maos.map(ids)).toEqual([
+      B.slice(0, 3),
+      [B[39], B[36], B[33]],
+      [B[38], B[35], B[32]],
+      [B[37], B[34], B[31]],
+    ]);
+    expect(idCarta(s.mao!.vira!)).toBe(B[30]);
+  });
+
+  test('não depois de outro movimento', () => {
+    const t = reduce(cortando(), { tipo: 'embaralhar', cadeira: 2, bits: novoBaralho().map(() => 0 as const) });
+    expect(() => reduce(t, { tipo: 'dar3', cadeira: 2 })).toThrow(ErroJogada);
+  });
+});
+```
+
+**Step 2: Rodar e ver falhar**
+
+Run: `pnpm --filter @truco/engine test ritual-corte`
+Expected: FAIL — `ação desconhecida: abrir3`.
+
+**Step 3: Implementação**
+
+`packages/engine/src/reducer.ts` — importe `parceiroDe` de `./estado`; no `switch` do `reduce`, depois de `case 'devolver'`:
+```ts
+    case 'abrir3':
+    case 'dar3':
+      cortarDe3(s, acao.cadeira, acao.tipo);
+      break;
+```
+e, depois de `devolver`:
+```ts
+/** Abrir 3 / dar 3: gastam os 3 movimentos de uma vez (só como primeiro movimento) e encerram o corte. */
+function cortarDe3(s: EstadoPartida, cadeira: Cadeira, tipo: 'abrir3' | 'dar3'): void {
+  const r = exigirCortador(s, cadeira);
+  if (r.movimentos > 0) falha(`${tipo === 'abrir3' ? 'abrir' : 'dar'} 3 gasta os 3 movimentos: só no começo do corte`);
+  const tres = s.monte.splice(0, 3);
+  if (tipo === 'abrir3') r.abertas = tres;
+  else r.dadas = { cadeira: parceiroDe(cadeira), cartas: tres };
+  r.movimentos = MOVIMENTOS_CORTE;
+  s.fase = 'escolhendoDistribuicao';
+}
+```
+
+**Step 4: Rodar e ver passar**
+
+Run: `pnpm --filter @truco/engine test` → PASS.
+
+**Step 5: Commit**
+```bash
+git -c "safe.directory=D:/01 Projetos/Projetos/truco" add -- packages/engine/test/ritual-corte.test.ts
+git -c "safe.directory=D:/01 Projetos/Projetos/truco" commit -m "feat(engine): abrir 3 e dar 3 no corte" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- packages/engine/src/reducer.ts packages/engine/test/ritual-corte.test.ts
+```
+
+---
+
 ### Task 5: Engine — família fechada/aberta, conferir, limite e pontos
 
 A família deixa de redistribuir: quem pede troca as 3 cartas pelas 3 de cima do monte. Fechada pode ser blefe e abre a fase `conferindoFamilia` para a dupla adversária; aberta precisa ser real e não pontua. Some `ultimaFamilia`.
