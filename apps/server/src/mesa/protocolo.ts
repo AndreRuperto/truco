@@ -1,6 +1,6 @@
 import { type AcaoJogador, type Cadeira, REGRAS_RANQUEADA, type RegrasMesa, type Variante, type Visao } from '@truco/engine';
 
-export const SINAIS = ['zap', 'copas', 'espadilha', 'picafumo', 'tres', 'dois', 'as', 'nada'] as const;
+export const SINAIS = ['zap', 'copas', 'espadilha', 'picafumo', 'coringa', 'tres', 'dois', 'as', 'nada'] as const;
 export type Sinal = (typeof SINAIS)[number];
 
 export const FALAS = ['truco', 'seis', 'nove', 'doze', 'desce', 'corro', 'boa', 'vixe', 'bora'] as const;

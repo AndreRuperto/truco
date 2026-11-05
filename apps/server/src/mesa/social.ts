@@ -2,6 +2,7 @@ import {
   type Cadeira,
   type Carta,
   duplaDe,
+  ehCoringa,
   type EstadoPartida,
   manilhaDoNaipe,
   melhorManilha,
@@ -19,10 +20,11 @@ const SEM_MANILHA: [Carta['valor'], Sinal][] = [
   ['A', 'as'],
 ];
 
-/** O sinal que um bot manda ao parceiro com esta mão: a melhor manilha; senão 3, 2, Ás; senão "nada". */
+/** O sinal que um bot manda ao parceiro com esta mão: a melhor manilha; senão coringa (mão limpa); senão 3, 2, Ás; senão "nada". */
 export function sinalDaMao(mao: readonly Carta[], variante: Variante, vira: Carta | null): Sinal {
   const m = melhorManilha(mao, variante, vira);
   if (m) return SINAL_DO_NAIPE[m.naipe];
+  if (mao.some(ehCoringa)) return 'coringa';
   for (const [valor, sinal] of SEM_MANILHA) if (mao.some((c) => c.valor === valor)) return sinal;
   return 'nada';
 }

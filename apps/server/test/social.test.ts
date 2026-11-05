@@ -31,9 +31,10 @@ describe('sinalDaMao', () => {
     expect(sinalDaMao(cs('Qo', 'Jo', 'Ko'), 'mineiro', null)).toBe('nada');
   });
 
-  test('mão limpa: coringa não é sinal de manilha', () => {
-    expect(sinalDaMao(cs('Cc', 'Cp', 'Qo'), 'mineiro', null)).toBe('nada');
-    expect(sinalDaMao(cs('Cc', '3e', 'Ko'), 'mineiro', null)).toBe('tres');
+  test('mão limpa: coringa sem manilha sinaliza "coringa"; manilha vem antes', () => {
+    expect(sinalDaMao(cs('Cc', 'Cp', 'Qo'), 'mineiro', null)).toBe('coringa');
+    expect(sinalDaMao(cs('Cc', '3e', 'Ko'), 'mineiro', null)).toBe('coringa');
+    expect(sinalDaMao(cs('2e', 'Ae', 'Cp'), 'mineiro', null)).toBe('espadilha');
     expect(sinalDaMao(cs('Cp', '7o', '3e'), 'mineiro', null)).toBe('picafumo');
   });
 
@@ -52,6 +53,10 @@ describe('cartaDoSinal', () => {
     expect(cartaDoSinal('tres', 'mineiro', null)).toBeNull();
     expect(cartaDoSinal('nada', 'paulista', c('5p'))).toBeNull();
     expect(cartaDoSinal('zap', 'paulista', null)).toBeNull();
+  });
+
+  test('coringa não é dica de manilha', () => {
+    expect(cartaDoSinal('coringa', 'mineiro', null)).toBeNull();
   });
 });
 
