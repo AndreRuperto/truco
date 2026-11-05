@@ -53,9 +53,23 @@ export interface Tempos {
   botMs: number;
   pausaMaoMs: number;
   intervaloMensagemMs: number;
+  /** Prazo do humano em cada etapa do ritual (embaralhar, cortar, escolher como dar). */
+  ritualMs: number;
+  /** Prazo da dupla adversária para conferir uma família fechada. */
+  conferirMs: number;
+  /** Quanto o bot da vez espera antes da 1ª carta quando a família está ligada. */
+  janelaFamiliaMs: number;
 }
 
-export const TEMPOS_PADRAO: Tempos = { jogadaMs: 20_000, botMs: 900, pausaMaoMs: 1_800, intervaloMensagemMs: 1_000 };
+export const TEMPOS_PADRAO: Tempos = {
+  jogadaMs: 20_000,
+  botMs: 900,
+  pausaMaoMs: 1_800,
+  intervaloMensagemMs: 1_000,
+  ritualMs: 12_000,
+  conferirMs: 6_000,
+  janelaFamiliaMs: 2_500,
+};
 
 export interface OpcoesMesa {
   regras: RegrasMesa;

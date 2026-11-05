@@ -6,6 +6,8 @@ describe('temposDoAmbiente', () => {
     expect(temposDoAmbiente({ TRUCO_TEMPOS: 'rapido' })).toEqual(TEMPOS_RAPIDOS);
     expect(TEMPOS_RAPIDOS.botMs).toBeLessThan(200);
     expect(TEMPOS_RAPIDOS.jogadaMs).toBeUndefined();
+    expect(TEMPOS_RAPIDOS.ritualMs).toBeLessThanOrEqual(3_000);
+    expect(TEMPOS_RAPIDOS.conferirMs).toBeUndefined();
   });
 
   test('sem a variável (ou outro valor) usa o padrão', () => {

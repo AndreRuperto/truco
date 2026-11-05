@@ -1,4 +1,16 @@
-import { type AcaoJogador, type Cadeira, REGRAS_RANQUEADA, type RegrasMesa, type Variante, type Visao } from '@truco/engine';
+import {
+  type AcaoJogador,
+  type Cadeira,
+  type EstadoPartida,
+  type ModoDistribuicao,
+  ordemDistribuicao,
+  parceiroDe,
+  REGRAS_RANQUEADA,
+  type RegrasMesa,
+  tipoDaProximaFamilia,
+  type Variante,
+  type Visao,
+} from '@truco/engine';
 import type { MesaFisica } from './mesaFisica';
 
 export type { MesaFisica, MsgBatida, Rachadura, TipoMesa } from './mesaFisica';
@@ -90,11 +102,47 @@ export interface MsgAcao {
   tipo: AcaoJogador['tipo'];
   /** Só em `mao10`: true = jogou a mão, false = correu. */
   jogar?: boolean;
+  /** `distribuir`: como o pé deu. */
+  modo?: ModoDistribuicao;
+  /** `distribuir`: quem recebeu, na ordem (sem quem ganhou o "dar 3"). */
+  ordem?: Cadeira[];
+  /** `dar3`: quem recebeu as 3 de cima. */
+  para?: Cadeira;
+  /** `cortar`: fração do monte que passou para cima (0–1, 2 casas). Só para a animação. */
+  fracao?: number;
+  /** `familia`: true = aberta (as cartas aparecem no `estado`). */
+  aberta?: boolean;
+  /** `conferir`: true = conferiu. */
+  conferir?: boolean;
 }
 
-/** O aviso público de uma ação (sem índice/carta: a jogada em si chega pelo `estado`). */
-export function msgDaAcao(a: AcaoJogador): MsgAcao {
-  return a.tipo === 'mao10' ? { cadeira: a.cadeira, tipo: a.tipo, jogar: a.jogar } : { cadeira: a.cadeira, tipo: a.tipo };
+/**
+ * O aviso público de uma ação (sem índice/carta: a jogada em si chega pelo `estado`).
+ * `antes` = estado em que a ação foi aplicada (para a ordem da distribuição, a fração do
+ * corte e o tipo da família). Nunca leva a sorte (`bits`, `ponto`).
+ */
+export function msgDaAcao(a: AcaoJogador, antes: EstadoPartida | null = null): MsgAcao {
+  const base: MsgAcao = { cadeira: a.cadeira, tipo: a.tipo };
+  switch (a.tipo) {
+    case 'mao10':
+      return { ...base, jogar: a.jogar };
+    case 'distribuir':
+      return antes
+        ? { ...base, modo: a.modo, ordem: ordemDistribuicao(antes.pe, antes.ritual?.dadas?.cadeira ?? null) }
+        : { ...base, modo: a.modo };
+    case 'dar3':
+      return { ...base, para: parceiroDe(a.cadeira) };
+    case 'cortar': {
+      const n = antes?.monte.length ?? 0;
+      return a.ponto !== undefined && n > 0 ? { ...base, fracao: Math.round((a.ponto / n) * 100) / 100 } : base;
+    }
+    case 'familia':
+      return antes ? { ...base, aberta: tipoDaProximaFamilia(antes) === 'aberta' } : base;
+    case 'conferir':
+      return { ...base, conferir: a.conferir };
+    default:
+      return base;
+  }
 }
 export interface MsgSinal {
   de: Cadeira;

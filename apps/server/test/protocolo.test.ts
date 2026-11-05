@@ -1,6 +1,6 @@
-import { REGRAS_RANQUEADA } from '@truco/engine';
+import { distribuirSemRitual, novaPartida, novoBaralho, REGRAS_RANQUEADA, reduce } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
-import { chaveRegras, ehFala, ehSinal, filtroDaSala, limparChat, limparNome, MAX_CHAT, opcoesDaSala } from '../src/mesa/protocolo';
+import { chaveRegras, ehFala, ehSinal, filtroDaSala, limparChat, limparNome, MAX_CHAT, msgDaAcao, opcoesDaSala } from '../src/mesa/protocolo';
 
 describe('chaveRegras', () => {
   const base = REGRAS_RANQUEADA.paulista;
@@ -117,5 +117,32 @@ describe('limparChat', () => {
     expect(limparChat('x'.repeat(500))).toHaveLength(MAX_CHAT);
     expect(limparChat(42)).toBe('');
     expect(limparChat('   ')).toBe('');
+  });
+});
+
+describe('msgDaAcao do ritual', () => {
+  const comMonte = () => reduce(novaPartida(REGRAS_RANQUEADA.mineiro, 3), { tipo: 'monte', baralho: novoBaralho() });
+
+  test('embaralhar não leva os bits; cortar leva só a fração', () => {
+    const s = comMonte();
+    expect(msgDaAcao({ tipo: 'embaralhar', cadeira: 3, bits: s.monte.map(() => 0 as const) }, s)).toEqual({ cadeira: 3, tipo: 'embaralhar' });
+    const c = reduce(s, { tipo: 'passarCorte', cadeira: 3 });
+    expect(msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto: 20 }, c)).toEqual({ cadeira: 2, tipo: 'cortar', fracao: 0.5 });
+  });
+
+  test('distribuir leva modo e ordem (sem quem ganhou o dar 3); dar3 leva quem recebe', () => {
+    const c = reduce(comMonte(), { tipo: 'passarCorte', cadeira: 3 });
+    expect(msgDaAcao({ tipo: 'dar3', cadeira: 2 }, c)).toEqual({ cadeira: 2, tipo: 'dar3', para: 0 });
+    const d = reduce(c, { tipo: 'dar3', cadeira: 2 });
+    expect(msgDaAcao({ tipo: 'distribuir', cadeira: 3, modo: 'subindo' }, d)).toEqual({ cadeira: 3, tipo: 'distribuir', modo: 'subindo', ordem: [1, 2, 3] });
+    const e = reduce(c, { tipo: 'devolver', cadeira: 2 });
+    expect(msgDaAcao({ tipo: 'distribuir', cadeira: 3, modo: 'porCima' }, e)).toEqual({ cadeira: 3, tipo: 'distribuir', modo: 'porCima', ordem: [0, 1, 2, 3] });
+  });
+
+  test('família diz se é aberta; conferir diz se conferiu', () => {
+    const s = distribuirSemRitual(novaPartida(REGRAS_RANQUEADA.mineiro, 3), novoBaralho());
+    expect(msgDaAcao({ tipo: 'familia', cadeira: 0 }, s)).toEqual({ cadeira: 0, tipo: 'familia', aberta: false });
+    expect(msgDaAcao({ tipo: 'conferir', cadeira: 1, conferir: true }, s)).toEqual({ cadeira: 1, tipo: 'conferir', conferir: true });
+    expect(msgDaAcao({ tipo: 'jogar', cadeira: 0, indice: 2 })).toEqual({ cadeira: 0, tipo: 'jogar' });
   });
 });
