@@ -3,6 +3,7 @@ import {
   botDificil,
   botFacil,
   type Cadeira,
+  type Carta,
   duplaDe,
   ehAcaoJogador,
   embaralhar,
@@ -17,7 +18,8 @@ import {
   type RegrasMesa,
   visaoDoJogador,
 } from '@truco/engine';
-import { ehFala, ehSinal, type InfoCadeira, limparNome, type MsgEstado, type NivelBot } from './protocolo';
+import { ehFala, ehSinal, type InfoCadeira, limparNome, type MsgEstado, type NivelBot, type Sinal } from './protocolo';
+import { cartaDoSinal, falaDaRodada, rodadaFechada, sinalDaMao } from './social';
 
 export interface Relogio {
   /** Agenda `fn` e devolve uma função que cancela. */
@@ -52,6 +54,10 @@ export interface OpcoesMesa {
   tempos?: Partial<Tempos>;
   /** Chance (0–1) de cada adversário ver um sinal. */
   chanceInterceptarSinal?: number;
+  /** Bots sinalizam ao parceiro a melhor carta no início da mão. Padrão: só com bot difícil. */
+  sinaisBot?: boolean;
+  /** Chance (0–1) de um bot comentar o fim de uma rodada ("boa", "bora", "vixe"). Padrão 0. */
+  chanceFalaBot?: number;
   aoTerminar?: (s: EstadoPartida) => void;
   /** Chamado uma vez, quando a partida começa (manual ou automaticamente). */
   aoIniciar?: () => void;
@@ -110,6 +116,8 @@ export class Mesa {
   /** Situação para a qual os timers atuais foram agendados (ver `atualizar`). */
   private chaveTurno: string | null = null;
   private bots = 0;
+  /** Carta que cada cadeira "sabe" que o parceiro tem (último sinal de manilha recebido nesta mão). */
+  private dicas: (Carta | null)[] = [null, null, null, null];
   private readonly relogio: Relogio;
   private readonly rand: () => number;
   private readonly tempos: Tempos;
@@ -123,10 +131,15 @@ export class Mesa {
     this.tempos = { ...TEMPOS_PADRAO, ...o.tempos };
     this.decidirBot =
       o.decidirBot ??
-      ((s, c) =>
-        o.nivelBot === 'dificil'
-          ? botDificil(visaoDoJogador(s, c), this.rand, { amostras: 24, orcamentoMs: 8 })
-          : botFacil(s, c));
+      ((s, c) => {
+        if (o.nivelBot !== 'dificil') return botFacil(s, c);
+        const d = this.dicas[c];
+        return botDificil(visaoDoJogador(s, c), this.rand, {
+          amostras: 24,
+          orcamentoMs: 8,
+          dica: d ? { parceiroTem: d } : undefined,
+        });
+      });
   }
 
   get iniciada(): boolean {
@@ -140,6 +153,11 @@ export class Mesa {
   cadeiraDe(id: string): Cadeira | null {
     const i = this.ocupantes.findIndex((x) => x.id === id);
     return i < 0 ? null : (i as Cadeira);
+  }
+
+  /** Dica (carta sinalizada pelo parceiro) que a cadeira tem nesta mão. Exposto para testes/depuração. */
+  dicaPara(c: Cadeira): Carta | null {
+    return this.dicas[c];
   }
 
   // ---------- lobby ----------
@@ -226,14 +244,7 @@ export class Mesa {
   sinal(id: string, sinal: unknown): void {
     const c = this.cadeiraDe(id);
     if (c === null || !this.estado || !ehSinal(sinal) || !this.podeMandar(c)) return;
-    const parceiro = parceiroDe(c);
-    for (const alvo of CADEIRAS) {
-      if (alvo === c || !this.humanoAtivo(alvo)) continue;
-      if (alvo === parceiro) this.o.enviar(this.ocupantes[alvo].id!, 'sinal', { de: c, sinal });
-      else if (this.rand() < (this.o.chanceInterceptarSinal ?? 0)) {
-        this.o.enviar(this.ocupantes[alvo].id!, 'sinal', { de: c, sinal, interceptado: true });
-      }
-    }
+    this.enviarSinal(c, sinal);
   }
 
   fala(id: string, fala: unknown): void {
@@ -247,8 +258,9 @@ export class Mesa {
   /** Aplica a ação; devolve se deu certo. Erro de humano vai para ele; de bot, para `aoErro`. */
   private aplicar(acao: AcaoJogador, idHumano?: string): boolean {
     if (!this.estado) return false;
+    const antes = this.estado;
     try {
-      this.estado = reduce(this.estado, acao);
+      this.estado = reduce(antes, acao);
     } catch (e) {
       if (idHumano) this.erro(idHumano, e instanceof ErroJogada ? e.message : 'erro interno');
       if (!idHumano || !(e instanceof ErroJogada)) this.falha(e);
@@ -256,6 +268,7 @@ export class Mesa {
     }
     this.versao++;
     this.paraHumanos((destino) => this.o.enviar(destino, 'acao', { cadeira: acao.cadeira, tipo: acao.tipo }));
+    if (acao.tipo === 'jogar') this.comentarRodada(antes, this.estado);
     this.atualizar();
     return true;
   }
@@ -319,6 +332,8 @@ export class Mesa {
     try {
       this.estado = reduce(this.estado, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), this.rand) });
       this.versao++;
+      this.dicas = [null, null, null, null];
+      this.sinaisDosBots();
     } catch (e) {
       this.falha(e);
     }
@@ -392,6 +407,44 @@ export class Mesa {
       nome: o.nome,
       conectado: o.humano ? o.conectado : true,
     }));
+  }
+
+  /** Cada bot conta ao parceiro sua melhor carta (só em mão normal: na de 10/11 não faz sentido). */
+  private sinaisDosBots(): void {
+    const s = this.estado;
+    if (!s?.mao || s.mao.tipo !== 'normal') return;
+    if (!(this.o.sinaisBot ?? this.o.nivelBot === 'dificil')) return;
+    for (const c of CADEIRAS) {
+      if (this.ocupantes[c].humano) continue;
+      this.enviarSinal(c, sinalDaMao(s.mao.maos[c], s.regras.variante, s.mao.vira));
+    }
+  }
+
+  /** Entrega o sinal ao parceiro (humano), sorteia interceptações e guarda a dica do parceiro. */
+  private enviarSinal(c: Cadeira, sinal: Sinal): void {
+    const s = this.estado;
+    const parceiro = parceiroDe(c);
+    this.dicas[parceiro] = s?.mao ? cartaDoSinal(sinal, s.regras.variante, s.mao.vira) : null;
+    const chance = this.o.chanceInterceptarSinal ?? 0;
+    for (const alvo of CADEIRAS) {
+      if (alvo === c || !this.humanoAtivo(alvo)) continue;
+      if (alvo === parceiro) this.o.enviar(this.ocupantes[alvo].id!, 'sinal', { de: c, sinal });
+      else if (chance > 0 && this.rand() < chance) {
+        this.o.enviar(this.ocupantes[alvo].id!, 'sinal', { de: c, sinal, interceptado: true });
+      }
+    }
+  }
+
+  /** Às vezes um bot comenta a rodada que acabou de fechar. */
+  private comentarRodada(antes: EstadoPartida, depois: EstadoPartida): void {
+    const chance = this.o.chanceFalaBot ?? 0;
+    if (chance <= 0) return;
+    const r = rodadaFechada(antes, depois);
+    if (r === null || r === 'empate') return;
+    const c = CADEIRAS.find((x) => !this.ocupantes[x].humano && this.rand() < chance);
+    if (c === undefined) return;
+    const fala = falaDaRodada(r, c, this.rand());
+    if (fala && this.podeMandar(c)) this.paraHumanos((destino) => this.o.enviar(destino, 'fala', { de: c, fala }));
   }
 
   private virarBot(c: Cadeira): void {

@@ -21,6 +21,7 @@ export class MesaRoom extends Room {
       nivelBot,
       humanosEsperados: humanos,
       chanceInterceptarSinal,
+      chanceFalaBot: 0.2,
       tempos: MesaRoom.tempos,
       rand: randCripto,
       relogio: {
