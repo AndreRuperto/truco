@@ -39,6 +39,8 @@ export interface MsgEstado {
   regras: RegrasMesa;
   /** Chance (0–1) de cada adversário ver um sinal; 0 = sinais são só do parceiro. */
   chanceInterceptarSinal: number;
+  /** Quantos humanos a mesa espera antes de começar sozinha (o resto vira bot). */
+  humanosEsperados: number;
   visao: Visao | null;
   /** Quem precisa agir e até quando (epoch ms). */
   prazo: { cadeiras: Cadeira[]; ate: number } | null;

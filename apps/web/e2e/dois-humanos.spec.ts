@@ -44,6 +44,7 @@ test('2 humanos parceiros: sinal chega ao parceiro e quem recarrega volta à mes
   try {
     await entrar(ana, 'Ana');
     await expect(ana.getByRole('heading', { name: 'Sala de espera' })).toBeVisible({ timeout: 15_000 });
+    await expect(ana.getByText('Esperando 1 jogador…')).toBeVisible();
     await expect(ana.getByRole('list', { name: 'Regras da mesa' })).toContainText('Sinais: só o parceiro vê');
 
     // A sala lota com a segunda e a partida começa sozinha.

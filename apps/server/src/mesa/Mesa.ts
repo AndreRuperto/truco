@@ -383,6 +383,7 @@ export class Mesa {
       cadeiras,
       regras: this.o.regras,
       chanceInterceptarSinal: this.o.chanceInterceptarSinal ?? 0,
+      humanosEsperados: this.o.humanosEsperados,
       visao: s ? visaoDoJogador(s, c) : null,
       prazo: this.prazo,
       minhasAcoes: s ? acoesValidas(s, c) : [],

@@ -60,6 +60,7 @@ export function msgEstado(s: EstadoPartida | null, minha: Cadeira = 0, extra: Pa
     cadeiras: CADEIRAS_PADRAO,
     regras: s?.regras ?? PAULISTA,
     chanceInterceptarSinal: 0,
+    humanosEsperados: 1,
     visao: s ? visaoDoJogador(s, minha) : null,
     prazo: null,
     minhasAcoes: s ? acoesValidas(s, minha) : [],

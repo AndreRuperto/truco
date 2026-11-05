@@ -10,7 +10,9 @@ interface Props {
 
 export function SalaEspera({ msg, aoIniciar, aoSair }: Props) {
   const dono = souDono(msg);
-  const faltam = msg.cadeiras.filter((c) => c.tipo === 'vazia').length;
+  // Faltam humanos, não cadeiras: as vazias que sobrarem viram bots ao começar.
+  const sentados = msg.cadeiras.filter((c) => c.tipo === 'humano').length;
+  const faltam = Math.max(0, msg.humanosEsperados - sentados);
   return (
     <main className="sala-espera">
       <h1>Sala de espera</h1>

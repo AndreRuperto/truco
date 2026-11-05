@@ -16,7 +16,7 @@ describe('SalaEspera', () => {
   test('o dono vê "Começar com bots"; os outros não', async () => {
     const user = userEvent.setup();
     const aoIniciar = vi.fn();
-    const { rerender } = render(<SalaEspera msg={msgEstado(null, 0, { cadeiras })} aoIniciar={aoIniciar} aoSair={vi.fn()} />);
+    const { rerender } = render(<SalaEspera msg={msgEstado(null, 0, { cadeiras, humanosEsperados: 4 })} aoIniciar={aoIniciar} aoSair={vi.fn()} />);
     expect(screen.getByText('Esperando 2 jogadores…')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Começar com bots' }));
     expect(aoIniciar).toHaveBeenCalledTimes(1);
@@ -36,6 +36,21 @@ describe('SalaEspera', () => {
     expect(lista).toHaveTextContent('Mão de 11 só no 11 a 11');
     expect(lista).toHaveTextContent('Família aberta');
     expect(lista).toHaveTextContent('Adversários às vezes interceptam sinais');
+  });
+
+  test('conta os humanos que faltam, não as cadeiras vazias (bots completam o resto)', () => {
+    const so: InfoCadeira[] = [
+      { tipo: 'humano', nome: 'Ana', conectado: true },
+      { tipo: 'vazia', nome: null, conectado: true },
+      { tipo: 'vazia', nome: null, conectado: true },
+      { tipo: 'vazia', nome: null, conectado: true },
+    ];
+    const { rerender } = render(<SalaEspera msg={msgEstado(null, 0, { cadeiras: so, humanosEsperados: 2 })} aoIniciar={vi.fn()} aoSair={vi.fn()} />);
+    expect(screen.getByText('Esperando 1 jogador…')).toBeInTheDocument();
+    rerender(<SalaEspera msg={msgEstado(null, 0, { cadeiras: so, humanosEsperados: 3 })} aoIniciar={vi.fn()} aoSair={vi.fn()} />);
+    expect(screen.getByText('Esperando 2 jogadores…')).toBeInTheDocument();
+    rerender(<SalaEspera msg={msgEstado(null, 0, { cadeiras: so, humanosEsperados: 1 })} aoIniciar={vi.fn()} aoSair={vi.fn()} />);
+    expect(screen.getByText('Começando…')).toBeInTheDocument();
   });
 
   test('sair', async () => {

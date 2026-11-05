@@ -39,6 +39,12 @@ describe('lobby', () => {
     expect(estado('b')!.regras).toEqual(regras);
   });
 
+  test('o estado diz quantos humanos a mesa espera', () => {
+    const { mesa, estado } = criarMesa({ humanosEsperados: 3 });
+    mesa.sentar('a', 'Ana');
+    expect(estado('a')!.humanosEsperados).toBe(3);
+  });
+
   test('sem chance configurada, o estado diz 0', () => {
     const { mesa, estado } = criarMesa();
     mesa.sentar('a', 'Ana');
