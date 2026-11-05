@@ -56,6 +56,27 @@ describe('loja da fila', () => {
     expect(g.getSnapshot()).toMatchObject({ status: 'fora', erro: 'Você saiu da fila.' });
   });
 
+  test('cancelar e entrar de novo antes da primeira abrir: a sala atrasada é largada', async () => {
+    const velha = new FilaFalsa();
+    const nova = new FilaFalsa();
+    const pendentes: ((s: SalaFilaLike) => void)[] = [];
+    const abrir = vi.fn(() => new Promise<SalaFilaLike>((ok) => pendentes.push(ok)));
+    const f = criarLojaFila({ abrir, aoParear: vi.fn() });
+    const p1 = f.entrar(OPC);
+    await f.cancelar();
+    const p2 = f.entrar({ variante: 'mineiro', formato: '2x2' });
+    pendentes[0](velha);
+    await p1;
+    expect(velha.saiu).toBe(true);
+    expect(f.getSnapshot().status).toBe('entrando');
+    pendentes[1](nova);
+    await p2;
+    expect(nova.saiu).toBe(false);
+    expect(f.getSnapshot()).toMatchObject({ status: 'na-fila', opcoes: { variante: 'mineiro' } });
+    velha.emit('msg:status', { esperaS: 1, faixa: 1, naFila: 9, aguardandoParceiro: false });
+    expect(f.getSnapshot().info).toBeNull();
+  });
+
   test('cancelar enquanto entra sai da sala assim que ela abre', async () => {
     const sala = new FilaFalsa();
     let abrir!: (s: FilaFalsa) => void;

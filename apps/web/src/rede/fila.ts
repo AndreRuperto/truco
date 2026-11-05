@@ -32,6 +32,8 @@ const INICIAL: EstadoFila = { status: 'fora', opcoes: null, info: null, erro: nu
 export function criarLojaFila(o: { abrir: (op: OpcoesFila) => Promise<SalaFilaLike>; aoParear: (reserva: unknown) => Promise<void> }) {
   let estado: EstadoFila = INICIAL;
   let sala: SalaFilaLike | null = null;
+  /** Sobe a cada entrar/cancelar: um `abrir` que resolve depois disso é de uma tentativa velha. */
+  let geracao = 0;
   const ouvintes = new Set<() => void>();
   const mudar = (p: Partial<EstadoFila>) => {
     estado = { ...estado, ...p };
@@ -51,16 +53,17 @@ export function criarLojaFila(o: { abrir: (op: OpcoesFila) => Promise<SalaFilaLi
 
     async entrar(op: OpcoesFila): Promise<void> {
       if (estado.status !== 'fora') return;
+      const g = ++geracao;
       mudar({ status: 'entrando', opcoes: op, info: null, erro: null });
       let s: SalaFilaLike;
       try {
         s = await o.abrir(op);
       } catch (e) {
-        mudar({ status: 'fora', erro: textoErroFila(e instanceof Error ? e.message : String(e)) });
+        if (g === geracao) mudar({ status: 'fora', erro: textoErroFila(e instanceof Error ? e.message : String(e)) });
         return;
       }
-      // Cancelou enquanto entrava: não fica numa fila que ninguém está olhando.
-      if (statusAtual() !== 'entrando') {
+      // Cancelou (e talvez entrou de novo) enquanto entrava: não fica numa fila que ninguém está olhando.
+      if (g !== geracao || statusAtual() !== 'entrando') {
         s.leave(true).catch(() => {});
         return;
       }
@@ -84,6 +87,7 @@ export function criarLojaFila(o: { abrir: (op: OpcoesFila) => Promise<SalaFilaLi
     },
 
     async cancelar(): Promise<void> {
+      geracao++;
       const s = sala;
       sala = null;
       mudar({ ...INICIAL, opcoes: estado.opcoes });
