@@ -111,6 +111,11 @@ describe('estáticos da SPA', () => {
     expect(raiz.headers.get('cache-control')).toBe('no-cache');
     expect((await app.pedir('/qualquer/coisa')).texto).toContain('<div id="raiz">');
     expect((await app.pedir('/assets/app.js')).texto).toBe('console.log(1)');
+    expect((await app.pedir('/index.html')).headers.get('cache-control')).toBe('no-cache');
+    expect((await app.pedir('/assets/app.js')).headers.get('cache-control')).toMatch(/max-age=604800/);
+    expect((await app.pedir('/assets/sumiu.js')).status).toBe(404);
+    expect((await app.pedir('/favicon.ico')).status).toBe(404);
+    expect((await app.pedir('/perfil/7')).texto).toContain('<div id="raiz">');
     const api = await app.pedir('/api/nao-existe');
     expect(api.status).toBe(404);
     expect(api.json).toEqual({ erro: 'não encontrado' });
@@ -119,11 +124,17 @@ describe('estáticos da SPA', () => {
 
 describe('cabecalhosCors', () => {
   const PROD = { producao: true, origens: ['https://truco.app'] };
-  test('dev reflete qualquer origem', () => {
-    expect(cabecalhosCors('http://localhost:5173', 'localhost:2567', { producao: false, origens: [] })).toEqual({
+  test('dev reflete só localhost/127.0.0.1/[::1]', () => {
+    const DEV = { producao: false, origens: [] };
+    expect(cabecalhosCors('http://localhost:5173', 'localhost:2567', DEV)).toEqual({
       'Access-Control-Allow-Origin': 'http://localhost:5173',
       Vary: 'Origin',
     });
+    expect(cabecalhosCors('http://127.0.0.1:5173', 'x', DEV)['Access-Control-Allow-Origin']).toBe('http://127.0.0.1:5173');
+    expect(cabecalhosCors('http://[::1]:5173', 'x', DEV)['Access-Control-Allow-Origin']).toBe('http://[::1]:5173');
+    expect(cabecalhosCors('https://malicioso.com', 'localhost:2567', DEV)).toEqual({});
+    expect(cabecalhosCors('http://localhost.malicioso.com', 'x', DEV)).toEqual({});
+    expect(cabecalhosCors('lixo', 'x', DEV)).toEqual({});
   });
   test('produção: só a própria origem ou as listadas', () => {
     expect(cabecalhosCors('https://x.up.railway.app', 'x.up.railway.app', PROD)['Access-Control-Allow-Origin']).toBe('https://x.up.railway.app');

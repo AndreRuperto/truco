@@ -40,6 +40,9 @@ function origemDoPedido(req: Request): string {
   return req.get('origin') ?? `${req.protocol}://${req.get('host')}`;
 }
 
+/** Caminho com extensão no último segmento (ex.: /assets/x.js, /favicon.ico). */
+const temExtensao = (caminho: string) => /\.[^/]+$/.test(caminho);
+
 export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}): void {
   const limiteIp = x.limiteLinkIp ?? new LimiteTaxa(5, 15 * 60_000);
   const limiteEmail = x.limiteLinkEmail ?? new LimiteTaxa(3, 15 * 60_000);
@@ -185,10 +188,20 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
 
   if (x.pastaWeb) {
     const pasta = x.pastaWeb;
-    // Os arquivos do Vite em /assets têm hash no nome: podem ficar em cache.
-    app.use(express.static(pasta, { index: false, maxAge: '7d' }));
+    // Os arquivos do Vite em /assets têm hash no nome: podem ficar em cache. O index.html não.
+    app.use(
+      express.static(pasta, {
+        index: false,
+        maxAge: '7d',
+        setHeaders: (res, caminho) => {
+          if (caminho.endsWith('index.html')) res.setHeader('Cache-Control', 'no-cache');
+        },
+      }),
+    );
     // `/{*caminho}` (Express 5) casa também "/": sem isso o Colyseus responderia "/" com a própria versão.
-    app.get('/{*caminho}', (_req, res) => {
+    // Arquivo que não existe (tem extensão) é 404, não o index.html (evita JS/ícone virar HTML em cache).
+    app.get('/{*caminho}', (req, res) => {
+      if (temExtensao(req.path)) return void res.status(404).type('text/plain').send('não encontrado');
       res.setHeader('Cache-Control', 'no-cache');
       res.sendFile('index.html', { root: pasta });
     });

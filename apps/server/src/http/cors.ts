@@ -2,6 +2,8 @@ import { matchMaker } from '@colyseus/core';
 
 const permitir = (origem: string) => ({ 'Access-Control-Allow-Origin': origem, Vary: 'Origin' });
 
+const LOCAIS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
 /**
  * Cabeçalhos que o Colyseus soma aos padrões (`Allow-Origin: *`, `Allow-Credentials: true`).
  * Devolver `{}` deixa o `*`, que o navegador recusa em pedidos com credenciais.
@@ -12,13 +14,15 @@ export function cabecalhosCors(
   o: { producao: boolean; origens: readonly string[] },
 ): Record<string, string> {
   if (!origem) return {};
-  if (!o.producao) return permitir(origem);
-  let mesmoHost = false;
+  let url: URL;
   try {
-    mesmoHost = new URL(origem).host === host;
+    url = new URL(origem);
   } catch {
     return {};
   }
+  // Fora de produção: só o próprio computador (Vite, testes), não qualquer site aberto no navegador.
+  if (!o.producao) return LOCAIS.has(url.hostname) ? permitir(origem) : {};
+  const mesmoHost = url.host === host;
   return mesmoHost || o.origens.includes(origem) ? permitir(origem) : {};
 }
 
