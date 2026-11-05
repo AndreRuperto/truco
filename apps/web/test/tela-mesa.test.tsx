@@ -4,7 +4,8 @@ import { describe, expect, test, vi } from 'vitest';
 import type { Evento } from '../src/logica/eventos';
 import type { EstadoLoja } from '../src/rede/loja';
 import { TelaMesa } from '../src/telas/Mesa';
-import { distribuida, MINEIRO, msgEstado, PAULISTA } from './fixtures';
+import { reduce } from '@truco/engine';
+import { distribuida, jogar, MINEIRO, msgEstado, PAULISTA } from './fixtures';
 
 const acoesFalsas = () => ({ enviarAcao: vi.fn(), enviarSinal: vi.fn(), enviarFala: vi.fn(), sair: vi.fn() });
 const snap = (msg: EstadoLoja['msg'], eventos: Evento[] = []): EstadoLoja => ({ status: 'na-mesa', msg, eventos, erro: null });
@@ -30,6 +31,16 @@ describe('TelaMesa', () => {
     expect(screen.getByTestId('assento-cima')).toHaveTextContent('Bot Tião');
     expect(screen.getByTestId('assento-esquerda')).toHaveTextContent('Bot Dita');
     expect(within(screen.getByTestId('assento-direita')).getByRole('status')).toHaveTextContent('TRUCO!');
+  });
+
+  test('vez: na resposta a truco marca a minha dupla inteira, mesmo com prazo só meu', () => {
+    const s = reduce(jogar(distribuida(PAULISTA), [[0, 0]]), { tipo: 'truco', cadeira: 1 });
+    const msg = msgEstado(s, 0, { prazo: { cadeiras: [0], ate: Date.now() + 20_000 } });
+    render(<TelaMesa snap={snap(msg)} acoes={acoesFalsas()} />);
+    expect(screen.getByTestId('assento-baixo')).toHaveClass('da-vez');
+    expect(screen.getByTestId('assento-cima')).toHaveClass('da-vez');
+    expect(screen.getByTestId('assento-direita')).not.toHaveClass('da-vez');
+    expect(screen.getByTestId('assento-esquerda')).not.toHaveClass('da-vez');
   });
 
   test('mão de 10: vejo a mão do parceiro e decido', () => {

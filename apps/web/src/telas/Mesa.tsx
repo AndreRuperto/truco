@@ -22,6 +22,7 @@ import {
   textoPedidoPendente,
   valorMao,
 } from '../logica/textos';
+import { quemDeveAgir } from '../logica/vez';
 import { useAgora } from '../rede/hooks';
 import type { EstadoLoja, Loja } from '../rede/loja';
 
@@ -46,7 +47,8 @@ export function TelaMesa({ snap, acoes }: Props) {
   const baloes = baloesAtivos(snap.eventos, agora);
   const { nos, eles } = placarRelativo(v);
   const nome = (c: Cadeira) => msg.cadeiras[c]?.nome ?? `Cadeira ${c + 1}`;
-  const daVez = (c: Cadeira) => (msg.prazo ? msg.prazo.cadeiras.includes(c) : v.fase === 'jogando' && m?.vez === c);
+  const agentes = quemDeveAgir(v);
+  const daVez = (c: Cadeira) => agentes.includes(c);
 
   const ultimo = [...snap.eventos].reverse().find((e) => e.tipo === 'sinal');
   const sinal: (SinalRecebido & { em: number }) | null =
