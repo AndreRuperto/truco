@@ -14,9 +14,10 @@ import {
 
 interface Props {
   aoJogar: (o: OpcoesEntrada) => void;
+  aoRanqueada?: () => void;
 }
 
-export function Lobby({ aoJogar }: Props) {
+export function Lobby({ aoJogar, aoRanqueada }: Props) {
   const [f, setF] = useState<FormLobby>(() => formPadrao('paulista', lerApelido()));
   const mudar = <K extends keyof FormLobby>(k: K, v: FormLobby[K]) => setF((x) => ({ ...x, [k]: v }));
 
@@ -110,8 +111,8 @@ export function Lobby({ aoJogar }: Props) {
           <button type="submit" className="botao-principal">
             Jogar
           </button>
-          <button type="button" disabled title="Em breve">
-            Ranqueada (em breve)
+          <button type="button" onClick={aoRanqueada} disabled={!aoRanqueada}>
+            Ranqueada
           </button>
         </div>
       </form>

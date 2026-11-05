@@ -59,10 +59,13 @@ describe('Lobby', () => {
     expect(aoJogar.mock.calls[1][0]).toMatchObject({ chanceInterceptarSinal: 0.5 });
   });
 
-  test('preenche o apelido salvo; ranqueada fica para depois', () => {
+  test('preenche o apelido salvo; botão Ranqueada chama aoRanqueada', async () => {
+    const user = userEvent.setup();
     localStorage.setItem(CHAVE_APELIDO, 'Bia');
-    render(<Lobby aoJogar={vi.fn()} />);
+    const aoRanqueada = vi.fn();
+    render(<Lobby aoJogar={vi.fn()} aoRanqueada={aoRanqueada} />);
     expect(screen.getByLabelText('Apelido')).toHaveValue('Bia');
-    expect(screen.getByRole('button', { name: 'Ranqueada (em breve)' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Ranqueada' }));
+    expect(aoRanqueada).toHaveBeenCalled();
   });
 });

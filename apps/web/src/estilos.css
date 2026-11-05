@@ -678,3 +678,37 @@ button:disabled {
     transition: none !important;
   }
 }
+
+/* ---------- contas, navegação e telas de dados ---------- */
+.cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.95rem;
+}
+.cabecalho a {
+  color: inherit;
+}
+.cabecalho-usuario {
+  margin-left: auto;
+  font-weight: 600;
+}
+.tela-conta {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.erro-form {
+  color: #ffb4a8;
+}
+.nota {
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+.botao-google {
+  margin: 16px 0;
+  min-height: 44px;
+}
