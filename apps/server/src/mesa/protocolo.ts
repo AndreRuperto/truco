@@ -32,6 +32,25 @@ export function limparNome(cru: unknown): string {
   return nome || 'Jogador';
 }
 
+export const MAX_CHAT = 200;
+
+export interface MsgChat {
+  de: Cadeira;
+  nome: string;
+  texto: string;
+}
+
+/** Texto de chat: sem caracteres de controle/invisíveis, espaços juntados, até 200. */
+export function limparChat(cru: unknown): string {
+  if (typeof cru !== 'string') return '';
+  return cru
+    .replace(/[\p{Cc}\p{Cf}]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_CHAT)
+    .trim();
+}
+
 export interface InfoCadeira {
   tipo: 'vazia' | 'humano' | 'bot';
   nome: string | null;
@@ -41,6 +60,8 @@ export interface InfoCadeira {
 export interface MsgEstado {
   minhaCadeira: Cadeira;
   cadeiras: InfoCadeira[];
+  /** Tipo da mesa (a tela usa para chat, convite e avisos da ranqueada). */
+  modo: ModoMesa;
   /** Regras da mesa (vêm desde a sala de espera, antes de haver `visao`). */
   regras: RegrasMesa;
   /** Chance (0–1) de cada adversário ver um sinal; 0 = sinais são só do parceiro. */

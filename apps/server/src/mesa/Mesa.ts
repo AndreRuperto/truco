@@ -18,7 +18,19 @@ import {
   type RegrasMesa,
   visaoDoJogador,
 } from '@truco/engine';
-import { ehFala, ehSinal, type InfoCadeira, limparNome, msgDaAcao, type MsgEstado, type NivelBot, type Sinal } from './protocolo';
+import {
+  ehFala,
+  ehSinal,
+  type InfoCadeira,
+  limparChat,
+  limparNome,
+  type ModoMesa,
+  type MsgChat,
+  msgDaAcao,
+  type MsgEstado,
+  type NivelBot,
+  type Sinal,
+} from './protocolo';
 import { cartaDoSinal, falaDaRodada, rodadaFechada, sinalDaMao } from './social';
 
 export interface Relogio {
@@ -63,6 +75,12 @@ export interface OpcoesMesa {
   aoIniciar?: () => void;
   /** Erros internos (bot, timers). A mesa se recupera sozinha; isto só registra. */
   aoErro?: (e: unknown) => void;
+  /** Tipo da mesa; vai no `MsgEstado`. Padrão 'classica'. */
+  modo?: ModoMesa;
+  /** Chat de texto. Padrão: só na privada. */
+  chat?: boolean;
+  /** Toda ação aplicada (humano ou bot). `porHumano` = veio de `acao()` (não de bot nem de tempo esgotado). */
+  aoAplicar?: (acao: AcaoJogador, porHumano: boolean) => void;
   /** Decisão dos bots. Padrão: bot fácil ou difícil conforme `nivelBot`. */
   decidirBot?: (s: EstadoPartida, cadeira: Cadeira) => AcaoJogador | null;
 }
@@ -105,6 +123,8 @@ export class Mesa {
   private bots = 0;
   /** Carta que cada cadeira "sabe" que o parceiro tem (último sinal de manilha recebido nesta mão). */
   private dicas: (Carta | null)[] = [null, null, null, null];
+  /** Última mensagem de chat por cadeira (limite próprio, separado de sinais/falas). */
+  private readonly ultimoChat: number[] = [-Infinity, -Infinity, -Infinity, -Infinity];
   private readonly relogio: Relogio;
   private readonly rand: () => number;
   private readonly tempos: Tempos;
@@ -149,9 +169,15 @@ export class Mesa {
 
   // ---------- lobby ----------
 
-  sentar(id: string, nome: unknown): Cadeira | null {
+  /** Senta na `cadeira` pedida (ranqueada: a que a fila reservou) ou na próxima livre. */
+  sentar(id: string, nome: unknown, cadeira?: Cadeira): Cadeira | null {
     if (this.iniciada || this.cadeiraDe(id) !== null) return null;
-    const cad = ORDEM_SENTAR.find((c) => this.ocupantes[c].id === null);
+    const cad =
+      cadeira !== undefined
+        ? this.ocupantes[cadeira]?.id === null
+          ? cadeira
+          : undefined
+        : ORDEM_SENTAR.find((c) => this.ocupantes[c].id === null);
     if (cad === undefined) return null;
     this.ocupantes[cad] = {
       id,
@@ -240,6 +266,26 @@ export class Mesa {
     this.paraHumanos((destino) => this.o.enviar(destino, 'fala', { de: c, fala }));
   }
 
+  /** Chat de texto (só na privada, salvo `chat`); vale também na sala de espera. */
+  chat(id: string, cru: unknown): void {
+    const c = this.cadeiraDe(id);
+    if (c === null) return;
+    if (!(this.o.chat ?? this.o.modo === 'privada')) {
+      this.erro(id, 'chat só em mesa privada');
+      return;
+    }
+    const texto = limparChat(cru);
+    if (!texto) return;
+    const agora = this.relogio.agora();
+    if (agora - this.ultimoChat[c] < this.tempos.intervaloMensagemMs) {
+      this.erro(id, 'calma: uma mensagem por segundo');
+      return;
+    }
+    this.ultimoChat[c] = agora;
+    const msg: MsgChat = { de: c, nome: this.ocupantes[c].nome ?? 'Jogador', texto };
+    this.paraHumanos((destino) => this.o.enviar(destino, 'chat', msg));
+  }
+
   // ---------- internos ----------
 
   /** Aplica a ação; devolve se deu certo. Erro de humano vai para ele; de bot, para `aoErro`. */
@@ -254,6 +300,11 @@ export class Mesa {
       return false;
     }
     this.versao++;
+    try {
+      this.o.aoAplicar?.(acao, idHumano !== undefined);
+    } catch (e) {
+      this.falha(e);
+    }
     this.paraHumanos((destino) => this.o.enviar(destino, 'acao', msgDaAcao(acao)));
     if (acao.tipo === 'jogar') this.comentarRodada(antes, this.estado);
     this.atualizar();
@@ -381,6 +432,7 @@ export class Mesa {
     const msg: MsgEstado = {
       minhaCadeira: c,
       cadeiras,
+      modo: this.o.modo ?? 'classica',
       regras: this.o.regras,
       chanceInterceptarSinal: this.o.chanceInterceptarSinal ?? 0,
       humanosEsperados: this.o.humanosEsperados,

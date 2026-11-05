@@ -1,6 +1,6 @@
 import { REGRAS_RANQUEADA } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
-import { chaveRegras, ehFala, ehSinal, filtroDaSala, limparNome, opcoesDaSala } from '../src/mesa/protocolo';
+import { chaveRegras, ehFala, ehSinal, filtroDaSala, limparChat, limparNome, MAX_CHAT, opcoesDaSala } from '../src/mesa/protocolo';
 
 describe('chaveRegras', () => {
   const base = REGRAS_RANQUEADA.paulista;
@@ -98,5 +98,14 @@ describe('modo da mesa', () => {
       nivelBot: 'facil',
       chaveRegras: chaveRegras(REGRAS_RANQUEADA.paulista, 0),
     });
+  });
+});
+
+describe('limparChat', () => {
+  test('tira controles, junta espaços, corta em 200', () => {
+    expect(limparChat('  oi\u0007 \n pessoal\u200b ')).toBe('oi pessoal');
+    expect(limparChat('x'.repeat(500))).toHaveLength(MAX_CHAT);
+    expect(limparChat(42)).toBe('');
+    expect(limparChat('   ')).toBe('');
   });
 });
