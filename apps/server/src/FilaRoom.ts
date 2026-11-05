@@ -2,7 +2,7 @@ import { type AuthContext, type Client, ErrorCode, matchMaker, Room, ServerError
 import type { Variante } from '@truco/engine';
 import type { Formato, MsgPareado } from './api/tipos';
 import { cadeirasDoPareamento, type EntradaFila, Fila, normalizarCodigoDupla, type Pareamento } from './fila/fila';
-import { SAIDA_FILA_SUBSTITUIDA } from './mesa/protocolo';
+import { SAIDA_FILA_SUBSTITUIDA, SAIDA_PARTIDA_CANCELADA } from './mesa/protocolo';
 import { MesaRoom } from './MesaRoom';
 import { bloqueioAte, ratingDe } from './repo/partidas';
 import type { Servicos } from './servicos';
@@ -18,6 +18,8 @@ export class FilaRoom extends Room {
   static servicos: Servicos | null = null;
   /** Sobrescrito nos testes. */
   static intervaloMs = 1_000;
+  /** Reserva de assento (os testes trocam para simular falha). */
+  static reservar: typeof matchMaker.reserveSeatFor = (sala, opcoes, auth) => matchMaker.reserveSeatFor(sala, opcoes, auth);
 
   private readonly fila = new Fila();
   private rodando = false;
@@ -104,11 +106,24 @@ export class FilaRoom extends Room {
       fichaInterna: MesaRoom.fichaInterna,
       jogadores: assentos.map((a) => ({ usuarioId: a.entrada.usuarioId, cadeira: a.cadeira })),
     });
-    for (const a of assentos) {
-      const auth: UsuarioConexao = { usuarioId: a.entrada.usuarioId, apelido: a.entrada.apelido };
-      // O authData vira `client.auth` na mesa (sem passar pelo onAuth de novo).
-      const reserva = await matchMaker.reserveSeatFor(sala, { nome: a.entrada.apelido }, auth);
-      const msg: MsgPareado = { reserva };
+    // Todas as reservas antes de avisar alguém: se uma falha, ninguém recebe `pareado` (e sai
+    // da fila à toa); a mesa é descartada e todos voltam à fila (quem chama devolve).
+    const reservas = [];
+    try {
+      for (const a of assentos) {
+        const auth: UsuarioConexao = { usuarioId: a.entrada.usuarioId, apelido: a.entrada.apelido };
+        // O authData vira `client.auth` na mesa (sem passar pelo onAuth de novo).
+        reservas.push(await FilaRoom.reservar(sala, { nome: a.entrada.apelido }, auth));
+      }
+    } catch (e) {
+      // `disconnect` resolve depois do descarte (onDispose libera as contas da mesa).
+      await matchMaker.remoteRoomCall(sala.roomId, 'disconnect', [SAIDA_PARTIDA_CANCELADA]).catch((x: unknown) => {
+        console.error('[FilaRoom] falha ao descartar a mesa sem reservas', x);
+      });
+      throw e;
+    }
+    for (const [i, a] of assentos.entries()) {
+      const msg: MsgPareado = { reserva: reservas[i] };
       this.clients.getById(a.entrada.id)?.send('pareado', msg);
     }
     // Entrou de novo por outra aba enquanto a mesa era criada: a entrada nova sai.

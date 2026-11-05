@@ -411,6 +411,33 @@ describe('fila ranqueada', () => {
     }
   });
 
+  test('reserva de assento falha: ninguém recebe pareado, a mesa criada é descartada e os dois voltam à fila', async () => {
+    const original = FilaRoom.reservar;
+    const salas: string[] = [];
+    let chamadas = 0;
+    FilaRoom.reservar = async (sala, opcoes, auth) => {
+      salas.push(sala.roomId);
+      if (++chamadas === 2) throw new Error('falha simulada na reserva');
+      return original(sala, opcoes, auth);
+    };
+    try {
+      const ana = await logado('ana@x.com');
+      const bia = await logado('bia@x.com');
+      const fa = coletor(await ana.cliente.joinOrCreate('fila', FILA_1X1));
+      const fb = coletor(await bia.cliente.joinOrCreate('fila', FILA_1X1));
+      // 1ª tentativa falha na 2ª reserva; a rodada seguinte pareia de novo, noutra mesa.
+      await esperar(() => !!fa.pareado?.length && !!fb.pareado?.length);
+      expect(fa.pareado).toHaveLength(1);
+      expect(fb.pareado).toHaveLength(1);
+      const primeira = salas[0];
+      expect(fa.pareado[0].reserva.roomId).not.toBe(primeira);
+      expect(fa.pareado[0].reserva.roomId).toBe(fb.pareado[0].reserva.roomId);
+      await esperar(() => !matchMaker.getLocalRoomById(primeira));
+    } finally {
+      FilaRoom.reservar = original;
+    }
+  });
+
   test('2x2: terceiro com o mesmo código de dupla é recusado com erro claro', async () => {
     const opcoes = { variante: 'mineiro', formato: '2x2', codigoDupla: 'trio' };
     for (const email of ['t1@x.com', 't2@x.com']) coletor(await (await logado(email)).cliente.joinOrCreate('fila', opcoes));
