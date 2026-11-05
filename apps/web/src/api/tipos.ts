@@ -2,10 +2,7 @@
 // servidor ainda não criou. Quando ele existir, aponte o alias `@truco/api` (vite.config.ts e
 // tsconfig.json) para `../server/src/api/tipos.ts` e apague este arquivo.
 import type { RegrasMesa, Variante } from '@truco/engine';
-import type { NivelBot } from '@truco/protocolo';
-
-/** Igual a `ModoMesa` de `protocolo.ts` (Tarefa 1). */
-export type ModoMesa = 'classica' | 'desafio' | 'privada' | 'ranqueada';
+import type { ModoMesa, NivelBot } from '@truco/protocolo';
 
 export type Formato = '1x1' | '2x2';
 

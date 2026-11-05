@@ -7,8 +7,11 @@ import { useLoja, useSessao } from './rede/hooks';
 import { api, loja, sessao } from './rede/instancia';
 import { navegar, useRota } from './rede/rota';
 import { TelaEntrar } from './telas/Entrar';
+import { TelaHistorico } from './telas/Historico';
 import { Lobby } from './telas/Lobby';
 import { TelaMesa } from './telas/Mesa';
+import { TelaPerfil } from './telas/Perfil';
+import { TelaRanking } from './telas/Ranking';
 import { SalaEspera } from './telas/SalaEspera';
 
 export function App() {
@@ -37,6 +40,15 @@ export function App() {
     switch (rota.tela) {
       case 'entrar':
         conteudo = <TelaEntrar token={rota.token} config={ses.config} api={api} aoEntrar={aoEntrar} />;
+        break;
+      case 'perfil':
+        conteudo = <TelaPerfil key={rota.id ?? 'eu'} id={rota.id} api={api} aoTrocarApelido={(u) => sessao.definirUsuario(u)} />;
+        break;
+      case 'historico':
+        conteudo = <TelaHistorico api={api} />;
+        break;
+      case 'ranking':
+        conteudo = <TelaRanking variante={rota.variante} api={api} />;
         break;
       default:
         conteudo = (
