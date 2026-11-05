@@ -22,6 +22,11 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
         <br />
         {SIMBOLO[carta.naipe]}
       </span>
+      <span className="canto canto-b" aria-hidden="true">
+        {carta.valor}
+        <br />
+        {SIMBOLO[carta.naipe]}
+      </span>
       <span className="naipe-central" aria-hidden="true">
         {SIMBOLO[carta.naipe]}
       </span>
