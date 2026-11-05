@@ -1,22 +1,18 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { type ModoMesa, type MsgEstado, SAIDA_PARTIDA_CANCELADA } from '@truco/protocolo';
+import { type MsgChat, SAIDA_PARTIDA_CANCELADA } from '@truco/protocolo';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { criarLoja, type EstadoLoja } from '../src/rede/loja';
 import { TelaMesa } from '../src/telas/Mesa';
-import type { MsgChat } from '../src/api/protocolo-provisorio';
 import { Chat } from '../src/componentes/Chat';
 import { SalaEspera } from '../src/telas/SalaEspera';
 import { distribuida, msgEstado, PAULISTA } from './fixtures';
 import { SalaFalsa } from './sala-falsa';
 
-// TEMPORÁRIO: enquanto `MsgEstado` não tem `modo` (Tarefa 11 do server), o extra passa por cast.
-const comModo = (modo: ModoMesa) => ({ modo }) as unknown as Partial<MsgEstado>;
-
 const acoesFalsas = () => ({ enviarAcao: vi.fn(), enviarSinal: vi.fn(), enviarFala: vi.fn(), sair: vi.fn(async () => {}) });
 const snap = (modo: 'classica' | 'privada' | 'ranqueada'): EstadoLoja => ({
   status: 'na-mesa',
-  msg: msgEstado(distribuida(PAULISTA), 0, comModo(modo)),
+  msg: msgEstado(distribuida(PAULISTA), 0, { modo }),
   eventos: [],
   erro: null,
   chat: [{ de: 1, nome: 'Bia', texto: 'bora' }],
@@ -53,7 +49,7 @@ describe('SalaEspera', () => {
     const aoChat = vi.fn();
     render(
       <SalaEspera
-        msg={msgEstado(null, 0, comModo('privada'))}
+        msg={msgEstado(null, 0, { modo: 'privada' })}
         aoIniciar={vi.fn()}
         aoSair={vi.fn()}
         salaId="abcd1234"
@@ -69,7 +65,7 @@ describe('SalaEspera', () => {
   });
 
   test('ranqueada não tem "Começar com bots" nem convite', () => {
-    render(<SalaEspera msg={msgEstado(null, 0, comModo('ranqueada'))} aoIniciar={vi.fn()} aoSair={vi.fn()} salaId="x1234" />);
+    render(<SalaEspera msg={msgEstado(null, 0, { modo: 'ranqueada' })} aoIniciar={vi.fn()} aoSair={vi.fn()} salaId="x1234" />);
     expect(screen.queryByRole('button', { name: 'Começar com bots' })).toBeNull();
     expect(screen.queryByLabelText('Link de convite')).toBeNull();
     expect(screen.getByText(/começa quando todos entrarem/)).toBeInTheDocument();
@@ -78,7 +74,7 @@ describe('SalaEspera', () => {
 
 describe('Convite: copiar com fallback', () => {
   const renderPrivada = () =>
-    render(<SalaEspera msg={msgEstado(null, 0, comModo('privada'))} aoIniciar={vi.fn()} aoSair={vi.fn()} salaId="abcd1234" origem="https://truco.app" />);
+    render(<SalaEspera msg={msgEstado(null, 0, { modo: 'privada' })} aoIniciar={vi.fn()} aoSair={vi.fn()} salaId="abcd1234" origem="https://truco.app" />);
   const trocar = <K extends 'clipboard'>(obj: Navigator, k: K, v: unknown) => Object.defineProperty(obj, k, { value: v, configurable: true });
   const clipboardOriginal = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
   afterEach(() => {
@@ -112,7 +108,7 @@ describe('SalaEspera: sair da ranqueada', () => {
   test('pede confirmação avisando da derrota/bloqueio; na casual sai direto', async () => {
     const user = userEvent.setup();
     const aoSair = vi.fn();
-    const { unmount } = render(<SalaEspera msg={msgEstado(null, 0, comModo('ranqueada'))} aoIniciar={vi.fn()} aoSair={aoSair} salaId="x1234" />);
+    const { unmount } = render(<SalaEspera msg={msgEstado(null, 0, { modo: 'ranqueada' })} aoIniciar={vi.fn()} aoSair={aoSair} salaId="x1234" />);
     await user.click(screen.getByRole('button', { name: 'Sair' }));
     const dialogo = screen.getByRole('alertdialog', { name: 'Sair da mesa' });
     expect(dialogo).toHaveTextContent('bloqueia a fila ranqueada');
@@ -121,7 +117,7 @@ describe('SalaEspera: sair da ranqueada', () => {
     expect(aoSair).toHaveBeenCalledTimes(1);
     unmount();
     const aoSair2 = vi.fn();
-    render(<SalaEspera msg={msgEstado(null, 0, comModo('privada'))} aoIniciar={vi.fn()} aoSair={aoSair2} />);
+    render(<SalaEspera msg={msgEstado(null, 0, { modo: 'privada' })} aoIniciar={vi.fn()} aoSair={aoSair2} />);
     await user.click(screen.getByRole('button', { name: 'Sair' }));
     expect(aoSair2).toHaveBeenCalled();
     expect(screen.queryByRole('alertdialog')).toBeNull();

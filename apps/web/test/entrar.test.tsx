@@ -121,6 +121,25 @@ describe('BotaoGoogle', () => {
     render(<TelaEntrar token={null} config={{ google: 'cid', emailTeste: false }} api={apiFalsa()} aoEntrar={vi.fn()} carregarGoogle={() => new Promise(() => {})} />);
     expect(screen.getByTestId('botao-google')).toBeInTheDocument();
   });
+
+  test('409 do server (e-mail ligado a outra conta Google) mostra a mensagem com o link mágico', async () => {
+    const msg = 'este e-mail já está ligado a outra conta Google; entre pelo link mágico';
+    let credencial: ((r: { credential: string }) => void) | null = null;
+    const g: GoogleId = {
+      initialize: vi.fn((o: Parameters<GoogleId['initialize']>[0]) => {
+        credencial = o.callback;
+      }),
+      renderButton: vi.fn(),
+    };
+    const api = { ...apiFalsa(), entrarGoogle: vi.fn(async () => Promise.reject(new ErroApi(409, msg))) };
+    const aoEntrar = vi.fn();
+    render(<TelaEntrar token={null} config={{ google: 'cid', emailTeste: false }} api={api} aoEntrar={aoEntrar} carregarGoogle={async () => g} />);
+    await waitFor(() => expect(credencial).not.toBeNull());
+    credencial!({ credential: 'jwt' });
+    expect(await screen.findByRole('alert')).toHaveTextContent(msg);
+    expect(api.entrarGoogle).toHaveBeenCalledWith('jwt');
+    expect(aoEntrar).not.toHaveBeenCalled();
+  });
 });
 
 describe('Cabecalho', () => {

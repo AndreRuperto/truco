@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
-import { MAX_CHAT, type MsgChat } from '../api/protocolo-provisorio';
+import { limparChat, MAX_CHAT, type MsgChat } from '@truco/protocolo';
 
 interface Props {
   mensagens: MsgChat[];
@@ -15,7 +15,7 @@ export function Chat({ mensagens, aoEnviar }: Props) {
   }, [mensagens.length]);
   const enviar = (e: FormEvent) => {
     e.preventDefault();
-    const t = texto.trim();
+    const t = limparChat(texto);
     if (!t) return;
     aoEnviar(t);
     setTexto('');

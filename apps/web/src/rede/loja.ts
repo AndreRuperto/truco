@@ -1,6 +1,5 @@
 import type { AcaoJogador } from '@truco/engine';
-import { type Fala, type MsgAcao, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
-import type { MsgChat } from '../api/protocolo-provisorio';
+import { type Fala, type MsgAcao, type MsgChat, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
 import { type Evento, FALA_TEXTO, type NovoEvento, textoDaAcao } from '../logica/eventos';
 
 /**

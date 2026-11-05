@@ -1,6 +1,5 @@
-import type { MsgEstado } from '@truco/protocolo';
+import type { MsgChat, MsgEstado } from '@truco/protocolo';
 import { useRef, useState } from 'react';
-import { type MsgChat, modoDaMesa } from '../api/protocolo-provisorio';
 import { Chat } from '../componentes/Chat';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { linkConvite } from '../logica/rotas';
@@ -21,7 +20,7 @@ interface Props {
 
 export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = window.location.origin, chat = [], aoChat }: Props) {
   const dono = souDono(msg);
-  const modo = modoDaMesa(msg);
+  const modo = msg.modo;
   // Faltam humanos, não cadeiras: as vazias que sobrarem viram bots ao começar.
   const sentados = msg.cadeiras.filter((c) => c.tipo === 'humano').length;
   const faltam = Math.max(0, msg.humanosEsperados - sentados);

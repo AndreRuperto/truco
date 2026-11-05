@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Assento } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
 import { CartaVisual } from '../componentes/CartaVisual';
-import { modoDaMesa } from '../api/protocolo-provisorio';
 import { CentroMesa } from '../componentes/CentroMesa';
 import { Chat } from '../componentes/Chat';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
@@ -43,7 +42,7 @@ export function TelaMesa({ snap, acoes, aoChat }: Props) {
   const [painel, setPainel] = useState<'sinais' | 'falas' | 'chat' | null>(null);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
   const msg = snap.msg!;
-  const modo = modoDaMesa(msg);
+  const modo = msg.modo;
   const v = msg.visao!;
   const m = v.mao;
   const minha = msg.minhaCadeira;
