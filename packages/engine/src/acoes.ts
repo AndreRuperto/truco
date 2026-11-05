@@ -1,5 +1,6 @@
 import type { AcaoJogador, Cadeira, EstadoPartida } from './estado';
 import { ErroJogada, reduce } from './reducer';
+import { completarSorte } from './ritual';
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
 
@@ -18,13 +19,25 @@ function candidatas(cadeira: Cadeira): AcaoJogador[] {
     { tipo: 'familia', cadeira },
     { tipo: 'mao10', cadeira, jogar: true },
     { tipo: 'mao10', cadeira, jogar: false },
+    { tipo: 'embaralhar', cadeira },
+    { tipo: 'passarCorte', cadeira },
+    { tipo: 'cortar', cadeira },
+    { tipo: 'abrir3', cadeira },
+    { tipo: 'dar3', cadeira },
+    { tipo: 'devolver', cadeira },
+    { tipo: 'distribuir', cadeira, modo: 'porCima' },
+    { tipo: 'distribuir', cadeira, modo: 'porBaixo' },
+    { tipo: 'distribuir', cadeira, modo: 'subindo' },
+    { tipo: 'conferir', cadeira, conferir: true },
+    { tipo: 'conferir', cadeira, conferir: false },
   ];
 }
 
+/** Testa cada candidata; embaralhar/cortar são testados com uma sorte qualquer e devolvidos sem ela. */
 function legais(s: EstadoPartida, acoes: AcaoJogador[]): AcaoJogador[] {
   return acoes.filter((a) => {
     try {
-      reduce(s, a);
+      reduce(s, completarSorte(a, s, () => 0));
       return true;
     } catch (e) {
       if (e instanceof ErroJogada) return false;
@@ -33,14 +46,14 @@ function legais(s: EstadoPartida, acoes: AcaoJogador[]): AcaoJogador[] {
   });
 }
 
-/** Ações legais da cadeira informada (exceto distribuir). Seguro para enviar a esse jogador. */
+/** Ações legais da cadeira informada (exceto monte). Seguro para enviar a esse jogador. */
 export function acoesValidas(s: EstadoPartida, cadeira: Cadeira): AcaoJogador[] {
   if (!CADEIRAS.includes(cadeira)) throw new ErroJogada('cadeira inválida');
   return legais(s, candidatas(cadeira));
 }
 
 /**
- * Ações legais de todas as cadeiras (exceto distribuir).
+ * Ações legais de todas as cadeiras (exceto monte).
  *
  * ATENÇÃO: server/test only — never send to clients. Revela, por exemplo,
  * quem tem família ou quantas cartas cada um pode jogar.

@@ -26,11 +26,12 @@ describe('quemDeveAgir (EstadoPartida e Visao dão o mesmo resultado)', () => {
     expect(quemDeveAgir(visaoDoJogador(inicio(MINEIRO, [0, 10]), 0))).toEqual([1, 3]);
   });
 
-  test('sem mão (antes da distribuição, entre mãos ou fim): ninguém', () => {
+  test('esperando o monte: ninguém; entre mãos: o pé novo, que embaralha', () => {
     expect(quemDeveAgir(novaPartida(MINEIRO))).toEqual([]);
     const s = reduce(inicio(MINEIRO, [10, 0]), { tipo: 'mao10', cadeira: 0, jogar: false });
     expect(s.mao).toBeNull();
-    expect(quemDeveAgir(s)).toEqual([]);
-    expect(quemDeveAgir(visaoDoJogador(s, 0))).toEqual([]);
+    expect(s.pe).toBe(0);
+    expect(quemDeveAgir(s)).toEqual([0]);
+    expect(quemDeveAgir(visaoDoJogador(s, 2))).toEqual([0]);
   });
 });
