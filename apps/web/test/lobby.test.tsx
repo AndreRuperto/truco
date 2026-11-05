@@ -26,6 +26,7 @@ describe('Lobby', () => {
       regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada' },
       chanceInterceptarSinal: 0,
       chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|int:0',
+      modo: 'desafio',
     });
     expect(localStorage.getItem(CHAVE_APELIDO)).toBe('Ana');
   });
@@ -67,5 +68,16 @@ describe('Lobby', () => {
     expect(screen.getByLabelText('Apelido')).toHaveValue('Bia');
     await user.click(screen.getByRole('button', { name: 'Ranqueada' }));
     expect(aoRanqueada).toHaveBeenCalled();
+  });
+
+  test('mesa privada: chama aoCriarPrivada em vez de aoJogar', async () => {
+    const user = userEvent.setup();
+    const aoJogar = vi.fn();
+    const aoCriarPrivada = vi.fn();
+    render(<Lobby aoJogar={aoJogar} aoCriarPrivada={aoCriarPrivada} />);
+    await user.click(screen.getByLabelText('Mesa privada (só entra quem tiver o link)'));
+    await user.click(screen.getByRole('button', { name: 'Criar mesa privada' }));
+    expect(aoJogar).not.toHaveBeenCalled();
+    expect(aoCriarPrivada.mock.calls[0][0]).toMatchObject({ modo: 'privada' });
   });
 });

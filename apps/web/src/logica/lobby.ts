@@ -12,6 +12,8 @@ export interface FormLobby {
   nivelBot: NivelBot;
   /** Chance (0–1) de cada adversário ver um sinal. */
   chanceInterceptarSinal: number;
+  /** Mesa privada (link de convite). */
+  privada: boolean;
 }
 
 /** Opções do campo "Adversários podem interceptar sinais". */
@@ -34,6 +36,7 @@ export interface OpcoesEntrada {
    * (quem omite aceita qualquer sala), então o cliente oficial sempre manda.
    */
   chaveRegras: string;
+  modo: 'classica' | 'desafio' | 'privada';
 }
 
 export const CHAVE_APELIDO = 'truco:apelido';
@@ -51,6 +54,7 @@ export function formPadrao(variante: Variante = 'paulista', nome = ''): FormLobb
     humanos: 1,
     nivelBot: 'facil',
     chanceInterceptarSinal: 0,
+    privada: false,
   };
 }
 
@@ -60,6 +64,7 @@ export function trocarVariante(f: FormLobby, variante: Variante): FormLobby {
     humanos: f.humanos,
     nivelBot: f.nivelBot,
     chanceInterceptarSinal: f.chanceInterceptarSinal,
+    privada: f.privada,
   };
 }
 
@@ -74,6 +79,7 @@ export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
     regras,
     chanceInterceptarSinal: chance,
     chaveRegras: chaveRegras({ variante: f.variante, ...regras }, chance),
+    modo: f.privada ? 'privada' : f.nivelBot === 'dificil' ? 'desafio' : 'classica',
   };
 }
 

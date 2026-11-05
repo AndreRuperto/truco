@@ -15,16 +15,19 @@ import {
 interface Props {
   aoJogar: (o: OpcoesEntrada) => void;
   aoRanqueada?: () => void;
+  aoCriarPrivada?: (o: OpcoesEntrada) => void;
 }
 
-export function Lobby({ aoJogar, aoRanqueada }: Props) {
+export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada }: Props) {
   const [f, setF] = useState<FormLobby>(() => formPadrao('paulista', lerApelido()));
   const mudar = <K extends keyof FormLobby>(k: K, v: FormLobby[K]) => setF((x) => ({ ...x, [k]: v }));
 
   const enviar = (e: FormEvent) => {
     e.preventDefault();
     gravarApelido(f.nome.trim());
-    aoJogar(opcoesDeEntrada(f));
+    const o = opcoesDeEntrada(f);
+    if (o.modo === 'privada' && aoCriarPrivada) aoCriarPrivada(o);
+    else aoJogar(o);
   };
 
   return (
@@ -107,9 +110,15 @@ export function Lobby({ aoJogar, aoRanqueada }: Props) {
             ))}
           </select>
         </div>
+        {aoCriarPrivada && (
+          <label className="campo-check">
+            <input type="checkbox" checked={f.privada} onChange={(e) => mudar('privada', e.target.checked)} />
+            Mesa privada (só entra quem tiver o link)
+          </label>
+        )}
         <div className="botoes-lobby">
           <button type="submit" className="botao-principal">
-            Jogar
+            {f.privada && aoCriarPrivada ? 'Criar mesa privada' : 'Jogar'}
           </button>
           <button type="button" onClick={aoRanqueada} disabled={!aoRanqueada}>
             Ranqueada

@@ -2,22 +2,26 @@ import type { UsuarioApi } from '@truco/api';
 import { useCallback, useEffect } from 'react';
 import { Cabecalho } from './componentes/Cabecalho';
 import { Toast } from './componentes/Toast';
-import { entrarNaMesa, tentarReconectar } from './rede/conexao';
+import { lerApelido } from './logica/lobby';
+import { criarMesaPrivada, entrarNaMesa, entrarPorCodigo, tentarReconectar } from './rede/conexao';
 import { useLoja, useSessao } from './rede/hooks';
 import { api, loja, sessao } from './rede/instancia';
 import { navegar, useRota } from './rede/rota';
 import { TelaEntrar } from './telas/Entrar';
+import { TelaEntrarPrivada } from './telas/EntrarPrivada';
 import { TelaHistorico } from './telas/Historico';
 import { Lobby } from './telas/Lobby';
 import { TelaMesa } from './telas/Mesa';
 import { TelaPerfil } from './telas/Perfil';
 import { TelaRanking } from './telas/Ranking';
 import { SalaEspera } from './telas/SalaEspera';
+import { TelaSalas } from './telas/Salas';
 
 export function App() {
   const snap = useLoja(loja);
   const ses = useSessao(sessao);
   const rota = useRota();
+  const nomePadrao = () => ses.usuario?.apelido ?? (lerApelido() || 'Jogador');
 
   useEffect(() => {
     void tentarReconectar(loja);
@@ -60,10 +64,28 @@ export function App() {
       case 'ranking':
         conteudo = <TelaRanking variante={rota.variante} api={api} />;
         break;
+      case 'salas':
+        conteudo = <TelaSalas api={api} aoEntrar={(id) => void entrarPorCodigo(loja, id, nomePadrao())} />;
+        break;
+      case 'privada':
+        conteudo = (
+          <TelaEntrarPrivada
+            key={rota.codigo}
+            codigo={rota.codigo}
+            nomeInicial={ses.usuario?.apelido ?? lerApelido()}
+            aoEntrar={(nome) => {
+              // ao sair da mesa volta ao início, não à tela do convite
+              navegar({ tela: 'inicio' });
+              void entrarPorCodigo(loja, rota.codigo, nome);
+            }}
+          />
+        );
+        break;
       default:
         conteudo = (
           <Lobby
             aoJogar={(o) => void entrarNaMesa(loja, o)}
+            aoCriarPrivada={(o) => void criarMesaPrivada(loja, o)}
             aoRanqueada={() => navegar(ses.usuario ? { tela: 'fila' } : { tela: 'entrar', token: null })}
           />
         );
