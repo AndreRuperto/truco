@@ -15,9 +15,22 @@ export interface JogadorReservado {
   cadeira: Cadeira;
 }
 
-/** Método do matchmaking (`create`, `joinOrCreate`, `join`, `joinById`...) ou '' se não veio por HTTP. */
-function metodoDoPedido(context: AuthContext | undefined): string {
-  const url: unknown = context?.req?.url;
+/** Métodos do controller do Colyseus 0.18 que chamam `onAuth` (`reconnect` não chama). */
+const METODOS_MATCHMAKE = new Set(['create', 'joinOrCreate', 'join', 'joinById']);
+
+/**
+ * Método do matchmaking (`create`, `joinOrCreate`...) do pedido HTTP; '' se o pedido existe
+ * mas a URL não diz o método; null se não há pedido.
+ *
+ * Premissa: no Colyseus 0.18 todo `onAuth` vindo de cliente passa pela rota HTTP
+ * `/matchmake/<método>/<sala>` e traz `context.req`; sem `req` só as chamadas internas do
+ * próprio servidor (`matchMaker.createRoom/joinById` da fila e dos testes). Se uma versão
+ * futura chamar `onAuth` de cliente sem `req`, esta checagem precisa ser revista.
+ */
+function metodoDoPedido(context: AuthContext | undefined): string | null {
+  const req: unknown = context?.req;
+  if (!req) return null;
+  const url: unknown = (req as { url?: unknown }).url;
   if (typeof url !== 'string') return '';
   try {
     return new URL(url, 'http://x').pathname.match(/\/matchmake\/([^/]+)\//)?.[1] ?? '';
@@ -82,9 +95,14 @@ export class MesaRoom extends Room {
     if (!options || typeof options !== 'object') throw new ServerError(ErrorCode.MATCHMAKE_INVALID_CRITERIA, 'opções da sala inválidas');
     const o = options as Record<string, unknown>;
     if (o.modo === 'ranqueada') throw new ServerError(ErrorCode.AUTH_FAILED, 'mesa ranqueada só pela fila');
-    // Privada nasce por `create` e se entra por `joinById`. `context.req` é o pedido HTTP de
-    // matchmaking (`/matchmake/<método>/<sala>`); chamadas internas não o têm.
-    if (o.modo === 'privada' && /^(join|joinOrCreate)$/.test(metodoDoPedido(context))) {
+    // `context.req` é o pedido HTTP de matchmaking (`/matchmake/<método>/<sala>`); chamadas
+    // internas não o têm e passam. Pedido com método desconhecido: recusado.
+    const metodo = metodoDoPedido(context);
+    if (metodo !== null && !METODOS_MATCHMAKE.has(metodo)) {
+      throw new ServerError(ErrorCode.MATCHMAKE_UNHANDLED, 'método de matchmaking desconhecido');
+    }
+    // Privada nasce por `create` e se entra por `joinById`.
+    if (o.modo === 'privada' && (metodo === 'join' || metodo === 'joinOrCreate')) {
       throw new ServerError(ErrorCode.MATCHMAKE_INVALID_CRITERIA, 'mesa privada: crie uma ou entre pelo código do convite');
     }
     delete o.fichaInterna;
