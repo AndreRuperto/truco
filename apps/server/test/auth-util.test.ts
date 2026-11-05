@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import { CaixaDeTeste, emailDoLink, emailsConsole, emailsResend, extrairLink } from '../src/auth/emails';
-import { LimiteTaxa } from '../src/auth/limite';
+import { chaveDeIp, LimiteTaxa } from '../src/auth/limite';
 import { bearer, COOKIE_SESSAO, cookieApagado, cookieSessao, lerCookie } from '../src/auth/tokens';
 
 describe('cookies', () => {
@@ -65,5 +65,17 @@ describe('e-mails', () => {
     expect(JSON.parse(init.body as string)).toMatchObject({ from: 'Truco <t@x.com>', to: ['a@x.com'], subject: 'Seu link para entrar no Truco' });
     const ruim = vi.fn(async () => new Response('quota', { status: 429 }));
     await expect(emailsResend({ chave: 'k', remetente: 'r', fetch: ruim }).enviar(emailDoLink('http://l', 'a@x.com'))).rejects.toThrow('Resend 429');
+  });
+});
+
+describe('chaveDeIp', () => {
+  test('IPv4 inteiro; IPv6 agrupado por /64; IPv4 mapeado vira IPv4', () => {
+    expect(chaveDeIp('1.2.3.4')).toBe('1.2.3.4');
+    expect(chaveDeIp('::ffff:1.2.3.4')).toBe('1.2.3.4');
+    expect(chaveDeIp('2001:db8:1:2:3:4:5:6')).toBe('2001:db8:1:2::/64');
+    expect(chaveDeIp('2001:DB8:1:2:ffff::1')).toBe('2001:db8:1:2::/64');
+    expect(chaveDeIp('2001:db8::1')).toBe('2001:db8:0:0::/64');
+    expect(chaveDeIp('::1')).toBe('0:0:0:0::/64');
+    expect(chaveDeIp(undefined)).toBe('?');
   });
 });

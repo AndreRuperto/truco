@@ -20,8 +20,8 @@ export async function subirApp(servicos: Servicos, extras: ExtrasApp = {}) {
     const s = app.listen(0, '127.0.0.1', () => ok(s));
   });
   const base = `http://127.0.0.1:${(srv.address() as AddressInfo).port}`;
-  async function pedir(caminho: string, o: { metodo?: string; corpo?: unknown; cookie?: string; tipo?: string; auth?: string } = {}): Promise<Resposta> {
-    const headers: Record<string, string> = {};
+  async function pedir(caminho: string, o: { metodo?: string; corpo?: unknown; cookie?: string; tipo?: string; auth?: string; headers?: Record<string, string> } = {}): Promise<Resposta> {
+    const headers: Record<string, string> = { ...o.headers };
     if (o.corpo !== undefined) headers['content-type'] = o.tipo ?? 'application/json';
     if (o.cookie) headers.cookie = o.cookie;
     if (o.auth) headers.authorization = o.auth;

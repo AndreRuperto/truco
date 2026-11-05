@@ -9,9 +9,11 @@ export interface Servicos {
   emails: Emails;
   caixaTeste: CaixaDeTeste | null;
   google: { clientId: string; verificar: VerificadorGoogle } | null;
-  /** Base dos links mágicos; null = origem do pedido (dev). */
+  /** Base dos links mágicos; null = origem do pedido (só fora de produção). */
   urlPublica: string | null;
   producao: boolean;
+  /** Confiar em X-Forwarded-For/Proto (`trust proxy`): produção ou `TRUCO_TRUST_PROXY`. */
+  confiarProxy?: boolean;
   /** Origens extras aceitas no CORS em produção. */
   origens: string[];
   kElo: number;
@@ -30,6 +32,7 @@ export interface ConfigAmbiente {
   emailTeste: boolean;
   kElo: number;
   origens: string[];
+  confiarProxy: boolean;
   avisos: string[];
 }
 
@@ -47,7 +50,13 @@ export function configDoAmbiente(env: Env, padroes: { pastaPglite: string }): Co
 
   const railway = vazio(env.RAILWAY_PUBLIC_DOMAIN);
   const urlPublica = (vazio(env.TRUCO_URL_PUBLICA) ?? (railway ? `https://${railway}` : null))?.replace(/\/+$/, '') ?? null;
-  if (producao && !urlPublica) avisos.push('produção sem URL pública (TRUCO_URL_PUBLICA ou RAILWAY_PUBLIC_DOMAIN): links mágicos usarão o Host do pedido');
+  // Montar o link mágico a partir do Host do pedido deixaria um atacante mandar e-mails
+  // com link para o domínio dele: em produção, sem URL pública, não sobe.
+  if (producao && !urlPublica) {
+    throw new Error('produção sem URL pública: defina TRUCO_URL_PUBLICA ou RAILWAY_PUBLIC_DOMAIN');
+  }
+  const tp = vazio(env.TRUCO_TRUST_PROXY);
+  const confiarProxy = producao || (tp !== null && tp !== '0' && tp !== 'false');
 
   const chave = vazio(env.RESEND_API_KEY);
   const resend = chave ? { chave, remetente: vazio(env.TRUCO_EMAIL_REMETENTE) ?? 'Truco <onboarding@resend.dev>' } : null;
@@ -66,7 +75,19 @@ export function configDoAmbiente(env: Env, padroes: { pastaPglite: string }): Co
     .map((s) => s.trim())
     .filter(Boolean);
 
-  return { producao, databaseUrl, pastaPglite, resend, googleClientId: vazio(env.GOOGLE_CLIENT_ID), urlPublica, emailTeste, kElo, origens, avisos };
+  return {
+    producao,
+    databaseUrl,
+    pastaPglite,
+    resend,
+    googleClientId: vazio(env.GOOGLE_CLIENT_ID),
+    urlPublica,
+    emailTeste,
+    kElo,
+    origens,
+    confiarProxy,
+    avisos,
+  };
 }
 
 export const BLOQUEIO_ABANDONO_MS = 5 * 60_000;
@@ -90,6 +111,7 @@ export async function servicosDoAmbiente(
       google,
       urlPublica: config.urlPublica,
       producao: config.producao,
+      confiarProxy: config.confiarProxy,
       origens: config.origens,
       kElo: config.kElo,
       bloqueioAbandonoMs: BLOQUEIO_ABANDONO_MS,

@@ -71,6 +71,31 @@ describe('link mágico', () => {
     expect(deNovo.json.erro).toMatch(/inválido ou expirado/);
   });
 
+  test('sem proxy confiável, X-Forwarded-For não muda o IP do limite', async () => {
+    for (const ip of ['9.9.9.1', '9.9.9.2']) {
+      expect((await app.pedir('/api/auth/link', { corpo: { email: `${ip}@x.com` }, headers: { 'x-forwarded-for': ip } })).status).toBe(204);
+    }
+    expect((await app.pedir('/api/auth/link', { corpo: { email: 'z@x.com' }, headers: { 'x-forwarded-for': '9.9.9.3' } })).status).toBe(429);
+  });
+
+  test('com proxy confiável, o IP vem do X-Forwarded-For (IPv6 agrupado por /64)', async () => {
+    await app.fechar();
+    app = await subirApp({ ...s, confiarProxy: true }, { limiteLinkIp: new LimiteTaxa(2, 60_000) });
+    const pedir = (ip: string, email: string) => app.pedir('/api/auth/link', { corpo: { email }, headers: { 'x-forwarded-for': ip } });
+    expect((await pedir('2001:db8:1:2::1', 'a@x.com')).status).toBe(204);
+    expect((await pedir('2001:db8:1:2::2', 'b@x.com')).status).toBe(204);
+    expect((await pedir('2001:db8:1:2::3', 'c@x.com')).status).toBe(429);
+    expect((await pedir('2001:db8:1:3::1', 'd@x.com')).status).toBe(204);
+  });
+
+  test('produção sem URL pública não monta link a partir do Host', async () => {
+    await app.fechar();
+    app = await subirApp({ ...s, producao: true, urlPublica: null });
+    const r = await app.pedir('/api/auth/link', { corpo: { email: 'a@x.com' }, headers: { host: 'malicioso.com' } });
+    expect(r.status).toBe(500);
+    expect(s.caixaTeste!.enviados).toEqual([]);
+  });
+
   test('e-mail inválido → 400; limite por IP → 429', async () => {
     expect((await app.pedir('/api/auth/link', { corpo: { email: 'nada' } })).status).toBe(400);
     expect((await app.pedir('/api/auth/link', { corpo: { email: 'a@x.com' } })).status).toBe(204);

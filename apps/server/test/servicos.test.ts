@@ -15,6 +15,7 @@ describe('configDoAmbiente', () => {
       emailTeste: false,
       kElo: 32,
       origens: [],
+      confiarProxy: false,
       avisos: [],
     });
   });
@@ -63,9 +64,19 @@ describe('configDoAmbiente', () => {
     expect(p.avisos).toContainEqual(expect.stringContaining('TRUCO_EMAIL_TESTE'));
   });
 
-  test('produção sem banco nem URL pública gera avisos; K inválido volta a 32', () => {
-    const c = configDoAmbiente({ NODE_ENV: 'production', TRUCO_K_ELO: '500' }, PADROES);
+  test('produção sem banco gera avisos; K inválido volta a 32', () => {
+    const c = configDoAmbiente({ NODE_ENV: 'production', TRUCO_K_ELO: '500', RAILWAY_PUBLIC_DOMAIN: 'x.up.railway.app' }, PADROES);
     expect(c.kElo).toBe(32);
-    expect(c.avisos).toEqual([expect.stringContaining('DATABASE_URL'), expect.stringContaining('URL pública'), expect.stringContaining('RESEND_API_KEY')]);
+    expect(c.avisos).toEqual([expect.stringContaining('DATABASE_URL'), expect.stringContaining('RESEND_API_KEY')]);
+  });
+
+  test('produção sem URL pública não sobe (o link mágico nunca sai do Host do pedido)', () => {
+    expect(() => configDoAmbiente({ NODE_ENV: 'production', DATABASE_URL: 'x' }, PADROES)).toThrow(/TRUCO_URL_PUBLICA ou RAILWAY_PUBLIC_DOMAIN/);
+  });
+
+  test('proxy confiável: em produção ou com TRUCO_TRUST_PROXY', () => {
+    expect(configDoAmbiente({}, PADROES).confiarProxy).toBe(false);
+    expect(configDoAmbiente({ TRUCO_TRUST_PROXY: '1' }, PADROES).confiarProxy).toBe(true);
+    expect(configDoAmbiente({ NODE_ENV: 'production', TRUCO_URL_PUBLICA: 'https://a' }, PADROES).confiarProxy).toBe(true);
   });
 });

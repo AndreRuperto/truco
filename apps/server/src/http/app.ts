@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import type { SalaAberta } from '../api/tipos';
 import { emailDoLink, extrairLink } from '../auth/emails';
-import { LimiteTaxa } from '../auth/limite';
+import { chaveDeIp, LimiteTaxa } from '../auth/limite';
 import { VARIANTES } from '../banco/schema';
 import { bearer, COOKIE_SESSAO, cookieApagado, cookieSessao, lerCookie } from '../auth/tokens';
 import {
@@ -35,10 +35,9 @@ export interface ExtrasApp {
 
 const tokenDe = (req: Request): string | null => lerCookie(req.headers.cookie, COOKIE_SESSAO) ?? bearer(req.headers.authorization);
 
-/** Em dev (sem URL pública) o link volta para quem pediu: o Vite em :5173 manda `Origin`. */
-function origemDoPedido(req: Request, producao: boolean): string {
-  const origem = producao ? undefined : req.get('origin');
-  return origem ?? `${req.protocol}://${req.get('host')}`;
+/** Só fora de produção (sem URL pública): o link volta para quem pediu (o Vite em :5173 manda `Origin`). */
+function origemDoPedido(req: Request): string {
+  return req.get('origin') ?? `${req.protocol}://${req.get('host')}`;
 }
 
 export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}): void {
@@ -51,8 +50,9 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     res.json({ usuario: u });
   };
 
-  // Railway (e qualquer proxy na frente) manda X-Forwarded-For/Proto: `req.ip` e `req.protocol` corretos.
-  app.set('trust proxy', 1);
+  // Railway (e qualquer proxy na frente) manda X-Forwarded-For/Proto: `req.ip` e `req.protocol`
+  // corretos. Sem proxy (dev), confiar nisso deixaria qualquer um forjar o IP do limite de taxa.
+  app.set('trust proxy', s.producao || s.confiarProxy ? 1 : false);
   app.disable('x-powered-by');
 
   app.get('/saude', async (_req, res) => {
@@ -92,11 +92,15 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   api.post('/auth/link', async (req, res) => {
     const email = normalizarEmail(req.body?.email);
     if (!email) return void res.status(400).json({ erro: 'e-mail inválido' });
-    if (!limiteIp.permitir(req.ip ?? '?') || !limiteEmail.permitir(email)) {
+    if (!limiteIp.permitir(chaveDeIp(req.ip)) || !limiteEmail.permitir(email)) {
       return void res.status(429).json({ erro: 'muitos pedidos; tente de novo em alguns minutos' });
     }
+    if (s.producao && !s.urlPublica) {
+      console.error('[auth] produção sem URL pública: link mágico recusado');
+      return void res.status(500).json({ erro: 'servidor sem URL pública configurada' });
+    }
     const token = await criarLinkMagico(s.banco, email, s.agora());
-    const base = s.urlPublica ?? origemDoPedido(req, s.producao);
+    const base = s.urlPublica ?? origemDoPedido(req);
     try {
       await s.emails.enviar(emailDoLink(`${base}/#/entrar?token=${token}`, email));
     } catch (e) {
