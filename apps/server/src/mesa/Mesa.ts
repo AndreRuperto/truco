@@ -119,7 +119,10 @@ export class Mesa {
     this.tempos = { ...TEMPOS_PADRAO, ...o.tempos };
     this.decidirBot =
       o.decidirBot ??
-      ((s, c) => (o.nivelBot === 'dificil' ? botDificil(visaoDoJogador(s, c), this.rand) : botFacil(s, c)));
+      ((s, c) =>
+        o.nivelBot === 'dificil'
+          ? botDificil(visaoDoJogador(s, c), this.rand, { amostras: 24, orcamentoMs: 8 })
+          : botFacil(s, c));
   }
 
   get iniciada(): boolean {

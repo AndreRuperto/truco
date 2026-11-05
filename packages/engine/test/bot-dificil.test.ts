@@ -89,6 +89,21 @@ describe('botDificil', () => {
     );
   }, 60_000);
 
+  test('orçamento de tempo: para cedo, mas sempre faz o mínimo de amostras e joga legal', () => {
+    const s = distribuida(MINEIRO, MAOS_DUPLA0_VENCE);
+    const v = visaoDoJogador(s, 0);
+    const t0 = performance.now();
+    const a = botDificil(v, mulberry32(3), { amostras: 100_000, orcamentoMs: 0, chanceBlefe: 0 });
+    expect(performance.now() - t0).toBeLessThan(2_000);
+    expect(acoesValidas(s, 0)).toContainEqual(a);
+  });
+
+  test('sem orçamento continua determinístico', () => {
+    const s = distribuida(MINEIRO, MAOS_DUPLA0_VENCE);
+    const v = visaoDoJogador(s, 0);
+    expect(botDificil(v, mulberry32(4), { amostras: 5, minAmostras: 2 })).toEqual(botDificil(v, mulberry32(4), { amostras: 5 }));
+  });
+
   test('quatro bots difíceis terminam uma partida', () => {
     const rand = mulberry32(77);
     let s = novaPartida(MINEIRO);

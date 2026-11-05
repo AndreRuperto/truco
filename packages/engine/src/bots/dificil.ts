@@ -74,6 +74,13 @@ export interface OpcoesBotDificil {
   amostras?: number;
   /** Chance de trucar "no escuro" quando pode. */
   chanceBlefe?: number;
+  /**
+   * Teto de tempo (ms) para a amostragem: depois dele para de amostrar, mas
+   * sempre faz pelo menos `minAmostras`. Sem orçamento o bot é determinístico.
+   */
+  orcamentoMs?: number;
+  /** Mínimo de amostras mesmo com o orçamento estourado (padrão 4, limitado a `amostras`). */
+  minAmostras?: number;
 }
 
 /** Joga o resto da mão com o bot fácil em todas as cadeiras; devolve o saldo de pontos da `dupla`. */
@@ -95,8 +102,11 @@ function simularResto(inicio: EstadoPartida, dupla: Dupla): number {
  * Recebe só a `Visao` — não tem como "roubar" olhando cartas alheias.
  */
 export function botDificil(v: Visao, rand: () => number, opcoes: OpcoesBotDificil = {}): AcaoJogador | null {
-  const { amostras = 24, chanceBlefe = 0.08 } = opcoes;
+  const { amostras = 24, chanceBlefe = 0.08, orcamentoMs, minAmostras = 4 } = opcoes;
   if (!v.mao) return null;
+  const inicio = orcamentoMs === undefined ? 0 : performance.now();
+  const estourou = (k: number) =>
+    orcamentoMs !== undefined && k >= minAmostras && performance.now() - inicio >= orcamentoMs;
 
   const primeiro = amostrarMundo(v, rand);
   const candidatas = acoesValidas(primeiro, v.cadeira);
@@ -107,7 +117,7 @@ export function botDificil(v: Visao, rand: () => number, opcoes: OpcoesBotDifici
 
   const dupla = duplaDe(v.cadeira);
   const soma = candidatas.map(() => 0);
-  for (let k = 0; k < amostras; k++) {
+  for (let k = 0; k < amostras && !estourou(k); k++) {
     const mundo = k === 0 ? primeiro : amostrarMundo(v, rand);
     candidatas.forEach((a, i) => {
       soma[i] += simularResto(reduce(mundo, a), dupla);
