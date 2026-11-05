@@ -97,6 +97,7 @@ async function conectarCom(
   abrir: (c: ClienteSala) => Promise<unknown>,
   cliente: ClienteSala | undefined,
   falha: string,
+  traduzir: (e: unknown) => string | null = () => null,
 ): Promise<void> {
   if (loja.getSnapshot().status !== 'fora') return;
   loja.marcarConectando();
@@ -104,9 +105,13 @@ async function conectarCom(
     const c = cliente ?? (await clientePadrao());
     loja.conectar((await abrir(c)) as SalaLike);
   } catch (e) {
-    loja.falhouConexao(`${falha}: ${mensagem(e)}`);
+    loja.falhouConexao(traduzir(e) ?? `${falha}: ${mensagem(e)}`);
   }
 }
+
+/** Erros do SDK/servidor ao entrar por id (sala inexistente, trancada, cheia, reserva vencida). */
+const MESA_INDISPONIVEL = /not found|locked|full|expired|not available/i;
+const traduzirEntrada = (e: unknown) => (MESA_INDISPONIVEL.test(mensagem(e)) ? 'Mesa não encontrada ou já começou.' : null);
 
 /** Mesa privada nova: não aparece na lista nem no joinOrCreate; o `roomId` é o convite. */
 export const criarMesaPrivada = (loja: Loja, opcoes: OpcoesEntrada, cliente?: ClienteSala) =>
@@ -114,11 +119,20 @@ export const criarMesaPrivada = (loja: Loja, opcoes: OpcoesEntrada, cliente?: Cl
 
 /** Mesa por código (link de convite ou lista de salas). */
 export const entrarPorCodigo = (loja: Loja, codigo: string, nome: string, cliente?: ClienteSala) =>
-  conectarCom(loja, (c) => c.joinById(codigo, { nome }), cliente, 'Não foi possível entrar na mesa');
+  conectarCom(loja, (c) => c.joinById(codigo, { nome }), cliente, 'Não foi possível entrar na mesa', traduzirEntrada);
 
-/** Mesa ranqueada criada pela fila (reserva vinda da mensagem `pareado`). */
-export const entrarComReserva = (loja: Loja, reserva: unknown, cliente?: ClienteSala) =>
-  conectarCom(loja, (c) => c.consumeSeatReservation(reserva), cliente, 'Não foi possível abrir a mesa ranqueada');
+/**
+ * Mesa ranqueada criada pela fila (reserva vinda da mensagem `pareado`). A reserva vence em
+ * segundos e o servidor conta quem não aparece: se a loja ainda está noutra mesa (ou
+ * conectando), larga esse estado e consome a reserva em vez de descartá-la.
+ */
+export async function entrarComReserva(loja: Loja, reserva: unknown, cliente?: ClienteSala): Promise<void> {
+  if (loja.getSnapshot().status !== 'fora') {
+    void loja.sair(); // larga o estado na hora; o leave da antiga não segura a reserva
+    if (loja.getSnapshot().status !== 'fora') loja.falhouConexao();
+  }
+  return conectarCom(loja, (c) => c.consumeSeatReservation(reserva), cliente, 'Não foi possível abrir a mesa ranqueada');
+}
 
 /** Sala `fila` (quem cuida dela é a loja da fila). */
 export async function abrirFila(opcoes: object, cliente?: ClienteSala): Promise<unknown> {

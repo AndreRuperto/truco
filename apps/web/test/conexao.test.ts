@@ -138,6 +138,46 @@ describe('mesa privada e reserva', () => {
     const loja = novaLoja();
     await entrarPorCodigo(loja, 'xxxx', 'Bia', c);
     expect(loja.getSnapshot().status).toBe('fora');
-    expect(loja.getSnapshot().erro?.mensagem).toBe('Não foi possível entrar na mesa: room "x" not found');
+    expect(loja.getSnapshot().erro?.mensagem).toBe('Mesa não encontrada ou já começou.');
+  });
+
+  test.each(['room "abcd" is locked', 'room "abcd" is full', 'seat reservation expired', 'Room is already full'])('erro do SDK "%s" vira mensagem amigável', async (m) => {
+    const c = { ...clienteFalso(new SalaFalsa()), joinById: vi.fn(async () => Promise.reject(new Error(m))) };
+    const loja = novaLoja();
+    await entrarPorCodigo(loja, 'abcd', 'Bia', c);
+    expect(loja.getSnapshot().erro?.mensagem).toBe('Mesa não encontrada ou já começou.');
+  });
+
+  test('outros erros mantêm o detalhe', async () => {
+    const c = { ...clienteFalso(new SalaFalsa()), joinById: vi.fn(async () => Promise.reject(new Error('timeout'))) };
+    const loja = novaLoja();
+    await entrarPorCodigo(loja, 'abcd', 'Bia', c);
+    expect(loja.getSnapshot().erro?.mensagem).toBe('Não foi possível entrar na mesa: timeout');
+  });
+
+  test('reserva com a loja ainda numa mesa: larga a anterior e consome a reserva', async () => {
+    const antiga = new SalaFalsa();
+    const nova = new SalaFalsa();
+    nova.roomId = 'r9';
+    const sairDaAntiga = vi.spyOn(antiga, 'leave');
+    const loja = novaLoja();
+    loja.conectar(antiga);
+    const c = clienteFalso(nova);
+    const reserva = { roomId: 'r9', sessionId: 's1' };
+    await entrarComReserva(loja, reserva, c);
+    expect(sairDaAntiga).toHaveBeenCalled();
+    expect(c.consumeSeatReservation).toHaveBeenCalledWith(reserva);
+    expect(loja.getSnapshot()).toMatchObject({ status: 'na-mesa', salaId: 'r9' });
+  });
+
+  test('reserva com a loja conectando: consome a reserva mesmo assim', async () => {
+    const nova = new SalaFalsa();
+    nova.roomId = 'r9';
+    const loja = novaLoja();
+    loja.marcarConectando();
+    const c = clienteFalso(nova);
+    await entrarComReserva(loja, { roomId: 'r9' }, c);
+    expect(c.consumeSeatReservation).toHaveBeenCalled();
+    expect(loja.getSnapshot()).toMatchObject({ status: 'na-mesa', salaId: 'r9' });
   });
 });
