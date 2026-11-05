@@ -82,6 +82,8 @@ export function TelaMesa({ snap, acoes }: Props) {
               maoVisivel={c === parceiroDe(minha) ? (m?.maoParceiro ?? null) : null}
               variante={variante}
               vira={vira}
+              prazo={msg.prazo?.cadeiras.includes(c) ? msg.prazo : null}
+              agora={agora}
             />
           );
         })}

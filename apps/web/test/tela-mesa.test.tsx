@@ -43,6 +43,36 @@ describe('TelaMesa', () => {
     expect(screen.getByTestId('assento-esquerda')).not.toHaveClass('da-vez');
   });
 
+  test('cronômetro pequeno no assento de outro humano com prazo (e não o meu grande)', () => {
+    const s = jogar(distribuida(PAULISTA), [[0, 0]]);
+    const cadeiras = [
+      { tipo: 'humano' as const, nome: 'Ana', conectado: true },
+      { tipo: 'humano' as const, nome: 'Bia', conectado: true },
+      { tipo: 'bot' as const, nome: 'Bot Tião', conectado: true },
+      { tipo: 'bot' as const, nome: 'Bot Dita', conectado: true },
+    ];
+    const msg = msgEstado(s, 0, { cadeiras, prazo: { cadeiras: [1], ate: Date.now() + 20_000 } });
+    render(<TelaMesa snap={snap(msg)} acoes={acoesFalsas()} />);
+    const timers = screen.getAllByRole('timer');
+    expect(timers).toHaveLength(1);
+    expect(within(screen.getByTestId('assento-direita')).getByRole('timer')).toHaveAccessibleName(/^Vez de Bia: (19|20) segundos$/);
+  });
+
+  test('com prazo meu e do parceiro: barra grande para mim e pequeno no assento dele', () => {
+    const s = reduce(jogar(distribuida(PAULISTA), [[0, 0]]), { tipo: 'truco', cadeira: 1 });
+    const cadeiras = [
+      { tipo: 'humano' as const, nome: 'Ana', conectado: true },
+      { tipo: 'bot' as const, nome: 'Bot Zé', conectado: true },
+      { tipo: 'humano' as const, nome: 'Caio', conectado: true },
+      { tipo: 'bot' as const, nome: 'Bot Dita', conectado: true },
+    ];
+    const msg = msgEstado(s, 0, { cadeiras, prazo: { cadeiras: [0, 2], ate: Date.now() + 20_000 } });
+    render(<TelaMesa snap={snap(msg)} acoes={acoesFalsas()} />);
+    expect(screen.getAllByRole('timer')).toHaveLength(2);
+    expect(screen.getByRole('timer', { name: /^Sua vez/ })).toBeInTheDocument();
+    expect(within(screen.getByTestId('assento-cima')).getByRole('timer')).toHaveAccessibleName(/^Vez de Caio/);
+  });
+
   test('mão de 10: vejo a mão do parceiro e decido', () => {
     render(<TelaMesa snap={snap(msgEstado(distribuida(MINEIRO, undefined, [10, 0])))} acoes={acoesFalsas()} />);
     const cima = screen.getByTestId('assento-cima');

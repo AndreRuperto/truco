@@ -1,7 +1,8 @@
 import { type Carta, idCarta, type Variante } from '@truco/engine';
-import type { InfoCadeira } from '@truco/protocolo';
+import type { InfoCadeira, MsgEstado } from '@truco/protocolo';
 import type { Posicao } from '../logica/posicoes';
 import { CartaVisual } from './CartaVisual';
+import { Cronometro } from './Cronometro';
 import { cx } from './cx';
 
 interface Props {
@@ -14,9 +15,12 @@ interface Props {
   maoVisivel: Carta[] | null;
   variante: Variante;
   vira: Carta | null;
+  /** Prazo desta cadeira (só quando ela está em `prazo.cadeiras`): mostra um cronômetro pequeno. */
+  prazo?: NonNullable<MsgEstado['prazo']> | null;
+  agora?: number;
 }
 
-export function Assento({ posicao, info, qtdCartas, daVez, balao, maoVisivel, variante, vira }: Props) {
+export function Assento({ posicao, info, qtdCartas, daVez, balao, maoVisivel, variante, vira, prazo = null, agora = 0 }: Props) {
   return (
     <div className={cx('assento', `pos-${posicao}`, daVez && 'da-vez')} data-testid={`assento-${posicao}`}>
       <div className="assento-nome">
@@ -25,6 +29,7 @@ export function Assento({ posicao, info, qtdCartas, daVez, balao, maoVisivel, va
         {info && !info.conectado && <span className="etiqueta off">desconectado</span>}
         {daVez && <span className="etiqueta">vez</span>}
       </div>
+      {prazo && <Cronometro prazo={prazo} agora={agora} rotulo={`Vez de ${info?.nome ?? 'jogador'}`} pequeno />}
       {maoVisivel ? (
         <div className="assento-cartas visivel">
           {maoVisivel.map((c) => (

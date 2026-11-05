@@ -482,6 +482,17 @@ button:disabled {
   transform-origin: left;
   transition: transform 0.25s linear;
 }
+.cronometro.pequeno {
+  width: 100%;
+  min-width: 44px;
+  height: 14px;
+  margin: 0;
+  border-radius: 7px;
+}
+.cronometro.pequeno span {
+  font-size: 0.65rem;
+  line-height: 14px;
+}
 .cronometro.urgente .cronometro-barra {
   background: var(--perigo);
 }
