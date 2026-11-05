@@ -45,6 +45,21 @@ describe('lobby', () => {
     expect(mesa.sentar('c', 'Cid')).toBe(2);
   });
 
+  test('aoIniciar é chamado uma vez, no início manual ou automático', () => {
+    const manual = vi.fn();
+    const t1 = criarMesa({ humanosEsperados: 3, aoIniciar: manual });
+    t1.mesa.sentar('a', 'Ana');
+    expect(manual).not.toHaveBeenCalled();
+    t1.mesa.iniciar('a');
+    t1.mesa.iniciar('a');
+    expect(manual).toHaveBeenCalledTimes(1);
+
+    const auto = vi.fn();
+    const t2 = criarMesa({ humanosEsperados: 1, aoIniciar: auto });
+    t2.mesa.sentar('a', 'Ana');
+    expect(auto).toHaveBeenCalledTimes(1);
+  });
+
   test('humanosEsperados fora de 1..4 é erro', () => {
     expect(() => criarMesa({ humanosEsperados: 0 })).toThrow();
     expect(() => criarMesa({ humanosEsperados: 5 })).toThrow();

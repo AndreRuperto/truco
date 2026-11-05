@@ -53,6 +53,8 @@ export interface OpcoesMesa {
   /** Chance (0–1) de cada adversário ver um sinal. */
   chanceInterceptarSinal?: number;
   aoTerminar?: (s: EstadoPartida) => void;
+  /** Chamado uma vez, quando a partida começa (manual ou automaticamente). */
+  aoIniciar?: () => void;
 }
 
 interface Ocupante {
@@ -149,6 +151,7 @@ export class Mesa {
     if (id !== undefined && this.cadeiraDe(id) !== this.dono()) return;
     for (const c of CADEIRAS) if (this.ocupantes[c].id === null) this.virarBot(c);
     this.estado = novaPartida(this.o.regras, Math.floor(this.rand() * 4) as Cadeira);
+    this.o.aoIniciar?.();
     this.atualizar();
   }
 

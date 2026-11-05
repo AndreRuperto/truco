@@ -69,4 +69,16 @@ describe('MesaRoom', () => {
     expect(ma.estado.at(-1).minhaCadeira).toBe(0);
     expect(mb.estado.at(-1).minhaCadeira).toBe(2);
   });
+
+  test('iniciar antes de lotar tranca a sala', async () => {
+    const a = await colyseus.sdk.joinOrCreate('mesa', { humanos: 2, nome: 'Ana' });
+    const ma = coletor(a);
+    await esperar(() => !!ma.estado?.length);
+    a.send('iniciar');
+    const sala = colyseus.getRoomById(a.roomId);
+    await esperar(() => sala.locked);
+    const b = await colyseus.sdk.joinOrCreate('mesa', { humanos: 2, nome: 'Bia' });
+    coletor(b);
+    expect(b.roomId).not.toBe(a.roomId);
+  });
 });

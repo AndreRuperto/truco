@@ -28,6 +28,9 @@ export class MesaRoom extends Room {
         agora: () => Date.now(),
       },
       enviar: (id, tipo, payload) => this.clients.get(id)?.send(tipo, payload),
+      aoIniciar: () => {
+        this.lock().catch((e) => console.error('[MesaRoom] falha ao trancar a sala', e));
+      },
       aoTerminar: () => {
         // Plano 4: registrar partida e Elo.
       },
@@ -41,9 +44,7 @@ export class MesaRoom extends Room {
 
   onJoin(client: Client, options?: { nome?: unknown }) {
     const nome = typeof options?.nome === 'string' ? options.nome : 'Jogador';
-    if (this.mesa.sentar(client.sessionId, nome) === null) throw new Error('mesa cheia ou já iniciada');
-    if (this.mesa.iniciada) void this.lock();
-  }
+    if (this.mesa.sentar(client.sessionId, nome) === null) throw new Error('mesa cheia ou já iniciada');  }
 
   onDrop(client: Client) {
     this.mesa.desconectar(client.sessionId);
