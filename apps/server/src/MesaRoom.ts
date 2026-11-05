@@ -32,6 +32,18 @@ export class MesaRoom extends Room {
   static readonly fichaInterna = randomUUID();
   /** Ranqueada que não lota nesse tempo é cancelada. */
   static esperaRanqueadaMs = 30_000;
+  /** Registros de salas vivas ou descartadas com gravação pendente (o desligamento espera). */
+  private static readonly registrosVivos = new Set<RegistroMesa>();
+
+  /** Espera as gravações de todas as mesas (desligamento: antes de fechar o banco). */
+  static async esperarGravacoes(): Promise<void> {
+    while (MesaRoom.registrosVivos.size > 0) {
+      const n = MesaRoom.registrosVivos.size;
+      await Promise.all([...MesaRoom.registrosVivos].map((r) => r.ocioso()));
+      // Sala viva continua no conjunto: não espera por ela para sempre.
+      if (MesaRoom.registrosVivos.size >= n) return;
+    }
+  }
 
   private mesa!: Mesa;
   private registro!: RegistroMesa;
@@ -78,6 +90,7 @@ export class MesaRoom extends Room {
       { variante: regras.variante, modo, formato: modo === 'ranqueada' ? (humanos === 2 ? '1x1' : '2x2') : null },
       (e) => console.error(`[MesaRoom ${this.roomId}] falha ao gravar`, e),
     );
+    MesaRoom.registrosVivos.add(this.registro);
     this.mesa = new Mesa({
       regras,
       modo,
@@ -157,7 +170,14 @@ export class MesaRoom extends Room {
   }
 
   onDispose() {
+    if (!this.mesa) return;
+    // Começou e não terminou (todos os humanos saíram): fecha a partida como abandonada.
+    if (this.mesa.iniciada && this.mesa.partida?.fase !== 'fimPartida') this.registro.encerrarAbandonada();
     this.mesa.dispose();
+    // O Colyseus espera esta promessa antes de dar a sala por descartada (e o desligamento,
+    // antes de fechar o banco).
+    const r = this.registro;
+    return r.ocioso().finally(() => MesaRoom.registrosVivos.delete(r));
   }
 
   /** Sem isto, uma exceção num timer do `clock` derruba o processo inteiro. */

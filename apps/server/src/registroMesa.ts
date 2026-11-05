@@ -2,7 +2,7 @@ import type { AcaoJogador, Cadeira, EstadoPartida, Variante } from '@truco/engin
 import type { Formato } from './api/tipos';
 import type { ModoMesa } from './mesa/protocolo';
 import { type Contadores, contadoresZerados, contarAcao } from './ranking/estatisticas';
-import { type AssentoRegistro, iniciarPartida, registrarAbandono, terminarPartida } from './repo/partidas';
+import { type AssentoRegistro, encerrarAbandonada, iniciarPartida, registrarAbandono, terminarPartida } from './repo/partidas';
 import type { Servicos } from './servicos';
 
 export interface JogadorSala {
@@ -86,6 +86,16 @@ export class RegistroMesa {
     this.encadear(async () => {
       if (this.partidaId === null) return;
       await terminarPartida(s.banco, this.partidaId, fim, { k: s.kElo, agora: s.agora() });
+    });
+  }
+
+  /** A sala foi descartada antes do fim: fecha a partida como abandonada (no-op se já terminou). */
+  encerrarAbandonada(): void {
+    const s = this.s;
+    if (!s) return;
+    this.encadear(async () => {
+      if (this.partidaId === null) return;
+      await encerrarAbandonada(s.banco, this.partidaId, s.agora());
     });
   }
 

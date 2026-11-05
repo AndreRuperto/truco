@@ -4,7 +4,7 @@ import { boot, type ColyseusTestServer } from '@colyseus/testing';
 import { REGRAS_RANQUEADA } from '@truco/engine';
 import { eq } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
-import { bloqueiosFila, participacoes } from '../src/banco/schema';
+import { bloqueiosFila, participacoes, partidas } from '../src/banco/schema';
 import { FilaRoom } from '../src/FilaRoom';
 import { MesaRoom } from '../src/MesaRoom';
 import { chaveRegras } from '../src/mesa/protocolo';
@@ -291,6 +291,24 @@ describe('contas, privadas e HTTP no mesmo servidor', () => {
       ocupados: 1,
       dono: 'Ana',
     });
+  });
+});
+
+describe('MesaRoom: abandono total, outra aba e gravações no desligamento', () => {
+  test('último humano sai com a partida em andamento: a sala descartada fecha a partida como abandonada', async () => {
+    const ana = await logado('ana@x.com');
+    const sala = await ana.cliente.joinOrCreate('mesa', { humanos: 1 });
+    const m = coletor(sala);
+    await esperar(() => !!m.estado?.some((x) => x.visao));
+    await esperarAsync(async () => (await banco.db.select().from(partidas)).length === 1);
+    const roomId = sala.roomId;
+    await sala.leave(true);
+    await esperar(() => !matchMaker.getLocalRoomById(roomId));
+    // O desligamento espera isto antes de fechar o banco.
+    await MesaRoom.esperarGravacoes();
+    const [p] = await banco.db.select().from(partidas);
+    expect(p.terminadaEm).not.toBeNull();
+    expect(p.abandonada).toBe(true);
   });
 });
 

@@ -170,6 +170,20 @@ export async function terminarPartida(db: Banco, partidaId: number, fim: FimPart
   });
 }
 
+/**
+ * Sala descartada com a partida começada e sem fim (todos os humanos saíram): fecha como
+ * `abandonada`, sem placar nem Elo (as penalidades de quem abandonou já foram gravadas).
+ * Não mexe numa partida já terminada.
+ */
+export async function encerrarAbandonada(db: Banco, partidaId: number, agora: Date): Promise<boolean> {
+  const r = await db
+    .update(partidas)
+    .set({ terminadaEm: agora, abandonada: true })
+    .where(and(eq(partidas.id, partidaId), isNull(partidas.terminadaEm)))
+    .returning({ id: partidas.id });
+  return r.length > 0;
+}
+
 export async function bloqueioAte(db: Banco, usuarioId: number, agora: Date): Promise<Date | null> {
   const [x] = await db
     .select({ ate: bloqueiosFila.ate })

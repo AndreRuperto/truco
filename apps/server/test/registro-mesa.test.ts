@@ -89,6 +89,37 @@ describe('RegistroMesa', () => {
     expect(aoErro).toHaveBeenCalledTimes(1);
   });
 
+  test('encerrarAbandonada: iniciada e sem fim (todos os humanos saíram) fica terminada e abandonada, sem Elo', async () => {
+    const s = servicosDeTeste(b.db, { agora: () => T0 });
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia' });
+    const r = new RegistroMesa(s, { variante: 'paulista', modo: 'ranqueada', formato: '1x1' });
+    r.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+    r.sentou({ cadeira: 1, usuarioId: bia.id, nome: 'bia' });
+    r.iniciou();
+    r.abandonou(0);
+    r.abandonou(1);
+    r.encerrarAbandonada();
+    await r.ocioso();
+    const [p] = await b.db.select().from(partidas);
+    expect(p).toMatchObject({ terminadaEm: T0, abandonada: true, vencedora: null });
+    // Só as penalidades de abandono: ninguém ganha Elo pelo fim.
+    expect((await ratingDe(b.db, ana.id, 'paulista')).elo).toBe(984);
+    expect((await ratingDe(b.db, bia.id, 'paulista')).elo).toBeLessThan(1000);
+  });
+
+  test('encerrarAbandonada depois do fim normal não mexe na partida', async () => {
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const r = new RegistroMesa(servicosDeTeste(b.db, { agora: () => T0 }), { variante: 'paulista', modo: 'classica', formato: null });
+    r.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+    r.iniciou();
+    r.terminou(fimDe(0, [12, 3]));
+    r.encerrarAbandonada();
+    await r.ocioso();
+    const [p] = await b.db.select().from(partidas);
+    expect(p).toMatchObject({ abandonada: false, vencedora: 0, placar0: 12 });
+  });
+
   // Regra: só `onLeave` (saída consentida ou fim dos 60 s de reconexão) chama `abandonou`,
   // e a sala não o chama se a partida já estava em `fimPartida`. Quem caiu e não voltou,
   // mas viu a partida terminar dentro dos 60 s, conta como quem ficou: vitória/derrota e Elo.

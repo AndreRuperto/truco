@@ -21,6 +21,9 @@ const servidor = criarServidor(servicos, { pastaWeb });
 const pararLimpeza = agendarLimpeza(() => limparExpirados(servicos.banco, servicos.agora()));
 servidor.onShutdown(async () => {
   pararLimpeza();
+  // As salas já foram descartadas (cada onDispose espera o próprio registro); garante que
+  // nenhuma gravação de partida fique pela metade antes de fechar o banco.
+  await MesaRoom.esperarGravacoes();
   await fechar();
 });
 
