@@ -6,6 +6,7 @@ import { CartaVisual } from '../componentes/CartaVisual';
 import { modoDaMesa } from '../api/protocolo-provisorio';
 import { CentroMesa } from '../componentes/CentroMesa';
 import { Chat } from '../componentes/Chat';
+import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { Cronometro } from '../componentes/Cronometro';
 import { Mao } from '../componentes/Mao';
 import { FimDeMao, FimDePartida } from '../componentes/Overlays';
@@ -142,21 +143,7 @@ export function TelaMesa({ snap, acoes, aoChat }: Props) {
         />
       )}
       {painel === 'chat' && aoChat && <Chat mensagens={snap.chat} aoEnviar={aoChat} />}
-      {confirmarSaida && (
-        <div className="confirmar-saida" role="alertdialog" aria-label="Sair da mesa">
-          <p>
-            {modo === 'ranqueada'
-              ? 'Sair agora conta como derrota e bloqueia a fila ranqueada por 5 minutos.'
-              : 'Um bot assume o seu lugar até o fim da partida.'}
-          </p>
-          <button type="button" className="botao-principal" onClick={() => void acoes.sair()}>
-            Sair da mesa
-          </button>
-          <button type="button" onClick={() => setConfirmarSaida(false)}>
-            Continuar jogando
-          </button>
-        </div>
-      )}
+      {confirmarSaida && <ConfirmarSaida ranqueada={modo === 'ranqueada'} aoSair={() => void acoes.sair()} aoCancelar={() => setConfirmarSaida(false)} />}
       {painel !== 'sinais' && sinal && agora - sinal.em < DURACAO_SINAL_MS && (
         <div className="sinal-flutuante" role="status">
           {textoSinalRecebido(sinal)}

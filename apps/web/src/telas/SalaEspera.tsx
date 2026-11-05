@@ -1,7 +1,8 @@
 import type { MsgEstado } from '@truco/protocolo';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { type MsgChat, modoDaMesa } from '../api/protocolo-provisorio';
 import { Chat } from '../componentes/Chat';
+import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { linkConvite } from '../logica/rotas';
 import { souDono } from '../logica/sala';
 import { resumoRegras } from '../logica/textos';
@@ -24,6 +25,7 @@ export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = win
   // Faltam humanos, não cadeiras: as vazias que sobrarem viram bots ao começar.
   const sentados = msg.cadeiras.filter((c) => c.tipo === 'humano').length;
   const faltam = Math.max(0, msg.humanosEsperados - sentados);
+  const [confirmarSaida, setConfirmarSaida] = useState(false);
   return (
     <main className="sala-espera">
       <h1>Sala de espera</h1>
@@ -56,23 +58,50 @@ export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = win
         <p>Só o dono da mesa pode começar antes de lotar.</p>
       )}
       <p>
-        <button type="button" onClick={aoSair}>
+        <button type="button" onClick={modo === 'ranqueada' ? () => setConfirmarSaida(true) : aoSair}>
           Sair
         </button>
       </p>
+      {confirmarSaida && <ConfirmarSaida ranqueada aoSair={aoSair} aoCancelar={() => setConfirmarSaida(false)} textoFicar="Continuar esperando" />}
     </main>
   );
 }
 
+/** Copia com a Clipboard API; sem ela (HTTP, navegador antigo) ou se recusar, tenta execCommand. */
+async function copiar(texto: string, campo: HTMLInputElement | null): Promise<boolean> {
+  try {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    }
+  } catch {
+    // cai no execCommand
+  }
+  if (!campo) return false;
+  campo.focus();
+  campo.select();
+  try {
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  }
+}
+
 function Convite({ link }: { link: string }) {
-  const [copiado, setCopiado] = useState(false);
+  const [situacao, setSituacao] = useState<'livre' | 'copiado' | 'falhou'>('livre');
+  const campo = useRef<HTMLInputElement>(null);
   return (
     <div className="convite">
       <label htmlFor="link-convite">Link de convite</label>
-      <input id="link-convite" type="text" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
-      <button type="button" onClick={() => void navigator.clipboard?.writeText(link).then(() => setCopiado(true), () => {})}>
-        {copiado ? 'Copiado!' : 'Copiar'}
+      <input ref={campo} id="link-convite" type="text" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
+      <button type="button" onClick={() => void copiar(link, campo.current).then((ok) => setSituacao(ok ? 'copiado' : 'falhou'))}>
+        {situacao === 'copiado' ? 'Copiado!' : 'Copiar'}
       </button>
+      {situacao === 'falhou' && (
+        <p className="nota" role="status">
+          Selecione e copie o link
+        </p>
+      )}
     </div>
   );
 }
