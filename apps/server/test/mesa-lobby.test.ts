@@ -45,6 +45,15 @@ describe('lobby', () => {
     expect(mesa.sentar('c', 'Cid')).toBe(2);
   });
 
+  test('dono é o primeiro humano conectado', () => {
+    const { mesa } = criarMesa({ humanosEsperados: 3 });
+    mesa.sentar('a', 'Ana');
+    mesa.sentar('b', 'Bia');
+    mesa.desconectar('a');
+    mesa.iniciar('b');
+    expect(mesa.iniciada).toBe(true);
+  });
+
   test('aoIniciar é chamado uma vez, no início manual ou automático', () => {
     const manual = vi.fn();
     const t1 = criarMesa({ humanosEsperados: 3, aoIniciar: manual });

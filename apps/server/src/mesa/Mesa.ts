@@ -413,8 +413,9 @@ export class Mesa {
     return this.ocupantes.filter((o) => o.humano && o.id !== null).length;
   }
 
+  /** Primeiro humano conectado, na ordem das cadeiras. */
   private dono(): Cadeira | undefined {
-    return ORDEM_SENTAR.find((c) => this.ocupantes[c].humano);
+    return CADEIRAS.find((c) => this.humanoAtivo(c));
   }
 
   private podeMandar(c: Cadeira): boolean {
