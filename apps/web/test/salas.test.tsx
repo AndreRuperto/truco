@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { REGRAS_RANQUEADA } from '@truco/engine';
 import { describe, expect, test, vi } from 'vitest';
@@ -21,6 +21,22 @@ describe('TelaSalas', () => {
     expect(aoEntrar).toHaveBeenCalledWith('abc123');
     await user.click(screen.getByRole('button', { name: 'Atualizar' }));
     expect(salas).toHaveBeenCalledTimes(2);
+  });
+
+  test('atualiza sozinha a cada 12 s e para ao desmontar', async () => {
+    vi.useFakeTimers();
+    try {
+      const salas = vi.fn(async () => ({ salas: [] }));
+      const { unmount } = render(<TelaSalas api={{ salas }} aoEntrar={vi.fn()} />);
+      expect(salas).toHaveBeenCalledTimes(1);
+      await act(async () => vi.advanceTimersByTimeAsync(12_000));
+      expect(salas).toHaveBeenCalledTimes(2);
+      unmount();
+      await act(async () => vi.advanceTimersByTimeAsync(36_000));
+      expect(salas).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test('vazia', async () => {

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NOME_MODO, NOME_VARIANTE } from '../logica/conta';
 import type { Api } from '../rede/api';
 import { useCarregar } from '../rede/hooks';
@@ -7,8 +8,16 @@ interface Props {
   aoEntrar: (id: string) => void;
 }
 
+const INTERVALO_MS = 12_000;
+
 export function TelaSalas({ api, aoEntrar }: Props) {
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.salas(), []);
+  // As mesas enchem e começam rápido: a lista se atualiza sozinha.
+  useEffect(() => {
+    const id = setInterval(recarregar, INTERVALO_MS);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <main className="tela-conta">
       <h1>Mesas abertas</h1>
