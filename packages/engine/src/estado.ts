@@ -40,6 +40,14 @@ export interface ResultadoMao {
   vencedor: Dupla | null;
   pontos: number;
   motivo: 'rodadas' | 'correu' | 'mao10Correu';
+  /** Resultado de cada rodada encerrada. */
+  rodadas: ResultadoRodada[];
+  /**
+   * Cartas jogadas na mão, por rodada. Se a mão acabou no meio de uma rodada
+   * (correu), a última entrada é a rodada incompleta e não tem item em `rodadas`.
+   */
+  rodadasJogadas: Jogada[][];
+  vira: Carta | null;
 }
 
 export interface EstadoPartida {

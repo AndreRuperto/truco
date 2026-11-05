@@ -171,8 +171,16 @@ export function finalizarMao(
   pontos: number,
   motivo: ResultadoMao['motivo'],
 ): void {
+  const m = maoAtual(s);
   if (vencedor !== null) s.placar[vencedor] += pontos;
-  s.ultimaMao = { vencedor, pontos: vencedor === null ? 0 : pontos, motivo };
+  s.ultimaMao = {
+    vencedor,
+    pontos: vencedor === null ? 0 : pontos,
+    motivo,
+    rodadas: m.rodadas,
+    rodadasJogadas: m.mesa.length > 0 ? [...m.rodadasJogadas, m.mesa] : m.rodadasJogadas,
+    vira: m.vira,
+  };
   s.mao = null;
   if (vencedor !== null && s.placar[vencedor] >= PONTOS_VITORIA) {
     s.vencedor = vencedor;
