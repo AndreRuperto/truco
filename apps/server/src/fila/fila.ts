@@ -83,7 +83,14 @@ function casar(grupos: Grupo[], agora: number): [Grupo, Grupo][] {
 }
 
 /** Pareamentos possíveis agora (função pura; a `Fila` tira os pareados). */
-export function parear(entradas: readonly EntradaFila[], agora: number): Pareamento[] {
+export function parear(todas: readonly EntradaFila[], agora: number): Pareamento[] {
+  // Uma entrada por conta (a mais recente): a mesma conta nunca é pareada contra si mesma.
+  const porUsuario = new Map<number, EntradaFila>();
+  for (const x of todas) {
+    const y = porUsuario.get(x.usuarioId);
+    if (!y || x.desde >= y.desde) porUsuario.set(x.usuarioId, x);
+  }
+  const entradas = [...porUsuario.values()];
   const out: Pareamento[] = [];
   const chaves = [...new Set(entradas.map((x) => `${x.variante}|${x.formato}`))].sort();
   for (const chave of chaves) {
@@ -167,9 +174,31 @@ export class Fila {
     return ps;
   }
 
-  /** Recoloca (ex.: a mesa não pôde ser criada), mantendo o tempo de espera. */
-  devolver(p: Pareamento): void {
-    for (const t of p.times) for (const x of t) this.entradas.set(x.id, x);
+  /** Tira a entrada da conta (se houver) e a devolve. */
+  tirarUsuario(usuarioId: number): EntradaFila | null {
+    for (const x of this.entradas.values()) {
+      if (x.usuarioId === usuarioId) {
+        this.entradas.delete(x.id);
+        return x;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Recoloca (ex.: a mesa não pôde ser criada), mantendo o tempo de espera. Se a conta
+   * entrou de novo (outra aba) enquanto estava pareada, vence a entrada nova: devolve as
+   * entradas descartadas (a sala derruba essas conexões).
+   */
+  devolver(p: Pareamento): EntradaFila[] {
+    const descartadas: EntradaFila[] = [];
+    for (const t of p.times) {
+      for (const x of t) {
+        if ([...this.entradas.values()].some((y) => y.usuarioId === x.usuarioId && y.id !== x.id)) descartadas.push(x);
+        else this.entradas.set(x.id, x);
+      }
+    }
+    return descartadas;
   }
 
   status(id: string, agora: number): MsgStatusFila | null {

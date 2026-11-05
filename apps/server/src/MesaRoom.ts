@@ -59,6 +59,22 @@ export class MesaRoom extends Room {
   /** Registros de salas vivas ou descartadas com gravação pendente (o desligamento espera). */
   private static readonly registrosVivos = new Set<RegistroMesa>();
 
+  /** Conta → mesa ranqueada viva em que tem lugar (reservado ou sentado, partida sem fim). */
+  private static readonly contasEmRanqueada = new Map<number, string>();
+
+  /** A conta foi pareada e a mesa dela ainda não acabou (a fila recusa a conta). */
+  static emRanqueada(usuarioId: number): boolean {
+    return MesaRoom.contasEmRanqueada.has(usuarioId);
+  }
+
+  private liberarConta(usuarioId: number): void {
+    if (MesaRoom.contasEmRanqueada.get(usuarioId) === this.roomId) MesaRoom.contasEmRanqueada.delete(usuarioId);
+  }
+
+  private liberarReservados(): void {
+    for (const r of this.reservados ?? []) this.liberarConta(r.usuarioId);
+  }
+
   /** Espera as gravações de todas as mesas (desligamento: antes de fechar o banco). */
   static async esperarGravacoes(): Promise<void> {
     while (MesaRoom.registrosVivos.size > 0) {
@@ -119,6 +135,7 @@ export class MesaRoom extends Room {
       if (cru.fichaInterna !== MesaRoom.fichaInterna) throw new Error('mesa ranqueada só pela fila');
       this.reservados = jogadoresReservados(cru.jogadores);
       if (this.reservados.length !== humanos) throw new Error('reservas não batem com a quantidade de humanos');
+      for (const r of this.reservados) MesaRoom.contasEmRanqueada.set(r.usuarioId, this.roomId);
     }
     this.maxClients = humanos;
     // O Colyseus 0.18 copia os campos do `filterBy` das opções cruas de criação para
@@ -157,7 +174,10 @@ export class MesaRoom extends Room {
         this.lock().catch((e) => console.error('[MesaRoom] falha ao trancar a sala', e));
         this.registro.iniciou();
       },
-      aoTerminar: (s) => this.registro.terminou(s),
+      aoTerminar: (s) => {
+        this.registro.terminou(s);
+        this.liberarReservados();
+      },
     });
 
     this.onMessage('acao', (client, payload) => this.mesa.acao(client.sessionId, payload));
@@ -205,6 +225,8 @@ export class MesaRoom extends Room {
 
   /** Saída definitiva (consentida ou fim dos 60 s de reconexão). */
   onLeave(client: Client) {
+    const auth = client.auth as UsuarioConexao | undefined;
+    if (this.reservados && auth) this.liberarConta(auth.usuarioId);
     const c = this.mesa.cadeiraDe(client.sessionId);
     if (c !== null) {
       if (!this.mesa.iniciada) this.registro.saiuAntesDoInicio(c);
@@ -214,6 +236,7 @@ export class MesaRoom extends Room {
   }
 
   onDispose() {
+    this.liberarReservados();
     if (!this.mesa) return;
     // Começou e não terminou (todos os humanos saíram): fecha a partida como abandonada.
     if (this.mesa.iniciada && this.mesa.partida?.fase !== 'fimPartida') this.registro.encerrarAbandonada();

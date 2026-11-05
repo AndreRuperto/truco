@@ -1,7 +1,7 @@
 import { type AuthContext, type Client, ErrorCode, matchMaker, Room, ServerError } from '@colyseus/core';
 import type { Variante } from '@truco/engine';
 import type { Formato, MsgPareado } from './api/tipos';
-import { cadeirasDoPareamento, Fila, normalizarCodigoDupla, type Pareamento } from './fila/fila';
+import { cadeirasDoPareamento, type EntradaFila, Fila, normalizarCodigoDupla, type Pareamento } from './fila/fila';
 import { SAIDA_FILA_SUBSTITUIDA } from './mesa/protocolo';
 import { MesaRoom } from './MesaRoom';
 import { bloqueioAte, ratingDe } from './repo/partidas';
@@ -26,6 +26,8 @@ export class FilaRoom extends Room {
     const s = FilaRoom.servicos;
     const u = await usuarioDaConexao(s, token, context.headers);
     if (!s || !u) throw new ServerError(ErrorCode.AUTH_FAILED, 'entre na sua conta para jogar ranqueada');
+    // Pareada há pouco (outra aba) ou ainda numa mesa ranqueada: termine aquela primeiro.
+    if (MesaRoom.emRanqueada(u.usuarioId)) throw new ServerError(ErrorCode.AUTH_FAILED, 'você já tem uma partida ranqueada em andamento');
     const ate = await bloqueioAte(s.banco, u.usuarioId, s.agora());
     if (ate) throw new ServerError(ErrorCode.AUTH_FAILED, `fila bloqueada até ${ate.toISOString()} por abandono de partida ranqueada`);
     return u;
@@ -65,7 +67,7 @@ export class FilaRoom extends Room {
     this.rodando = true;
     try {
       for (const p of this.fila.rodada(Date.now())) {
-        if (p.times.flat().some((x) => !this.clients.getById(x.id))) {
+        if (p.times.flat().some((x) => !this.clients.getById(x.id) || MesaRoom.emRanqueada(x.usuarioId))) {
           this.devolverPresentes(p);
           continue;
         }
@@ -82,9 +84,15 @@ export class FilaRoom extends Room {
     }
   }
 
+  /** Devolve à fila quem ainda está conectado e não está em outra ranqueada. */
   private devolverPresentes(p: Pareamento): void {
-    const presente = (x: { id: string }) => !!this.clients.getById(x.id);
-    this.fila.devolver({ ...p, times: [p.times[0].filter(presente), p.times[1].filter(presente)] });
+    const volta = (x: EntradaFila) => !!this.clients.getById(x.id) && !MesaRoom.emRanqueada(x.usuarioId);
+    for (const x of p.times.flat()) if (this.clients.getById(x.id) && !volta(x)) this.derrubar(x);
+    for (const x of this.fila.devolver({ ...p, times: [p.times[0].filter(volta), p.times[1].filter(volta)] })) this.derrubar(x);
+  }
+
+  private derrubar(x: EntradaFila): void {
+    this.clients.getById(x.id)?.leave(SAIDA_FILA_SUBSTITUIDA);
   }
 
   private async criarMesa(p: Pareamento): Promise<void> {
@@ -102,6 +110,11 @@ export class FilaRoom extends Room {
       const reserva = await matchMaker.reserveSeatFor(sala, { nome: a.entrada.apelido }, auth);
       const msg: MsgPareado = { reserva };
       this.clients.getById(a.entrada.id)?.send('pareado', msg);
+    }
+    // Entrou de novo por outra aba enquanto a mesa era criada: a entrada nova sai.
+    for (const a of assentos) {
+      const outra = this.fila.tirarUsuario(a.entrada.usuarioId);
+      if (outra) this.derrubar(outra);
     }
   }
 

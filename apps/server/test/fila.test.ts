@@ -150,6 +150,37 @@ describe('Fila', () => {
     expect(() => f.entrar(e(1000, { formato: '2x2', variante: 'mineiro', codigoDupla: 'ZE12' }))).not.toThrow();
   });
 
+  test('devolver: se a conta voltou à fila por outra aba enquanto estava pareada, vence a entrada nova', () => {
+    const f = new Fila();
+    const [a, b] = [e(1000), e(1000)];
+    f.entrar(a);
+    f.entrar(b);
+    const [p] = f.rodada(T0);
+    const aNova = { ...a, id: 'aba-nova', desde: T0 + 5_000 };
+    f.entrar(aNova);
+    expect(f.devolver(p)).toEqual([a]);
+    expect(f.tamanho).toBe(2);
+    expect(f.status(a.id, T0)).toBeNull();
+    expect(f.status(aNova.id, T0 + 5_000)).not.toBeNull();
+  });
+
+  test('a mesma conta nunca é pareada contra si mesma', () => {
+    const a = e(1000);
+    expect(parear([a, { ...a, id: 'outra-aba' }], T0)).toEqual([]);
+    const b = e(1000);
+    const [p] = parear([a, { ...a, id: 'outra-aba', desde: T0 + 1 }, b], T0 + 1);
+    expect(p.times.flat().map((x) => x.usuarioId).sort()).toEqual([a.usuarioId, b.usuarioId].sort());
+  });
+
+  test('tirarUsuario remove a entrada da conta', () => {
+    const f = new Fila();
+    const a = e(1000);
+    f.entrar(a);
+    expect(f.tirarUsuario(a.usuarioId)).toEqual(a);
+    expect(f.tirarUsuario(a.usuarioId)).toBeNull();
+    expect(f.tamanho).toBe(0);
+  });
+
   test('status: aguardando parceiro com o mesmo código', () => {
     const f = new Fila();
     const a = e(1000, { formato: '2x2', codigoDupla: 'ZE12' });

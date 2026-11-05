@@ -388,6 +388,29 @@ describe('fila ranqueada', () => {
     expect((await banco.db.select().from(participacoes)).some((x) => x.abandonou)).toBe(false);
   });
 
+  test('pareado/em mesa ranqueada viva não entra na fila de novo (outra aba) até a mesa acabar', async () => {
+    const espera = MesaRoom.esperaRanqueadaMs;
+    MesaRoom.esperaRanqueadaMs = 500;
+    try {
+      const ana = await logado('ana@x.com');
+      const bia = await logado('bia@x.com');
+      const fa = coletor(await ana.cliente.joinOrCreate('fila', FILA_1X1));
+      const fb = coletor(await bia.cliente.joinOrCreate('fila', FILA_1X1));
+      await esperar(() => !!fa.pareado?.length && !!fb.pareado?.length);
+      const outraAba = new Client(URL_TESTE);
+      outraAba.auth.token = ana.token;
+      await expect(outraAba.joinOrCreate('fila', FILA_1X1)).rejects.toThrow(/partida ranqueada em andamento/);
+      // Ninguém consome a reserva: a mesa é cancelada (sem penalidade) e a conta é liberada.
+      const roomId = fa.pareado[0].reserva.roomId as string;
+      await esperar(() => !matchMaker.getLocalRoomById(roomId), 5_000);
+      const fila = await outraAba.joinOrCreate('fila', FILA_1X1);
+      coletor(fila);
+      expect(await banco.db.select().from(bloqueiosFila)).toEqual([]);
+    } finally {
+      MesaRoom.esperaRanqueadaMs = espera;
+    }
+  });
+
   test('2x2: terceiro com o mesmo código de dupla é recusado com erro claro', async () => {
     const opcoes = { variante: 'mineiro', formato: '2x2', codigoDupla: 'trio' };
     for (const email of ['t1@x.com', 't2@x.com']) coletor(await (await logado(email)).cliente.joinOrCreate('fila', opcoes));
