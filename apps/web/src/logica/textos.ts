@@ -94,6 +94,7 @@ export function resumoRegras(r: RegrasMesa, chanceInterceptarSinal: number): str
     r.maoDe10 ? 'Mão de 10 ligada' : 'Mão de 10 desligada',
     TEXTO_MAO11[r.maoDe11],
     TEXTO_FAMILIA[r.familia],
+    ...(r.variante === 'mineiro' && r.maoLimpa === true ? ['Mão limpa (sem 4 a 7, com 2 coringas)'] : []),
     textoInterceptacao(chanceInterceptarSinal),
   ];
 }

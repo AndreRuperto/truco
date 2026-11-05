@@ -23,9 +23,9 @@ describe('Lobby', () => {
       variante: 'mineiro',
       humanos: 2,
       nivelBot: 'dificil',
-      regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada' },
+      regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada', maoLimpa: false },
       chanceInterceptarSinal: 0,
-      chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|int:0',
+      chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|lim:0|int:0',
       modo: 'desafio',
     });
     expect(localStorage.getItem(CHAVE_APELIDO)).toBe('Ana');
@@ -44,6 +44,29 @@ describe('Lobby', () => {
       variante: 'paulista',
       regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'qualquerDupla', familia: 'aberta' },
     });
+  });
+
+  test('mão limpa: só aparece no mineiro, entra no resumo e nas opções; some ao voltar ao paulista', async () => {
+    const user = userEvent.setup();
+    const aoJogar = vi.fn();
+    render(<Lobby aoJogar={aoJogar} />);
+    expect(screen.queryByLabelText(/Mão limpa/)).toBeNull();
+    await user.selectOptions(screen.getByLabelText('Variante'), 'mineiro');
+    const caixa = screen.getByRole('checkbox', { name: /Mão limpa/ });
+    expect(caixa).not.toBeChecked();
+    expect(caixa.closest('label')).toHaveTextContent('sem 4 a 7, com 2 coringas');
+    await user.click(caixa);
+    const resumo = screen.getByText('Regras da mesa').closest('summary')!;
+    expect(resumo).toHaveTextContent('mão limpa');
+    await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
+    expect(aoJogar.mock.calls[0][0]).toMatchObject({ variante: 'mineiro', regras: { maoLimpa: true }, chaveRegras: expect.stringContaining('|lim:1|') });
+    await user.selectOptions(screen.getByLabelText('Variante'), 'paulista');
+    expect(screen.queryByLabelText(/Mão limpa/)).toBeNull();
+    expect(resumo).not.toHaveTextContent('mão limpa');
+    await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
+    expect(aoJogar.mock.calls[1][0]).toMatchObject({ variante: 'paulista', regras: { maoLimpa: false } });
+    await user.selectOptions(screen.getByLabelText('Variante'), 'mineiro');
+    expect(screen.getByRole('checkbox', { name: /Mão limpa/ })).not.toBeChecked();
   });
 
   test('interceptação de sinais: padrão "Nunca"; escolher manda a chance', async () => {

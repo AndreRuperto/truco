@@ -38,6 +38,15 @@ describe('SalaEspera', () => {
     expect(lista).toHaveTextContent('Adversários às vezes interceptam sinais');
   });
 
+  test('mão limpa aparece nas regras da sala; mesa comum não fala nela', () => {
+    const { rerender } = render(
+      <SalaEspera msg={msgEstado(null, 0, { cadeiras, regras: { ...MINEIRO, maoLimpa: true } })} aoIniciar={vi.fn()} aoSair={vi.fn()} />,
+    );
+    expect(screen.getByRole('list', { name: 'Regras da mesa' })).toHaveTextContent('Mão limpa (sem 4 a 7, com 2 coringas)');
+    rerender(<SalaEspera msg={msgEstado(null, 0, { cadeiras, regras: MINEIRO })} aoIniciar={vi.fn()} aoSair={vi.fn()} />);
+    expect(screen.getByRole('list', { name: 'Regras da mesa' })).not.toHaveTextContent('Mão limpa');
+  });
+
   test('conta os humanos que faltam, não as cadeiras vazias (bots completam o resto)', () => {
     const so: InfoCadeira[] = [
       { tipo: 'humano', nome: 'Ana', conectado: true },

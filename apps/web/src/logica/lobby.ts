@@ -8,6 +8,8 @@ export interface FormLobby {
   maoDe10: boolean;
   maoDe11: RegrasMesa['maoDe11'];
   familia: RegrasMesa['familia'];
+  /** Mão limpa (só vale no mineiro). */
+  maoLimpa: boolean;
   humanos: number;
   nivelBot: NivelBot;
   /** Chance (0–1) de cada adversário ver um sinal. */
@@ -51,6 +53,7 @@ export function formPadrao(variante: Variante = 'paulista', nome = ''): FormLobb
     maoDe10: r.maoDe10,
     maoDe11: r.maoDe11,
     familia: r.familia,
+    maoLimpa: r.maoLimpa,
     humanos: 1,
     nivelBot: 'facil',
     chanceInterceptarSinal: 0,
@@ -69,7 +72,13 @@ export function trocarVariante(f: FormLobby, variante: Variante): FormLobby {
 }
 
 export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
-  const regras = { pontuacao: f.pontuacao, maoDe10: f.maoDe10, maoDe11: f.maoDe11, familia: f.familia };
+  const regras = {
+    pontuacao: f.pontuacao,
+    maoDe10: f.maoDe10,
+    maoDe11: f.maoDe11,
+    familia: f.familia,
+    maoLimpa: f.variante === 'mineiro' && f.maoLimpa,
+  };
   const chance = Math.min(1, Math.max(0, f.chanceInterceptarSinal));
   return {
     nome: f.nome.trim() || 'Jogador',

@@ -137,6 +137,14 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada }: Props) {
               <input type="checkbox" checked={f.maoDe10} onChange={(e) => mudar('maoDe10', e.target.checked)} />
               Mão de 10
             </label>
+            {f.variante === 'mineiro' && (
+              <label className="campo-check largo">
+                <input type="checkbox" checked={f.maoLimpa} onChange={(e) => mudar('maoLimpa', e.target.checked)} />
+                <span>
+                  Mão limpa <small>(sem 4 a 7, com 2 coringas)</small>
+                </span>
+              </label>
+            )}
           </div>
         </details>
       </form>
@@ -157,6 +165,7 @@ function resumoLobby(f: FormLobby): string {
     f.maoDe10 ? 'mão de 10' : null,
     TEXTO_MAO11[f.maoDe11],
     TEXTO_FAMILIA[f.familia],
+    f.variante === 'mineiro' && f.maoLimpa ? 'mão limpa' : null,
     bots > 0 ? `${bots} ${bots === 1 ? 'bot' : 'bots'} ${nivel}` : 'só humanos',
     f.chanceInterceptarSinal > 0 ? 'sinais interceptáveis' : null,
   ];

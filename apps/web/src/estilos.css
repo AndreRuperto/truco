@@ -244,9 +244,15 @@ button:disabled {
   min-height: 44px;
 }
 .campo-check input {
+  flex: none;
   width: 22px;
   height: 22px;
   accent-color: var(--madeira-funda);
+}
+.campo-check small {
+  display: block;
+  color: var(--tinta-suave);
+  font-size: var(--t-1);
 }
 .formulario .nota {
   color: var(--tinta-suave);

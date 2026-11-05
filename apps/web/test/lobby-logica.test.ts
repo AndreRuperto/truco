@@ -11,12 +11,13 @@ describe('formulário do lobby', () => {
       maoDe10: false,
       maoDe11: 'qualquerDupla',
       familia: 'off',
+      maoLimpa: false,
       humanos: 1,
       nivelBot: 'facil',
       chanceInterceptarSinal: 0,
       privada: false,
     });
-    expect(formPadrao('mineiro')).toMatchObject({ pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'off', familia: 'fechada' });
+    expect(formPadrao('mineiro')).toMatchObject({ pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'off', familia: 'fechada', maoLimpa: false });
   });
 
   test('trocar a variante reaplica as regras mas mantém nome, humanos, bots e interceptação', () => {
@@ -30,9 +31,9 @@ describe('formulário do lobby', () => {
       variante: 'paulista',
       humanos: 3,
       nivelBot: 'dificil',
-      regras: { pontuacao: '1-3-6-9-12', maoDe10: false, maoDe11: 'qualquerDupla', familia: 'off' },
+      regras: { pontuacao: '1-3-6-9-12', maoDe10: false, maoDe11: 'qualquerDupla', familia: 'off', maoLimpa: false },
       chanceInterceptarSinal: 0,
-      chaveRegras: '1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|int:0',
+      chaveRegras: '1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|lim:0|int:0',
       modo: 'desafio',
     });
     expect(opcoesDeEntrada({ ...formPadrao('paulista'), nome: '   ', humanos: 9 })).toMatchObject({ nome: 'Jogador', humanos: 4 });
@@ -47,6 +48,19 @@ describe('formulário do lobby', () => {
     expect(s.chanceInterceptarSinal).toBe(0.25);
     // a chave que o cliente manda é a mesma que a sala recalcula
     expect(o.chaveRegras).toBe(chaveRegras(s.regras, s.chanceInterceptarSinal));
+  });
+
+  test('mão limpa: vai nas regras e na chave só no mineiro; trocar de variante desmarca', () => {
+    const limpa = { ...formPadrao('mineiro', 'Ana'), maoLimpa: true };
+    const o = opcoesDeEntrada(limpa);
+    expect(o.regras.maoLimpa).toBe(true);
+    expect(o.chaveRegras).toContain('|lim:1|');
+    const s = opcoesDaSala(o);
+    expect(s.regras).toEqual({ variante: 'mineiro', ...o.regras });
+    expect(o.chaveRegras).toBe(chaveRegras(s.regras, s.chanceInterceptarSinal));
+    expect(trocarVariante(limpa, 'paulista').maoLimpa).toBe(false);
+    // mesmo que o estado fique marcado no paulista, não vai para a sala
+    expect(opcoesDeEntrada({ ...formPadrao('paulista'), maoLimpa: true }).regras.maoLimpa).toBe(false);
   });
 
   test('apelido no localStorage', () => {
