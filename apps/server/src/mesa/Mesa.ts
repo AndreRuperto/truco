@@ -154,6 +154,12 @@ export class Mesa {
   private terminou = false;
   /** Sobe a cada mudança do estado do jogo (ação aplicada ou distribuição). */
   private versao = 0;
+  /**
+   * Sobe quando quem devia agir age fora do ritual (jogou, pediu, respondeu). Com humano agindo,
+   * o prazo é da etapa: não muda com ações alheias (família de bot fora da vez) nem, no ritual,
+   * com cada embaralhada/movimento do corte — só quando a fase, os agentes ou isto mudam.
+   */
+  private etapa = 0;
   /** Situação para a qual os timers atuais foram agendados (ver `atualizar`). */
   private chaveTurno: string | null = null;
   private bots = 0;
@@ -349,6 +355,7 @@ export class Mesa {
   private aplicar(pedida: AcaoJogador, idHumano?: string): boolean {
     if (!this.estado) return false;
     const antes = this.estado;
+    const fechaEtapa = !ehFaseRitual(antes.fase) && quemDeveAgir(antes).includes(pedida.cadeira);
     const acao = completarSorte(semSorte(pedida), antes, this.rand);
     try {
       this.estado = reduce(antes, acao);
@@ -358,6 +365,7 @@ export class Mesa {
       return false;
     }
     this.versao++;
+    if (fechaEtapa) this.etapa++;
     try {
       this.o.aoAplicar?.(semSorte(acao), idHumano !== undefined);
     } catch (e) {
@@ -385,9 +393,9 @@ export class Mesa {
 
   /**
    * Reagenda timers e prazo conforme quem deve agir e reenvia os estados.
-   * Se nada relevante mudou (mesma versão do jogo, mesmos agentes, mesmos
-   * humanos ativos) só reenvia — quem cai/volta sem ser da vez não mexe no
-   * prazo alheio. `forcar` reagenda mesmo assim (recuperação de falhas).
+   * Se nada relevante mudou (ver `chaveDoTurno`) só reenvia — quem cai/volta sem
+   * ser da vez, a família de um bot fora da vez ou mais uma embaralhada não mexem
+   * no prazo do humano. `forcar` reagenda mesmo assim (recuperação de falhas).
    */
   private atualizar(forcar = false): void {
     const s = this.estado;
@@ -467,9 +475,15 @@ export class Mesa {
     this.paraHumanos((destino) => this.o.enviar(destino, 'batida', msg));
   }
 
+  /**
+   * Situação dos timers. Com humano entre os agentes, vale a etapa (o prazo fica o mesmo enquanto
+   * fase, agentes e `etapa` não mudarem); só com bots, cada mudança do jogo reagenda o próximo passo.
+   */
   private chaveDoTurno(s: EstadoPartida): string {
-    const agentes = quemDeveAgir(s).map((c) => `${c}${this.humanoAtivo(c) ? 'h' : 'b'}`);
-    return `${this.versao}|${s.fase}|${agentes.join(',')}`;
+    const agentes = quemDeveAgir(s);
+    const marcas = agentes.map((c) => `${c}${this.humanoAtivo(c) ? 'h' : 'b'}`);
+    const marco = agentes.some((c) => this.humanoAtivo(c)) ? `e${this.etapa}` : `v${this.versao}`;
+    return `${marco}|${s.fase}|${marcas.join(',')}`;
   }
 
   /** Prazo do humano: etapa do ritual, conferir família ou jogada. */

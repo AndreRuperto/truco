@@ -1,6 +1,6 @@
-import { type AcaoJogador, botFacil, type Cadeira, type EstadoPartida, janelaDeFamilia, REGRAS_RANQUEADA } from '@truco/engine';
+import { type AcaoJogador, botFacil, type Cadeira, ehFamilia, type EstadoPartida, janelaDeFamilia, REGRAS_RANQUEADA } from '@truco/engine';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { TEMPOS, avancarAte, criarMesa } from './mesa-helpers';
+import { TEMPOS, avancarAte, criarMesa, vezDeJogar } from './mesa-helpers';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -81,5 +81,57 @@ describe('família na Mesa', () => {
     expect(t.de('a', 'acao').find((x) => x.tipo === 'conferir')).toMatchObject({ tipo: 'conferir', conferir: false });
     expect(t.estado('a')!.visao!.fase).toBe('jogando');
     expect(t.estado('a')!.visao!.placar).toEqual(placar);
+  });
+
+  describe('família aberta e o prazo do humano da vez', () => {
+    const ABERTA = { ...MINEIRO, familia: 'aberta' as const };
+    /** Bots pedem família (aberta) só quando têm uma de verdade; senão jogam o fácil. */
+    const soComFamilia = (s: EstadoPartida, c: Cadeira): AcaoJogador | null => {
+      if (janelaDeFamilia(s) && s.mao && ehFamilia(s.mao.maos[c])) return { tipo: 'familia', cadeira: c };
+      const a = botFacil(s, c);
+      return a?.tipo === 'familia' ? null : a;
+    };
+    /** Põe 3 figuras do monte na mão da cadeira `c` (mexe no estado vivo da Mesa: só teste). */
+    function darFamilia(s: EstadoPartida, c: Cadeira): void {
+      const mao = s.mao!.maos[c];
+      const figuras = s.monte.map((x, i) => ({ x, i })).filter(({ x }) => ['Q', 'J', 'K', 'A'].includes(x.valor)).slice(0, 3);
+      figuras.forEach(({ i }, k) => {
+        const tmp = mao[k];
+        mao[k] = s.monte[i];
+        s.monte[i] = tmp;
+      });
+      expect(ehFamilia(mao)).toBe(true);
+    }
+    const naJanelaDaAna = () => {
+      const t = criarMesa({ regras: ABERTA, decidirBot: soComFamilia });
+      t.mesa.sentar('a', 'Ana');
+      avancarAte(() => vezDeJogar(t) && janelaDeFamilia(t.mesa.partida!) && !t.mesa.partida!.mao!.maos.some((m) => ehFamilia(m)), 1);
+      return t;
+    };
+
+    test('bot fora da vez abre família: o prazo da Ana não reinicia', () => {
+      const t = naJanelaDaAna();
+      const ate = t.estado('a')!.prazo!.ate;
+      // A consulta dos bots fora da vez ainda está agendada (botMs).
+      darFamilia(t.mesa.partida!, 1);
+      vi.advanceTimersByTime(300);
+      expect(t.de('a', 'acao').at(-1)).toEqual({ cadeira: 1, tipo: 'familia', aberta: true });
+      expect(t.estado('a')!.prazo).toEqual({ cadeiras: [0], ate });
+      const n = t.de('a', 'acao').length;
+      vi.advanceTimersByTime(ate - Date.now() - 1);
+      expect(t.de('a', 'acao')).toHaveLength(n);
+      vi.advanceTimersByTime(1);
+      expect(t.de('a', 'acao')[n]).toEqual({ cadeira: 0, tipo: 'jogar' });
+    });
+
+    test('quem é da vez e age (abre família) ganha prazo novo', () => {
+      const t = naJanelaDaAna();
+      const ate = t.estado('a')!.prazo!.ate;
+      vi.advanceTimersByTime(300);
+      darFamilia(t.mesa.partida!, 0);
+      t.mesa.acao('a', { tipo: 'familia' });
+      expect(t.de('a', 'erro')).toEqual([]);
+      expect(t.estado('a')!.prazo!.ate).toBe(ate + 300);
+    });
   });
 });

@@ -56,6 +56,39 @@ describe('ritual na Mesa', () => {
     ]);
   });
 
+  test('o prazo é da etapa: embaralhar de novo não reinicia o relógio', () => {
+    const t = comAna();
+    ateEtapa(t, 'embaralhando');
+    const ate = t.estado('a')!.prazo!.ate;
+    for (let i = 0; i < 5; i++) {
+      vi.advanceTimersByTime(100);
+      t.mesa.acao('a', { tipo: 'embaralhar' });
+      expect(t.estado('a')!.prazo).toEqual({ cadeiras: [0], ate });
+    }
+    const n = t.de('a', 'acao').length;
+    vi.advanceTimersByTime(ate - Date.now() - 1);
+    expect(t.de('a', 'acao')).toHaveLength(n);
+    vi.advanceTimersByTime(1);
+    // Já embaralhou 5 vezes: o tempo esgotado só passa para o corte.
+    expect(novas(t, n)[0]).toEqual({ cadeira: 0, tipo: 'passarCorte' });
+  });
+
+  test('o prazo é da etapa: cortar várias vezes não reinicia o relógio', () => {
+    const t = comAna();
+    ateEtapa(t, 'cortando');
+    const ate = t.estado('a')!.prazo!.ate;
+    // Dois movimentos (o 3º encerraria o corte).
+    for (let i = 0; i < 2; i++) {
+      vi.advanceTimersByTime(100);
+      t.mesa.acao('a', { tipo: 'cortar' });
+      expect(t.de('a', 'erro')).toEqual([]);
+      expect(t.estado('a')!.prazo).toEqual({ cadeiras: [0], ate });
+    }
+    const n = t.de('a', 'acao').length;
+    vi.advanceTimersByTime(ate - Date.now());
+    expect(novas(t, n)[0]).toEqual({ cadeira: 0, tipo: 'devolver' });
+  });
+
   test('cortador humano: tempo esgotado corta e devolve', () => {
     const t = comAna();
     ateEtapa(t, 'cortando');
