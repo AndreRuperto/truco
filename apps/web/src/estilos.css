@@ -67,7 +67,8 @@
 
   --carta-l: clamp(58px, 18vw, 96px);
   --carta-p: clamp(20px, 6vw, 32px);
-  --carta-c: clamp(42px, 12.5vw, 76px);
+  --carta-c: clamp(56px, 17vw, 84px);
+  --marcador: 20px;
 
   font-family: var(--fonte-ui);
   font-size: 100%;
@@ -531,7 +532,7 @@ button:disabled {
     'cima cima cima'
     'esquerda centro direita'
     'baixo baixo baixo';
-  grid-template-columns: minmax(58px, 1fr) minmax(0, 3fr) minmax(58px, 1fr);
+  grid-template-columns: minmax(56px, 1fr) minmax(0, 3.4fr) minmax(56px, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: var(--e1);
   min-height: 0;
@@ -650,17 +651,22 @@ button:disabled {
   animation: grito 420ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 
+/* Cruz de cartas jogadas (todas do mesmo tamanho), vira num canto e rodadas no outro. */
 .centro {
+  --cruz-h: calc(var(--carta-c) * 1.45);
   grid-area: centro;
   display: grid;
   grid-template-areas:
-    '. cima .'
-    'esquerda meio direita'
+    'vira cima meio'
+    'esquerda . direita'
     '. baixo .';
-  grid-template-columns: 1fr auto 1fr;
-  grid-template-rows: 1fr auto 1fr;
+  grid-template-columns: minmax(0, calc(var(--carta-c) * 1.4)) var(--carta-c) minmax(0, calc(var(--carta-c) * 1.4));
+  grid-template-rows: repeat(3, var(--cruz-h));
+  place-content: center;
   place-items: center;
-  gap: var(--e1);
+  /* A cruz abre conforme sobra altura (no 375×667 fica justa; no 375×812 respira). */
+  gap: clamp(4px, (100vh - 560px) / 10, 28px) clamp(6px, 2.5vw, 28px);
+  gap: clamp(4px, (100dvh - 560px) / 10, 28px) clamp(6px, 2.5vw, 28px);
 }
 .centro .carta {
   --carta-l: var(--carta-c);
@@ -684,17 +690,23 @@ button:disabled {
   grid-area: meio;
   display: grid;
   justify-items: center;
-  gap: var(--e1);
+  align-self: start;
+  gap: var(--e2);
 }
 .vira {
+  grid-area: vira;
   display: grid;
   justify-items: center;
-  gap: 2px;
+  align-self: start;
 }
-.vira .carta.pequena {
-  --carta-l: calc(var(--carta-c) * 0.72);
+/* Um pouco menor que as jogadas e de lado, encostada no monte. */
+.vira .carta {
+  --carta-l: calc(var(--carta-c) * 0.86);
+  transform: rotate(-8deg);
 }
 .vira-rotulo {
+  position: relative;
+  margin-top: -10px;
   padding: 0 var(--e2);
   border-radius: 6px;
   background: var(--madeira-funda);
@@ -706,23 +718,25 @@ button:disabled {
   white-space: nowrap;
 }
 .vira-manilha {
-  padding: 0 var(--e1);
+  max-width: 100%;
+  padding: 1px var(--e1);
   border-radius: 4px;
   background: var(--madeira-funda);
   color: var(--giz);
   font-size: var(--t-1);
   font-weight: 600;
-  white-space: nowrap;
+  line-height: 1.2;
+  text-align: center;
 }
 .marcadores {
   display: flex;
-  gap: var(--e1);
+  gap: 2px;
 }
 .marcador {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: var(--marcador);
+  height: var(--marcador);
   border: 2px solid var(--giz);
   border-radius: 50%;
   background: var(--madeira-funda);
@@ -831,11 +845,6 @@ button:disabled {
 .carta.pequena .naipe-central,
 .carta.pequena .selo {
   display: none;
-}
-.vira .carta.pequena .naipe-central {
-  display: grid;
-  font-size: calc(var(--carta-l) * 0.45);
-  padding-top: 30%;
 }
 .carta.esmaecida {
   opacity: 0.55;
@@ -1197,7 +1206,11 @@ button:disabled {
   :root {
     --carta-l: 96px;
     --carta-p: 34px;
-    --carta-c: 76px;
+    --carta-c: 74px;
+    --marcador: 24px;
+  }
+  .centro {
+    row-gap: var(--e1);
   }
   .assento-nome {
     font-size: var(--t0);
@@ -1210,7 +1223,7 @@ button:disabled {
 @media (max-height: 700px) and (max-width: 767px) {
   :root {
     --carta-l: clamp(54px, 16.5vw, 96px);
-    --carta-c: clamp(40px, 11.5vw, 76px);
+    --carta-c: clamp(52px, 15vw, 76px);
   }
   .placar-num {
     font-size: var(--t3);

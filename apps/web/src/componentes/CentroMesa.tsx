@@ -28,14 +28,14 @@ export function CentroMesa({ mao, ultimaMao, minha, variante }: Props) {
   const vira = fonte.vira;
   return (
     <div className="centro" data-testid="centro">
+      {vira && (
+        <div className="vira">
+          <CartaVisual carta={vira} variante={variante} vira={vira} />
+          <span className="vira-rotulo">vira</span>
+        </div>
+      )}
       <div className="meio">
-        {vira && (
-          <div className="vira">
-            <CartaVisual carta={vira} variante={variante} vira={vira} tamanho="pequena" />
-            <span className="vira-rotulo">vira</span>
-            {variante === 'paulista' && <span className="vira-manilha">manilha: {nomeValor(valorManilhaPaulista(vira))}</span>}
-          </div>
-        )}
+        {vira && variante === 'paulista' && <span className="vira-manilha">manilha: {nomeValor(valorManilhaPaulista(vira))}</span>}
         <div className="marcadores" aria-label="Rodadas">
           {marcadoresRodadas(fonte.rodadas, minha).map((m, i) => (
             <span key={i} className={cx('marcador', m)} title={`${i + 1}ª rodada: ${TITULO[m]}`}>
