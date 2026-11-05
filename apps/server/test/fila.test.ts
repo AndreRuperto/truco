@@ -69,10 +69,17 @@ describe('parear 1x1', () => {
 });
 
 describe('parear 2x2', () => {
-  test('quatro solos: os dois mais próximos viram dupla', () => {
+  test('quatro avulsos: times equilibrados — maior + menor contra os dois do meio', () => {
     const [a, b, c, d] = [e(1000, { formato: '2x2' }), e(1010, { formato: '2x2' }), e(1020, { formato: '2x2' }), e(1030, { formato: '2x2' })];
     const [p] = parear([d, c, b, a], T0);
-    expect(p.times.map(ids)).toEqual([ids([a, b]), ids([c, d])]);
+    expect(p.times.map((t) => ids(t).sort())).toEqual([ids([a, d]).sort(), ids([b, c]).sort()]);
+  });
+
+  test('avulsos bem diferentes: o equilíbrio vale mesmo assim (1000+1200 contra 1080+1120)', () => {
+    const x = [1000, 1080, 1120, 1200].map((elo) => e(elo, { formato: '2x2' }));
+    const [p] = parear(x, T0 + 60_000);
+    const medias = p.times.map((t) => t.reduce((s, y) => s + y.elo, 0) / t.length);
+    expect(medias).toEqual([1100, 1100]);
   });
 
   test('dupla completa por código contra dois solos', () => {

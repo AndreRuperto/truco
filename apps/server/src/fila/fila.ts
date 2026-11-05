@@ -42,13 +42,25 @@ interface Grupo {
   membros: EntradaFila[];
   elo: number;
   desde: number;
+  /** Dupla montada pela fila com dois avulsos (sem código). */
+  avulsa?: boolean;
 }
 
-const grupo = (membros: EntradaFila[]): Grupo => ({
+const grupo = (membros: EntradaFila[], avulsa = false): Grupo => ({
   membros,
   elo: media(membros.map((m) => m.elo)),
   desde: Math.min(...membros.map((m) => m.desde)),
+  avulsa,
 });
+
+/** Quatro avulsos: maior + menor Elo contra os dois do meio (médias o mais perto possível). */
+function equilibrar(quatro: EntradaFila[]): [EntradaFila[], EntradaFila[]] {
+  const [w, x, y, z] = [...quatro].sort((p, q) => p.elo - q.elo || p.desde - q.desde);
+  return [
+    [w, z],
+    [x, y],
+  ];
+}
 
 function cabem(a: Grupo, b: Grupo, agora: number): boolean {
   return Math.abs(a.elo - b.elo) <= Math.max(faixa(agora - a.desde), faixa(agora - b.desde));
@@ -91,8 +103,12 @@ export function parear(entradas: readonly EntradaFila[], agora: number): Pareame
     for (const membros of porCodigo.values()) {
       if (membros.length >= 2) times.push(grupo([...membros].sort((p, q) => p.desde - q.desde).slice(0, 2)));
     }
-    for (const [a, b] of casar(solos.map((x) => grupo([x])), agora)) times.push(grupo([...a.membros, ...b.membros]));
-    for (const [a, b] of casar(times, agora)) out.push({ variante, formato, times: [a.membros, b.membros] });
+    for (const [a, b] of casar(solos.map((x) => grupo([x])), agora)) times.push(grupo([...a.membros, ...b.membros], true));
+    for (const [a, b] of casar(times, agora)) {
+      // Os quatro escolhidos são avulsos: a divisão em duplas é livre, então equilibra.
+      const t = a.avulsa && b.avulsa ? equilibrar([...a.membros, ...b.membros]) : ([a.membros, b.membros] as [EntradaFila[], EntradaFila[]]);
+      out.push({ variante, formato, times: t });
+    }
   }
   return out;
 }
