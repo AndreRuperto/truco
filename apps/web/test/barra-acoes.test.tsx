@@ -13,7 +13,7 @@ describe('BarraAcoes', () => {
     const s = reduce(distribuida(PAULISTA), { tipo: 'truco', cadeira: 0 });
     const v = visaoDoJogador(s, 1);
     const aoEscolher = vi.fn();
-    render(<BarraAcoes botoes={agruparAcoes(acoesValidas(s, 1), v.mao).botoes} pedido={textoPedidoPendente(v)} aoEscolher={aoEscolher} />);
+    render(<BarraAcoes botoes={agruparAcoes(acoesValidas(s, 1), v).botoes} pedido={textoPedidoPendente(v)} aoEscolher={aoEscolher} />);
     const barra = screen.getByRole('toolbar', { name: 'Ações' });
     expect(within(barra).getAllByRole('button').map((b) => b.textContent)).toEqual(['Aceitar', 'Seis!', 'Correr']);
     expect(barra).toHaveTextContent('Pediram Truco! Vale 3.');

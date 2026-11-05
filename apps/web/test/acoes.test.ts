@@ -1,9 +1,9 @@
 import { acoesValidas, type Cadeira, type EstadoPartida, reduce, visaoDoJogador } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
 import { agruparAcoes } from '../src/logica/acoes';
-import { distribuida, jogar, MINEIRO, PAULISTA } from './fixtures';
+import { distribuida, jogar, MINEIRO, noRitual, PAULISTA } from './fixtures';
 
-const ui = (s: EstadoPartida, c: Cadeira) => agruparAcoes(acoesValidas(s, c), visaoDoJogador(s, c).mao);
+const ui = (s: EstadoPartida, c: Cadeira) => agruparAcoes(acoesValidas(s, c), visaoDoJogador(s, c));
 const rotulos = (s: EstadoPartida, c: Cadeira) => ui(s, c).botoes.map((b) => b.rotulo);
 
 describe('agruparAcoes', () => {
@@ -41,8 +41,32 @@ describe('agruparAcoes', () => {
     expect(ui(s, 0).jogaveis).toEqual([]);
   });
 
-  test('família aparece quando a mão é família', () => {
+  test('família fechada aparece para todos na janela (blefe vale)', () => {
     const s = distribuida(MINEIRO, [['Qo', 'Jo', 'Ko'], ['3e', '5e', '6e'], ['4c', '5c', '6c'], ['2e', '5p', '6p']]);
-    expect(rotulos(s, 0)).toEqual(['Truco!', 'Família!']);
+    expect(rotulos(s, 0)).toEqual(['Truco!', 'Pedir família fechada']);
+    expect(rotulos(s, 1)).toEqual(['Pedir família fechada']);
+  });
+});
+
+describe('agruparAcoes no ritual e na família', () => {
+  test('embaralhador: Embaralhar e Passar pra cortar; cortador: Cortar, Embaralhar, Abrir 3, Dar 3, Devolver', () => {
+    const s = noRitual();
+    expect(rotulos(s, 3)).toEqual(['Embaralhar', 'Passar pra cortar']);
+    const t = reduce(s, { tipo: 'passarCorte', cadeira: 3 });
+    expect(rotulos(t, 2)).toEqual(['Cortar', 'Embaralhar', 'Abrir 3', 'Dar 3', 'Devolver']);
+    expect(ui(t, 2).botoes[0].acao).toEqual({ tipo: 'cortar', cadeira: 2 });
+  });
+
+  test('quem dá: os 3 modos', () => {
+    const u = reduce(reduce(noRitual(), { tipo: 'passarCorte', cadeira: 3 }), { tipo: 'devolver', cadeira: 2 });
+    expect(rotulos(u, 3)).toEqual(['Por cima', 'Por baixo', 'Subindo alternado']);
+  });
+
+  test('mesa aberta pede aberta; conferir é da dupla adversária', () => {
+    const fam = [['Qo', 'Jo', 'Ko']];
+    expect(rotulos(distribuida({ ...PAULISTA, familia: 'aberta' }, fam), 0)).toEqual(['Truco!', 'Pedir família aberta']);
+    const t = reduce(distribuida(MINEIRO, fam), { tipo: 'familia', cadeira: 0 });
+    expect(rotulos(t, 1)).toEqual(['Conferir', 'Deixar passar']);
+    expect(rotulos(t, 0)).toEqual([]);
   });
 });

@@ -20,6 +20,12 @@ export interface SalaLike {
 /** Todas as mensagens servidor → cliente; os handlers são registrados antes de `sincronizar`. */
 export const TIPOS_MENSAGEM = ['estado', 'acao', 'sinal', 'fala', 'erro', 'chat', 'batida'] as const;
 
+/** Uma mensagem `acao` recebida, para as animações (o `id` só cresce). */
+export interface Movimento {
+  id: number;
+  msg: MsgAcao;
+}
+
 export type Status = 'fora' | 'conectando' | 'na-mesa' | 'reconectando';
 
 export interface EstadoLoja {
@@ -38,6 +44,8 @@ export interface EstadoLoja {
   salaId: string | null;
   /** Última batida na mesa (animação); `id` muda a cada uma, `em` = epoch ms local de chegada. */
   batida?: (MsgBatida & { id: number; em: number }) | null;
+  /** Últimas mensagens `acao` (até 20), na ordem; ausente = nenhuma. As animações do ritual leem daqui. */
+  movimentos?: Movimento[];
 }
 
 export interface OpcoesLoja {
@@ -56,7 +64,7 @@ export interface OpcoesLoja {
 /** `CloseCode.CONSENTED` do @colyseus/sdk 0.18: saída pedida (leave(true) ou o servidor). */
 export const SAIDA_CONSENTIDA = 4000;
 
-const INICIAL: EstadoLoja = { status: 'fora', msg: null, eventos: [], erro: null, chat: [], salaId: null };
+const INICIAL: EstadoLoja = { status: 'fora', msg: null, eventos: [], erro: null, chat: [], salaId: null, movimentos: [] };
 
 export function criarLoja(o: OpcoesLoja = {}) {
   const agora = o.agora ?? Date.now;
@@ -79,7 +87,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
   const largar = (esquecerToken = true) => {
     sala = null;
     if (esquecerToken) persistir(null);
-    mudar({ status: 'fora', msg: null, eventos: [], chat: [], salaId: null, batida: null });
+    mudar({ status: 'fora', msg: null, eventos: [], chat: [], salaId: null, batida: null, movimentos: [] });
   };
 
   function conectar(s: SalaLike): void {
@@ -92,8 +100,10 @@ export function criarLoja(o: OpcoesLoja = {}) {
       if (sala === s) mudar({ msg: m });
     });
     s.onMessage('acao', (a: MsgAcao) => {
+      if (sala !== s) return;
+      mudar({ movimentos: [...(estado.movimentos ?? []), { id: ++seq, msg: a }].slice(-20) });
       const texto = textoDaAcao(a, estado.msg?.visao ?? null);
-      if (sala === s && texto) evento({ tipo: 'acao', de: a.cadeira, texto });
+      if (texto) evento({ tipo: 'acao', de: a.cadeira, texto });
     });
     s.onMessage('fala', (f: MsgFala) => {
       if (sala === s) evento({ tipo: 'fala', de: f.de, texto: FALA_TEXTO[f.fala] ?? String(f.fala) });
@@ -141,7 +151,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
       if (!consentida) erro('Conexão com a mesa perdida');
     });
     persistir(s.reconnectionToken);
-    mudar({ status: 'na-mesa', msg: null, eventos: [], chat: [], salaId: s.roomId, batida: null });
+    mudar({ status: 'na-mesa', msg: null, eventos: [], chat: [], salaId: s.roomId, batida: null, movimentos: [] });
     s.send('sincronizar');
   }
 

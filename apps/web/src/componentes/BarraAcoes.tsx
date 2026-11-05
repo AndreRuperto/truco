@@ -9,7 +9,11 @@ const ESTILO: Partial<Record<BotaoAcao['chave'], string>> = {
   aumentar: 'grito',
   aceitar: 'aceitar',
   familia: 'papel',
+  'conferir-sim': 'grito',
   'mao10-sim': 'papel',
+  passarCorte: 'papel',
+  cortar: 'papel',
+  'dist-porCima': 'papel',
 };
 
 interface Props {

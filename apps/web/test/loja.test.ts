@@ -46,6 +46,16 @@ describe('loja', () => {
     expect(loja.getSnapshot().eventos).toEqual([{ id: expect.any(Number), em: 1_000, tipo: 'acao', de: 0, texto: 'TRUCO!' }]);
   });
 
+  test('toda mensagem acao vira um movimento (para as animações), com id crescente', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    sala.receber('acao', { cadeira: 3, tipo: 'embaralhar' });
+    sala.receber('acao', { cadeira: 3, tipo: 'distribuir', modo: 'porCima', ordem: [0, 1, 2, 3] });
+    const mov = loja.getSnapshot().movimentos!;
+    expect(mov.map((m) => m.msg.tipo)).toEqual(['embaralhar', 'distribuir']);
+    expect(mov[1].id).toBeGreaterThan(mov[0].id);
+  });
+
   test('falas e sinais entram no feed', () => {
     const { loja, sala, passar } = montar();
     loja.conectar(sala);

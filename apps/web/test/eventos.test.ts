@@ -25,6 +25,20 @@ describe('texto dos balões de ação', () => {
     expect(textoDaAcao({ cadeira: 1, tipo: 'mao10' }, null)).toBeNull();
   });
 
+  test('ritual e família viram balões curtos', () => {
+    expect(textoDaAcao({ cadeira: 3, tipo: 'embaralhar' }, null)).toBe('Embaralhando…');
+    expect(textoDaAcao({ cadeira: 3, tipo: 'passarCorte' }, null)).toBe('Corta aí!');
+    expect(textoDaAcao({ cadeira: 2, tipo: 'cortar', fracao: 0.4 }, null)).toBe('Cortei.');
+    expect(textoDaAcao({ cadeira: 2, tipo: 'abrir3' }, null)).toBe('Abri 3!');
+    expect(textoDaAcao({ cadeira: 2, tipo: 'dar3', para: 0 }, null)).toBe('Toma 3, parceiro!');
+    expect(textoDaAcao({ cadeira: 2, tipo: 'devolver' }, null)).toBe('Pode dar.');
+    expect(textoDaAcao({ cadeira: 3, tipo: 'distribuir', modo: 'subindo', ordem: [0, 1, 2, 3] }, null)).toBe('Subindo!');
+    expect(textoDaAcao({ cadeira: 0, tipo: 'familia', aberta: false }, null)).toBe('Família fechada!');
+    expect(textoDaAcao({ cadeira: 0, tipo: 'familia', aberta: true }, null)).toBe('Família aberta!');
+    expect(textoDaAcao({ cadeira: 1, tipo: 'conferir', conferir: true }, null)).toBe('Confere!');
+    expect(textoDaAcao({ cadeira: 1, tipo: 'conferir', conferir: false }, null)).toBeNull();
+  });
+
   test('falas', () => {
     expect(FALA_TEXTO.bora).toBe('Bora!');
     expect(FALA_TEXTO.truco).toBe('TRUCO!');

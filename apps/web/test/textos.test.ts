@@ -6,11 +6,10 @@ import {
   placarRelativo,
   resumoFimMao,
   resumoFimPartida,
-  textoFamilia,
   textoPedidoPendente,
   valorMao,
 } from '../src/logica/textos';
-import { CADEIRAS_PADRAO, distribuida, jogar, MINEIRO, PAULISTA } from './fixtures';
+import { distribuida, jogar, MINEIRO, PAULISTA } from './fixtures';
 
 const trucado = () => reduce(distribuida(PAULISTA), { tipo: 'truco', cadeira: 0 });
 
@@ -84,10 +83,8 @@ describe('fim de partida e família', () => {
     expect(resumoFimPartida({ ...fim, cadeira: 1 })).toEqual({ titulo: 'Vitória!', placar: 'Nós 12 × 7 Eles', venceu: true });
   });
 
-  test('aviso de família', () => {
-    const v = visaoDoJogador(distribuida(PAULISTA), 0);
-    const nome = (c: number) => CADEIRAS_PADRAO[c].nome!;
-    expect(textoFamilia(v, nome)).toBeNull();
-    expect(textoFamilia({ ...v, ultimaFamilia: { cadeira: 2, cartas: null } }, nome)).toBe('Bot Tião pediu família — cartas redistribuídas');
+  test('partida fechada por família conferida', () => {
+    const u: VisaoResultadoMao = { vencedor: 0, pontos: 2, motivo: 'familia', rodadas: [], rodadasJogadas: [], vira: null };
+    expect(resumoFimMao(u, 0).detalhe).toBe('+2 pontos — na família conferida');
   });
 });

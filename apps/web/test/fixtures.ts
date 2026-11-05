@@ -7,6 +7,7 @@ import {
   type Naipe,
   novaPartida,
   baralhoDaMesa,
+  distribuirSemRitual,
   novoBaralho,
   reduce,
   REGRAS_RANQUEADA,
@@ -39,7 +40,12 @@ export function baralhoCom(maos: string[][] = [], vira?: string, base: Carta[] =
 export function distribuida(regras: RegrasMesa, maos?: string[][], placar: [number, number] = [0, 0], vira?: string): EstadoPartida {
   const s = novaPartida(regras, 3);
   s.placar = placar;
-  return reduce(s, { tipo: 'distribuir', baralho: baralhoCom(maos, vira, baralhoDaMesa(regras)) });
+  return distribuirSemRitual(s, baralhoCom(maos, vira, baralhoDaMesa(regras)));
+}
+
+/** Começo do ritual com pe = 3 (a 3 embaralha e dá, a 2 corta); monte na ordem do baralho da mesa. */
+export function noRitual(regras: RegrasMesa = PAULISTA): EstadoPartida {
+  return reduce(novaPartida(regras, 3), { tipo: 'monte', baralho: baralhoDaMesa(regras) });
 }
 
 /** Joga em sequência [cadeira, índice] (cartas abertas). */

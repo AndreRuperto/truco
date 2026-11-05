@@ -49,13 +49,15 @@ export function resumoFimMao(u: VisaoResultadoMao, minha: Cadeira): ResumoMao {
   const motivo =
     u.motivo === 'rodadas'
       ? 'nas rodadas'
-      : u.motivo === 'correu'
-        ? nos
-          ? 'eles correram'
-          : 'nós corremos'
-        : nos
-          ? 'eles correram na mão de 10'
-          : 'corremos na mão de 10';
+      : u.motivo === 'familia'
+        ? 'na família conferida'
+        : u.motivo === 'correu'
+          ? nos
+            ? 'eles correram'
+            : 'nós corremos'
+          : nos
+            ? 'eles correram na mão de 10'
+            : 'corremos na mão de 10';
   return { titulo: nos ? 'Nós levamos!' : 'Eles levaram!', detalhe: `${pontos} — ${motivo}`, nos };
 }
 
@@ -63,11 +65,6 @@ export function resumoFimPartida(v: Visao): { titulo: string; placar: string; ve
   const { nos, eles } = placarRelativo(v);
   const venceu = v.vencedor === duplaDe(v.cadeira);
   return { titulo: venceu ? 'Vitória!' : 'Derrota', placar: `Nós ${nos} × ${eles} Eles`, venceu };
-}
-
-export function textoFamilia(v: Visao, nomeDe: (c: Cadeira) => string): string | null {
-  const f = v.ultimaFamilia;
-  return f ? `${nomeDe(f.cadeira)} pediu família — cartas redistribuídas` : null;
 }
 
 const TEXTO_MAO11: Record<RegrasMesa['maoDe11'], string> = {

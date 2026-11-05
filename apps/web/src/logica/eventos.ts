@@ -40,7 +40,23 @@ export function textoDaAcao(a: MsgAcao, anterior: Visao | null): string | null {
     case 'correr':
       return 'Corro!';
     case 'familia':
-      return 'Família!';
+      return a.aberta === undefined ? 'Família!' : a.aberta ? 'Família aberta!' : 'Família fechada!';
+    case 'embaralhar':
+      return 'Embaralhando…';
+    case 'passarCorte':
+      return 'Corta aí!';
+    case 'cortar':
+      return 'Cortei.';
+    case 'abrir3':
+      return 'Abri 3!';
+    case 'dar3':
+      return 'Toma 3, parceiro!';
+    case 'devolver':
+      return 'Pode dar.';
+    case 'distribuir':
+      return a.modo === 'porBaixo' ? 'Por baixo!' : a.modo === 'subindo' ? 'Subindo!' : 'Por cima!';
+    case 'conferir':
+      return a.conferir ? 'Confere!' : null;
     case 'mao10':
       return a.jogar === undefined ? null : a.jogar ? 'Vamos!' : 'Corro!';
     default:
