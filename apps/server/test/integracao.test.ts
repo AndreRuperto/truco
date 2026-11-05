@@ -360,6 +360,34 @@ describe('fila ranqueada', () => {
     await esperarAsync(async () => (await banco.db.select().from(bloqueiosFila)).length === 2);
   });
 
+  test('desligamento do servidor (redeploy) no meio da ranqueada: ninguém perde Elo nem é bloqueado', async () => {
+    const ana = await logado('ana@x.com');
+    const bia = await logado('bia@x.com');
+    const fa = coletor(await ana.cliente.joinOrCreate('fila', FILA_1X1));
+    const fb = coletor(await bia.cliente.joinOrCreate('fila', FILA_1X1));
+    await esperar(() => !!fa.pareado?.length && !!fb.pareado?.length);
+    const mesaA = await ana.cliente.consumeSeatReservation(fa.pareado[0].reserva);
+    const ma = coletor(mesaA);
+    const mesaB = await bia.cliente.consumeSeatReservation(fb.pareado[0].reserva);
+    coletor(mesaB);
+    await esperar(() => !!ma.estado?.some((m) => m.visao));
+    await esperarAsync(async () => (await banco.db.select().from(partidas)).length === 1);
+
+    // O que o `gracefullyShutdown` do Colyseus faz com cada sala (SIGTERM).
+    const roomId = mesaA.roomId;
+    matchMaker.getLocalRoomById(roomId)!.onBeforeShutdown();
+    await esperar(() => !matchMaker.getLocalRoomById(roomId));
+    await MesaRoom.esperarGravacoes();
+
+    const [p] = await banco.db.select().from(partidas);
+    expect(p.terminadaEm).not.toBeNull();
+    expect(p.abandonada).toBe(true);
+    expect(await ratingDe(banco.db, ana.u.id, 'paulista')).toEqual({ elo: 1000, pontos: 0, partidas: 0 });
+    expect(await ratingDe(banco.db, bia.u.id, 'paulista')).toEqual({ elo: 1000, pontos: 0, partidas: 0 });
+    expect(await banco.db.select().from(bloqueiosFila)).toEqual([]);
+    expect((await banco.db.select().from(participacoes)).some((x) => x.abandonou)).toBe(false);
+  });
+
   test('2x2: quem usa o mesmo código fica parceiro', async () => {
     const jogadores = [];
     for (const email of ['ana1@x.com', 'ana2@x.com', 'bia1@x.com', 'bia2@x.com']) jogadores.push(await logado(email));

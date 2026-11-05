@@ -19,6 +19,8 @@ const pastaWeb = existsSync(join(PASTA_WEB, 'index.html')) ? PASTA_WEB : null;
 const servidor = criarServidor(servicos, { pastaWeb });
 // Sessões e links vencidos: no boot e a cada hora (timer com unref).
 const pararLimpeza = agendarLimpeza(() => limparExpirados(servicos.banco, servicos.agora()));
+// Redeploy/SIGTERM: antes de o Colyseus derrubar as conexões, nenhuma queda vira abandono.
+servidor.onBeforeShutdown(() => MesaRoom.desligar());
 servidor.onShutdown(async () => {
   pararLimpeza();
   // As salas já foram descartadas (cada onDispose espera o próprio registro); garante que

@@ -56,6 +56,15 @@ export class MesaRoom extends Room {
     }
   }
 
+  /**
+   * Desligamento do servidor (SIGTERM/redeploy), antes de o Colyseus derrubar as conexões:
+   * nenhuma mesa pune as quedas que vêm a seguir; partidas em andamento fecham como
+   * abandonadas, sem Elo nem bloqueio.
+   */
+  static desligar(): void {
+    for (const r of MesaRoom.registrosVivos) r.desligar();
+  }
+
   private mesa!: Mesa;
   private registro!: RegistroMesa;
   private reservados: JogadorReservado[] | null = null;
@@ -195,6 +204,12 @@ export class MesaRoom extends Room {
     // antes de fechar o banco).
     const r = this.registro;
     return r.ocioso().finally(() => MesaRoom.registrosVivos.delete(r));
+  }
+
+  /** O `gracefullyShutdown` do Colyseus chama isto em cada sala antes de desconectar todos. */
+  onBeforeShutdown() {
+    this.registro?.desligar();
+    super.onBeforeShutdown();
   }
 
   /** Sem isto, uma exceção num timer do `clock` derruba o processo inteiro. */

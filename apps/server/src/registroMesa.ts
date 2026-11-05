@@ -29,6 +29,8 @@ export class RegistroMesa {
   private readonly humanos = new Map<Cadeira, JogadorSala>();
   private readonly contadores: Contadores[] = CADEIRAS.map(contadoresZerados);
   private cadeia: Promise<void> = Promise.resolve();
+  /** Servidor desligando (redeploy): ninguém é punido pelas quedas que vêm a seguir. */
+  private desligando = false;
 
   constructor(
     private readonly s: Servicos | null,
@@ -60,7 +62,7 @@ export class RegistroMesa {
    */
   iniciou(): void {
     const s = this.s;
-    if (!s) return;
+    if (!s || this.desligando) return;
     this.encadear(async () => {
       if (![...this.humanos.values()].some((j) => j.usuarioId !== null)) return;
       const assentos: AssentoRegistro[] = CADEIRAS.map((c) => {
@@ -74,7 +76,7 @@ export class RegistroMesa {
   abandonou(c: Cadeira): void {
     const s = this.s;
     const usuarioId = this.humanos.get(c)?.usuarioId ?? null;
-    if (!s || usuarioId === null) return;
+    if (!s || usuarioId === null || this.desligando) return;
     this.encadear(async () => {
       if (this.partidaId === null) return;
       await registrarAbandono(s.banco, this.partidaId, usuarioId, { k: s.kElo, agora: s.agora(), bloqueioMs: s.bloqueioAbandonoMs });
@@ -103,6 +105,17 @@ export class RegistroMesa {
       if (this.partidaId === null) return;
       await encerrarAbandonada(s.banco, this.partidaId, s.agora());
     });
+  }
+
+  /**
+   * O servidor vai desligar e derrubar todo mundo: a partida em andamento fecha como
+   * abandonada (sem Elo para ninguém) e as saídas seguintes não viram abandono (sem Elo
+   * nem bloqueio). Abandonos já registrados antes continuam valendo.
+   */
+  desligar(): void {
+    if (this.desligando) return;
+    this.desligando = true;
+    this.encerrarAbandonada();
   }
 
   /** Espera as gravações pendentes (testes e desligamento). */

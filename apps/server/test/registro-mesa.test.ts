@@ -120,6 +120,40 @@ describe('RegistroMesa', () => {
     expect(p).toMatchObject({ abandonada: false, vencedora: 0, placar0: 12 });
   });
 
+  test('desligar (redeploy): fecha a partida como abandonada; saídas depois não custam Elo nem bloqueiam', async () => {
+    const s = servicosDeTeste(b.db, { agora: () => T0 });
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia' });
+    const r = new RegistroMesa(s, { variante: 'paulista', modo: 'ranqueada', formato: '1x1' });
+    r.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+    r.sentou({ cadeira: 1, usuarioId: bia.id, nome: 'bia' });
+    r.iniciou();
+    r.desligar();
+    // O Colyseus derruba todo mundo em seguida: a sala chama `abandonou` para cada um.
+    r.abandonou(0);
+    r.abandonou(1);
+    r.encerrarAbandonada();
+    await r.ocioso();
+    const [p] = await b.db.select().from(partidas);
+    expect(p).toMatchObject({ terminadaEm: T0, abandonada: true, vencedora: null });
+    expect(await ratingDe(b.db, ana.id, 'paulista')).toEqual({ elo: 1000, pontos: 0, partidas: 0 });
+    expect(await ratingDe(b.db, bia.id, 'paulista')).toEqual({ elo: 1000, pontos: 0, partidas: 0 });
+    expect(await bloqueioAte(b.db, ana.id, T0)).toBeNull();
+    expect(await bloqueioAte(b.db, bia.id, T0)).toBeNull();
+    const ps = await b.db.select().from(participacoes);
+    expect(ps.some((x) => x.abandonou)).toBe(false);
+  });
+
+  test('desligar antes do início: a partida não chega a ser gravada', async () => {
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const r = new RegistroMesa(servicosDeTeste(b.db, { agora: () => T0 }), { variante: 'paulista', modo: 'classica', formato: null });
+    r.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+    r.desligar();
+    r.iniciou();
+    await r.ocioso();
+    expect(await b.db.select().from(partidas)).toEqual([]);
+  });
+
   test('temUsuario: conta logada sentada (outra aba é recusada pela sala)', () => {
     const r = new RegistroMesa(null, { variante: 'paulista', modo: 'classica', formato: null });
     r.sentou({ cadeira: 0, usuarioId: 7, nome: 'ana' });
