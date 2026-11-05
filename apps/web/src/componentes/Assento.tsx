@@ -5,6 +5,9 @@ import { CartaVisual } from './CartaVisual';
 import { Cronometro } from './Cronometro';
 import { cx } from './cx';
 
+/** Pedidos de aposta: o balão entra como grito de giz amarelo. */
+const GRITOS = new Set(['TRUCO!', 'SEIS!', 'NOVE!', 'DOZE!']);
+
 interface Props {
   posicao: Posicao;
   info: InfoCadeira | undefined;
@@ -22,12 +25,12 @@ interface Props {
 
 export function Assento({ posicao, info, qtdCartas, daVez, balao, maoVisivel, variante, vira, prazo = null, agora = 0 }: Props) {
   return (
-    <div className={cx('assento', `pos-${posicao}`, daVez && 'da-vez')} data-testid={`assento-${posicao}`}>
+    <div className={cx('assento', `pos-${posicao}`, daVez && 'da-vez', info && !info.conectado && 'caiu')} data-testid={`assento-${posicao}`}>
       <div className="assento-nome">
-        {info?.nome ?? '—'}
+        <span>{info?.nome ?? '—'}</span>
         {info?.tipo === 'bot' && <span className="etiqueta">bot</span>}
-        {info && !info.conectado && <span className="etiqueta off">desconectado</span>}
-        {daVez && <span className="etiqueta">vez</span>}
+        {info && !info.conectado && <span className="etiqueta off">caiu</span>}
+        {daVez && <span className="etiqueta vez">{posicao === 'baixo' ? 'sua vez' : 'vez'}</span>}
       </div>
       {prazo && <Cronometro prazo={prazo} agora={agora} rotulo={`Vez de ${info?.nome ?? 'jogador'}`} pequeno />}
       {maoVisivel ? (
@@ -44,7 +47,7 @@ export function Assento({ posicao, info, qtdCartas, daVez, balao, maoVisivel, va
         </div>
       ) : null}
       {balao && (
-        <div className="balao" role="status">
+        <div className={cx('balao', GRITOS.has(balao) && 'grito')} role="status">
           {balao}
         </div>
       )}

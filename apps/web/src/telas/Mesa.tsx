@@ -69,11 +69,12 @@ export function TelaMesa({ snap, acoes, aoChat }: Props) {
   const familia = entreMaos ? textoFamilia(v, nome) : null;
   const resumoMao = entreMaos && !familia && v.ultimaMao ? resumoFimMao(v.ultimaMao, minha) : null;
   const fim = v.fase === 'fimPartida' ? resumoFimPartida(v) : null;
+  const pedido = textoPedidoPendente(v);
 
   return (
     <main className="tela-mesa">
-      <Placar nos={nos} eles={eles} valor={m ? valorMao(v.regras, m.nivel) : null} />
-      <div className="feltro">
+      <Placar nos={nos} eles={eles} valor={m ? valorMao(v.regras, m.nivel) : null} pedido={pedido?.replace(/\.$/, '') ?? null} />
+      <div className="tampo">
         {(['cima', 'esquerda', 'direita'] as const).map((pos) => {
           const c = cadeiraNaPosicao(minha, pos);
           return (
@@ -105,24 +106,26 @@ export function TelaMesa({ snap, acoes, aoChat }: Props) {
         />
       </div>
       {prazoEhMeu(msg) && msg.prazo && <Cronometro prazo={msg.prazo} agora={agora} />}
-      <BarraAcoes botoes={ui.botoes} pedido={textoPedidoPendente(v)} aoEscolher={acoes.enviarAcao} />
-      {m && <Mao cartas={m.minhaMao} jogaveis={ui.jogaveis} cobriveis={ui.cobriveis} variante={variante} vira={vira} aoJogar={jogar} />}
-      <nav className="barra-social" aria-label="Sinais e falas">
-        <button type="button" aria-pressed={painel === 'sinais'} onClick={() => alternar('sinais')}>
-          Sinais
-        </button>
-        <button type="button" aria-pressed={painel === 'falas'} onClick={() => alternar('falas')}>
-          Falas
-        </button>
-        {modo === 'privada' && aoChat && (
-          <button type="button" aria-pressed={painel === 'chat'} onClick={() => alternar('chat')}>
-            Chat
+      {m ? <Mao cartas={m.minhaMao} jogaveis={ui.jogaveis} cobriveis={ui.cobriveis} variante={variante} vira={vira} aoJogar={jogar} /> : <div />}
+      <div className="rodape-mesa">
+        <BarraAcoes botoes={ui.botoes} pedido={pedido} aoEscolher={acoes.enviarAcao} />
+        <nav className="barra-social" aria-label="Sinais e falas">
+          <button type="button" aria-pressed={painel === 'sinais'} onClick={() => alternar('sinais')}>
+            Sinais
           </button>
-        )}
-        <button type="button" onClick={() => setConfirmarSaida(true)}>
-          Sair
-        </button>
-      </nav>
+          <button type="button" aria-pressed={painel === 'falas'} onClick={() => alternar('falas')}>
+            Falas
+          </button>
+          {modo === 'privada' && aoChat && (
+            <button type="button" aria-pressed={painel === 'chat'} onClick={() => alternar('chat')}>
+              Chat
+            </button>
+          )}
+          <button type="button" onClick={() => setConfirmarSaida(true)}>
+            Sair
+          </button>
+        </nav>
+      </div>
       {painel === 'sinais' && (
         <PainelSinais
           chanceInterceptar={msg.chanceInterceptarSinal}

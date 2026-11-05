@@ -15,6 +15,9 @@ const NOME_VALOR: Record<Valor, string> = {
   '3': '3',
 };
 
+/** "Dama", "Ás", "7"... */
+export const nomeValor = (v: Valor): string => NOME_VALOR[v];
+
 /** Nome da manilha pelo naipe — igual nas duas variantes (♣ > ♥ > ♠ > ♦). */
 const NOME_MANILHA: Record<Naipe, string> = { paus: 'Zap', copas: 'Copas', espadas: 'Espadilha', ouros: 'Pica-fumo' };
 

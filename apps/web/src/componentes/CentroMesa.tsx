@@ -1,4 +1,5 @@
-import type { Cadeira, Variante, VisaoMao, VisaoResultadoMao } from '@truco/engine';
+import { type Cadeira, valorManilhaPaulista, type Variante, type VisaoMao, type VisaoResultadoMao } from '@truco/engine';
+import { nomeValor } from '../logica/cartas';
 import { posicaoRelativa } from '../logica/posicoes';
 import { marcadoresRodadas } from '../logica/textos';
 import { CartaVisual } from './CartaVisual';
@@ -31,7 +32,8 @@ export function CentroMesa({ mao, ultimaMao, minha, variante }: Props) {
         {vira && (
           <div className="vira">
             <CartaVisual carta={vira} variante={variante} vira={vira} tamanho="pequena" />
-            <small>vira</small>
+            <span className="vira-rotulo">vira</span>
+            {variante === 'paulista' && <span className="vira-manilha">manilha: {nomeValor(valorManilhaPaulista(vira))}</span>}
           </div>
         )}
         <div className="marcadores" aria-label="Rodadas">
@@ -39,6 +41,9 @@ export function CentroMesa({ mao, ultimaMao, minha, variante }: Props) {
             <span key={i} className={cx('marcador', m)} title={`${i + 1}ª rodada: ${TITULO[m]}`}>
               {SIGLA[m]}
             </span>
+          ))}
+          {Array.from({ length: Math.max(0, 3 - fonte.rodadas.length) }, (_, i) => (
+            <span key={`vaga-${i}`} className="marcador vaga" aria-hidden="true" />
           ))}
         </div>
       </div>
