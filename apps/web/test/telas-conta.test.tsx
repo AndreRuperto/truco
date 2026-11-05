@@ -86,5 +86,7 @@ describe('TelaRanking', () => {
     const link = await screen.findByRole('link', { name: 'ana' });
     expect(link).toHaveAttribute('href', '#/perfil/7');
     expect(screen.getByRole('row', { name: /ana/ })).toHaveTextContent('Prata');
+    expect(screen.getByRole('table', { name: 'Ranking Mineiro' })).toBeInTheDocument();
+    for (const th of screen.getAllByRole('columnheader')) expect(th).toHaveAttribute('scope', 'col');
   });
 });

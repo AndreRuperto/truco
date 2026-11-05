@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /** O pedaço do Google Identity Services (`google.accounts.id`) que usamos. */
 export interface GoogleId {
@@ -40,19 +40,29 @@ export function BotaoGoogle({ clientId, aoCredencial, carregar = carregarGsi }: 
   const ref = useRef<HTMLDivElement>(null);
   const cb = useRef(aoCredencial);
   cb.current = aoCredencial;
+  const [falhou, setFalhou] = useState(false);
   useEffect(() => {
     let vivo = true;
+    setFalhou(false);
     carregar().then(
       (g) => {
         if (!vivo || !ref.current) return;
         g.initialize({ client_id: clientId, callback: (r) => cb.current(r.credential) });
         g.renderButton(ref.current, { theme: 'outline', size: 'large', text: 'signin_with', locale: 'pt-BR' });
       },
-      (e: unknown) => console.warn('[google]', e),
+      (e: unknown) => {
+        console.warn('[google]', e);
+        if (vivo) setFalhou(true);
+      },
     );
     return () => {
       vivo = false;
     };
   }, [clientId, carregar]);
-  return <div ref={ref} className="botao-google" data-testid="botao-google" />;
+  return (
+    <>
+      <div ref={ref} className="botao-google" data-testid="botao-google" />
+      {falhou && <p className="nota">Login com Google indisponível agora.</p>}
+    </>
+  );
 }

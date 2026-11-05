@@ -29,6 +29,22 @@ describe('TelaEntrar', () => {
     expect(screen.queryByTestId('botao-google')).toBeNull();
   });
 
+  test('depois de enviado dá para corrigir o e-mail ou reenviar', async () => {
+    const user = userEvent.setup();
+    const api = apiFalsa();
+    render(<TelaEntrar token={null} config={SEM_GOOGLE} api={api} aoEntrar={vi.fn()} />);
+    await user.type(screen.getByLabelText('E-mail'), 'ana@x.co');
+    await user.click(screen.getByRole('button', { name: 'Enviar link' }));
+    await user.click(await screen.findByRole('button', { name: 'Reenviar link' }));
+    expect(api.pedirLink).toHaveBeenCalledTimes(2);
+    await user.click(await screen.findByRole('button', { name: 'Corrigir e-mail' }));
+    const campo = screen.getByLabelText('E-mail');
+    expect(campo).toHaveValue('ana@x.co');
+    await user.type(campo, 'm');
+    await user.click(screen.getByRole('button', { name: 'Enviar link' }));
+    expect(api.pedirLink).toHaveBeenLastCalledWith('ana@x.com');
+  });
+
   test('erro do servidor aparece como alerta', async () => {
     const user = userEvent.setup();
     const api = { ...apiFalsa(), pedirLink: vi.fn(async () => Promise.reject(new ErroApi(429, 'muitos pedidos; tente de novo em alguns minutos'))) };
@@ -93,6 +109,12 @@ describe('BotaoGoogle', () => {
     expect(g.initialize).toHaveBeenCalledWith(expect.objectContaining({ client_id: 'cid' }));
     capturado.cb!({ credential: 'jwt' });
     expect(aoCredencial).toHaveBeenCalledWith('jwt');
+  });
+
+  test('se o script do Google não carregar, avisa em texto curto', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(<BotaoGoogle clientId="cid" aoCredencial={vi.fn()} carregar={async () => Promise.reject(new Error('rede'))} />);
+    expect(await screen.findByText('Login com Google indisponível agora.')).toBeInTheDocument();
   });
 
   test('aparece na tela Entrar quando o servidor tem Google', () => {

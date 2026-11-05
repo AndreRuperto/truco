@@ -48,6 +48,19 @@ export function TelaEntrar({ token, config, api, aoEntrar, carregarGoogle }: Pro
     }
   };
 
+  const [reenviando, setReenviando] = useState(false);
+  const reenviar = async () => {
+    setErro(null);
+    setReenviando(true);
+    try {
+      await api.pedirLink(email.trim());
+    } catch (x) {
+      setErro(mensagemDe(x));
+    } finally {
+      setReenviando(false);
+    }
+  };
+
   const google = async (credencial: string) => {
     setErro(null);
     try {
@@ -63,9 +76,25 @@ export function TelaEntrar({ token, config, api, aoEntrar, carregarGoogle }: Pro
       {estado === 'confirmando' ? (
         <p role="status">Entrando…</p>
       ) : estado === 'enviado' ? (
-        <p role="status">
-          Enviamos um link para <strong>{email.trim()}</strong>. Abra-o neste navegador para entrar (vale por 15 minutos).
-        </p>
+        <>
+          <p role="status">
+            Enviamos um link para <strong>{email.trim()}</strong>. Abra-o neste navegador para entrar (vale por 15 minutos).
+          </p>
+          <div className="linha-botoes">
+            <button type="button" onClick={() => void reenviar()} disabled={reenviando}>
+              Reenviar link
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setErro(null);
+                setEstado('livre');
+              }}
+            >
+              Corrigir e-mail
+            </button>
+          </div>
+        </>
       ) : (
         <form className="formulario" onSubmit={enviar}>
           <div className="campo">

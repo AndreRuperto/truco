@@ -25,13 +25,14 @@ export function TelaRanking({ api, variante }: { api: Pick<Api, 'ranking'>; vari
       {dados && dados.linhas.length === 0 && <p>Ninguém jogou ranqueada nesta variante ainda.</p>}
       {dados && dados.linhas.length > 0 && (
         <table className="tabela-ranking">
+          <caption className="so-leitor">Ranking {NOME_VARIANTE[variante]}</caption>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Jogador</th>
-              <th>Patente</th>
-              <th>Pontos</th>
-              <th>Elo</th>
+              <th scope="col">#</th>
+              <th scope="col">Jogador</th>
+              <th scope="col">Patente</th>
+              <th scope="col">Pontos</th>
+              <th scope="col">Elo</th>
             </tr>
           </thead>
           <tbody>

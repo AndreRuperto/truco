@@ -821,3 +821,19 @@ button:disabled {
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.3);
 }
+
+/* Só para leitores de tela (ex.: legenda de tabela). */
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.linha-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
