@@ -1,0 +1,341 @@
+/*
+ * Bater na mesa: rachaduras na madeira, tremor, TUM!, quebra e a mesa de plástico de bar
+ * (amarelo cervejaria genérico, sem marca). Importado só pelo Tampo.tsx. Este arquivo carrega
+ * ANTES de estilos.css (o App vem antes no main.tsx): os seletores aqui são mais específicos.
+ * Contraste sobre o plástico (#f4c430): tinta 11.4; os chips de nome/vira/manilha continuam em
+ * madeira-funda com giz (8.3, independem do tampo); a vez troca o aro amarelo por tinta + papel.
+ */
+:root {
+  --plastico: #f4c430;
+  --plastico-borda: #c99712;
+  --plastico-relevo: #fff1b8;
+  --plastico-sombra: #8a6400;
+}
+
+/* As fendas ficam sob as cartas: o centro passa a ser posicionado (pinta por cima do SVG). */
+.tampo > .centro {
+  position: relative;
+}
+.tampo > .rachaduras {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.rachadura path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Fenda escura com 1px de lasca clara de cada lado. */
+.rachadura .borda {
+  stroke: color-mix(in srgb, var(--papel) 42%, transparent);
+  stroke-width: 4.5px;
+}
+.rachadura .fenda {
+  stroke: color-mix(in srgb, var(--sombra) 82%, var(--madeira-funda));
+  stroke-width: 2.5px;
+}
+.rachadura .borda.ramo {
+  stroke-width: 3px;
+}
+.rachadura .fenda.ramo {
+  stroke-width: 1.2px;
+}
+.rachadura.nova path {
+  stroke-dasharray: 1;
+  animation: rachar 340ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.rachadura.nova path.ramo {
+  animation-delay: 120ms;
+}
+@keyframes rachar {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+/* No plástico: amassado (sombra + brilho) e arranhões finos. */
+.marca .amassado {
+  fill: color-mix(in srgb, var(--plastico-sombra) 18%, transparent);
+  stroke: color-mix(in srgb, var(--plastico-relevo) 70%, transparent);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+.rachadura.marca .borda {
+  stroke: color-mix(in srgb, var(--plastico-relevo) 80%, transparent);
+  stroke-width: 2.6px;
+}
+.rachadura.marca .fenda {
+  stroke: color-mix(in srgb, var(--plastico-sombra) 70%, transparent);
+  stroke-width: 1.2px;
+}
+.rachadura.marca .fenda.ramo {
+  stroke-width: 0.8px;
+}
+
+/* Batida: o tampo treme (translate, não mexe no transform de ninguém) e as cartas pulam. */
+.tampo.tremendo {
+  animation: tremer 260ms linear 1;
+}
+.tampo.tremendo .carta {
+  animation: pulinho 300ms cubic-bezier(0.3, 0.7, 0.4, 1) 1;
+}
+.tampo.tremendo .camada-voo .carta {
+  animation: none;
+}
+@keyframes tremer {
+  20% {
+    translate: calc(var(--forca, 0.6) * -5px) calc(var(--forca, 0.6) * 2px);
+  }
+  40% {
+    translate: calc(var(--forca, 0.6) * 4px) calc(var(--forca, 0.6) * -2px);
+  }
+  60% {
+    translate: calc(var(--forca, 0.6) * -3px) calc(var(--forca, 0.6) * 1px);
+  }
+  80% {
+    translate: calc(var(--forca, 0.6) * 2px) 0;
+  }
+}
+@keyframes pulinho {
+  35% {
+    translate: 0 calc(var(--forca, 0.6) * -8px);
+  }
+  70% {
+    translate: 0 1px;
+  }
+}
+.tampo .tum {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: 50%;
+  padding: 0 var(--e3) 2px;
+  border: 2px solid var(--lousa-borda);
+  border-radius: var(--raio-botao);
+  background: var(--lousa);
+  color: var(--giz);
+  font-family: var(--fonte-giz);
+  font-size: var(--t3);
+  line-height: 1.1;
+  white-space: nowrap;
+  pointer-events: none;
+  translate: -50% -50%;
+  rotate: -6deg;
+  animation: tum 700ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.tampo .tum.pos-baixo {
+  top: 74%;
+}
+.tampo .tum.pos-cima {
+  top: 26%;
+}
+.tampo .tum.pos-esquerda {
+  left: 24%;
+}
+.tampo .tum.pos-direita {
+  left: 76%;
+}
+@keyframes tum {
+  0% {
+    scale: 0.4;
+    opacity: 0;
+  }
+  18% {
+    scale: 1.15;
+    opacity: 1;
+  }
+  32% {
+    scale: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    scale: 1;
+    opacity: 0;
+  }
+}
+
+/* Quebra (~900 ms): a fenda corre de ponta a ponta e as duas metades de madeira caem. */
+.tampo > .quebra {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  overflow: hidden;
+  border-radius: var(--raio-tampo);
+  pointer-events: none;
+}
+.quebra .pedaco {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0.4deg, color-mix(in srgb, var(--madeira-funda) 9%, transparent) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(-0.7deg, color-mix(in srgb, var(--madeira-veio) 13%, transparent) 0 2px, transparent 2px 13px),
+    var(--madeira);
+  box-shadow: inset 0 0 0 6px var(--madeira-funda);
+  animation: 900ms cubic-bezier(0.55, 0, 0.8, 0.4) both;
+}
+.quebra .pedaco.esq {
+  clip-path: polygon(0 0, 53% 0, 47% 22%, 55% 41%, 45% 63%, 52% 81%, 47% 100%, 0 100%);
+  transform-origin: 15% 100%;
+  animation-name: cair-esq;
+}
+.quebra .pedaco.dir {
+  clip-path: polygon(53% 0, 100% 0, 100% 100%, 47% 100%, 52% 81%, 45% 63%, 55% 41%, 47% 22%);
+  transform-origin: 85% 100%;
+  animation-name: cair-dir;
+}
+@keyframes cair-esq {
+  0%,
+  28% {
+    transform: none;
+    opacity: 1;
+  }
+  38% {
+    transform: translate(-6px, 2px) rotate(-1.5deg);
+  }
+  100% {
+    transform: translate(-18%, 70%) rotate(-14deg);
+    opacity: 0;
+  }
+}
+@keyframes cair-dir {
+  0%,
+  28% {
+    transform: none;
+    opacity: 1;
+  }
+  38% {
+    transform: translate(6px, 2px) rotate(1.5deg);
+  }
+  100% {
+    transform: translate(18%, 70%) rotate(14deg);
+    opacity: 0;
+  }
+}
+.quebra .fenda-quebra {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: sumir 900ms linear both;
+}
+.fenda-quebra polyline {
+  fill: none;
+  stroke-dasharray: 1;
+  stroke-linejoin: round;
+  animation: rachar 250ms ease-out both;
+}
+.fenda-quebra .borda {
+  stroke: color-mix(in srgb, var(--papel) 45%, transparent);
+  stroke-width: 6px;
+}
+.fenda-quebra .fenda {
+  stroke: var(--sombra);
+  stroke-width: 4px;
+}
+@keyframes sumir {
+  0%,
+  30% {
+    opacity: 1;
+  }
+  40%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Mesa de bar de plástico amarelo: anéis em relevo, borda grossa e arredondada. */
+.tampo.tampo-plastico {
+  --foco: var(--tinta);
+  border-radius: 48px;
+  background:
+    radial-gradient(ellipse 70% 55% at 32% 28%, color-mix(in srgb, var(--plastico-relevo) 45%, transparent), transparent 70%),
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 0 27%,
+      color-mix(in srgb, var(--plastico-sombra) 22%, transparent) 27.3% 27.9%,
+      color-mix(in srgb, var(--plastico-relevo) 60%, transparent) 28.2% 28.7%,
+      transparent 29%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 0 43%,
+      color-mix(in srgb, var(--plastico-sombra) 16%, transparent) 43.3% 43.8%,
+      color-mix(in srgb, var(--plastico-relevo) 50%, transparent) 44.1% 44.6%,
+      transparent 45%
+    ),
+    var(--plastico);
+  box-shadow:
+    inset 0 0 0 10px var(--plastico-borda),
+    inset 0 0 0 12px color-mix(in srgb, var(--plastico-relevo) 55%, transparent),
+    inset 0 -8px 22px color-mix(in srgb, var(--plastico-sombra) 30%, transparent),
+    var(--sombra-tampo);
+}
+.tampo.tampo-plastico > .quebra {
+  border-radius: 48px;
+}
+/* O aro da vez era amarelo (some no amarelo): vira tinta com respiro de papel. */
+.tampo.tampo-plastico .assento.da-vez .assento-nome {
+  box-shadow:
+    0 0 0 2px var(--tinta),
+    0 0 0 4px var(--papel);
+  animation: none;
+}
+.tampo.tampo-plastico .marcador.vaga {
+  border-color: color-mix(in srgb, var(--tinta) 60%, transparent);
+}
+.tampo.tampo-plastico .marcador {
+  border-color: var(--tinta);
+}
+/* Papel sobre amarelo: contorno de tinta para a carta não se perder. */
+.tampo.tampo-plastico .carta {
+  box-shadow:
+    inset 0 0 0 1px var(--papel-borda),
+    0 0 0 1px color-mix(in srgb, var(--tinta) 45%, transparent),
+    var(--sombra-carta);
+}
+
+/* Botão que bate: a carga enche por trás do texto e uma barra de força cresce embaixo. */
+.barra-acoes .acao.bate {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+.barra-acoes .acao.bate::before,
+.barra-acoes .acao.bate::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: calc(var(--carga, 0) * 100%);
+  pointer-events: none;
+}
+.barra-acoes .acao.bate::before {
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--tinta) 22%, transparent);
+}
+.barra-acoes .acao.bate::after {
+  bottom: 0;
+  height: 6px;
+  background: var(--tinta);
+}
+.barra-acoes .acao.bate.carregando {
+  scale: calc(1 + var(--carga, 0) * 0.07);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barra-acoes .acao.bate.carregando {
+    scale: none;
+  }
+}

@@ -20,7 +20,7 @@ function barraComSeis() {
   const v = visaoDoJogador(s, 1);
   const ordem: string[] = [];
   const aoEscolher = vi.fn(() => ordem.push('acao'));
-  const aoBater = vi.fn(() => ordem.push('batida'));
+  const aoBater = vi.fn((_forca: number) => ordem.push('batida'));
   render(
     <BarraAcoes
       botoes={agruparAcoes(acoesValidas(s, 1), v.mao).botoes}
