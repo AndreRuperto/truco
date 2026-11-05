@@ -23,21 +23,36 @@ export interface OpcoesBanco {
   url?: string;
   /** Pasta do PGlite em disco; sem ela, PGlite em memória. */
   pastaPglite?: string;
+  /** Só para testes: outra pasta de migrações. */
+  pastaMigracoes?: string;
 }
 
 export const PASTA_MIGRACOES = fileURLToPath(new URL('../../drizzle', import.meta.url));
 
-/** Abre o banco e aplica as migrações pendentes (idempotente). */
+/** Abre o banco e aplica as migrações pendentes (idempotente). Se a migração falhar, fecha e relança. */
 export async function abrirBanco(o: OpcoesBanco = {}): Promise<ConexaoBanco> {
+  const migrationsFolder = o.pastaMigracoes ?? PASTA_MIGRACOES;
   if (o.url) {
     const pool = new pg.Pool({ connectionString: o.url, max: 10 });
+    // Sem ouvinte, um erro num cliente ocioso (Postgres reiniciou, rede caiu) derruba o processo.
+    pool.on('error', (e) => console.error('[banco]', e));
     const db = drizzlePg({ client: pool, schema });
-    await migrarPg(db, { migrationsFolder: PASTA_MIGRACOES });
+    try {
+      await migrarPg(db, { migrationsFolder });
+    } catch (e) {
+      await pool.end().catch(() => {});
+      throw e;
+    }
     return { db, tipo: 'postgres', fechar: () => pool.end() };
   }
   if (o.pastaPglite) mkdirSync(o.pastaPglite, { recursive: true });
   const cliente = o.pastaPglite ? new PGlite(o.pastaPglite) : new PGlite();
   const db = drizzlePglite({ client: cliente, schema });
-  await migrarPglite(db, { migrationsFolder: PASTA_MIGRACOES });
+  try {
+    await migrarPglite(db, { migrationsFolder });
+  } catch (e) {
+    await cliente.close().catch(() => {});
+    throw e;
+  }
   return { db, tipo: 'pglite', fechar: () => cliente.close() };
 }
