@@ -7,10 +7,19 @@ import { PainelSinais } from '../src/componentes/PainelSinais';
 import { Toast } from '../src/componentes/Toast';
 
 describe('PainelSinais', () => {
+  test('o aviso só fala em interceptação quando a mesa permite', () => {
+    const { rerender } = render(<PainelSinais chanceInterceptar={0} aoEnviar={vi.fn()} ultimo={null} />);
+    const painel = screen.getByRole('region', { name: 'Sinais' });
+    expect(painel).toHaveTextContent('Só seu parceiro vê.');
+    expect(painel).not.toHaveTextContent(/intercept/i);
+    rerender(<PainelSinais chanceInterceptar={0.25} aoEnviar={vi.fn()} ultimo={null} />);
+    expect(painel).toHaveTextContent('Só seu parceiro vê — mas os adversários podem interceptar.');
+  });
+
   test('8 sinais; clicar envia', async () => {
     const user = userEvent.setup();
     const aoEnviar = vi.fn();
-    render(<PainelSinais aoEnviar={aoEnviar} ultimo={null} />);
+    render(<PainelSinais chanceInterceptar={0} aoEnviar={aoEnviar} ultimo={null} />);
     const painel = screen.getByRole('region', { name: 'Sinais' });
     expect(within(painel).getAllByRole('button')).toHaveLength(8);
     await user.click(screen.getByRole('button', { name: 'Piscar — Zap' }));
@@ -19,9 +28,9 @@ describe('PainelSinais', () => {
 
   test('mostra o sinal recebido do parceiro e o interceptado', () => {
     const em = Date.now();
-    const { rerender } = render(<PainelSinais aoEnviar={vi.fn()} ultimo={{ sinal: 'tres', interceptado: false, nome: 'Bot Tião', em }} />);
+    const { rerender } = render(<PainelSinais chanceInterceptar={0} aoEnviar={vi.fn()} ultimo={{ sinal: 'tres', interceptado: false, nome: 'Bot Tião', em }} />);
     expect(screen.getByRole('status')).toHaveTextContent('Bot Tião (parceiro): 😛 Língua — tenho 3');
-    rerender(<PainelSinais aoEnviar={vi.fn()} ultimo={{ sinal: 'zap', interceptado: true, nome: 'Bot Zé', em }} />);
+    rerender(<PainelSinais chanceInterceptar={0} aoEnviar={vi.fn()} ultimo={{ sinal: 'zap', interceptado: true, nome: 'Bot Zé', em }} />);
     expect(screen.getByRole('status')).toHaveTextContent('Interceptado de Bot Zé: 😉 Piscar — Zap');
   });
 
@@ -30,7 +39,7 @@ describe('PainelSinais', () => {
     try {
       vi.setSystemTime(100_000);
       const ultimo = { sinal: 'zap' as const, interceptado: false, nome: 'Bot Tião', em: 100_000 };
-      render(<PainelSinais aoEnviar={vi.fn()} ultimo={ultimo} />);
+      render(<PainelSinais chanceInterceptar={0} aoEnviar={vi.fn()} ultimo={ultimo} />);
       act(() => {
         vi.advanceTimersByTime(7_000);
       });
@@ -45,7 +54,7 @@ describe('PainelSinais', () => {
   });
 
   test('sinal antigo não aparece ao abrir o painel', () => {
-    render(<PainelSinais aoEnviar={vi.fn()} ultimo={{ sinal: 'zap', interceptado: false, nome: 'Bot Tião', em: Date.now() - 60_000 }} />);
+    render(<PainelSinais chanceInterceptar={0} aoEnviar={vi.fn()} ultimo={{ sinal: 'zap', interceptado: false, nome: 'Bot Tião', em: Date.now() - 60_000 }} />);
     expect(screen.queryByRole('status')).toBeNull();
   });
 });

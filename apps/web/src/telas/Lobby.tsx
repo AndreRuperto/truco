@@ -6,6 +6,7 @@ import {
   formPadrao,
   gravarApelido,
   lerApelido,
+  OPCOES_INTERCEPTACAO,
   type OpcoesEntrada,
   opcoesDeEntrada,
   trocarVariante,
@@ -89,6 +90,20 @@ export function Lobby({ aoJogar }: Props) {
           <select id="bots" value={f.nivelBot} onChange={(e) => mudar('nivelBot', e.target.value as NivelBot)}>
             <option value="facil">Fácil</option>
             <option value="dificil">Difícil</option>
+          </select>
+        </div>
+        <div className="campo">
+          <label htmlFor="interceptar">Adversários podem interceptar sinais</label>
+          <select
+            id="interceptar"
+            value={String(f.chanceInterceptarSinal)}
+            onChange={(e) => mudar('chanceInterceptarSinal', Number(e.target.value))}
+          >
+            {OPCOES_INTERCEPTACAO.map((o) => (
+              <option key={o.valor} value={String(o.valor)}>
+                {o.rotulo}
+              </option>
+            ))}
           </select>
         </div>
         <div className="botoes-lobby">

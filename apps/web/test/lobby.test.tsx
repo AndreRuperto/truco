@@ -24,6 +24,7 @@ describe('Lobby', () => {
       humanos: 2,
       nivelBot: 'dificil',
       regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada' },
+      chanceInterceptarSinal: 0,
       chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|int:0',
     });
     expect(localStorage.getItem(CHAVE_APELIDO)).toBe('Ana');
@@ -42,6 +43,20 @@ describe('Lobby', () => {
       variante: 'paulista',
       regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'qualquerDupla', familia: 'aberta' },
     });
+  });
+
+  test('interceptação de sinais: padrão "Nunca"; escolher manda a chance', async () => {
+    const user = userEvent.setup();
+    const aoJogar = vi.fn();
+    render(<Lobby aoJogar={aoJogar} />);
+    const campo = screen.getByLabelText('Adversários podem interceptar sinais');
+    expect(campo).toHaveDisplayValue('Nunca');
+    await user.selectOptions(campo, 'Às vezes');
+    await user.click(screen.getByRole('button', { name: 'Jogar' }));
+    expect(aoJogar.mock.calls[0][0]).toMatchObject({ chanceInterceptarSinal: 0.25, chaveRegras: expect.stringMatching(/\|int:0\.25$/) });
+    await user.selectOptions(campo, 'Fácil');
+    await user.click(screen.getByRole('button', { name: 'Jogar' }));
+    expect(aoJogar.mock.calls[1][0]).toMatchObject({ chanceInterceptarSinal: 0.5 });
   });
 
   test('preenche o apelido salvo; ranqueada fica para depois', () => {

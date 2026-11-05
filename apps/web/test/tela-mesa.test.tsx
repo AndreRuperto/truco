@@ -81,6 +81,15 @@ describe('TelaMesa', () => {
     expect(screen.getByRole('button', { name: 'Correr da mão' })).toBeInTheDocument();
   });
 
+  test('sinais: o aviso de interceptação segue a chance da mesa', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<TelaMesa snap={snap(msgEstado(distribuida(PAULISTA)))} acoes={acoesFalsas()} />);
+    await user.click(screen.getByRole('button', { name: 'Sinais' }));
+    expect(screen.getByRole('region', { name: 'Sinais' })).not.toHaveTextContent(/intercept/i);
+    rerender(<TelaMesa snap={snap(msgEstado(distribuida(PAULISTA), 0, { chanceInterceptarSinal: 0.5 }))} acoes={acoesFalsas()} />);
+    expect(screen.getByRole('region', { name: 'Sinais' })).toHaveTextContent(/podem interceptar/);
+  });
+
   test('sinais: abrir o painel e mandar', async () => {
     const user = userEvent.setup();
     const acoes = acoesFalsas();

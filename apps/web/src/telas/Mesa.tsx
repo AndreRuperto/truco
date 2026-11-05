@@ -113,6 +113,7 @@ export function TelaMesa({ snap, acoes }: Props) {
       </nav>
       {painel === 'sinais' && (
         <PainelSinais
+          chanceInterceptar={msg.chanceInterceptarSinal}
           ultimo={sinal}
           aoEnviar={(s) => {
             acoes.enviarSinal(s);

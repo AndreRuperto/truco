@@ -10,7 +10,16 @@ export interface FormLobby {
   familia: RegrasMesa['familia'];
   humanos: number;
   nivelBot: NivelBot;
+  /** Chance (0–1) de cada adversário ver um sinal. */
+  chanceInterceptarSinal: number;
 }
+
+/** Opções do campo "Adversários podem interceptar sinais". */
+export const OPCOES_INTERCEPTACAO = [
+  { valor: 0, rotulo: 'Nunca' },
+  { valor: 0.25, rotulo: 'Às vezes' },
+  { valor: 0.5, rotulo: 'Fácil' },
+] as const;
 
 /** O que vai em `joinOrCreate('mesa', ...)`: opções de criação (lidas por `opcoesDaSala`) + `nome` do join. */
 export interface OpcoesEntrada {
@@ -19,6 +28,7 @@ export interface OpcoesEntrada {
   humanos: number;
   nivelBot: NivelBot;
   regras: Omit<RegrasMesa, 'variante'>;
+  chanceInterceptarSinal: number;
   /**
    * `chaveRegras(regras, chance)`: o servidor só junta numa sala quem manda a mesma chave
    * (quem omite aceita qualquer sala), então o cliente oficial sempre manda.
@@ -40,22 +50,30 @@ export function formPadrao(variante: Variante = 'paulista', nome = ''): FormLobb
     familia: r.familia,
     humanos: 1,
     nivelBot: 'facil',
+    chanceInterceptarSinal: 0,
   };
 }
 
 export function trocarVariante(f: FormLobby, variante: Variante): FormLobby {
-  return { ...formPadrao(variante, f.nome), humanos: f.humanos, nivelBot: f.nivelBot };
+  return {
+    ...formPadrao(variante, f.nome),
+    humanos: f.humanos,
+    nivelBot: f.nivelBot,
+    chanceInterceptarSinal: f.chanceInterceptarSinal,
+  };
 }
 
 export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
   const regras = { pontuacao: f.pontuacao, maoDe10: f.maoDe10, maoDe11: f.maoDe11, familia: f.familia };
+  const chance = Math.min(1, Math.max(0, f.chanceInterceptarSinal));
   return {
     nome: f.nome.trim() || 'Jogador',
     variante: f.variante,
     humanos: Math.min(4, Math.max(1, Math.round(f.humanos))),
     nivelBot: f.nivelBot,
     regras,
-    chaveRegras: chaveRegras({ variante: f.variante, ...regras }, 0),
+    chanceInterceptarSinal: chance,
+    chaveRegras: chaveRegras({ variante: f.variante, ...regras }, chance),
   };
 }
 
