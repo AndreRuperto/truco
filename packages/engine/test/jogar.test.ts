@@ -26,7 +26,7 @@ describe('jogar', () => {
   test('paulista vale 1 no preset 1-3-6-9-12', () => {
     let s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'); // manilha = 6
     s = jogarSeq(s, [[0, 2], [1, 0], [2, 2], [3, 0]]); // 6o, 3e, Ko, 2e → dupla 0 (6o manilha)
-    s = jogarSeq(s, [[0, 1], [1, 1], [2, 1], [3, 1]]); // 5o, 6e(manilha 12), Jo, 6c(manilha 14) → dupla 1
+    s = jogarSeq(s, [[0, 1], [1, 1], [2, 1], [3, 1]]); // 5o, 6e(manilha 13), Jo, 6c(manilha 14) → dupla 1
     s = jogarSeq(s, [[3, 0], [0, 0], [1, 0], [2, 0]]); // 5c, 4p, 5e, Qo(5) → dupla 0
     expect(s.placar).toEqual([1, 0]);
   });
