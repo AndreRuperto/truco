@@ -137,6 +137,19 @@ describe('Fila', () => {
     expect(f.sair(c.id)).toBe(false);
   });
 
+  test('3º jogador com o mesmo código de dupla é recusado (a mesma conta em outra aba não conta)', () => {
+    const f = new Fila();
+    const a = e(1000, { formato: '2x2', codigoDupla: 'ZE12' });
+    f.entrar(a);
+    f.entrar(e(1000, { formato: '2x2', codigoDupla: 'ZE12' }));
+    expect(() => f.entrar(e(1000, { formato: '2x2', codigoDupla: 'ZE12' }))).toThrow('código de dupla já tem dois jogadores');
+    expect(f.tamanho).toBe(2);
+    // outra aba da mesma conta substitui, não é "terceiro"
+    expect(f.entrar({ ...a, id: 'outra-aba' })).toEqual(a);
+    // o mesmo código noutra variante é outra dupla
+    expect(() => f.entrar(e(1000, { formato: '2x2', variante: 'mineiro', codigoDupla: 'ZE12' }))).not.toThrow();
+  });
+
   test('status: aguardando parceiro com o mesmo código', () => {
     const f = new Fila();
     const a = e(1000, { formato: '2x2', codigoDupla: 'ZE12' });

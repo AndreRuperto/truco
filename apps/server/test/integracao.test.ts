@@ -388,6 +388,13 @@ describe('fila ranqueada', () => {
     expect((await banco.db.select().from(participacoes)).some((x) => x.abandonou)).toBe(false);
   });
 
+  test('2x2: terceiro com o mesmo código de dupla é recusado com erro claro', async () => {
+    const opcoes = { variante: 'mineiro', formato: '2x2', codigoDupla: 'trio' };
+    for (const email of ['t1@x.com', 't2@x.com']) coletor(await (await logado(email)).cliente.joinOrCreate('fila', opcoes));
+    const t3 = await logado('t3@x.com');
+    await expect(t3.cliente.joinOrCreate('fila', opcoes)).rejects.toThrow(/código de dupla já tem dois jogadores/);
+  });
+
   test('2x2: quem usa o mesmo código fica parceiro', async () => {
     const jogadores = [];
     for (const email of ['ana1@x.com', 'ana2@x.com', 'bia1@x.com', 'bia2@x.com']) jogadores.push(await logado(email));

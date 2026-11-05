@@ -133,8 +133,18 @@ export function cadeirasDoPareamento(p: Pareamento): { entrada: EntradaFila; cad
 export class Fila {
   private readonly entradas = new Map<string, EntradaFila>();
 
-  /** Entra. Se o mesmo usuário já estava (outra aba), tira e devolve a entrada antiga. */
+  /**
+   * Entra. Se o mesmo usuário já estava (outra aba), tira e devolve a entrada antiga.
+   * Lança se o código de dupla (mesma variante e formato) já tem dois outros jogadores.
+   */
   entrar(e: EntradaFila): EntradaFila | null {
+    if (e.formato === '2x2' && e.codigoDupla) {
+      let mesmos = 0;
+      for (const x of this.entradas.values()) {
+        if (x.usuarioId !== e.usuarioId && x.variante === e.variante && x.formato === e.formato && x.codigoDupla === e.codigoDupla) mesmos++;
+      }
+      if (mesmos >= 2) throw new Error('código de dupla já tem dois jogadores; combine outro código');
+    }
     let antiga: EntradaFila | null = null;
     for (const x of this.entradas.values()) if (x.usuarioId === e.usuarioId) antiga = x;
     if (antiga) this.entradas.delete(antiga.id);
