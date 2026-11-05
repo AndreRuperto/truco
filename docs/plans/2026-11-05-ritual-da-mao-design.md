@@ -120,7 +120,7 @@ Quem recebeu "dar 3" fica com aquelas cartas e é pulado. A mão de 10 e a de fe
 
 `atalhos.ts` (exportado): `monteRodaARoda(baralho)` converte um baralho na ordem antiga (roda a roda a partir de `pe + 1`, vira na posição 12) para o monte "por cima" equivalente; `ritualMinimo(s)` (passa, devolve, por cima) e `distribuirSemRitual(s, baralho)` (= `monte` + ritual mínimo). Assim os helpers `distribuida(...)` de engine, servidor e web continuam entregando **as mesmas mãos** de antes e quase nenhum teste muda.
 
-### 2.8 Bots (`bots/etapas.ts`)
+### 2.8 Bots (`bots/ritual.ts`)
 
 | Etapa | Fácil | Difícil |
 |---|---|---|
@@ -149,7 +149,7 @@ O difícil decide etapas e família por política e tira `familia` das candidata
 ## 4. Web
 
 - Loja: `movimentos` (últimas 20 `MsgAcao` com id) para as animações; `textoDaAcao` ganha balões ("Corta aí", "Cortei", "Abri 3!", "Toma 3!", "Pode dar", "Por cima"…, "Família fechada!", "Confere!").
-- Botões (`agruparAcoes(acoes, mao, proximaFamilia)`): Embaralhar / Passar pra cortar; Cortar / Embaralhar / Abrir 3 / Dar 3 / Devolver; Por cima / Por baixo / Subindo alternado; Pedir família fechada / Pedir família aberta; Conferir / Deixar passar.
+- Botões (`agruparAcoes(acoes, visao)`): Embaralhar / Passar pra cortar; Cortar / Embaralhar / Abrir 3 / Dar 3 / Devolver; Por cima / Por baixo / Subindo alternado; Pedir família fechada / Pedir família aberta; Conferir / Deixar passar.
 - `logica/ritual.ts`: `donoDoMonte`, `textoEtapa` ("Sua vez de cortar — 2 movimentos"), `passosDistribuicao`, `textoFamilia` ("Bia conferiu: era blefe — +2 pra Nós").
 - Componentes: `Monte` (pilha com contagem, encostada no assento de quem está com ele), `FamiliasNaMesa` (abertas no corte; cada família na frente de quem pediu, versos ou faces, com o texto). `CentroMesa` passa a ter sempre `data-testid="centro"` e recebe filhos.
 - Resumo de fim de mão: aparece enquanto `fase === 'embaralhando' && embaralhadas === 0`.
@@ -159,7 +159,7 @@ O difícil decide etapas e família por política e tira `familia` das candidata
 
 - Engine: unidades de riffle (inclusive distribuição exata para n = 3), corte, distribuição nos 3 modos, recolhimento, abrir/dar 3, família fechada/aberta/conferir/limites/fim de partida, visão sem vazamento, bots; propriedade: partidas inteiras com ritual aleatório, nenhuma carta duplicada ou perdida em nenhum passo.
 - Servidor: `mesa-ritual.test.ts` (sorte do servidor, tempos esgotados, mensagens, família conferida, prazo de conferir); um teste novo em `integracao.test.ts` (porta 2568).
-- Web: lógica, componentes, tela; E2E adaptados (clicam a ação padrão de cada etapa) + `ritual.spec.ts` (mineiro, família fechada pedida duas vezes, bot confere, resultado na mesa).
+- Web: lógica, componentes, tela; E2E adaptados (clicam a ação padrão de cada etapa) + `ritual-familia.spec.ts` (mineiro, família fechada pedida duas vezes, bot confere, resultado na mesa).
 
 ## 6. Fora de escopo
 
