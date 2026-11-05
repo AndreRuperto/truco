@@ -38,6 +38,8 @@ export function amostrarMundo(v: Visao, rand: () => number, dica: DicaAmostra = 
   marcar(m.vira);
   m.mesa.forEach((j) => marcar(j.carta));
   m.rodadasJogadas.flat().forEach((j) => marcar(j.carta));
+  m.abertasNoCorte.forEach(marcar);
+  m.familias.forEach((f) => f.cartas?.forEach(marcar));
 
   const monte = embaralhar(
     baralhoDaMesa(v.regras).filter((c) => !conhecidas.has(idCarta(c))),
@@ -67,23 +69,28 @@ export function amostrarMundo(v: Visao, rand: () => number, dica: DicaAmostra = 
     return Array.from({ length: m.qtdCartas[c] }, tirar);
   });
   const revelar = (j: JogadaVisivel): Jogada => ({ ...j, carta: j.carta ?? tirar() });
-
-  const { minhaMao: _a, maoParceiro: _b, qtdCartas: _c, mesa, rodadasJogadas, ...resto } = m;
+  const { minhaMao: _a, maoParceiro: _b, qtdCartas: _c, mesa, rodadasJogadas, familias, ...resto } = m;
+  const mesaReal = mesa.map(revelar);
+  const rodadasReais = rodadasJogadas.map((r) => r.map(revelar));
+  const familiasReais = familias.map((f) => ({ ...f, cartas: f.cartas ? f.cartas.map((x) => ({ ...x })) : [tirar(), tirar(), tirar()] }));
+  // O que sobrou é o monte (a ordem não importa para a simulação).
+  if (monte.length !== v.qtdMonte) throw new Error('amostrarMundo: o monte não bate com a visão');
   return {
     regras: { ...v.regras },
     placar: [v.placar[0], v.placar[1]],
     pe: v.pe,
     fase: v.fase,
-    monte: [],
-    ritual: v.ritual,
+    monte,
+    ritual: null,
     ultimaMao: null,
     ultimaFamilia: null,
     vencedor: v.vencedor,
     mao: {
       ...structuredClone(resto),
       maos,
-      mesa: mesa.map(revelar),
-      rodadasJogadas: rodadasJogadas.map((r) => r.map(revelar)),
+      mesa: mesaReal,
+      rodadasJogadas: rodadasReais,
+      familias: familiasReais,
     },
   };
 }
