@@ -1,4 +1,7 @@
 import { type AcaoJogador, type Cadeira, REGRAS_RANQUEADA, type RegrasMesa, type Variante, type Visao } from '@truco/engine';
+import type { MesaFisica } from './mesaFisica';
+
+export type { MesaFisica, MsgBatida, Rachadura, TipoMesa } from './mesaFisica';
 
 export const SINAIS = ['zap', 'copas', 'espadilha', 'picafumo', 'coringa', 'tres', 'dois', 'as', 'nada'] as const;
 export type Sinal = (typeof SINAIS)[number];
@@ -78,6 +81,8 @@ export interface MsgEstado {
   /** Quem precisa agir e até quando (epoch ms). */
   prazo: { cadeiras: Cadeira[]; ate: number } | null;
   minhasAcoes: AcaoJogador[];
+  /** Tampo ("bater na mesa"): rachaduras e se já quebrou e virou plástico. Sempre enviado pelo servidor. */
+  mesaFisica?: MesaFisica;
 }
 
 export interface MsgAcao {

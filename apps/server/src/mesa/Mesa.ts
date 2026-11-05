@@ -31,6 +31,7 @@ import {
   type NivelBot,
   type Sinal,
 } from './protocolo';
+import { aplicarBatida, decidirBatidaBot, forcaDaBatida, JANELA_BATIDA_MS, mesaFisicaInicial, type MsgBatida, pedidoQueBate } from './mesaFisica';
 import { cartaDoSinal, falaDaRodada, rodadaFechada, sinalDaMao } from './social';
 
 export interface Relogio {
@@ -83,6 +84,8 @@ export interface OpcoesMesa {
   aoAplicar?: (acao: AcaoJogador, porHumano: boolean) => void;
   /** Decisão dos bots. Padrão: bot fácil ou difícil conforme `nivelBot`. */
   decidirBot?: (s: EstadoPartida, cadeira: Cadeira) => AcaoJogador | null;
+  /** Chance (0–1) de um bot bater na mesa ao pedir seis/nove/doze. Padrão `CHANCE_BATIDA_BOT`. */
+  chanceBatidaBot?: number;
 }
 
 interface Ocupante {
@@ -125,6 +128,10 @@ export class Mesa {
   private dicas: (Carta | null)[] = [null, null, null, null];
   /** Última mensagem de chat por cadeira (limite próprio, separado de sinais/falas). */
   private readonly ultimoChat: number[] = [-Infinity, -Infinity, -Infinity, -Infinity];
+  /** Tampo da mesa ("bater na mesa"): rachaduras, dano e se já virou plástico. */
+  private fisica = mesaFisicaInicial();
+  /** Último pedido de seis/nove/doze que ainda pode ser acompanhado de uma batida. */
+  private pedidoBatida: { cadeira: Cadeira; ate: number } | null = null;
   private readonly relogio: Relogio;
   private readonly rand: () => number;
   private readonly tempos: Tempos;
@@ -266,6 +273,18 @@ export class Mesa {
     this.paraHumanos((destino) => this.o.enviar(destino, 'fala', { de: c, fala }));
   }
 
+  /** Bater na mesa: só quem acabou de pedir seis/nove/doze, uma vez por pedido, dentro da janela. */
+  batida(id: string, forcaCrua: unknown): void {
+    const c = this.cadeiraDe(id);
+    const forca = forcaDaBatida(forcaCrua);
+    const p = this.pedidoBatida;
+    if (c === null || !this.estado || forca === null || !p || p.cadeira !== c) return;
+    if (this.relogio.agora() > p.ate || !this.podeMandar(c)) return;
+    this.pedidoBatida = null;
+    this.bater(c, forca);
+    this.enviarEstados();
+  }
+
   /** Chat de texto (só na privada, salvo `chat`); vale também na sala de espera. */
   chat(id: string, cru: unknown): void {
     const c = this.cadeiraDe(id);
@@ -306,6 +325,14 @@ export class Mesa {
       this.falha(e);
     }
     this.paraHumanos((destino) => this.o.enviar(destino, 'acao', msgDaAcao(acao)));
+    this.pedidoBatida = null;
+    if (pedidoQueBate(acao, this.estado)) {
+      if (idHumano !== undefined) this.pedidoBatida = { cadeira: acao.cadeira, ate: this.relogio.agora() + JANELA_BATIDA_MS };
+      else if (!this.ocupantes[acao.cadeira].humano) {
+        const forca = decidirBatidaBot(this.rand, this.o.chanceBatidaBot);
+        if (forca !== null) this.bater(acao.cadeira, forca);
+      }
+    }
     if (acao.tipo === 'jogar') this.comentarRodada(antes, this.estado);
     this.atualizar();
     return true;
@@ -358,6 +385,16 @@ export class Mesa {
       for (const c of agentes) this.agendar(this.tempos.botMs, () => this.jogarBot(c));
     }
     this.enviarEstados();
+  }
+
+  /** Aplica a batida ao tampo e avisa todos (o estado novo vai no próximo `estado`). */
+  private bater(c: Cadeira, forca: number): void {
+    const r = aplicarBatida(this.fisica, c, forca, this.rand);
+    this.fisica = r.fisica;
+    const msg: MsgBatida = { de: c, forca };
+    if (r.rachadura) msg.rachadura = r.rachadura;
+    if (r.quebrou) msg.quebrou = true;
+    this.paraHumanos((destino) => this.o.enviar(destino, 'batida', msg));
   }
 
   private chaveDoTurno(s: EstadoPartida): string {
@@ -439,6 +476,7 @@ export class Mesa {
       visao: s ? visaoDoJogador(s, c) : null,
       prazo: this.prazo,
       minhasAcoes: s ? acoesValidas(s, c) : [],
+      mesaFisica: this.fisica,
     };
     this.o.enviar(this.ocupantes[c].id!, 'estado', msg);
   }
