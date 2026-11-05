@@ -90,6 +90,20 @@ describe('MesaRoom', () => {
     expect(mb.estado.at(-1).minhaCadeira).toBe(2);
   });
 
+  test('matchmaking separa por variante, humanos e nível do bot', async () => {
+    const a = await colyseus.sdk.joinOrCreate('mesa', { variante: 'mineiro', humanos: 2, nivelBot: 'facil', nome: 'Ana' });
+    coletor(a);
+    const b = await colyseus.sdk.joinOrCreate('mesa', { variante: 'paulista', humanos: 2, nome: 'Bia' });
+    coletor(b);
+    expect(b.roomId).not.toBe(a.roomId);
+    const c = await colyseus.sdk.joinOrCreate('mesa', { variante: 'mineiro', humanos: 2, nivelBot: 'dificil', nome: 'Cid' });
+    coletor(c);
+    expect(c.roomId).not.toBe(a.roomId);
+    const d = await colyseus.sdk.joinOrCreate('mesa', { variante: 'mineiro', humanos: 2, nivelBot: 'facil', nome: 'Duda' });
+    coletor(d);
+    expect(d.roomId).toBe(a.roomId);
+  });
+
   test('iniciar antes de lotar tranca a sala', async () => {
     const a = await colyseus.sdk.joinOrCreate('mesa', { humanos: 2, nome: 'Ana' });
     const ma = coletor(a);
