@@ -58,6 +58,9 @@ function problemaDeFormato(x: unknown): string | null {
       if (!Number.isInteger(a.indice)) return 'índice inválido';
       if (a.coberta !== undefined && typeof a.coberta !== 'boolean') return 'coberta deve ser booleano';
       return null;
+    case 'empilhar':
+      if (!ehCadeira(a.cadeira)) return 'cadeira inválida';
+      return Number.isInteger(a.indice) ? null : 'índice inválido';
     case 'mao10':
       if (!ehCadeira(a.cadeira)) return 'cadeira inválida';
       return typeof a.jogar === 'boolean' ? null : 'jogar deve ser booleano';
@@ -79,6 +82,7 @@ function problemaDeFormato(x: unknown): string | null {
     case 'correr':
     case 'aumentar':
     case 'familia':
+    case 'mostrar':
     case 'passarCorte':
     case 'abrir3':
     case 'dar3':
@@ -157,6 +161,12 @@ export function reduce(estado: EstadoPartida, acao: Acao): EstadoPartida {
       break;
     case 'jogar':
       jogar(s, acao.cadeira, acao.indice, acao.coberta ?? false);
+      break;
+    case 'empilhar':
+      empilhar(s, acao.cadeira, acao.indice);
+      break;
+    case 'mostrar':
+      mostrar(s, acao.cadeira);
       break;
     case 'truco':
       pedirTruco(s, acao.cadeira);
@@ -293,6 +303,7 @@ function distribuir(s: EstadoPartida, cadeira: Cadeira, modo: ModoDistribuicao):
     abertasNoCorte: r.abertas,
     familias: [],
     familiaPendente: null,
+    cangada: null,
   };
   s.mao = mao;
   s.ritual = null;
@@ -335,6 +346,7 @@ function jogar(s: EstadoPartida, cadeira: Cadeira, indice: number, coberta: bool
   const m = maoAtual(s);
   if (s.fase !== 'jogando') falha('não é hora de jogar carta');
   if (m.vez !== cadeira) falha('não é sua vez');
+  if (m.cangada) falha('cangou: as cartas saem empilhadas, mande mostrar');
   const mao = m.maos[cadeira];
   if (!Number.isInteger(indice) || indice < 0 || indice >= mao.length) falha('carta inválida');
   if (coberta && (m.rodadas.length === 0 || m.tipo === 'mao11')) falha('carta coberta só a partir da 2ª rodada');
@@ -351,17 +363,58 @@ function jogar(s: EstadoPartida, cadeira: Cadeira, indice: number, coberta: bool
     m.vez = proximaCadeira(cadeira);
     return;
   }
+  fecharRodada(s, m);
+}
 
+/** Rodada com as 4 cartas: resolve, e a mão segue, cangou na 1ª (todos empilham) ou acabou. */
+function fecharRodada(s: EstadoPartida, m: EstadoMao): void {
   const { resultado, proximo } = resolverRodada(m.mesa);
   m.rodadas.push(resultado);
   m.rodadasJogadas.push(m.mesa);
   m.mesa = [];
   const v = vencedorMao(m.rodadas);
-  if (v === 'continua') {
-    m.vez = proximo;
+  if (v !== 'continua') {
+    finalizarMao(s, v, escada(s)[m.nivel], 'rodadas');
     return;
   }
-  finalizarMao(s, v, escada(s)[m.nivel], 'rodadas');
+  m.vez = proximo;
+  if (m.cangada) {
+    m.cangada.etapa = 'baixo';
+    return;
+  }
+  // Cangou a 1ª: cada um junta as 2 que sobraram e escolhe a de cima (na mão de ferro ninguém vê as cartas: segue normal).
+  if (m.rodadas.length === 1 && resultado === 'empate' && m.tipo !== 'mao11') {
+    m.cangada = { etapa: 'empilhando', empilhou: [false, false, false, false] };
+    s.fase = 'empilhando';
+  }
+}
+
+function empilhar(s: EstadoPartida, cadeira: Cadeira, indice: number): void {
+  const m = maoAtual(s);
+  if (s.fase !== 'empilhando' || !m.cangada) falha('não é hora de empilhar');
+  if (m.cangada.empilhou[cadeira]) falha('você já empilhou');
+  const mao = m.maos[cadeira];
+  if (!Number.isInteger(indice) || indice < 0 || indice >= mao.length) falha('carta inválida');
+  const [cima] = mao.splice(indice, 1);
+  mao.unshift(cima);
+  m.cangada.empilhou[cadeira] = true;
+  if (m.cangada.empilhou.every(Boolean)) {
+    m.cangada.etapa = 'cima';
+    s.fase = 'jogando';
+  }
+}
+
+/** Todos mostram a de cima (ou, cangada de novo, abrem a de baixo) de uma vez, a partir da vez. */
+function mostrar(s: EstadoPartida, cadeira: Cadeira): void {
+  const m = maoAtual(s);
+  if (s.fase !== 'jogando' || !m.cangada || m.cangada.etapa === 'empilhando') falha('não há cartas empilhadas para mostrar');
+  if (m.vez !== cadeira) falha('quem manda mostrar é a vez');
+  for (let i = 0, c = cadeira; i < 4; i++, c = proximaCadeira(c)) {
+    const carta = m.maos[c].shift();
+    if (!carta) falha('mão vazia na cangada');
+    m.mesa.push({ cadeira: c, carta, coberta: false, forca: forca(carta, s.regras.variante, m.vira) });
+  }
+  fecharRodada(s, m);
 }
 
 function pedirTruco(s: EstadoPartida, cadeira: Cadeira): void {

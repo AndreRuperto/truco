@@ -121,6 +121,11 @@ describe('propriedades do ritual', () => {
         conservou(s, regras);
       }
       expect(s.mao!.rodadas).toHaveLength(1);
+      // Cangou: todos empilham (a carta de índice 0 por cima).
+      if (s.fase === 'empilhando') {
+        for (const c of [0, 1, 2, 3] as Cadeira[]) s = reduce(s, { tipo: 'empilhar', cadeira: c, indice: 0 });
+        conservou(s, regras);
+      }
       s = reduce(reduce(s, { tipo: 'truco', cadeira: s.mao!.vez }), { tipo: 'correr', cadeira: ((s.mao!.vez + 1) % 4) as Cadeira });
       expect(s.mao).toBeNull();
       conservou(s, regras);

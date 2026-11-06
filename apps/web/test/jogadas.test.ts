@@ -1,4 +1,4 @@
-import { visaoDoJogador } from '@truco/engine';
+import { reduce, visaoDoJogador } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
 import { exibicaoMesa, jogadasNovas, rodadaRecolhida } from '../src/logica/jogadas';
 import { distribuida, jogar, PAULISTA } from './fixtures';
@@ -71,7 +71,11 @@ describe('rodada recolhida', () => {
   test('empate: as cartas ficam e somem (sem destino)', () => {
     const fechada = jogar(inicio(MAOS_EMPATE), RODADA_1);
     expect(exib(fechada).resultado).toBe('empate');
-    const r = rodadaRecolhida(exib(fechada), exib(jogar(fechada, [[0, 0]])), 0)!;
+    // Cangou: todos empilham e a vez manda mostrar; aí a rodada empatada sai da mesa.
+    let e = fechada;
+    for (const cadeira of [0, 1, 2, 3] as const) e = reduce(e, { tipo: 'empilhar', cadeira, indice: 0 });
+    e = reduce(e, { tipo: 'mostrar', cadeira: e.mao!.vez });
+    const r = rodadaRecolhida(exib(fechada), exib(e), 0)!;
     expect(r.chaves).toHaveLength(4);
     expect(r.destino).toBeNull();
   });

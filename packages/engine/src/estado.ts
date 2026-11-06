@@ -15,6 +15,7 @@ export type Fase =
   | 'escolhendoDistribuicao'
   | 'decisaoMao10'
   | 'jogando'
+  | 'empilhando'
   | 'respondendoTruco'
   | 'conferindoFamilia'
   | 'fimPartida';
@@ -83,6 +84,12 @@ export interface EstadoMao {
   familias: FamiliaPedida[];
   /** Índice em `familias` da fechada esperando a dupla adversária conferir. */
   familiaPendente: number | null;
+  /**
+   * Cangou a 1ª rodada: cada um empilha as 2 cartas que sobraram (a de cima é `maos[c][0]`).
+   * `empilhando`: escolhendo a de cima; `cima`: todos empilharam, quem é da vez manda mostrar
+   * (ou pede truco); `baixo`: a 2ª também cangou, a da vez manda abrir a de baixo. null = não cangou.
+   */
+  cangada: { etapa: 'empilhando' | 'cima' | 'baixo'; empilhou: boolean[] } | null;
 }
 
 export interface ResultadoMao {
@@ -119,6 +126,10 @@ export interface EstadoPartida {
  */
 export type AcaoJogador =
   | { tipo: 'jogar'; cadeira: Cadeira; indice: number; coberta?: boolean }
+  /** Cangada: `indice` é a carta da mão que vai por cima. */
+  | { tipo: 'empilhar'; cadeira: Cadeira; indice: number }
+  /** Cangada: a da vez manda todo mundo mostrar a de cima (depois, abrir a de baixo). */
+  | { tipo: 'mostrar'; cadeira: Cadeira }
   | { tipo: 'truco'; cadeira: Cadeira }
   | { tipo: 'aceitar'; cadeira: Cadeira }
   | { tipo: 'correr'; cadeira: Cadeira }

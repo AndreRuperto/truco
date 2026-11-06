@@ -9,11 +9,11 @@ const rotulos = (s: EstadoPartida, c: Cadeira) => ui(s, c).botoes.map((b) => b.r
 describe('agruparAcoes', () => {
   test('início da mão: jogar as 3 abertas, sem truco (só da 2ª rodada em diante)', () => {
     const s = distribuida(PAULISTA);
-    expect(ui(s, 0)).toEqual({ jogaveis: [0, 1, 2], cobriveis: [], botoes: [] });
-    expect(ui(s, 1)).toEqual({ jogaveis: [], cobriveis: [], botoes: [] });
+    expect(ui(s, 0)).toEqual({ jogaveis: [0, 1, 2], cobriveis: [], empilhaveis: [], botoes: [] });
+    expect(ui(s, 1)).toEqual({ jogaveis: [], cobriveis: [], empilhaveis: [], botoes: [] });
     const r2 = naSegundaRodada(s);
     expect(ui(r2, 0).botoes).toEqual([{ chave: 'truco', rotulo: 'Truco!', acao: { tipo: 'truco', cadeira: 0 }, tom: 'principal' }]);
-    expect(ui(r2, 1)).toEqual({ jogaveis: [], cobriveis: [], botoes: [] });
+    expect(ui(r2, 1)).toEqual({ jogaveis: [], cobriveis: [], empilhaveis: [], botoes: [] });
   });
 
   test('respondendo truco: Aceitar, Seis!, Correr — nessa ordem', () => {
@@ -31,9 +31,17 @@ describe('agruparAcoes', () => {
   });
 
   test('da 2ª rodada em diante dá para jogar coberta', () => {
-    // paulista, novoBaralho: os quatro 4 cangam na 1ª; a cadeira 0 volta a jogar
-    const s = jogar(distribuida(PAULISTA), [[0, 0], [1, 0], [2, 0], [3, 0]]);
+    const s = naSegundaRodada(distribuida(PAULISTA));
     expect(ui(s, 0)).toMatchObject({ jogaveis: [0, 1], cobriveis: [0, 1] });
+  });
+
+  test('cangada: clicar na carta empilha; empilhado, a vez tem Truco! e "Mostrar as de cima"', () => {
+    // paulista, novoBaralho: os quatro 4 cangam na 1ª.
+    const s = jogar(distribuida(PAULISTA), [[0, 0], [1, 0], [2, 0], [3, 0]]);
+    expect(ui(s, 0)).toEqual({ jogaveis: [], cobriveis: [], empilhaveis: [0, 1], botoes: [] });
+    let e = s;
+    for (const cadeira of [0, 1, 2, 3] as const) e = reduce(e, { tipo: 'empilhar', cadeira, indice: 0 });
+    expect(rotulos(e, e.mao!.vez)).toEqual(['Truco!', 'Mostrar as de cima']);
   });
 
   test('mão de 10: jogar ou correr da mão', () => {

@@ -949,6 +949,31 @@ body:has(.tela-mesa) {
   font-variant-numeric: tabular-nums;
 }
 
+/* Cangada: as 2 cartas empilhadas, a de cima inteira e a de baixo saindo por trás. */
+.minha-mao.pilha-empilhada .cartas {
+  gap: 0;
+}
+.minha-mao.pilha-empilhada .carta-botao {
+  position: relative;
+}
+.minha-mao.pilha-empilhada .carta-botao:first-child {
+  z-index: 1;
+}
+.minha-mao.pilha-empilhada .carta-botao:nth-child(2) {
+  z-index: 0;
+  margin-left: calc(var(--carta-l) * -0.55);
+  translate: 0 10px;
+  rotate: 6deg;
+  filter: brightness(0.82);
+}
+.dica-pilha {
+  margin: 0 0 var(--e1);
+  color: var(--grito);
+  font-family: var(--fonte-giz);
+  font-size: var(--t1);
+  text-align: center;
+}
+
 /* Tampo de madeira */
 .tampo {
   position: relative;

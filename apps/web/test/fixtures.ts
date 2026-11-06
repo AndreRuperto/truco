@@ -55,12 +55,24 @@ export function jogar(s: EstadoPartida, seq: [Cadeira, number][]): EstadoPartida
 
 /**
  * Joga a 1ª rodada inteira (índice 0, a partir de quem está na vez): truco só vale da 2ª rodada em diante.
- * Com o `novoBaralho()` padrão: no paulista os quatro 4 cangam e a cadeira 0 volta a ter a vez;
+ * Com o `novoBaralho()` padrão: no paulista os quatro 4 cangariam (aí escolhe outras cartas para a cadeira 0 levar);
  * no mineiro o zap da cadeira 3 leva a rodada e a vez é dela.
  */
 export function naSegundaRodada(s: EstadoPartida): EstadoPartida {
-  for (let k = 0; k < 4; k++) s = reduce(s, { tipo: 'jogar', cadeira: s.mao!.vez, indice: 0 });
-  return s;
+  const rodada = (ind: number[]) => {
+    let x = s;
+    for (let k = 0; k < 4; k++) x = reduce(x, { tipo: 'jogar', cadeira: x.mao!.vez, indice: ind[x.mao!.vez] });
+    return x;
+  };
+  const padrao = rodada([0, 0, 0, 0]);
+  if (padrao.fase !== 'empilhando') return padrao;
+  // Cangar agora empilha as cartas: para os testes da 2ª rodada "normal", a cadeira 0 leva a 1ª.
+  for (let i = 0; i < 81; i++) {
+    const ind = [i % 3, Math.floor(i / 3) % 3, Math.floor(i / 9) % 3, Math.floor(i / 27) % 3];
+    const x = rodada(ind);
+    if (x.fase === 'jogando' && x.mao?.vez === 0) return x;
+  }
+  throw new Error('naSegundaRodada: nenhuma 1ª rodada sem cangar com a vez na cadeira 0');
 }
 
 export const CADEIRAS_PADRAO: InfoCadeira[] = [

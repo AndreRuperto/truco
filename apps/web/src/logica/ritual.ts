@@ -26,6 +26,13 @@ export function textoEtapa(v: Visao, nome: (c: Cadeira) => string): string | nul
   }
   if (r && v.fase === 'escolhendoDistribuicao') return eu(r.embaralhador) ? 'Como você vai dar as cartas?' : `${nome(r.embaralhador)} vai dar as cartas`;
   const m = v.mao;
+  if (m?.cangada && v.fase === 'empilhando') {
+    return m.cangada.empilhou[v.cadeira] ? 'Cangou! Esperando os outros empilharem' : 'Cangou! Escolha a carta que vai por cima';
+  }
+  if (m?.cangada && v.fase === 'jogando') {
+    const o = m.cangada.etapa === 'baixo' ? 'abrir as de baixo' : 'mostrar as de cima';
+    return eu(m.vez) ? `Cartas empilhadas: peça truco ou mande ${o}` : `Cartas empilhadas: ${nome(m.vez)} manda ${o}`;
+  }
   if (m && v.fase === 'conferindoFamilia' && m.familiaPendente !== null) {
     const f = m.familias[m.familiaPendente];
     if (duplaDe(f.cadeira) !== duplaDe(v.cadeira)) return `${nome(f.cadeira)} pediu família fechada. Conferir?`;

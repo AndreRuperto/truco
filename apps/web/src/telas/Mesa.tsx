@@ -66,7 +66,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
     ultimo && ultimo.tipo === 'sinal' ? { sinal: ultimo.sinal, interceptado: ultimo.interceptado, nome: nome(ultimo.de), em: ultimo.em } : null;
 
   const jogar = (indice: number, coberta: boolean) => {
-    const a = msg.minhasAcoes.find((x) => x.tipo === 'jogar' && x.indice === indice && !!x.coberta === coberta);
+    const a =
+      msg.minhasAcoes.find((x) => x.tipo === 'jogar' && x.indice === indice && !!x.coberta === coberta) ??
+      msg.minhasAcoes.find((x) => x.tipo === 'empilhar' && x.indice === indice);
     if (a) acoes.enviarAcao(a);
   };
   const alternar = (p: 'sinais' | 'falas' | 'chat') => setPainel((atual) => (atual === p ? null : p));
@@ -131,7 +133,19 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
         <div ref={camadaRitual} className="camada-voo" aria-hidden="true" />
       </Tampo>
       {prazoEhMeu(msg) && msg.prazo && <Cronometro prazo={msg.prazo} agora={agora} />}
-      {m ? <Mao cartas={m.minhaMao} jogaveis={ui.jogaveis} cobriveis={ui.cobriveis} variante={variante} vira={vira} aoJogar={jogar} /> : <div />}
+      {m ? (
+        <Mao
+          cartas={m.minhaMao}
+          jogaveis={ui.empilhaveis.length > 0 ? ui.empilhaveis : ui.jogaveis}
+          cobriveis={ui.cobriveis}
+          variante={variante}
+          vira={vira}
+          aoJogar={jogar}
+          pilha={!m.cangada ? null : ui.empilhaveis.length > 0 ? 'escolher' : m.cangada.empilhou[minha] && m.minhaMao.length === 2 ? 'empilhada' : null}
+        />
+      ) : (
+        <div />
+      )}
       <div className="rodape-mesa">
         {msg.janelaFamilia && (
           <JanelaFamilia

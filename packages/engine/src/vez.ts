@@ -6,7 +6,7 @@ const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
 export interface SituacaoVez {
   fase: Fase;
   mao:
-    | (Pick<EstadoMao, 'vez' | 'trucoPendente' | 'duplaNoDez' | 'familiaPendente'> & {
+    | (Pick<EstadoMao, 'vez' | 'trucoPendente' | 'duplaNoDez' | 'familiaPendente' | 'cangada'> & {
         familias: readonly { cadeira: Cadeira }[];
       })
     | null;
@@ -31,6 +31,8 @@ export function quemDeveAgir(s: SituacaoVez): Cadeira[] {
   const m = s.mao;
   if (!m) return [];
   if (s.fase === 'jogando') return [m.vez];
+  // Cangou: todos escolhem a de cima ao mesmo tempo.
+  if (s.fase === 'empilhando' && m.cangada) return CADEIRAS.filter((c) => !m.cangada!.empilhou[c]);
   if (s.fase === 'respondendoTruco' && m.trucoPendente) {
     const pediu = m.trucoPendente.dupla;
     return CADEIRAS.filter((c) => duplaDe(c) !== pediu);

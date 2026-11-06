@@ -3,6 +3,10 @@ import { distribuirSemRitual, ritualMinimo } from '../src/testes';
 import { novoBaralho } from '../src/cartas';
 import type { Acao, Cadeira, EstadoPartida } from '../src/estado';
 import { proximaCadeira } from '../src/estado';
+import { acoesValidas } from '../src/acoes';
+import { idCarta } from '../src/cartas';
+import { quemDeveAgir } from '../src/vez';
+import { visaoDoJogador } from '../src/visao';
 import { ErroJogada, reduce } from '../src/reducer';
 import { embaralhar, mulberry32 } from '../src/rng';
 import {
@@ -12,6 +16,7 @@ import {
   PRIMEIRA_RODADA_PAULISTA_DUPLA0,
   baralhoCom,
   distribuida,
+  empilharTodos,
   jogarPrimeiraRodada,
   jogarSeq,
   partida,
@@ -31,11 +36,12 @@ describe('cangou dentro de uma mão real', () => {
     ['4e', '5c', 'Qe'],
   ];
 
-  test('1ª rodada empatada → quem vence a 2ª leva a mão', () => {
+  test('1ª rodada empatada → todos empilham; quem vence a 2ª (as de cima) leva a mão', () => {
     let s = jogarSeq(distribuida(MINEIRO, MAOS), RODADA_IDX0);
     expect(s.mao!.rodadas).toEqual(['empate']);
     expect(s.mao!.vez).toBe(0); // primeira carta mais forte da rodada empatada
-    s = jogarSeq(s, RODADA_IDX0);
+    expect(s.fase).toBe('empilhando');
+    s = reduce(empilharTodos(s), { tipo: 'mostrar', cadeira: 0 });
     expect(s.placar).toEqual([0, 2]);
     expect(s.ultimaMao).toMatchObject({ vencedor: 1, pontos: 2, motivo: 'rodadas', rodadas: ['empate', 1] });
   });
@@ -51,7 +57,10 @@ describe('três rodadas empatadas', () => {
   ];
 
   test('ninguém pontua e o pé avança', () => {
-    const s = jogarSeq(distribuida(MINEIRO, MAOS), [...RODADA_IDX0, ...RODADA_IDX0, ...RODADA_IDX0]);
+    let s = empilharTodos(jogarSeq(distribuida(MINEIRO, MAOS), RODADA_IDX0));
+    s = reduce(s, { tipo: 'mostrar', cadeira: s.mao!.vez });
+    expect(s.mao!.cangada!.etapa).toBe('baixo');
+    s = reduce(s, { tipo: 'mostrar', cadeira: s.mao!.vez });
     expect(s.ultimaMao).toMatchObject({
       vencedor: null,
       pontos: 0,
@@ -189,5 +198,44 @@ describe('reduce não muta a entrada', () => {
       ['2e', '5c', '6c'],
     ]);
     intacto(s, { tipo: 'familia', cadeira: 0 });
+  });
+});
+
+describe('cangada: cartas empilhadas', () => {
+  // R1 canga (3o x 3e). Sobram: 0 [5o, 6o], 1 [2e, 6e], 2 [5e, Qo], 3 [5c, Qe].
+  const MAOS = [
+    ['3o', '5o', '6o'],
+    ['3e', '2e', '6e'],
+    ['4o', '5e', 'Qo'],
+    ['4e', '5c', 'Qe'],
+  ];
+  const cangou = () => jogarSeq(distribuida(MINEIRO, MAOS), RODADA_IDX0);
+
+  test('todos escolhem a de cima ao mesmo tempo; ninguém joga carta nem truca enquanto empilha', () => {
+    const s = cangou();
+    expect(quemDeveAgir(s)).toEqual([0, 1, 2, 3]);
+    expect(acoesValidas(s, 0).map((a) => a.tipo)).toEqual(['empilhar', 'empilhar']);
+    expect(() => reduce(s, { tipo: 'truco', cadeira: 0 })).toThrow();
+    const um = reduce(s, { tipo: 'empilhar', cadeira: 2, indice: 1 });
+    expect(um.mao!.maos[2].map(idCarta)).toEqual(['Qo', '5e']);
+    expect(quemDeveAgir(um)).toEqual([0, 1, 3]);
+    expect(() => reduce(um, { tipo: 'empilhar', cadeira: 2, indice: 0 })).toThrow(/já empilhou/);
+    // A visão de outro jogador não mostra a ordem de quem empilhou, só que empilhou.
+    expect(visaoDoJogador(um, 0).mao!.cangada!.empilhou).toEqual([false, false, true, false]);
+  });
+
+  test('empilhado: a vez pede truco ou manda mostrar; jogar carta não vale', () => {
+    const s = empilharTodos(cangou(), [0, 1, 0, 0]);
+    expect(s.fase).toBe('jogando');
+    expect(s.mao!.cangada!.etapa).toBe('cima');
+    expect(acoesValidas(s, 0).map((a) => a.tipo).sort()).toEqual(['mostrar', 'truco']);
+    expect(() => reduce(s, { tipo: 'jogar', cadeira: 0, indice: 0 })).toThrow(/empilhadas/);
+    expect(() => reduce(s, { tipo: 'mostrar', cadeira: 1 })).toThrow(/vez/);
+    const trucado = reduce(reduce(s, { tipo: 'truco', cadeira: 0 }), { tipo: 'aceitar', cadeira: 1 });
+    expect(trucado.fase).toBe('jogando');
+    // A cadeira 1 pôs o 6e por cima: as de cima são 5o, 6e, 5e, 5c → a dupla 1 leva o truco (4 no mineiro).
+    const fim = reduce(trucado, { tipo: 'mostrar', cadeira: 0 });
+    expect(fim.ultimaMao).toMatchObject({ vencedor: 1, pontos: 4, rodadas: ['empate', 1] });
+    expect(fim.ultimaMao!.rodadasJogadas[1].map((j) => idCarta(j.carta))).toEqual(['5o', '6e', '5e', '5c']);
   });
 });

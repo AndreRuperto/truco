@@ -77,6 +77,13 @@ export function jogarPrimeiraRodada(s: EstadoPartida, indices: readonly number[]
     const cadeira = s.mao!.vez;
     s = reduce(s, { tipo: 'jogar', cadeira, indice: indices[cadeira] });
   }
+  // Cangou: todos empilham na ordem em que estão (a de índice 0 por cima).
+  return s.fase === 'empilhando' ? empilharTodos(s) : s;
+}
+
+/** Cangada: cada cadeira põe por cima a carta `cima[cadeira]` (padrão: a de índice 0). */
+export function empilharTodos(s: EstadoPartida, cima: readonly number[] = [0, 0, 0, 0]): EstadoPartida {
+  for (const cadeira of [0, 1, 2, 3] as Cadeira[]) s = reduce(s, { tipo: 'empilhar', cadeira, indice: cima[cadeira] });
   return s;
 }
 

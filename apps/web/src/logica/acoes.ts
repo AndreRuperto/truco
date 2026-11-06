@@ -5,6 +5,7 @@ export type ChaveBotao =
   | 'aceitar'
   | 'aumentar'
   | 'truco'
+  | 'mostrar'
   | 'familia'
   | 'conferir-sim'
   | 'conferir-nao'
@@ -34,6 +35,8 @@ export interface AcoesUI {
   jogaveis: number[];
   /** Índices jogáveis cobertos (2ª rodada em diante). */
   cobriveis: number[];
+  /** Cangada: índices que posso pôr por cima (clicar na carta empilha). */
+  empilhaveis: number[];
   botoes: BotaoAcao[];
 }
 
@@ -41,6 +44,7 @@ const ORDEM: ChaveBotao[] = [
   'aceitar',
   'aumentar',
   'truco',
+  'mostrar',
   'familia',
   'conferir-sim',
   'conferir-nao',
@@ -65,6 +69,7 @@ export function agruparAcoes(acoes: AcaoJogador[], v: Pick<Visao, 'mao' | 'regra
   const m = v?.mao ?? null;
   const jogaveis: number[] = [];
   const cobriveis: number[] = [];
+  const empilhaveis: number[] = [];
   const botoes: BotaoAcao[] = [];
   const botao = (chave: ChaveBotao, rotulo: string, acao: AcaoJogador, tom: BotaoAcao['tom'] = 'neutro') =>
     botoes.push({ chave, rotulo, acao, tom });
@@ -72,6 +77,12 @@ export function agruparAcoes(acoes: AcaoJogador[], v: Pick<Visao, 'mao' | 'regra
     switch (a.tipo) {
       case 'jogar':
         (a.coberta ? cobriveis : jogaveis).push(a.indice);
+        break;
+      case 'empilhar':
+        empilhaveis.push(a.indice);
+        break;
+      case 'mostrar':
+        botao('mostrar', m?.cangada?.etapa === 'baixo' ? 'Abrir as de baixo' : 'Mostrar as de cima', a, 'principal');
         break;
       case 'truco':
         botao('truco', `${nomePedido((m?.nivel ?? 0) + 1)}!`, a, 'principal');
@@ -120,5 +131,5 @@ export function agruparAcoes(acoes: AcaoJogador[], v: Pick<Visao, 'mao' | 'regra
     }
   }
   botoes.sort((x, y) => ORDEM.indexOf(x.chave) - ORDEM.indexOf(y.chave));
-  return { jogaveis, cobriveis, botoes };
+  return { jogaveis, cobriveis, empilhaveis, botoes };
 }

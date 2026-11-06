@@ -26,6 +26,14 @@ export function botFacil(s: EstadoPartida, cadeira: Cadeira): AcaoJogador | null
     return { tipo: 'mao10', cadeira, jogar: boa };
   }
 
+  // Cangada: a mais forte por cima (a 2ª rodada decide); com tudo empilhado, a vez manda mostrar.
+  if (s.fase === 'empilhando') {
+    if (!m.cangada || m.cangada.empilhou[cadeira]) return null;
+    const forte = minha.reduce((b, c, i) => (f(c) > f(minha[b]) ? i : b), 0);
+    return { tipo: 'empilhar', cadeira, indice: forte };
+  }
+  if (s.fase === 'jogando' && m.cangada && m.vez === cadeira) return { tipo: 'mostrar', cadeira };
+
   if (janelaDeFamilia(s) && querFamilia(visaoDoJogador(s, cadeira), () => 1, 'facil')) return { tipo: 'familia', cadeira };
   if (s.fase !== 'jogando' || m.vez !== cadeira) return null;
   if (m.tipo === 'mao11') return { tipo: 'jogar', cadeira, indice: 0 };

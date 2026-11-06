@@ -148,6 +148,12 @@ export function jogadaAutomatica(s: EstadoPartida, cadeira: Cadeira): AcaoJogado
   if (s.fase === 'decisaoMao10') return { tipo: 'mao10', cadeira, jogar: false };
   const m = s.mao;
   if (!m || m.tipo === 'mao11') return { tipo: 'jogar', cadeira, indice: 0 };
+  // Cangada: tempo esgotado empilha a mais forte por cima; empilhado, a vez manda mostrar.
+  if (s.fase === 'empilhando') {
+    const f = m.maos[cadeira].map((c) => forca(c, s.regras.variante, m.vira));
+    return { tipo: 'empilhar', cadeira, indice: f.indexOf(Math.max(...f)) };
+  }
+  if (m.cangada) return { tipo: 'mostrar', cadeira };
   const forcas = m.maos[cadeira].map((c) => forca(c, s.regras.variante, m.vira));
   return { tipo: 'jogar', cadeira, indice: forcas.indexOf(Math.min(...forcas)) };
 }
@@ -175,6 +181,8 @@ export class Mesa {
   private familiaDecidida = new Set<Cadeira>();
   /** Janela de família da mão atual (ver `Tempos.janelaFamiliaMs`); null = a mão não teve. */
   private janela: { ate: number; decidiram: Set<Cadeira>; fechada: boolean } | null = null;
+  /** Prazo único de quem ainda não empilhou na cangada (não reinicia a cada um que empilha). */
+  private ateEmpilhar: number | null = null;
   /** Última mensagem de chat por cadeira (limite próprio, separado de sinais/falas). */
   private readonly ultimoChat: number[] = [-Infinity, -Infinity, -Infinity, -Infinity];
   /** Tampo da mesa ("bater na mesa"): rachaduras, dano e se já virou plástico. */
@@ -462,6 +470,24 @@ export class Mesa {
       this.enviarEstados();
       return;
     }
+    // Cangada: os quatro empilham ao mesmo tempo (as duas duplas). Bots no ritmo deles; humanos
+    // têm um prazo só, e quem não empilhar até lá empilha a mais forte por cima.
+    if (s.fase === 'empilhando') {
+      const agora = this.relogio.agora();
+      this.ateEmpilhar ??= agora + this.tempos.jogadaMs;
+      const faltam = quemDeveAgir(s);
+      const humanos = faltam.filter((c) => this.humanoAtivo(c));
+      if (humanos.length > 0) {
+        this.prazo = { cadeiras: humanos, ate: this.ateEmpilhar };
+        this.agendar(Math.max(0, this.ateEmpilhar - agora), () => {
+          for (const c of humanos) if (this.estado?.fase === 'empilhando' && quemDeveAgir(this.estado).includes(c)) this.agirPor(c);
+        });
+      }
+      for (const c of faltam) if (!this.humanoAtivo(c)) this.agendar(this.tempos.botMs, () => this.jogarBot(c));
+      this.enviarEstados();
+      return;
+    }
+    this.ateEmpilhar = null;
     // Os agentes são sempre de uma só dupla (ou uma cadeira, no ritual). Havendo humano ativo
     // entre eles, ninguém decide por ele: espera o prazo; no fim, o parceiro bot (se houver) decide.
     const agentes = quemDeveAgir(s);

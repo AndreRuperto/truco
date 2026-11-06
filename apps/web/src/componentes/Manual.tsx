@@ -353,6 +353,23 @@ function secoesDe(v: Variante): SecaoInfo[] {
             <strong>As três empataram</strong>: ninguém marca ponto.
           </li>
         </ul>
+        <h3>Cangou a 1ª: cartas empilhadas</h3>
+        <p>
+          Quando a 1ª rodada canga, ninguém joga a 2ª carta na vez. <strong>Todo mundo junta as duas cartas que sobraram,
+          uma em cima da outra</strong>, e escolhe qual vai por cima: a mais forte, para decidir já na 2ª, ou a mais fraca,
+          guardando a forte embaixo. Cada um escolhe sem ver o que os outros fizeram. Na mesa, é só tocar na carta que vai
+          por cima.
+        </p>
+        <ol>
+          <li>Com tudo empilhado, quem é da vez pode pedir truco ou mandar mostrar.</li>
+          <li>
+            <strong>Todos mostram a de cima ao mesmo tempo</strong>: essa é a 2ª rodada. A de baixo continua escondida.
+          </li>
+          <li>
+            Se a 2ª também cangar, quem é da vez (pode pedir truco de novo) manda <strong>abrir</strong>: todos viram a de
+            baixo de lado, e ela decide a 3ª.
+          </li>
+        </ol>
         <h3>Carta coberta</h3>
         <p>
           <strong>A partir da 2ª rodada</strong>, você pode jogar uma carta virada para baixo. Ela{' '}
