@@ -1,9 +1,11 @@
-import { type Dupla, type EstadoPartida, novaPartida, REGRAS_RANQUEADA } from '@truco/engine';
+import { botFacil, type Cadeira, type Dupla, ehFamilia, type EstadoPartida, janelaDeFamilia, mulberry32, novaPartida, REGRAS_RANQUEADA } from '@truco/engine';
 import { asc } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Banco } from '../src/banco/banco';
 import { participacoes, partidas } from '../src/banco/schema';
+import { Mesa, type Relogio } from '../src/mesa/Mesa';
 import { RegistroMesa } from '../src/registroMesa';
+import { TEMPOS } from './mesa-helpers';
 import { bloqueioAte, ratingDe } from '../src/repo/partidas';
 import { criarUsuario } from '../src/repo/usuarios';
 import { servicosDeTeste } from '../src/servicos';
@@ -186,5 +188,100 @@ describe('RegistroMesa', () => {
       [true, false],
       [false, false],
     ]);
+  });
+
+  test('família conferida que fecha a partida pela Mesa: aoTerminar uma vez, partida e Elo gravados', async () => {
+    // Relógio manual (os timers falsos do Vitest atrapalhariam o banco em memória).
+    let agora = 0;
+    const fila: { t: number; n: number; fn: () => void; vivo: boolean }[] = [];
+    let seq = 0;
+    const relogio: Relogio = {
+      agora: () => agora,
+      agendar(ms, fn) {
+        const x = { t: agora + ms, n: seq++, fn, vivo: true };
+        fila.push(x);
+        return () => {
+          x.vivo = false;
+        };
+      },
+    };
+    const passo = () => {
+      const vivos = fila.filter((x) => x.vivo).sort((a, b) => a.t - b.t || a.n - b.n);
+      const x = vivos[0];
+      if (!x) throw new Error('mesa parada sem timer');
+      x.vivo = false;
+      agora = x.t;
+      x.fn();
+    };
+
+    const s = servicosDeTeste(b.db, { agora: () => T0 });
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia' });
+    const r = new RegistroMesa(s, { variante: 'mineiro', modo: 'ranqueada', formato: '1x1' });
+    const terminou: EstadoPartida[] = [];
+    const ids: Record<Cadeira, string | null> = { 0: 'ana', 1: 'bia', 2: null, 3: null };
+    const mesa = new Mesa({
+      regras: { ...REGRAS_RANQUEADA.mineiro, maoDe10: false },
+      nivelBot: 'facil',
+      humanosEsperados: 2,
+      rand: mulberry32(11),
+      relogio,
+      tempos: TEMPOS,
+      enviar: () => {},
+      // Bots sem família: a única família da partida é a do teste.
+      decidirBot: (e, c) => {
+        const a = botFacil(e, c);
+        return a?.tipo === 'familia' ? null : a;
+      },
+      aoAplicar: (a, porHumano) => r.acao(a, porHumano),
+      aoIniciar: () => r.iniciou(),
+      aoTerminar: (e) => {
+        terminou.push(e);
+        r.terminou(e);
+      },
+    });
+    mesa.sentar('ana', 'ana', 0);
+    r.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+    mesa.sentar('bia', 'bia', 1);
+    r.sentou({ cadeira: 1, usuarioId: bia.id, nome: 'bia' });
+
+    let pediu: Dupla | null = null;
+    for (let i = 0; i < 200_000 && terminou.length === 0; i++) {
+      const e = mesa.partida!;
+      const dupla = ([0, 1] as const).find((d) => e.placar[d] >= 10);
+      if (pediu === null && dupla !== undefined && janelaDeFamilia(e) && e.monte.length >= 3) {
+        // O humano da dupla que chegou a 10 (cadeira = dupla no 1x1) ganha família de verdade
+        // (mexe no estado vivo: só teste), pede (fechada) e o adversário confere.
+        const c = dupla as Cadeira;
+        const mao = e.mao!.maos[c];
+        e.monte.forEach((x, j) => {
+          const k = mao.findIndex((y) => !['Q', 'J', 'K', 'A'].includes(y.valor));
+          if (k >= 0 && ['Q', 'J', 'K', 'A'].includes(x.valor)) [mao[k], e.monte[j]] = [x, mao[k]];
+        });
+        expect(ehFamilia(mao)).toBe(true);
+        mesa.acao(ids[c]!, { tipo: 'familia' });
+        expect(mesa.partida!.fase).toBe('conferindoFamilia');
+        mesa.acao(ids[(1 - c) as Cadeira]!, { tipo: 'conferir', conferir: true });
+        pediu = dupla;
+        continue;
+      }
+      passo();
+    }
+    expect(pediu).not.toBeNull();
+    expect(terminou).toHaveLength(1);
+    const fim = terminou[0];
+    expect(fim.fase).toBe('fimPartida');
+    expect(fim.vencedor).toBe(pediu);
+    expect(fim.ultimaMao).toMatchObject({ motivo: 'familia', vencedor: pediu });
+    // Nada mais agendado depois do fim.
+    expect(fila.filter((x) => x.vivo)).toEqual([]);
+    mesa.dispose();
+    await r.ocioso();
+
+    const [p] = await b.db.select().from(partidas);
+    expect(p).toMatchObject({ abandonada: false, vencedora: pediu, placar0: fim.placar[0], placar1: fim.placar[1] });
+    const [ga, pe] = pediu === 0 ? [ana, bia] : [bia, ana];
+    expect((await ratingDe(b.db, ga.id, 'mineiro')).elo).toBe(1016);
+    expect((await ratingDe(b.db, pe.id, 'mineiro')).elo).toBe(984);
   });
 });

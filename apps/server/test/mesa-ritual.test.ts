@@ -122,6 +122,49 @@ describe('ritual na Mesa', () => {
     expect(novas(t, n)[0]).toMatchObject({ cadeira: 0, tipo: 'distribuir', modo: 'porCima' });
   });
 
+  test('humano cai no meio do ritual: o bot assume a etapa e a mão sai (não trava)', () => {
+    const t = comAna();
+    ateEtapa(t, 'embaralhando');
+    t.mesa.acao('a', { tipo: 'embaralhar' });
+    t.mesa.desconectar('a');
+    const antes = Date.now();
+    avancarAte(() => t.mesa.partida!.fase === 'jogando');
+    // Sem esperar o ritualMs da Ana: o bot faz a etapa no ritmo dele.
+    expect(Date.now() - antes).toBeLessThan(TEMPOS.ritualMs);
+    expect(t.mesa.partida!.mao!.maos.every((m) => m.length === 3)).toBe(true);
+  });
+
+  test('humano volta no meio do ritual: estado e prazo coerentes com a etapa', () => {
+    const t = comAna();
+    ateEtapa(t, 'cortando');
+    t.mesa.acao('a', { tipo: 'cortar' });
+    t.mesa.desconectar('a');
+    const n = t.de('a', 'estado').length;
+    t.mesa.reconectar('a');
+    const e = t.estado('a')!;
+    expect(t.de('a', 'estado').length).toBe(n + 1);
+    expect(e.visao!.fase).toBe('cortando');
+    expect(e.visao!.ritual).toMatchObject({ cortador: 0, movimentos: 1 });
+    expect(e.minhasAcoes.map((a) => a.tipo)).toContain('devolver');
+    expect(e.prazo!.cadeiras).toEqual([0]);
+    expect(e.prazo!.ate - Date.now()).toBe(TEMPOS.ritualMs);
+    // O prazo novo vale: no fim dele o servidor devolve por ela.
+    const k = t.de('a', 'acao').length;
+    vi.advanceTimersByTime(TEMPOS.ritualMs);
+    expect(novas(t, k)[0]).toEqual({ cadeira: 0, tipo: 'devolver' });
+  });
+
+  test('dispose no meio do ritual não deixa timer pendente', () => {
+    const t = comAna();
+    ateEtapa(t, 'embaralhando');
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    t.mesa.dispose();
+    expect(vi.getTimerCount()).toBe(0);
+    const n = t.de('a', 'acao').length;
+    vi.advanceTimersByTime(TEMPOS.ritualMs * 10);
+    expect(t.de('a', 'acao')).toHaveLength(n);
+  });
+
   test('aoAplicar recebe as ações sem a sorte', () => {
     const vistas: unknown[] = [];
     const t = comAna({ aoAplicar: (a) => vistas.push(a) });
