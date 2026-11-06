@@ -2894,3 +2894,136 @@ button:disabled {
   margin: 0 0 var(--e2);
   color: var(--giz-suave);
 }
+
+/*
+ * Fundo das telas internas: as cartas só nas bordas, apagadas e paradas no mouse; no escuro,
+ * por baixo, um feltro (ruído fino) e uma vinheta que escurece as beiradas e emoldura o meio.
+ */
+.fundo-cartas.discreto {
+  opacity: 0.38;
+}
+@media (max-width: 600px) {
+  .fundo-cartas.discreto {
+    opacity: 0.22;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  .fundo-cartas.discreto::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(ellipse 75% 70% at 50% 40%, transparent 55%, color-mix(in srgb, var(--sombra) 55%, transparent)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.75 0 0 0 0 0.65 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23f)'/%3E%3C/svg%3E");
+  }
+  /* A vinheta e o feltro valem com a opacidade cheia; só as cartas ficam apagadas. */
+  .fundo-cartas.discreto {
+    opacity: 1;
+  }
+  .fundo-cartas.discreto .carta-solta {
+    opacity: calc((0.3 + var(--d) * 0.6) * 0.42);
+  }
+}
+@media (prefers-color-scheme: dark) and (max-width: 600px) {
+  .fundo-cartas.discreto .carta-solta {
+    opacity: calc((0.3 + var(--d) * 0.6) * 0.25);
+  }
+}
+
+/* Salas: situação da lista e a mesa vazia desenhada. */
+.salas-situacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2) var(--e3);
+  color: var(--texto-suave);
+  font-size: var(--t-1);
+}
+.salas-situacao button {
+  font-size: var(--t0);
+}
+.mesa-vazia {
+  display: grid;
+  justify-items: center;
+  gap: var(--e2);
+  margin-top: var(--e4);
+  padding: var(--e5) var(--e4);
+  border: 3px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: color-mix(in srgb, var(--lousa) 92%, transparent);
+  color: var(--giz);
+  text-align: center;
+  --foco: var(--grito);
+}
+.mesa-vazia h2 {
+  margin: var(--e2) 0 0;
+  font-family: var(--fonte-giz);
+  font-size: var(--t3);
+  font-weight: 400;
+  color: var(--grito);
+}
+.mesa-vazia p {
+  max-width: 44ch;
+  margin: 0;
+  color: var(--giz-suave);
+  line-height: 1.5;
+}
+.mesa-vazia-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--e2) var(--e3);
+  margin-top: var(--e3);
+}
+.mesa-vazia-acoes > * {
+  flex: 1 1 200px;
+}
+.botao-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--e4);
+  border: 2px solid var(--madeira-funda);
+  border-radius: var(--raio-botao);
+  text-decoration: none;
+}
+.mesa-vazia-acoes button {
+  min-height: 52px;
+  background: color-mix(in srgb, var(--lousa) 86%, var(--giz));
+}
+.mesa-vazia-desenho {
+  width: min(220px, 60vw);
+  height: auto;
+}
+.mv-cadeira {
+  fill: var(--madeira-funda);
+}
+.mv-encosto {
+  fill: var(--madeira-veio);
+}
+.mv-sombra {
+  fill: color-mix(in srgb, var(--sombra) 45%, transparent);
+}
+.mv-tampo {
+  fill: var(--madeira);
+}
+.mv-aro {
+  fill: none;
+  stroke: color-mix(in srgb, var(--madeira-funda) 55%, transparent);
+  stroke-width: 2;
+}
+.mv-copo {
+  fill: none;
+  stroke: color-mix(in srgb, var(--papel) 45%, transparent);
+  stroke-width: 2.5;
+}
+.mv-carta {
+  fill: var(--papel);
+  stroke: var(--papel-borda);
+  stroke-width: 1;
+}
+.mv-verso {
+  fill: var(--verso);
+}

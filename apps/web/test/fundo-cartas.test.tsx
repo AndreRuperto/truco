@@ -48,4 +48,16 @@ describe('FundoCartas', () => {
     expect(camada).toHaveAttribute('aria-hidden', 'true');
     expect(camada?.querySelectorAll('[data-solta]')).toHaveLength(CARTAS_SOLTAS.length);
   });
+
+  test('discreto (telas internas): só as cartas das bordas, longe do texto do meio', () => {
+    const { container } = render(<FundoCartas discreto />);
+    const camada = container.querySelector('.fundo-cartas.discreto')!;
+    const soltas = [...camada.querySelectorAll<HTMLElement>('[data-solta]')];
+    expect(soltas.length).toBeGreaterThan(4);
+    expect(soltas.length).toBeLessThan(CARTAS_SOLTAS.length);
+    for (const el of soltas) {
+      const x = Number.parseFloat(el.style.left);
+      expect(x < 20 || x > 80).toBe(true);
+    }
+  });
 });

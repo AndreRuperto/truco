@@ -11,13 +11,18 @@ const carta = (id: string): Carta => ({ valor: id.slice(0, -1) as Valor, naipe: 
  * paralaxe e a que está debaixo do ponteiro se afasta e levanta. Em tela de toque só
  * flutuam devagar; com movimento reduzido ficam paradas. Puramente decorativo.
  */
-export function FundoCartas() {
+/** No modo discreto (telas internas) só ficam as cartas das bordas, longe do texto. */
+const CARTAS_DAS_BORDAS = CARTAS_SOLTAS.filter((c) => c.x < 20 || c.x > 80);
+
+export function FundoCartas({ discreto = false }: { discreto?: boolean }) {
   const camada = useRef<HTMLDivElement>(null);
+  const cartas = discreto ? CARTAS_DAS_BORDAS : CARTAS_SOLTAS;
 
   useEffect(() => {
     const raiz = camada.current;
     const mm = window.matchMedia;
-    if (!raiz || !mm) return;
+    // Discreto: só flutua (o mouse não mexe nada; o conteúdo é que importa nessas telas).
+    if (!raiz || !mm || discreto) return;
     if (!mm('(hover: hover) and (pointer: fine)').matches || mm('(prefers-reduced-motion: reduce)').matches) return;
 
     const cartas = [...raiz.querySelectorAll<HTMLElement>('[data-solta]')];
@@ -80,11 +85,11 @@ export function FundoCartas() {
       window.removeEventListener('blur', aoSair);
       window.removeEventListener('resize', aoRedimensionar);
     };
-  }, []);
+  }, [discreto]);
 
   return (
-    <div className="fundo-cartas" ref={camada} aria-hidden="true">
-      {CARTAS_SOLTAS.map((c, i) => (
+    <div className={discreto ? 'fundo-cartas discreto' : 'fundo-cartas'} ref={camada} aria-hidden="true" data-testid="fundo-cartas">
+      {cartas.map((c, i) => (
         <span
           key={c.id}
           className="carta-solta"

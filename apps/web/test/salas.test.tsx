@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { REGRAS_RANQUEADA } from '@truco/engine';
 import { describe, expect, test, vi } from 'vitest';
 import { TelaEntrarPrivada } from '../src/telas/EntrarPrivada';
-import { TelaSalas } from '../src/telas/Salas';
+import { TelaSalas, textoAtualizado } from '../src/telas/Salas';
 
 const SALA = { id: 'abc123', modo: 'desafio', variante: 'mineiro', humanos: 2, nivelBot: 'dificil', regras: REGRAS_RANQUEADA.mineiro, ocupados: 1, dono: 'Ana' } as const;
 
@@ -39,9 +39,22 @@ describe('TelaSalas', () => {
     }
   });
 
-  test('vazia', async () => {
-    render(<TelaSalas api={{ salas: vi.fn(async () => ({ salas: [] })) }} aoEntrar={vi.fn()} />);
-    expect(await screen.findByText(/Nenhuma mesa esperando jogadores/)).toBeInTheDocument();
+  test('vazia: mesa desenhada, Abrir uma mesa leva ao início e Jogar com bots começa na hora', async () => {
+    const user = userEvent.setup();
+    const aoJogarComBots = vi.fn();
+    render(<TelaSalas api={{ salas: vi.fn(async () => ({ salas: [] })) }} aoEntrar={vi.fn()} aoJogarComBots={aoJogarComBots} />);
+    const vazia = await screen.findByRole('region', { name: 'Ninguém sentou ainda' });
+    expect(vazia.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByRole('link', { name: 'Abrir uma mesa' })).toHaveAttribute('href', '#/');
+    await user.click(screen.getByRole('button', { name: 'Jogar com bots agora' }));
+    expect(aoJogarComBots).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('atualizado agora')).toBeInTheDocument();
+  });
+
+  test('textoAtualizado', () => {
+    expect(textoAtualizado(1_000)).toBe('atualizado agora');
+    expect(textoAtualizado(8_400)).toBe('atualizado há 8 s');
+    expect(textoAtualizado(130_000)).toBe('atualizado há 2 min');
   });
 });
 

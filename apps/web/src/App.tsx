@@ -1,9 +1,9 @@
 import type { PreferenciasMesa, UsuarioApi } from '@truco/api';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Cabecalho } from './componentes/Cabecalho';
+import { FundoCartas } from './componentes/FundoCartas';
 import { Toast } from './componentes/Toast';
-import { lerApelido } from './logica/lobby';
-import type { OpcoesEntrada } from './logica/lobby';
+import { formInicial, lerApelido, lerPreferenciasLocais, type OpcoesEntrada, opcoesDeEntrada } from './logica/lobby';
 import { criarMesaPrivada, entrarNaMesa, entrarPorCodigo, tentarReconectar } from './rede/conexao';
 import { useFila, useLoja, useSessao } from './rede/hooks';
 import { api, loja, lojaFila, sessao } from './rede/instancia';
@@ -145,7 +145,19 @@ export function App() {
         conteudo = <TelaRanking variante={rota.variante} api={api} />;
         break;
       case 'salas':
-        conteudo = <TelaSalas api={api} aoEntrar={(id) => void entrarPorCodigo(loja, id, nomePadrao())} />;
+        conteudo = (
+          <TelaSalas
+            api={api}
+            aoEntrar={(id) => void entrarPorCodigo(loja, id, nomePadrao())}
+            aoJogarComBots={() => {
+              // As regras de sempre (conta > aparelho > padrão), só eu contra 3 bots.
+              const f = { ...formInicial(nomePadrao(), prefsConta ?? lerPreferenciasLocais()), humanos: 1 };
+              const o = opcoesDeEntrada(f);
+              ultimaEntrada = { tipo: 'mesa', opcoes: o };
+              void entrarNaMesa(loja, o);
+            }}
+          />
+        );
         break;
       case 'privada':
         conteudo = (
@@ -205,6 +217,8 @@ export function App() {
             void sessao.sair();
           }}
         />
+        {/* A tela inicial tem o fundo de cartas inteiro (com mouse); as outras, a versão discreta. */}
+        {rota.tela !== 'inicio' && <FundoCartas discreto />}
         {/* trocar de conta remonta a tela: nada do usuário anterior sobrevive em estado local */}
         <Fragment key={ses.usuario?.id ?? 'anon'}>{conteudo}</Fragment>
       </>
