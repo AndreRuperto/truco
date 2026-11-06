@@ -1,4 +1,4 @@
-import { novaPartida, novoBaralho, REGRAS_RANQUEADA, reduce } from '@truco/engine';
+import { limitesCorte, novaPartida, novoBaralho, REGRAS_RANQUEADA, reduce } from '@truco/engine';
 import { distribuirSemRitual } from '@truco/engine/testes';
 import { describe, expect, test } from 'vitest';
 import { chaveRegras, ehFala, ehSinal, filtroDaSala, limparChat, limparNome, MAX_CHAT, msgDaAcao, opcoesDaSala } from '../src/mesa/protocolo';
@@ -131,18 +131,16 @@ describe('msgDaAcao do ritual', () => {
     expect(msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto: 20 }, c)).toEqual({ cadeira: 2, tipo: 'cortar', fracao: 0.5 });
   });
 
-  test('a fração do corte é só visual (décimos): não revela o ponto exato', () => {
+  test('a fração do corte é só visual (3 níveis: pouco/meio/muito): não revela o ponto exato', () => {
     const c = reduce(comMonte(), { tipo: 'passarCorte', cadeira: 3 });
-    const n = c.monte.length;
-    const pontos = Array.from({ length: Math.floor(n * 0.4) + 1 }, (_, i) => Math.ceil(n * 0.3) + i);
+    const [min, max] = limitesCorte(c.monte.length);
+    const pontos = Array.from({ length: max - min + 1 }, (_, i) => min + i);
     const fracoes = pontos.map((ponto) => msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto }, c).fracao!);
-    for (const f of fracoes) {
-      expect(f).toBeGreaterThanOrEqual(0);
-      expect(f).toBeLessThanOrEqual(1);
-      expect(Math.round(f * 10) / 10).toBe(f);
-    }
-    // Vários pontos dão a mesma fração: não dá para voltar ao ponto.
-    expect(new Set(fracoes).size).toBeLessThan(pontos.length);
+    expect([...new Set(fracoes)].sort()).toEqual([0.3, 0.5, 0.7]);
+    // Crescente com o ponto: corte raso = pouco, fundo = muito.
+    expect(fracoes).toEqual([...fracoes].sort((a, b) => a - b));
+    expect(msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto: min }, c).fracao).toBe(0.3);
+    expect(msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto: max }, c).fracao).toBe(0.7);
     expect(msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto: 19 }, c).fracao).toBe(msgDaAcao({ tipo: 'cortar', cadeira: 2, ponto: 21 }, c).fracao);
   });
 

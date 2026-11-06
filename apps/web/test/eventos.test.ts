@@ -28,7 +28,7 @@ describe('texto dos balões de ação', () => {
   test('ritual e família viram balões curtos', () => {
     expect(textoDaAcao({ cadeira: 3, tipo: 'embaralhar' }, null)).toBe('Embaralhando…');
     expect(textoDaAcao({ cadeira: 3, tipo: 'passarCorte' }, null)).toBe('Corta aí!');
-    expect(textoDaAcao({ cadeira: 2, tipo: 'cortar', fracao: 0.4 }, null)).toBe('Cortei.');
+    expect(textoDaAcao({ cadeira: 2, tipo: 'cortar', fracao: 0.3 }, null)).toBe('Cortei.');
     expect(textoDaAcao({ cadeira: 2, tipo: 'abrir3' }, null)).toBe('Abri 3!');
     expect(textoDaAcao({ cadeira: 2, tipo: 'dar3', para: 0 }, null)).toBe('Toma 3, parceiro!');
     expect(textoDaAcao({ cadeira: 2, tipo: 'devolver' }, null)).toBe('Pode dar.');

@@ -38,11 +38,11 @@ describe('useAnimacaoRitual', () => {
 
   test('distribuir e cortar marcam o monte', () => {
     const { rerender } = render(<Palco movimentos={[]} />);
-    rerender(<Palco movimentos={[mov(1, { cadeira: 2, tipo: 'cortar', fracao: 0.4 })]} />);
+    rerender(<Palco movimentos={[mov(1, { cadeira: 2, tipo: 'cortar', fracao: 0.3 })]} />);
     expect(anim()).toBe('cortar');
     rerender(
       <Palco
-        movimentos={[mov(1, { cadeira: 2, tipo: 'cortar', fracao: 0.4 }), mov(2, { cadeira: 3, tipo: 'distribuir', modo: 'subindo', ordem: [0, 1, 2, 3] })]}
+        movimentos={[mov(1, { cadeira: 2, tipo: 'cortar', fracao: 0.3 }), mov(2, { cadeira: 3, tipo: 'distribuir', modo: 'subindo', ordem: [0, 1, 2, 3] })]}
       />,
     );
     expect(anim()).toBe('distribuir');

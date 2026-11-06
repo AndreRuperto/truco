@@ -593,7 +593,7 @@ class AnimadorRitual {
     }
   }
 
-  /** A parte de cima (aprox. `fracao` do monte: o servidor só manda décimos) sobe, vai para o lado e o resto passa por cima dela. */
+  /** A parte de cima (aprox. `fracao` do monte: o servidor só manda 0.3, 0.5 ou 0.7) sobe, vai para o lado e o resto passa por cima dela. */
   cortar(monte: HTMLElement, fracao: number) {
     this.marcar(monte, 'cortar', DUR_CORTE);
     if (!podeAnimar(this.camada)) return;

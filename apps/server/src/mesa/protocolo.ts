@@ -108,12 +108,22 @@ export interface MsgAcao {
   ordem?: Cadeira[];
   /** `dar3`: quem recebeu as 3 de cima. */
   para?: Cadeira;
-  /** `cortar`: fração do monte que passou para cima (0–1, em décimos: não revela o ponto exato). Só para a animação. */
+  /** `cortar`: fração do monte que passou para cima (3 níveis: 0.3 pouco, 0.5 meio, 0.7 muito; não revela o ponto exato). Só para a animação. */
   fracao?: number;
   /** `familia`: true = aberta (as cartas aparecem no `estado`). */
   aberta?: boolean;
   /** `conferir`: true = conferiu. */
   conferir?: boolean;
+}
+
+/**
+ * Fração do corte reduzida a 3 níveis visuais (pouco/meio/muito: 0.3/0.5/0.7). O ponto vai de 30%
+ * a 70% do monte (`limitesCorte`); cada terço dessa faixa vira um nível, e o ponto exato não sai.
+ */
+function nivelDoCorte(f: number): 0.3 | 0.5 | 0.7 {
+  if (f < 0.3 + 0.4 / 3) return 0.3;
+  if (f <= 0.7 - 0.4 / 3) return 0.5;
+  return 0.7;
 }
 
 /**
@@ -134,7 +144,7 @@ export function msgDaAcao(a: AcaoJogador, antes: EstadoPartida | null = null): M
       return { ...base, para: parceiroDe(a.cadeira) };
     case 'cortar': {
       const n = antes?.monte.length ?? 0;
-      return a.ponto !== undefined && n > 0 ? { ...base, fracao: Math.round((a.ponto / n) * 10) / 10 } : base;
+      return a.ponto !== undefined && n > 0 ? { ...base, fracao: nivelDoCorte(a.ponto / n) } : base;
     }
     case 'familia':
       return antes ? { ...base, aberta: tipoDaProximaFamilia(antes) === 'aberta' } : base;
