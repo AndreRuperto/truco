@@ -468,7 +468,11 @@ function secoesDe(v: Variante): SecaoInfo[] {
             <strong>Correr</strong>: a dupla adversária ganha o valor inicial da mão (1 ou 2 pontos) sem jogar.
           </li>
         </ul>
-        <p>Nessa mão ninguém pede truco. Se as duas duplas estiverem com 10, a mão é normal.</p>
+        <p>
+          Nessa mão <strong>ninguém pede truco</strong>: ela já é trucada. Na mesa de verdade, quem pede truco na mão de 10
+          dá tento para os adversários (o valor da mão); aqui o botão de truco nem aparece. Se as duas duplas estiverem com
+          10, a mão é normal.
+        </p>
       </>
     ),
   },
