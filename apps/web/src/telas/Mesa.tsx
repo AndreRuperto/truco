@@ -30,6 +30,7 @@ import { donoDoMonte, mostrarResumoMao, textoEtapa } from '../logica/ritual';
 import { type SinalRecebido, temCoringa, textoSinalRecebido } from '../logica/sinais';
 import { placarRelativo, resumoFimMao, resumoFimPartida, textoPedidoPendente, valorMao } from '../logica/textos';
 import { useAgora } from '../rede/hooks';
+import { gravarSomLigado, lerSomLigado, useSonsDaMesa } from '../som/useSons';
 import type { EstadoLoja, Loja } from '../rede/loja';
 
 const DURACAO_SINAL_MS = 4_000;
@@ -66,6 +67,8 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   const [confirmarSaida, setConfirmarSaida] = useState(false);
   const [manual, setManual] = useState(false);
   const fecharManual = useCallback(() => setManual(false), []);
+  const [somLigado, setSomLigado] = useState(lerSomLigado);
+  useSonsDaMesa(snap, somLigado, agora);
   const [vista3d, setVista3d] = useState(lerVista3D);
   const [aviso3d, setAviso3d] = useState<string | null>(null);
   const trocarVista = () => {
@@ -271,6 +274,19 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           )}
           <button type="button" aria-pressed={vista3d} onClick={trocarVista}>
             3D
+          </button>
+          <button
+            type="button"
+            aria-pressed={somLigado}
+            title={somLigado ? 'Desligar o som' : 'Ligar o som'}
+            onClick={() =>
+              setSomLigado((x) => {
+                gravarSomLigado(!x);
+                return !x;
+              })
+            }
+          >
+            Som
           </button>
           <button type="button" className="botao-ajuda" aria-label="Como jogar" title="Como jogar" onClick={() => setManual(true)}>
             ?

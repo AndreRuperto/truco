@@ -12,12 +12,6 @@ import './estilos-mesa-fisica.css';
 /** Linha da quebra (x% y%), a mesma dos `clip-path` dos pedaços no CSS. */
 const LINHA_QUEBRA = '53,0 47,22 55,41 45,63 52,81 47,100';
 
-/**
- * Som da batida (thump sintetizado). O app ainda não tem controle de som/mudo, então fica
- * DESLIGADO por padrão; ligar só junto com um botão de mudo.
- */
-export const SOM_BATIDA = false;
-
 /** Quanto tempo a batida fica "viva" na tela (tremor ~250 ms, TUM!, quebra ~900 ms). */
 export const DURACAO_BATIDA_MS = 1_000;
 
@@ -40,28 +34,6 @@ export interface JogadorDesenhado {
   gritando: boolean;
 }
 
-let audio: AudioContext | null = null;
-/** "Tum" grave e curto, volume baixo. Só toca depois de interação (o AudioContext exige). */
-function tocarTum(forca: number): void {
-  if (!SOM_BATIDA || typeof AudioContext === 'undefined') return;
-  try {
-    audio ??= new AudioContext();
-    if (audio.state === 'suspended') return;
-    const t = audio.currentTime;
-    const osc = audio.createOscillator();
-    const ganho = audio.createGain();
-    osc.frequency.setValueAtTime(120, t);
-    osc.frequency.exponentialRampToValueAtTime(45, t + 0.18);
-    ganho.gain.setValueAtTime(0.08 + 0.12 * forca, t);
-    ganho.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-    osc.connect(ganho).connect(audio.destination);
-    osc.start(t);
-    osc.stop(t + 0.25);
-  } catch {
-    // som é enfeite
-  }
-}
-
 /** O tampo da mesa: madeira (com rachaduras) ou, depois de quebrada, plástico amarelo de bar. */
 export function Tampo({ fisica, minha, batida, jogadores = [], children }: Props) {
   const [ativa, setAtiva] = useState<Batida | null>(null);
@@ -70,7 +42,6 @@ export function Tampo({ fisica, minha, batida, jogadores = [], children }: Props
   useEffect(() => {
     if (!batida || Date.now() - batida.em > DURACAO_BATIDA_MS) return;
     setAtiva(batida);
-    tocarTum(batida.forca);
     const t = setTimeout(() => setAtiva(null), DURACAO_BATIDA_MS);
     return () => clearTimeout(t);
     // só reage a uma batida nova (o id muda a cada uma)

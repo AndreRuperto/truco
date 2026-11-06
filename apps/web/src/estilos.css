@@ -1998,6 +1998,15 @@ body:has(.tela-mesa) {
 .barra-social button {
   padding: 0 var(--e3);
 }
+/* No celular os seis botões (sinais, falas, 3D, som, ajuda, sair) cabem numa linha só. */
+@media (max-width: 420px) {
+  .barra-social {
+    gap: var(--e1);
+  }
+  .barra-social button {
+    padding: 0 10px;
+  }
+}
 .pedido {
   width: 100%;
   font-weight: 800;
