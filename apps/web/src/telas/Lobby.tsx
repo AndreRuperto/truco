@@ -25,6 +25,8 @@ interface Props {
   /** Foto atual (da conta ou do aparelho) e como trocar. Sem `aoTrocarAvatar`, sem seletor. */
   avatar?: string | null;
   aoTrocarAvatar?: (avatar: string | null) => void | Promise<void>;
+  /** Com conta, a mesa usa o apelido da conta: o campo mostra ele e não edita. */
+  apelidoConta?: string;
   /** Preferências salvas na conta: undefined = sem conta (ou ainda carregando), null = conta sem nada salvo. */
   preferenciasConta?: PreferenciasMesa | null;
   /** Grava na conta (só com login). Chamado pouco depois de cada mudança nas regras. */
@@ -34,7 +36,7 @@ interface Props {
 /** Espera depois da última mudança antes de mandar para a conta. */
 const ESPERA_SALVAR_MS = 600;
 
-export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta, aoSalvarNaConta, avatar = null, aoTrocarAvatar }: Props) {
+export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta, aoSalvarNaConta, avatar = null, aoTrocarAvatar, apelidoConta }: Props) {
   const [f, setFCru] = useState<FormLobby>(() => formInicial(lerApelido(), lerPreferenciasLocais()));
   // Só grava depois que a pessoa mexe: abrir a tela não sobrescreve o que está na conta.
   const mexeu = useRef(false);
@@ -63,8 +65,8 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
 
   const enviar = (e: FormEvent) => {
     e.preventDefault();
-    gravarApelido(f.nome.trim());
-    const o = opcoesDeEntrada(f);
+    if (apelidoConta === undefined) gravarApelido(f.nome.trim());
+    const o = opcoesDeEntrada(apelidoConta === undefined ? f : { ...f, nome: apelidoConta });
     if (o.modo === 'privada' && aoCriarPrivada) aoCriarPrivada(o);
     else aoJogar(o);
   };
@@ -79,17 +81,24 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
           <div className="campo">
             <label htmlFor="apelido">Apelido</label>
             <div className="apelido-com-foto">
-              {aoTrocarAvatar && <SeletorAvatar apelido={f.nome} valor={avatar} aoMudar={aoTrocarAvatar} />}
+              {aoTrocarAvatar && <SeletorAvatar apelido={apelidoConta ?? f.nome} valor={avatar} aoMudar={aoTrocarAvatar} />}
               <input
                 id="apelido"
                 type="text"
-                value={f.nome}
+                value={apelidoConta ?? f.nome}
                 maxLength={20}
                 autoComplete="nickname"
                 placeholder="Como te chamam na mesa"
+                readOnly={apelidoConta !== undefined}
+                aria-describedby={apelidoConta !== undefined ? 'apelido-conta-dica' : undefined}
                 onChange={(e) => mudar('nome', e.target.value)}
               />
             </div>
+            {apelidoConta !== undefined && (
+              <small id="apelido-conta-dica" className="dica-campo">
+                É o apelido da sua conta. Para trocar, vá em <a href="#/perfil?editar">Editar perfil</a>.
+              </small>
+            )}
           </div>
           <button type="submit" className="botao-principal">
             {f.privada && aoCriarPrivada ? 'Criar mesa privada' : 'Jogar agora'}

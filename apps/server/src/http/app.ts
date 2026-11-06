@@ -1,6 +1,8 @@
 import type { Variante } from '@truco/engine';
 import { sql } from 'drizzle-orm';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { SalaAberta } from '../api/tipos';
 import { emailDoLink, extrairLink } from '../auth/emails';
 import { chaveDeIp, LimiteTaxa } from '../auth/limite';
@@ -255,10 +257,18 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     );
     // `/{*caminho}` (Express 5) casa também "/": sem isso o Colyseus responderia "/" com a própria versão.
     // Arquivo que não existe (tem extensão) é 404, não o index.html (evita JS/ícone virar HTML em cache).
+    // O index.html leva o endereço do site na prévia do link (og:image precisa de URL completa).
+    let indice: string | null = null;
     app.get('/{*caminho}', (req, res) => {
       if (temExtensao(req.path)) return void res.status(404).type('text/plain').send('não encontrado');
       res.setHeader('Cache-Control', 'no-cache');
-      res.sendFile('index.html', { root: pasta });
+      try {
+        indice ??= readFileSync(join(pasta, 'index.html'), 'utf8');
+      } catch {
+        return void res.sendFile('index.html', { root: pasta });
+      }
+      const origem = s.urlPublica ?? `${req.protocol}://${req.get('host')}`;
+      res.type('html').send(indice.replaceAll('__ORIGEM__', origem));
     });
   }
 

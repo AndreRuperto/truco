@@ -124,7 +124,7 @@ describe('TelaHistorico', () => {
 
   test('vazio', async () => {
     render(<TelaHistorico api={{ historico: vi.fn(async () => ({ partidas: [] })) }} />);
-    expect(await screen.findByText('Nenhuma partida ainda.')).toBeInTheDocument();
+    expect(await screen.findByText('Nenhuma partida por aqui ainda')).toBeInTheDocument();
   });
 });
 

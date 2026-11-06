@@ -107,7 +107,7 @@ describe('App: conta', () => {
     act(() => {
       window.location.hash = '#/historico';
     });
-    expect(await screen.findByText('Nenhuma partida ainda.')).toBeInTheDocument();
+    expect(await screen.findByText('Nenhuma partida por aqui ainda')).toBeInTheDocument();
     act(() => sessao.definirUsuario(null)); // o que o 401 faz
     expect(await screen.findByRole('link', { name: 'entre na sua conta' })).toBeInTheDocument();
   });

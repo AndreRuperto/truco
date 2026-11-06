@@ -18,7 +18,7 @@ let pastaWeb: string;
 beforeAll(async () => {
   b = await bancoDeTeste();
   pastaWeb = mkdtempSync(join(tmpdir(), 'truco-web-'));
-  writeFileSync(join(pastaWeb, 'index.html'), '<!doctype html><div id="raiz"></div>');
+  writeFileSync(join(pastaWeb, 'index.html'), '<!doctype html><meta property="og:image" content="__ORIGEM__/compartilhar.png"><div id="raiz"></div>');
   mkdirSync(join(pastaWeb, 'assets'));
   writeFileSync(join(pastaWeb, 'assets', 'app.js'), 'console.log(1)');
 }, 30_000);
@@ -116,6 +116,9 @@ describe('estáticos da SPA', () => {
     expect((await app.pedir('/assets/sumiu.js')).status).toBe(404);
     expect((await app.pedir('/favicon.ico')).status).toBe(404);
     expect((await app.pedir('/perfil/7')).texto).toContain('<div id="raiz">');
+    // a prévia do link leva o endereço completo do site (nada de __ORIGEM__ cru)
+    expect(raiz.texto).toMatch(/content="https?:\/\/[^"]+\/compartilhar\.png"/);
+    expect(raiz.texto).not.toContain('__ORIGEM__');
     const api = await app.pedir('/api/nao-existe');
     expect(api.status).toBe(404);
     expect(api.json).toEqual({ erro: 'não encontrado' });

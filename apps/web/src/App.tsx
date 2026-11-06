@@ -218,6 +218,7 @@ export function App() {
             }}
             avatar={avatar}
             aoTrocarAvatar={trocarAvatar}
+            apelidoConta={ses.usuario?.apelido}
             aoRanqueada={() => navegar(ses.usuario ? { tela: 'fila' } : { tela: 'entrar', token: null })}
             preferenciasConta={ses.usuario ? prefsConta : undefined}
             aoSalvarNaConta={ses.usuario ? salvarPrefs : undefined}

@@ -13,7 +13,15 @@ export function TelaHistorico({ api }: { api: Pick<Api, 'historico'> }) {
           {erro}
         </p>
       )}
-      {dados && dados.partidas.length === 0 && <p>Nenhuma partida ainda.</p>}
+      {dados && dados.partidas.length === 0 && (
+        <section className="historico-vazio">
+          <h2>Nenhuma partida por aqui ainda</h2>
+          <p>Cada partida que você terminar logado aparece nesta lista, com o placar, o modo e quanto o Elo mudou.</p>
+          <a className="botao-principal botao-link" href="#/">
+            Jogar uma partida
+          </a>
+        </section>
+      )}
       {dados && dados.partidas.length > 0 && (
         <ul className="lista-dados">
           {dados.partidas.map((p) => (
