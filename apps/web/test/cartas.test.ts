@@ -1,6 +1,6 @@
 import type { Carta, Naipe, Valor } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
-import { ehVermelha, nomeManilha, rotuloCarta, SIMBOLO, simboloCarta, textoCarta } from '../src/logica/cartas';
+import { ehVermelha, nomeManilha, rotuloCarta, SIMBOLO, textoCarta } from '../src/logica/cartas';
 
 const N: Record<string, Naipe> = { o: 'ouros', e: 'espadas', c: 'copas', p: 'paus' };
 const c = (s: string): Carta => ({ valor: s.slice(0, -1) as Valor, naipe: N[s.slice(-1)] });
@@ -42,8 +42,6 @@ describe('exibição de cartas', () => {
     expect(ehVermelha(c('Cc'))).toBe(true);
     expect(ehVermelha(c('Cp'))).toBe(false);
     expect(textoCarta(c('Cc'))).toBe('Coringa');
-    expect(simboloCarta(c('Cp'))).toBe('★');
-    expect(simboloCarta(c('Kp'))).toBe('♣');
   });
 
   test('rótulo acessível', () => {

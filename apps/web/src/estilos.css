@@ -34,6 +34,8 @@
   --azulejo-junta: #d6e0d9;
   --sombra: #0b0806;
   /* Mão que arremessa a carta: pele neutra e manga da camisa em lousa, contorno em tinta. */
+  /* Roupa das figuras de naipe preto: papel 5.1, tinta 3.2 (contorno visível). */
+  --roupa-preta: #5f6b78;
   --pele: #dcae86;
   --pele-sombra: #a8764f;
 
@@ -921,8 +923,7 @@ button:disabled {
   --coringa-roupa: var(--naipe-vermelho);
 }
 .carta.coringa.preta {
-  /* um tom acima do contorno, para a roupa não virar silhueta */
-  --coringa-roupa: var(--tinta-suave);
+  --coringa-roupa: var(--roupa-preta);
 }
 .carta.coringa .figura-coringa {
   inset: 4% 6% 3%;
@@ -1046,7 +1047,21 @@ button:disabled {
   stroke-linecap: round;
 }
 .fig-cor {
+  fill: var(--fig-cor, currentColor);
+}
+.fig-naipe {
   fill: currentColor;
+}
+/* Rei, Dama e Valete de naipe preto: roupa e cabelo em cinza-azulado, não em tinta. */
+.carta.preta .figura:not(.figura-as) {
+  --fig-cor: var(--roupa-preta);
+}
+/* Chapéu do coringa no lugar do naipe: do tamanho do texto em volta. */
+.chapeu-coringa {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.12em;
 }
 .fig-papel {
   fill: var(--papel);

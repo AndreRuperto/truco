@@ -17,15 +17,17 @@ describe('CartaVisual', () => {
     expect(carta).toHaveClass('coringa', 'vermelha');
     expect(carta).not.toHaveClass('manilha');
     expect(carta.querySelectorAll('.canto')).toHaveLength(2);
-    // Cada canto traz a palavra (carta larga) e "C" + estrela (média/estreita); o CSS escolhe.
+    // Cada canto traz a palavra (carta larga) e "C" + chapéu (média/estreita); o CSS escolhe.
     for (const canto of carta.querySelectorAll('.canto')) {
       expect(canto).toHaveAttribute('aria-hidden', 'true');
       expect(canto.querySelector('.coringa-palavra')?.textContent).toBe('CORINGA');
-      expect(canto.querySelector('.coringa-curto')?.textContent).toBe('C★');
+      expect(canto.querySelector('.coringa-curto')?.textContent).toBe('C');
+      expect(canto.querySelector('.coringa-curto svg[data-simbolo="coringa"]')).not.toBeNull();
       expect(canto.querySelector('.coringa-c')?.textContent).toBe('C');
     }
-    // Estrela simples continua no DOM para a carta estreita.
-    expect(carta.querySelector('.naipe-central')).toHaveTextContent('★');
+    // O chapéu sozinho continua no DOM para a carta estreita; a estrela saiu.
+    expect(carta.querySelector('.naipe-central svg[data-simbolo="coringa"]')).not.toBeNull();
+    expect(carta).not.toHaveTextContent('★');
     expect(carta.querySelector('.selo')).toBeNull();
     expect(carta).not.toHaveTextContent(/[♥♠♦♣]/);
   });
@@ -37,7 +39,7 @@ describe('CartaVisual', () => {
     render(<CartaVisual carta={c(id)} variante="mineiro" vira={null} />);
     const carta = screen.getByRole('img', { name: 'Coringa' });
     expect(carta).toHaveClass('coringa', cor, 'figurada');
-    const svgs = carta.querySelectorAll('svg');
+    const svgs = carta.querySelectorAll('svg[data-figura]');
     expect(svgs).toHaveLength(1);
     expect(svgs[0]).toHaveAttribute('data-figura', 'coringa');
     expect(svgs[0]).toHaveAttribute('aria-hidden', 'true');

@@ -24,10 +24,6 @@ const NOME_MANILHA: Record<Naipe, string> = { paus: 'Zap', copas: 'Copas', espad
 
 export const ehVermelha = (c: Carta): boolean => c.naipe === 'ouros' || c.naipe === 'copas';
 
-/** Símbolo da carta: o do naipe, ou a estrela do coringa (que só usa o naipe para a cor). */
-export const SIMBOLO_CORINGA = '★';
-export const simboloCarta = (c: Carta): string => (ehCoringa(c) ? SIMBOLO_CORINGA : SIMBOLO[c.naipe]);
-
 export const textoCarta = (c: Carta): string => (ehCoringa(c) ? NOME_VALOR.C : `${c.valor}${SIMBOLO[c.naipe]}`);
 
 export function nomeManilha(c: Carta, variante: Variante, vira: Carta | null): string | null {

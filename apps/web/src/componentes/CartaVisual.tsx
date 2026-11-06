@@ -1,8 +1,8 @@
 import { type Carta, ehCoringa, type Variante } from '@truco/engine';
 import type { ReactNode } from 'react';
-import { ehVermelha, nomeManilha, rotuloCarta, simboloCarta } from '../logica/cartas';
+import { ehVermelha, nomeManilha, rotuloCarta, SIMBOLO } from '../logica/cartas';
 import { cx } from './cx';
-import { type Figura, FiguraCarta, FiguraCoringa, OrnamentoAs } from './FiguraCarta';
+import { ChapeuCoringa, type Figura, FiguraCarta, FiguraCoringa, OrnamentoAs } from './FiguraCarta';
 
 const FIGURA: Partial<Record<Carta['valor'], Figura>> = { K: 'rei', Q: 'dama', J: 'valete' };
 
@@ -20,12 +20,13 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
   if (!carta) return <span className={cx(base, 'verso')} role="img" aria-label="carta virada" />;
   const manilha = nomeManilha(carta, variante, vira);
   const coringa = ehCoringa(carta);
-  const simbolo = simboloCarta(carta);
+  /* O coringa usa o naipe só para a cor; o símbolo dele é o chapéu de bobo. */
+  const simbolo: ReactNode = coringa ? <ChapeuCoringa /> : SIMBOLO[carta.naipe];
   const figura = coringa ? undefined : FIGURA[carta.valor];
   const as = !coringa && carta.valor === 'A';
   /*
    * O coringa não tem valor impresso: o canto traz "CORINGA" empilhado na carta larga
-   * (≥ 74px), "C" + estrela na média e só a estrela na estreita (< 48px). O CSS escolhe.
+   * (≥ 74px), "C" + chapéu na média e só o chapéu na estreita (< 48px). O CSS escolhe.
    */
   const canto: ReactNode = coringa ? (
     <>
