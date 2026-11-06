@@ -486,8 +486,9 @@ export class Mesa {
     return `${marco}|${s.fase}|${marcas.join(',')}`;
   }
 
-  /** Prazo do humano: etapa do ritual, conferir família ou jogada. */
+  /** Prazo do humano: etapa do ritual (+ a pausa do resumo, na 1ª de uma mão nova), conferir família ou jogada. */
   private prazoMs(s: EstadoPartida): number {
+    if (this.inicioDeMaoNova(s)) return this.tempos.ritualMs + this.tempos.pausaMaoMs;
     if (ehFaseRitual(s.fase)) return this.tempos.ritualMs;
     if (s.fase === 'conferindoFamilia') return this.tempos.conferirMs;
     return this.tempos.jogadaMs;
@@ -495,10 +496,15 @@ export class Mesa {
 
   /** Espera do bot. A 1ª embaralhada de uma mão nova espera a pausa (o resumo da mão anterior aparece). */
   private atrasoBot(s: EstadoPartida): number {
-    if (s.fase === 'embaralhando' && s.ritual?.embaralhadas === 0 && s.ultimaMao) return this.tempos.pausaMaoMs;
+    if (this.inicioDeMaoNova(s)) return this.tempos.pausaMaoMs;
     // A vez espera a janela de família: dá tempo de alguém (humano) pedir antes da 1ª carta.
     if (janelaDeFamilia(s)) return Math.max(this.tempos.botMs, this.tempos.janelaFamiliaMs);
     return this.tempos.botMs;
+  }
+
+  /** Monte ainda sem embaralhar numa mão que não é a 1ª: o resumo da mão anterior está na tela. */
+  private inicioDeMaoNova(s: EstadoPartida): boolean {
+    return s.fase === 'embaralhando' && s.ritual?.embaralhadas === 0 && !!s.ultimaMao;
   }
 
   /** 1ª mão: o servidor põe o monte sorteado na mesa. */

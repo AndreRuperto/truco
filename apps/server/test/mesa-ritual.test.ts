@@ -56,6 +56,17 @@ describe('ritual na Mesa', () => {
     ]);
   });
 
+  test('mão nova: a 1ª embaralhada do humano ganha a pausa do resumo da mão anterior', () => {
+    const t = comAna();
+    avancarAte(() => {
+      const r = t.mesa.partida?.ritual;
+      return t.mesa.partida?.fase === 'embaralhando' && !!t.mesa.partida.ultimaMao && r?.embaralhador === 0 && r.embaralhadas === 0;
+    }, 1);
+    const restante = t.estado('a')!.prazo!.ate - Date.now();
+    expect(restante).toBeGreaterThan(TEMPOS.ritualMs);
+    expect(restante).toBeLessThanOrEqual(TEMPOS.ritualMs + TEMPOS.pausaMaoMs);
+  });
+
   test('o prazo é da etapa: embaralhar de novo não reinicia o relógio', () => {
     const t = comAna();
     ateEtapa(t, 'embaralhando');
