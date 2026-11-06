@@ -30,13 +30,20 @@ describe('manual de como jogar', () => {
   test('um guia para cada variante: escada completa, vira e mão limpa só onde existem', async () => {
     const user = userEvent.setup();
     render(<Manual varianteInicial="mineiro" />);
-    expect(screen.getByText('4♣ › 7♥ › A♠ › 7♦ › 3 › 2 › A › K › J › Q › 7 › 6 › 5 › 4')).toBeInTheDocument();
+    const escadaMineiro = screen.getByRole('list', { name: 'Da mais forte para a mais fraca, no mineiro' });
+    const nomes = within(escadaMineiro).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'));
+    expect(nomes.slice(0, 5)).toEqual(['4 de paus, manilha', '7 de copas, manilha', 'Ás de espadas, manilha', '7 de ouros, manilha', '3 de ouros']);
+    expect(nomes).toHaveLength(14);
     expect(screen.getByRole('heading', { level: 2, name: 'Resumo do Mineiro' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Mão limpa' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'No paulista: depende da vira' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Guia do Paulista' }));
     expect(screen.getByRole('button', { name: 'Guia do Paulista' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('Q♣ › Q♥ › Q♠ › Q♦ › 3 › 2 › A › K › J › 7 › 6 › 5 › 4')).toBeInTheDocument();
+    const escadaPaulista = screen.getByRole('list', { name: 'Da mais forte para a mais fraca, com a vira 7 de ouros' });
+    const itens = within(escadaPaulista).getAllByRole('listitem');
+    expect(itens).toHaveLength(13);
+    expect(itens[0]).toHaveAccessibleName('Dama de paus, manilha');
+    expect(itens.some((li) => /^Dama/.test(li.getAttribute('aria-label') ?? '') && !/manilha/.test(li.getAttribute('aria-label') ?? ''))).toBe(false);
     expect(screen.getByRole('heading', { name: 'No paulista: depende da vira' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: 'Mão limpa' })).toBeNull();
     expect(screen.queryByText(/Piscar os dois olhos/)).toBeNull();

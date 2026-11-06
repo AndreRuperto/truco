@@ -24,6 +24,54 @@ function Cartas({ cartas, variante = 'mineiro', vira = null, legenda }: { cartas
   );
 }
 
+const NOME_VALOR: Record<string, string> = { A: 'Ás', K: 'Rei', J: 'Valete', Q: 'Dama', C: 'Coringa' };
+const nomeCarta = (c: Carta) => `${NOME_VALOR[c.valor] ?? c.valor} de ${c.naipe}`;
+
+/**
+ * A escada de força em cartas: manilhas, depois comuns, com uma seta entre cada degrau. Para o
+ * leitor de tela é uma lista ordenada com o nome de cada carta (as setas são só desenho).
+ */
+function Escada({
+  variante,
+  vira,
+  rotulo,
+  manilhas,
+  legendaManilhas,
+  comuns,
+}: {
+  variante: Variante;
+  vira: Carta | null;
+  rotulo: string;
+  manilhas: Carta[];
+  legendaManilhas?: string[];
+  comuns: Carta[];
+}) {
+  const degraus = [
+    ...manilhas.map((c, i) => ({ c, grupo: 'manilha' as const, legenda: legendaManilhas?.[i] })),
+    ...comuns.map((c) => ({ c, grupo: 'comum' as const, legenda: undefined })),
+  ];
+  return (
+    <figure className="escada">
+      <figcaption>{rotulo}</figcaption>
+      <ol className="escada-degraus" aria-label={rotulo}>
+        {degraus.map(({ c, grupo, legenda }, i) => (
+          <li key={`${c.valor}${c.naipe}`} className={`escada-degrau escada-${grupo}`} aria-label={nomeCarta(c) + (grupo === 'manilha' ? ', manilha' : '')}>
+            {i > 0 && (
+              <span className={degraus[i - 1].grupo !== grupo ? 'escada-seta escada-divisa' : 'escada-seta'} aria-hidden="true">
+                ›
+              </span>
+            )}
+            <span className="escada-carta" aria-hidden="true">
+              <CartaVisual carta={c} variante={variante} vira={vira} />
+              <span className="escada-legenda">{legenda ?? (grupo === 'manilha' ? 'manilha' : '')}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </figure>
+  );
+}
+
 interface SecaoInfo {
   id: string;
   titulo: string;
@@ -126,37 +174,23 @@ function secoesDe(v: Variante): SecaoInfo[] {
           comuns, em que só o número importa (o naipe não).{' '}
           {paulista ? 'Exemplo com a vira 7 de ouros' : 'No mineiro é sempre esta'}, da mais forte para a mais fraca:
         </p>
-        <h3>Manilhas</h3>
         {paulista ? (
-          <Cartas
+          <Escada
             variante="paulista"
             vira={VIRA_EXEMPLO}
-            cartas={[k('Q', 'paus'), k('Q', 'copas'), k('Q', 'espadas'), k('Q', 'ouros')]}
-            legenda={['Q de paus', 'Q de copas', 'Q de espadas', 'Q de ouros']}
+            rotulo="Da mais forte para a mais fraca, com a vira 7 de ouros"
+            manilhas={[k('Q', 'paus'), k('Q', 'copas'), k('Q', 'espadas'), k('Q', 'ouros')]}
+            comuns={COMUNS.filter((c) => c.valor !== 'Q')}
           />
         ) : (
-          <Cartas
+          <Escada
             variante="mineiro"
-            cartas={[k('4', 'paus'), k('7', 'copas'), k('A', 'espadas'), k('7', 'ouros')]}
-            legenda={['Zap (4♣)', '7 de copas', 'Espadilha (A♠)', 'Pica-fumo (7♦)']}
+            vira={null}
+            rotulo="Da mais forte para a mais fraca, no mineiro"
+            manilhas={[k('4', 'paus'), k('7', 'copas'), k('A', 'espadas'), k('7', 'ouros')]}
+            legendaManilhas={['Zap', '7 de copas', 'Espadilha', 'Pica-fumo']}
+            comuns={COMUNS}
           />
-        )}
-        <h3>Comuns</h3>
-        <Cartas variante={v} vira={paulista ? VIRA_EXEMPLO : null} cartas={paulista ? COMUNS.filter((c) => c.valor !== 'Q') : COMUNS} />
-        {paulista ? (
-          <p
-            className="manual-ordem"
-            aria-label="Manilhas: Dama de paus, de copas, de espadas e de ouros; depois 3, 2, Ás, Rei, Valete, 7, 6, 5, 4"
-          >
-            Q♣ › Q♥ › Q♠ › Q♦ › 3 › 2 › A › K › J › 7 › 6 › 5 › 4
-          </p>
-        ) : (
-          <p
-            className="manual-ordem"
-            aria-label="Manilhas: 4 de paus, 7 de copas, Ás de espadas, 7 de ouros; depois 3, 2, Ás, Rei, Valete, Dama, 7, 6, 5, 4"
-          >
-            4♣ › 7♥ › A♠ › 7♦ › 3 › 2 › A › K › J › Q › 7 › 6 › 5 › 4
-          </p>
         )}
         {paulista ? (
           <p>

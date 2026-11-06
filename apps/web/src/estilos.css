@@ -3049,3 +3049,72 @@ button:disabled {
 .manual-secao h3 + .manual-cartas {
   margin-top: var(--e2);
 }
+
+/* Escada de força no manual: cartas pequenas com seta entre os degraus; manilhas sublinhadas. */
+.escada {
+  margin: var(--e3) 0;
+}
+.escada figcaption {
+  margin-bottom: var(--e2);
+  color: var(--manual-suave, var(--texto-suave));
+  font-size: var(--t-1);
+}
+.escada-degraus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--e3) 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.manual-secao .escada-degrau {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+}
+.escada-carta {
+  display: grid;
+  justify-items: center;
+  gap: var(--e1);
+  width: 52px;
+}
+.escada-carta .carta {
+  --carta-l: 44px;
+}
+.escada-manilha .carta {
+  box-shadow:
+    0 0 0 2px var(--grito),
+    var(--sombra-carta);
+}
+.escada-legenda {
+  min-height: 1.2em;
+  color: var(--manual-suave, var(--texto-suave));
+  font-size: 0.7rem;
+  line-height: 1.2;
+  text-align: center;
+}
+.escada-manilha .escada-legenda {
+  color: var(--manual-destaque, var(--grito));
+  font-weight: 700;
+}
+.escada-seta {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: calc(44px * 1.45);
+  color: var(--manual-tinta, var(--texto));
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+.escada-divisa {
+  width: 28px;
+  color: var(--manual-destaque, var(--grito));
+}
+@media (prefers-color-scheme: light) {
+  .tela-manual .escada-manilha .carta {
+    box-shadow:
+      0 0 0 2px var(--madeira),
+      var(--sombra-carta);
+  }
+}
