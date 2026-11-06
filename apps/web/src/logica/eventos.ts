@@ -56,7 +56,7 @@ export function textoDaAcao(a: MsgAcao, anterior: Visao | null): string | null {
     case 'distribuir':
       return a.modo === 'porBaixo' ? 'Por baixo!' : a.modo === 'subindo' ? 'Subindo!' : 'Por cima!';
     case 'conferir':
-      return a.conferir ? 'Confere!' : null;
+      return a.conferir ? 'Confere!' : 'Pode ir.';
     case 'mao10':
       return a.jogar === undefined ? null : a.jogar ? 'Vamos!' : 'Corro!';
     default:

@@ -36,7 +36,7 @@ describe('texto dos balões de ação', () => {
     expect(textoDaAcao({ cadeira: 0, tipo: 'familia', aberta: false }, null)).toBe('Família fechada!');
     expect(textoDaAcao({ cadeira: 0, tipo: 'familia', aberta: true }, null)).toBe('Família aberta!');
     expect(textoDaAcao({ cadeira: 1, tipo: 'conferir', conferir: true }, null)).toBe('Confere!');
-    expect(textoDaAcao({ cadeira: 1, tipo: 'conferir', conferir: false }, null)).toBeNull();
+    expect(textoDaAcao({ cadeira: 1, tipo: 'conferir', conferir: false }, null)).toBe('Pode ir.');
   });
 
   test('falas', () => {
