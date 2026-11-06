@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { distribuirSemRitual } from '../src/atalhos';
+import { distribuirSemRitual } from '../src/testes';
 import { idCarta } from '../src/cartas';
 import { novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';

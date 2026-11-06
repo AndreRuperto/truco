@@ -1,4 +1,4 @@
-import { distribuirSemRitual } from '../src/atalhos';
+import { distribuirSemRitual } from '../src/testes';
 import { baralhoDaMesa, type Carta, idCarta, type Naipe, novoBaralho, type Valor } from '../src/cartas';
 import { type Cadeira, type EstadoPartida, novaPartida } from '../src/estado';
 import { reduce } from '../src/reducer';

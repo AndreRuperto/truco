@@ -1,6 +1,5 @@
 import {
   type Cadeira,
-  distribuirSemRitual,
   type Carta,
   type EstadoPartida,
   type Naipe,
@@ -10,6 +9,7 @@ import {
   REGRAS_RANQUEADA,
   type Valor,
 } from '@truco/engine';
+import { distribuirSemRitual } from '@truco/engine/testes';
 import { describe, expect, test } from 'vitest';
 import { cartaDoSinal, falaDaRodada, rodadaFechada, sinalDaMao } from '../src/mesa/social';
 

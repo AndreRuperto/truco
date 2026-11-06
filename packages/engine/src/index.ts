@@ -4,7 +4,6 @@ export * from './regras';
 export * from './forca';
 export * from './manilhas';
 export * from './ritual';
-export * from './atalhos';
 export * from './estado';
 export * from './mao';
 export * from './familia';

@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "paths": { "@truco/engine": ["../../packages/engine/src/index.ts"] }
+    "paths": {
+      "@truco/engine": ["../../packages/engine/src/index.ts"],
+      "@truco/engine/testes": ["../../packages/engine/src/testes.ts"]
+    }
   },
   "include": ["src", "test", "scripts", "vitest.config.ts", "drizzle.config.ts"]
 }

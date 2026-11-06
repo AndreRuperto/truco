@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { distribuirSemRitual } from '../src/atalhos';
+import { distribuirSemRitual } from '../src/testes';
 import { amostrarMundo } from '../src/bots/dificil';
 import { botFacil } from '../src/bots/facil';
 import { baralhoDaMesa, idCarta, novoBaralho } from '../src/cartas';

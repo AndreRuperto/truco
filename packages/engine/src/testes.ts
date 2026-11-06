@@ -1,3 +1,7 @@
+/**
+ * Atalhos só para testes e simulações (fora da API pública: importe de `@truco/engine/testes`,
+ * ou de `../src/testes` dentro do engine). Pulam o ritual, que no jogo real vem dos jogadores.
+ */
 import type { Carta } from './cartas';
 import type { EstadoPartida } from './estado';
 import { reduce } from './reducer';

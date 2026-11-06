@@ -1,4 +1,5 @@
-import { distribuirSemRitual, type EstadoPartida, novaPartida, novoBaralho, reduce, REGRAS_RANQUEADA } from '@truco/engine';
+import { type EstadoPartida, novaPartida, novoBaralho, reduce, REGRAS_RANQUEADA } from '@truco/engine';
+import { distribuirSemRitual } from '@truco/engine/testes';
 import { describe, expect, test } from 'vitest';
 import { jogadaAutomatica } from '../src/mesa/Mesa';
 

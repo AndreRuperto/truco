@@ -1,4 +1,5 @@
-import { distribuirSemRitual, novaPartida, novoBaralho, REGRAS_RANQUEADA, reduce } from '@truco/engine';
+import { novaPartida, novoBaralho, REGRAS_RANQUEADA, reduce } from '@truco/engine';
+import { distribuirSemRitual } from '@truco/engine/testes';
 import { describe, expect, test } from 'vitest';
 import { chaveRegras, ehFala, ehSinal, filtroDaSala, limparChat, limparNome, MAX_CHAT, msgDaAcao, opcoesDaSala } from '../src/mesa/protocolo';
 

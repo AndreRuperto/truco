@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, test } from 'vitest';
-import { distribuirSemRitual } from '../src/atalhos';
+import { distribuirSemRitual } from '../src/testes';
 import { acoesValidas, todasAcoesValidas } from '../src/acoes';
 import { amostrarMundo, botDificil } from '../src/bots/dificil';
 import { baralhoDaMesa, type Carta, idCarta } from '../src/cartas';

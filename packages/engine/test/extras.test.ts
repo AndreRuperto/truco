@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { distribuirSemRitual, ritualMinimo } from '../src/atalhos';
+import { distribuirSemRitual, ritualMinimo } from '../src/testes';
 import { novoBaralho } from '../src/cartas';
 import type { Acao, Cadeira, EstadoPartida } from '../src/estado';
 import { proximaCadeira } from '../src/estado';

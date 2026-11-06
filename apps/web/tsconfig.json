@@ -7,6 +7,7 @@
     "baseUrl": ".",
     "paths": {
       "@truco/engine": ["../../packages/engine/src/index.ts"],
+      "@truco/engine/testes": ["../../packages/engine/src/testes.ts"],
       "@truco/protocolo": ["../server/src/mesa/protocolo.ts"],
       "@truco/api": ["../server/src/api/tipos.ts"]
     }

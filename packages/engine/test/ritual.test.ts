@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { distribuirSemRitual, ritualMinimo } from '../src/atalhos';
+import { distribuirSemRitual, ritualMinimo } from '../src/testes';
 import { type Carta, idCarta, novoBaralho } from '../src/cartas';
 import { type EstadoPartida, novaPartida } from '../src/estado';
 import { ErroJogada, reduce } from '../src/reducer';

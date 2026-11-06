@@ -7,7 +7,6 @@ import {
   type Naipe,
   novaPartida,
   baralhoDaMesa,
-  distribuirSemRitual,
   novoBaralho,
   reduce,
   REGRAS_RANQUEADA,
@@ -15,6 +14,7 @@ import {
   type Valor,
   visaoDoJogador,
 } from '@truco/engine';
+import { distribuirSemRitual } from '@truco/engine/testes';
 import type { InfoCadeira, MsgEstado } from '@truco/protocolo';
 
 const N: Record<string, Naipe> = { o: 'ouros', e: 'espadas', c: 'copas', p: 'paus' };
