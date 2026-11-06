@@ -237,7 +237,10 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
     return { modo, regras: { ...REGRAS_RANQUEADA[variante] }, humanos: h === 4 ? 4 : 2, nivelBot: 'dificil', chanceInterceptarSinal: 0, tempoFamiliaS: 20 };
   }
   const nivelBot: NivelBot = modo === 'classica' ? 'facil' : modo === 'desafio' ? 'dificil' : nivelPedido;
-  return { modo, regras, humanos, nivelBot, chanceInterceptarSinal, tempoFamiliaS };
+  // Mesa privada é para chamar gente pelo link: com 1 humano ela começaria na hora, sem sala de
+  // espera (e sem link). Espera até 4; o dono pode começar com bots quando quiser.
+  const humanosMesa = modo === 'privada' && humanos < 2 ? 4 : humanos;
+  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS };
 }
 
 /** Campos do `filterBy` da sala `mesa`, sempre preenchidos com valores validados. */

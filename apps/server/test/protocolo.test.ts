@@ -89,6 +89,13 @@ describe('modo da mesa', () => {
     expect(opcoesDaSala({ nivelBot: 'dificil' })).toMatchObject({ modo: 'desafio', nivelBot: 'dificil' });
   });
 
+  test('privada com 1 humano espera 4 (senão começaria na hora, sem sala de espera nem link)', () => {
+    expect(opcoesDaSala({ modo: 'privada', humanos: 1 }).humanos).toBe(4);
+    expect(opcoesDaSala({ modo: 'privada' }).humanos).toBe(4);
+    expect(opcoesDaSala({ modo: 'privada', humanos: 2 }).humanos).toBe(2);
+    expect(opcoesDaSala({ modo: 'classica', humanos: 1 }).humanos).toBe(1);
+  });
+
   test('o modo manda no nível do bot nas casuais; na privada vale o pedido', () => {
     expect(opcoesDaSala({ modo: 'classica', nivelBot: 'dificil' }).nivelBot).toBe('facil');
     expect(opcoesDaSala({ modo: 'desafio', nivelBot: 'facil' }).nivelBot).toBe('dificil');

@@ -162,7 +162,8 @@ export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
   return {
     nome: f.nome.trim() || 'Jogador',
     variante: f.variante,
-    humanos: Math.min(4, Math.max(1, Math.round(f.humanos))),
+    // Privada com "só eu" começaria na hora, sem sala de espera nem link: espera até 4 (o dono pode começar antes).
+    humanos: f.privada && f.humanos < 2 ? 4 : Math.min(4, Math.max(1, Math.round(f.humanos))),
     nivelBot: f.nivelBot,
     regras,
     chanceInterceptarSinal: chance,

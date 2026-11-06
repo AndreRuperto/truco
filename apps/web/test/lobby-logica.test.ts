@@ -80,6 +80,12 @@ describe('modo', () => {
     expect(opcoesDeEntrada({ ...formPadrao('paulista', 'Ana'), privada: true }).modo).toBe('privada');
   });
 
+  test('privada com "só eu" pede 4 humanos: a mesa espera o convite em vez de começar na hora', () => {
+    expect(opcoesDeEntrada({ ...formPadrao('paulista', 'Ana'), privada: true, humanos: 1 }).humanos).toBe(4);
+    expect(opcoesDeEntrada({ ...formPadrao('paulista', 'Ana'), privada: true, humanos: 2 }).humanos).toBe(2);
+    expect(opcoesDeEntrada({ ...formPadrao('paulista', 'Ana'), humanos: 1 }).humanos).toBe(1);
+  });
+
   test('trocar a variante mantém a privada', () => {
     expect(trocarVariante({ ...formPadrao(), privada: true }, 'mineiro').privada).toBe(true);
   });
