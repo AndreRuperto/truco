@@ -866,17 +866,6 @@ button:disabled {
   text-align: center;
   white-space: nowrap;
 }
-.vira-manilha {
-  max-width: 100%;
-  padding: 1px var(--e1);
-  border-radius: 4px;
-  background: var(--madeira-funda);
-  color: var(--giz);
-  font-size: var(--t-1);
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: center;
-}
 .marcadores {
   display: flex;
   gap: 2px;

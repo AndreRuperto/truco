@@ -1,6 +1,5 @@
-import { type Cadeira, valorManilhaPaulista, type Variante, type VisaoMao, type VisaoResultadoMao } from '@truco/engine';
+import { type Cadeira, type Variante, type VisaoMao, type VisaoResultadoMao } from '@truco/engine';
 import { type ReactNode, useRef } from 'react';
-import { nomeValor } from '../logica/cartas';
 import { exibicaoMesa } from '../logica/jogadas';
 import { posicaoRelativa } from '../logica/posicoes';
 import { marcadoresRodadas } from '../logica/textos';
@@ -48,7 +47,6 @@ export function CentroMesa({ mao, ultimaMao, minha, variante, extra }: Props) {
         )}
         {fonte && (
           <div className="meio">
-            {vira && variante === 'paulista' && <span className="vira-manilha">manilha: {nomeValor(valorManilhaPaulista(vira))}</span>}
             <div className="marcadores" aria-label="Rodadas">
               {marcadoresRodadas(fonte.rodadas, minha).map((m, i) => (
                 <span key={i} className={cx('marcador', m)} title={`${i + 1}ª rodada: ${TITULO[m]}`}>
