@@ -204,17 +204,53 @@ button:disabled {
   border-bottom: 3px solid var(--lousa-borda);
 }
 
-/* ---------- formulários (papel) ---------- */
+/*
+ * ---------- formulários ----------
+ * No escuro: lousa sobre a noite (giz/lousa 12.2, giz-suave/lousa 7.1, giz/campo 14.6).
+ * No claro: papel com tinta, como antes. Os campos usam os tokens --form-* com o papel de fallback.
+ */
 .formulario {
+  --form-fundo: var(--lousa);
+  --form-borda: #3e4d45;
+  --form-campo: var(--lousa-noite);
+  --form-tinta: var(--giz);
+  --form-tinta-suave: var(--giz-suave);
+  --form-acento: var(--grito);
+  --form-erro: var(--erro-texto);
   display: grid;
   gap: var(--e3);
   padding: var(--e4);
-  border: 1px solid var(--papel-borda);
+  border: 1px solid var(--form-borda);
   border-radius: var(--raio-painel);
-  background: var(--papel);
-  color: var(--tinta);
-  color-scheme: light;
-  --foco: var(--tinta);
+  background: var(--form-fundo);
+  color: var(--form-tinta);
+  color-scheme: dark;
+  --foco: var(--grito);
+}
+@media (prefers-color-scheme: light) {
+  .formulario {
+    --form-fundo: var(--papel);
+    --form-borda: var(--papel-borda);
+    --form-campo: var(--branco);
+    --form-tinta: var(--tinta);
+    --form-tinta-suave: var(--tinta-suave);
+    --form-acento: var(--madeira-funda);
+    --form-erro: var(--naipe-vermelho);
+    color-scheme: light;
+    --foco: var(--tinta);
+  }
+}
+/* Botão secundário dentro do formulário escuro: um tom acima da lousa, para não sumir nela. */
+.formulario button:not(.botao-principal) {
+  border-color: var(--form-borda);
+}
+@media (prefers-color-scheme: dark) {
+  .formulario button:not(.botao-principal) {
+    background: color-mix(in srgb, var(--lousa) 86%, var(--giz));
+  }
+  .formulario button:not(.botao-principal):hover:not(:disabled) {
+    background: color-mix(in srgb, var(--lousa) 76%, var(--giz));
+  }
 }
 .campo {
   display: grid;
@@ -224,7 +260,7 @@ button:disabled {
 .campo label {
   font-size: var(--t-1);
   font-weight: 600;
-  color: var(--tinta-suave);
+  color: var(--form-tinta-suave, var(--tinta-suave));
 }
 .campo select,
 .campo input,
@@ -232,10 +268,10 @@ button:disabled {
 .chat-form input {
   min-height: 44px;
   padding: 0 var(--e3);
-  border: 2px solid var(--papel-borda);
+  border: 2px solid var(--form-borda, var(--papel-borda));
   border-radius: var(--raio-carta);
-  background: var(--branco);
-  color: var(--tinta);
+  background: var(--form-campo, var(--branco));
+  color: var(--form-tinta, var(--tinta));
 }
 .campo select,
 .campo input {
@@ -243,7 +279,7 @@ button:disabled {
 }
 .campo select:hover,
 .campo input:hover {
-  border-color: var(--tinta-suave);
+  border-color: var(--form-tinta-suave, var(--tinta-suave));
 }
 .campo-check {
   display: flex;
@@ -255,19 +291,19 @@ button:disabled {
   flex: none;
   width: 22px;
   height: 22px;
-  accent-color: var(--madeira-funda);
+  accent-color: var(--form-acento, var(--madeira-funda));
 }
 .campo-check small {
   display: block;
-  color: var(--tinta-suave);
+  color: var(--form-tinta-suave, var(--tinta-suave));
   font-size: var(--t-1);
 }
 .formulario .nota {
-  color: var(--tinta-suave);
+  color: var(--form-tinta-suave);
   opacity: 1;
 }
 .formulario .erro-form {
-  color: var(--naipe-vermelho);
+  color: var(--form-erro);
 }
 
 /*
@@ -384,7 +420,7 @@ button:disabled {
   gap: var(--e2);
   min-height: 44px;
   padding: var(--e1) var(--e3);
-  border: 2px solid var(--papel-borda);
+  border: 2px solid var(--form-borda, var(--papel-borda));
   border-radius: var(--raio-botao);
   cursor: pointer;
 }
@@ -392,15 +428,15 @@ button:disabled {
   flex: none;
   width: 22px;
   height: 22px;
-  accent-color: var(--madeira-funda);
+  accent-color: var(--form-acento, var(--madeira-funda));
 }
 .alternar-privada small {
   display: block;
-  color: var(--tinta-suave);
+  color: var(--form-tinta-suave, var(--tinta-suave));
   font-size: var(--t-1);
 }
 .regras-mesa {
-  border-top: 1px dashed var(--papel-borda);
+  border-top: 1px dashed var(--form-borda, var(--papel-borda));
   padding-top: var(--e2);
 }
 .regras-mesa summary {
@@ -432,7 +468,7 @@ button:disabled {
   transform: rotate(45deg);
 }
 .regras-mesa summary small {
-  color: var(--tinta-suave);
+  color: var(--form-tinta-suave, var(--tinta-suave));
   font-size: var(--t-1);
   font-weight: 400;
 }
