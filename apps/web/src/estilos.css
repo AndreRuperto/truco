@@ -810,6 +810,10 @@ button:disabled {
  * Tudo atrás (z-index -1), então placar, cronômetro e mão cobrem o que sobrar.
  */
 :root {
+  --parede: #26322c;
+  --parede-faixa: #6f4628;
+  --azulejo-parede: #34463e;
+  --azulejo-parede-junta: #29372f;
   --piso: #1a231f;
   --piso-junta: #121915;
   --piso-motivo: #22302a;
@@ -819,6 +823,9 @@ button:disabled {
 }
 @media (prefers-color-scheme: light) {
   :root {
+    --parede: #e6dac2;
+    --azulejo-parede: #dbe7e0;
+    --azulejo-parede-junta: #bfcfc6;
     --piso: #d9cfbd;
     --piso-junta: #c5b9a3;
     --piso-motivo: #cdbfa6;
@@ -999,6 +1006,195 @@ body:has(.tela-mesa) {
   filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--sombra) 40%, transparent));
 }
 
+/*
+ * 2.5D (tela larga e alta): a mesa vista de quem está sentado. Só a superfície desenhada
+ * inclina (pseudo-elementos); cartas, botões e animações continuam retos por cima.
+ * Em volta, os jogadores desenhados, a parede de azulejo e o piso do bar.
+ */
+.lugar,
+.prateleira {
+  display: none;
+}
+@media (min-width: 900px) and (min-height: 820px) {
+  .mesa-ambiente {
+    margin-top: clamp(40px, 9vh - 40px, 80px);
+  }
+  .mesa-ambiente > .tampo {
+    isolation: isolate;
+    background: none;
+    box-shadow: none;
+  }
+  .mesa-ambiente > .tampo::before,
+  .mesa-ambiente > .tampo::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+  }
+  /* Espessura do tampo, aparecendo embaixo da borda da frente. */
+  .mesa-ambiente > .tampo::before {
+    left: 0.6%;
+    right: 0.6%;
+    bottom: -16px;
+    height: 48px;
+    border-radius: 0 0 var(--raio-tampo) var(--raio-tampo);
+    background: linear-gradient(color-mix(in srgb, var(--tampo-lateral) 85%, black), color-mix(in srgb, var(--tampo-lateral) 55%, black));
+    box-shadow: 0 18px 30px color-mix(in srgb, var(--sombra) 60%, transparent);
+  }
+  /* A superfície, inclinada para longe (o fundo estreita); a lâmpada clareia o meio. */
+  .mesa-ambiente > .tampo::after {
+    inset: -15% 0 0;
+    border-radius: inherit;
+    background:
+      radial-gradient(ellipse 55% 45% at 50% 38%, color-mix(in srgb, #ffd69a 20%, transparent), transparent 72%),
+      var(--tampo-fundo);
+    box-shadow: var(--tampo-borda);
+    transform-origin: 50% 100%;
+    transform: perspective(1100px) rotateX(17deg);
+  }
+  .tampo-plastico > .estampa-zapada {
+    z-index: 0;
+  }
+  .cadeira {
+    display: none;
+  }
+  .lugar {
+    display: block;
+    position: absolute;
+  }
+  .lugar-cima {
+    top: 0;
+    left: 50%;
+    width: clamp(130px, 15vh, 190px);
+    translate: -50% -46%;
+  }
+  .lugar-esquerda,
+  .lugar-direita {
+    top: 42%;
+    width: clamp(130px, 21vh, 240px);
+  }
+  /* Os dos lados ficam meio atrás da borda da mesa (o tampo cobre o corpo de baixo). */
+  .lugar-esquerda {
+    left: 0;
+    translate: -66% -50%;
+    rotate: 6deg;
+  }
+  .lugar-direita {
+    right: 0;
+    translate: 66% -50%;
+    rotate: -6deg;
+    scale: -1 1;
+  }
+  .lugar-esquerda .personagem,
+  .lugar-direita .personagem {
+    mask-image: linear-gradient(#000 72%, transparent 96%);
+  }
+  .personagem {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    filter: drop-shadow(0 8px 10px color-mix(in srgb, var(--sombra) 45%, transparent));
+  }
+  .prateleira {
+    display: block;
+    position: fixed;
+    top: 14vh;
+    right: 2vw;
+    width: clamp(150px, 15vw, 240px);
+  }
+  /* Parede (reboco em cima, azulejo embaixo, rodapé) e piso, presos à janela, atrás de tudo. */
+  .tela-mesa::before,
+  .tela-mesa::after {
+    content: '';
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: -2;
+    pointer-events: none;
+  }
+  .tela-mesa::before {
+    top: 0;
+    height: 46vh;
+    background:
+      radial-gradient(ellipse 40% 60% at 50% 0%, color-mix(in srgb, #ffd69a 14%, transparent), transparent 70%),
+      linear-gradient(to top, #2a1d13 0 12px, #3a2a1c 12px 16px, transparent 16px),
+      linear-gradient(var(--parede) 0 52%, var(--parede-faixa) 52% 54%, transparent 54%),
+      linear-gradient(var(--azulejo-parede-junta) 2px, transparent 2px) 0 0 / 34px 34px,
+      linear-gradient(90deg, var(--azulejo-parede-junta) 2px, transparent 2px) 0 0 / 34px 34px,
+      var(--azulejo-parede);
+  }
+  .tela-mesa::after {
+    top: 46vh;
+    bottom: 0;
+    background:
+      linear-gradient(color-mix(in srgb, var(--sombra) 55%, transparent), transparent 22%),
+      linear-gradient(var(--piso-junta) 2px, transparent 2px) 0 0 / 64px 64px,
+      linear-gradient(90deg, var(--piso-junta) 2px, transparent 2px) 0 0 / 64px 64px,
+      conic-gradient(from 45deg at 50% 50%, var(--piso-motivo) 0 25%, transparent 0 50%, var(--piso-motivo) 0 75%, transparent 0) 21px 21px / 22px 22px,
+      var(--piso);
+  }
+  /* Vida: respiram, piscam; na vez, mão no queixo; no grito, braço pra cima e boca aberta. */
+  .personagem-corpo {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: respirar 4.2s ease-in-out infinite;
+    animation-delay: var(--atraso);
+  }
+  .personagem .olhos {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: piscar 5.5s infinite;
+    animation-delay: var(--atraso);
+  }
+  .personagem .braco-pensa,
+  .personagem .braco-grito,
+  .personagem .boca-aberta {
+    opacity: 0;
+    transition: opacity var(--dur) ease-out;
+  }
+  .personagem.pensando .braco-pensa,
+  .personagem.gritando .braco-grito,
+  .personagem.gritando .boca-aberta {
+    opacity: 1;
+  }
+  .personagem.gritando .boca {
+    opacity: 0;
+  }
+  .personagem.gritando .personagem-cabeca {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: gritar 400ms ease-out 2;
+  }
+}
+@keyframes respirar {
+  50% {
+    transform: translateY(-2px) scaleY(1.01);
+  }
+}
+@keyframes piscar {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes gritar {
+  40% {
+    transform: translateY(-4px) rotate(-3deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .personagem-corpo,
+  .personagem .olhos,
+  .personagem.gritando .personagem-cabeca {
+    animation: none;
+  }
+}
+
 /* Tampo de madeira */
 .tampo {
   position: relative;
@@ -1013,7 +1209,8 @@ body:has(.tela-mesa) {
   min-height: 0;
   padding: var(--e2);
   border-radius: var(--raio-tampo);
-  background:
+  /* Superfície em variáveis: na tela larga ela é desenhada inclinada num pseudo-elemento (2.5D). */
+  --tampo-fundo:
     /* Veio de baixo contraste em períodos primos (7, 13, 29 px) e manchas largas de tom: um só material, não persiana. */
     radial-gradient(ellipse 75% 60% at 30% 35%, color-mix(in srgb, var(--papel) 7%, transparent), transparent 70%),
     radial-gradient(ellipse 65% 55% at 78% 82%, color-mix(in srgb, var(--madeira-funda) 16%, transparent), transparent 70%),
@@ -1021,10 +1218,12 @@ body:has(.tela-mesa) {
     repeating-linear-gradient(-0.7deg, color-mix(in srgb, var(--madeira-veio) 13%, transparent) 0 2px, transparent 2px 13px),
     repeating-linear-gradient(0.2deg, color-mix(in srgb, var(--madeira-funda) 7%, transparent) 0 4px, transparent 4px 29px),
     var(--madeira);
-  box-shadow:
+  --tampo-borda:
     inset 0 0 0 6px var(--madeira-funda),
-    inset 0 0 24px color-mix(in srgb, var(--sombra) 35%, transparent),
-    var(--sombra-tampo);
+    inset 0 0 24px color-mix(in srgb, var(--sombra) 35%, transparent);
+  --tampo-lateral: var(--madeira-funda);
+  background: var(--tampo-fundo);
+  box-shadow: var(--tampo-borda), var(--sombra-tampo);
 }
 .assento {
   position: relative;

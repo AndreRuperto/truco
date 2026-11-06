@@ -6,7 +6,7 @@ import { Cronometro } from './Cronometro';
 import { cx } from './cx';
 
 /** Pedidos de aposta: o balão entra como grito de giz amarelo. */
-const GRITOS = new Set(['TRUCO!', 'SEIS!', 'NOVE!', 'DOZE!']);
+export const GRITOS = new Set(['TRUCO!', 'SEIS!', 'NOVE!', 'DOZE!']);
 
 interface Props {
   posicao: Posicao;

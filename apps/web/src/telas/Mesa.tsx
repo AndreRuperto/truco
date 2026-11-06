@@ -1,7 +1,7 @@
 import { type Cadeira, ehFaseRitual, parceiroDe, quemDeveAgir } from '@truco/engine';
 import { useCallback, useRef, useState } from 'react';
 import { useAnimacaoRitual } from '../componentes/animacaoMesa';
-import { Assento } from '../componentes/Assento';
+import { Assento, GRITOS } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
 import { CentroMesa } from '../componentes/CentroMesa';
 import { Chat } from '../componentes/Chat';
@@ -86,7 +86,15 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   return (
     <main className="tela-mesa">
       <Placar nos={nos} eles={eles} valor={m ? valorMao(v.regras, m.nivel) : null} pedido={pedido?.replace(/\.$/, '') ?? null} />
-      <Tampo fisica={msg.mesaFisica} minha={minha} batida={snap.batida}>
+      <Tampo
+        fisica={msg.mesaFisica}
+        minha={minha}
+        batida={snap.batida}
+        jogadores={(['cima', 'esquerda', 'direita'] as const).map((pos) => {
+          const c = cadeiraNaPosicao(minha, pos);
+          return { pos, nome: nome(c), daVez: daVez(c), gritando: GRITOS.has(baloes.get(c) ?? '') };
+        })}
+      >
         {(['cima', 'esquerda', 'direita'] as const).map((pos) => {
           const c = cadeiraNaPosicao(minha, pos);
           return (

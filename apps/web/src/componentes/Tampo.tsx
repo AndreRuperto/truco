@@ -5,6 +5,7 @@ import { posicaoRelativa } from '../logica/posicoes';
 import { movimentoReduzido } from './animacaoMesa';
 import { cx } from './cx';
 import { EstampaZapada } from './EstampaZapada';
+import { Personagem, tiposDaMesa } from './Personagem';
 import { Rachaduras } from './Rachaduras';
 import './estilos-mesa-fisica.css';
 
@@ -27,7 +28,16 @@ interface Props {
   fisica?: MesaFisica;
   minha: Cadeira;
   batida?: Batida | null;
+  /** Quem senta em volta (desenhados na tela larga, em 2.5D). */
+  jogadores?: JogadorDesenhado[];
   children: ReactNode;
+}
+
+export interface JogadorDesenhado {
+  pos: 'cima' | 'esquerda' | 'direita';
+  nome: string;
+  daVez: boolean;
+  gritando: boolean;
 }
 
 let audio: AudioContext | null = null;
@@ -53,7 +63,7 @@ function tocarTum(forca: number): void {
 }
 
 /** O tampo da mesa: madeira (com rachaduras) ou, depois de quebrada, plástico amarelo de bar. */
-export function Tampo({ fisica, minha, batida, children }: Props) {
+export function Tampo({ fisica, minha, batida, jogadores = [], children }: Props) {
   const [ativa, setAtiva] = useState<Batida | null>(null);
   const id = batida?.id;
 
@@ -72,7 +82,7 @@ export function Tampo({ fisica, minha, batida, children }: Props) {
 
   return (
     <div className={cx('mesa-ambiente', tipo === 'plastico' && 'ambiente-plastico')}>
-      <Mobilia />
+      <Mobilia jogadores={jogadores} />
     <div data-testid="tampo" className={cx('tampo', tipo === 'plastico' && 'tampo-plastico', ativa && 'tremendo')} style={estilo}>
       {tipo === 'plastico' && <EstampaZapada />}
       <Rachaduras rachaduras={fisica?.rachaduras ?? []} tipo={tipo} minha={minha} novaId={ativa?.rachadura?.id ?? null} />
@@ -106,9 +116,15 @@ export function Tampo({ fisica, minha, batida, children }: Props) {
  * O que fica em volta do tampo, por baixo dele: uma cadeira em cada lado (vista de cima, o encosto
  * para fora e o assento enfiado sob a mesa) e os pés da mesa aparecendo nos cantos de baixo.
  */
-function Mobilia() {
+function Mobilia({ jogadores }: { jogadores: JogadorDesenhado[] }) {
+  const tipos = tiposDaMesa(jogadores.map((j) => j.nome));
   return (
     <div className="mobilia" aria-hidden="true">
+      {jogadores.map((j, i) => (
+        <div key={j.pos} className={`lugar lugar-${j.pos}`}>
+          <Personagem tipo={tipos[i]} lado={j.pos} daVez={j.daVez} gritando={j.gritando} />
+        </div>
+      ))}
       {(['cima', 'direita', 'baixo', 'esquerda'] as const).map((lado) => (
         <svg key={lado} className={`cadeira cadeira-${lado}`} viewBox="0 0 100 90" focusable="false">
           <rect className="cadeira-pe" x="10" y="78" width="12" height="10" rx="3" />
@@ -122,6 +138,36 @@ function Mobilia() {
       ))}
       <span className="pe-mesa pe-esq" />
       <span className="pe-mesa pe-dir" />
+      <Prateleira />
     </div>
   );
 }
+
+/** Prateleira do bar na parede (só no 2.5D): garrafas da Zapada e copos. */
+function Prateleira() {
+  const garrafas = [12, 34, 56, 78];
+  return (
+    <svg className="prateleira" viewBox="0 0 220 120" focusable="false">
+      {garrafas.map((x, i) => (
+        <g key={x} transform={`translate(${x} ${i % 2 ? 22 : 16})`}>
+          <rect x="4" y="0" width="8" height="18" rx="2" fill="#1f5a36" />
+          <path d="M0 26 C0 18, 16 18, 16 26 V86 H0 Z" fill="#1f5a36" />
+          <rect x="0" y="44" width="16" height="22" fill="#fbf3dc" />
+          <rect x="3" y="50" width="10" height="3" fill="#1f5a36" />
+          <rect x="3" y="56" width="10" height="2" fill="#b8202a" />
+        </g>
+      ))}
+      {[118, 146, 174].map((x) => (
+        <g key={x} transform={`translate(${x} 66)`}>
+          <path d="M0 0 H22 L19 36 H3 Z" fill="#cfe3dc" opacity="0.55" />
+          <path d="M2 10 H20 L18 34 H4 Z" fill="#e9b02c" opacity="0.8" />
+          <path d="M1 4 H21 V10 H2 Z" fill="#fbf8f1" opacity="0.9" />
+        </g>
+      ))}
+      <rect x="0" y="102" width="220" height="10" rx="2" fill="#6f4628" />
+      <rect x="20" y="112" width="8" height="8" fill="#4a2d17" />
+      <rect x="192" y="112" width="8" height="8" fill="#4a2d17" />
+    </svg>
+  );
+}
+

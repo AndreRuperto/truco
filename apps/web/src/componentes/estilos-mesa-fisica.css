@@ -257,7 +257,8 @@
 .tampo.tampo-plastico {
   --foco: var(--tinta);
   border-radius: 48px;
-  background:
+  --tampo-lateral: var(--plastico-borda);
+  --tampo-fundo:
     radial-gradient(ellipse 70% 55% at 32% 28%, color-mix(in srgb, var(--plastico-relevo) 45%, transparent), transparent 70%),
     radial-gradient(
       circle at 50% 50%,
@@ -274,11 +275,12 @@
       transparent 45%
     ),
     var(--plastico);
-  box-shadow:
+  --tampo-borda:
     inset 0 0 0 10px var(--plastico-borda),
     inset 0 0 0 12px color-mix(in srgb, var(--plastico-relevo) 55%, transparent),
-    inset 0 -8px 22px color-mix(in srgb, var(--plastico-sombra) 30%, transparent),
-    var(--sombra-tampo);
+    inset 0 -8px 22px color-mix(in srgb, var(--plastico-sombra) 30%, transparent);
+  background: var(--tampo-fundo);
+  box-shadow: var(--tampo-borda), var(--sombra-tampo);
 }
 /*
  * Estampa da cerveja da casa no meio da mesa, dentro do anel menor, por baixo de tudo
