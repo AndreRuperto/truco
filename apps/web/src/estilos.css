@@ -2768,6 +2768,93 @@ button:disabled {
   color: var(--papel);
   font-weight: 800;
 }
+.avatar {
+  flex: none;
+  overflow: hidden;
+  line-height: 1;
+}
+.avatar-foto img,
+.avatar-pronto svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar-pronto {
+  background: transparent;
+}
+.perfil-titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+}
+.escolher-avatar {
+  margin: 0 0 var(--e4);
+  padding: 0;
+  border: 0;
+}
+.escolher-avatar legend {
+  margin-bottom: var(--e2);
+  padding: 0;
+  color: var(--giz-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.avatar-atual {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+}
+.avatar-atual .avatar {
+  box-shadow: 0 0 0 3px var(--lousa-borda);
+}
+.avatar-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+.avatar-dica {
+  margin: var(--e3) 0 var(--e2);
+  color: var(--giz-suave);
+}
+.avatares-prontos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: var(--e2);
+  max-width: 340px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.editar-perfil .avatares-prontos button {
+  display: block;
+  width: 52px;
+  height: 52px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 0 2px transparent;
+  transition: transform var(--dur) ease-out, box-shadow var(--dur) ease-out;
+}
+.editar-perfil .avatares-prontos button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: transparent;
+}
+.editar-perfil .avatares-prontos button[aria-pressed='true'] {
+  box-shadow: 0 0 0 3px var(--lousa), 0 0 0 6px var(--grito);
+}
+.avatares-prontos svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .editar-perfil .avatares-prontos button:hover:not(:disabled) {
+    transform: none;
+  }
+}
 .menu-conta-nome {
   max-width: 14ch;
   overflow: hidden;

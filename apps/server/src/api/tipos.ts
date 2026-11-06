@@ -9,7 +9,13 @@ export interface UsuarioApi {
   email: string | null;
   /** Conta ligada a um login do Google. */
   google: boolean;
+  /** Foto de perfil: `pronto:<id>` (um dos `AVATARES_PRONTOS`), uma imagem `data:` pequena, ou null. */
+  avatar?: string | null;
 }
+
+/** Avatares desenhados que o site oferece (os desenhos ficam no web). */
+export const AVATARES_PRONTOS = ['zap', 'copas', 'espadilha', 'ouros', 'chope', 'chapeu', 'galo', 'viola', 'ferradura', 'lua'] as const;
+export type AvatarPronto = (typeof AVATARES_PRONTOS)[number];
 
 /** O que a tela inicial lembra entre visitas (na conta, para quem entrou). */
 export interface PreferenciasMesa {
@@ -45,7 +51,7 @@ export interface RatingVariante {
 }
 
 export interface PerfilApi {
-  usuario: { id: number; apelido: string };
+  usuario: { id: number; apelido: string; avatar?: string | null };
   variantes: Record<Variante, RatingVariante>;
 }
 

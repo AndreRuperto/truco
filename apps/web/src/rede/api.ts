@@ -40,6 +40,7 @@ export function criarApi(f: typeof fetch = (...a) => fetch(...a), base = '', aoN
     config: () => pedir<ConfigApi>('GET', '/api/config'),
     eu: () => pedir<{ usuario: UsuarioApi | null }>('GET', '/api/eu'),
     trocarApelido: (apelido: string) => pedir<{ usuario: UsuarioApi }>('PATCH', '/api/eu', { apelido }, true),
+    trocarAvatar: (avatar: string | null) => pedir<{ usuario: UsuarioApi }>('PUT', '/api/eu/avatar', { avatar }, true),
     conectarGoogle: (credencial: string) => pedir<{ usuario: UsuarioApi }>('POST', '/api/eu/google', { credencial }, true),
     pedirLink: (email: string) => pedir<void>('POST', '/api/auth/link', { email }),
     confirmarLink: (token: string) => pedir<{ usuario: UsuarioApi }>('POST', '/api/auth/link/confirmar', { token }),

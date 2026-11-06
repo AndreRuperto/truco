@@ -1,13 +1,15 @@
 import type { RatingVariante, UsuarioApi } from '@truco/api';
 import type { Variante } from '@truco/engine';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { AVATARES_PRONTOS } from '@truco/api';
+import { Avatar, DesenhoAvatar, NOME_AVATAR, reduzirFoto } from '../componentes/Avatar';
 import { BotaoGoogle } from '../componentes/BotaoGoogle';
 import { NOME_VARIANTE } from '../logica/conta';
 import type { Api } from '../rede/api';
 import { useCarregar } from '../rede/hooks';
 
 interface Props {
-  api: Pick<Api, 'perfil' | 'trocarApelido'> & Partial<Pick<Api, 'conectarGoogle'>>;
+  api: Pick<Api, 'perfil' | 'trocarApelido'> & Partial<Pick<Api, 'conectarGoogle' | 'trocarAvatar'>>;
   /** null = o próprio perfil (exige login). */
   id: number | null;
   /** Veio de "Editar perfil": rola até o bloco de edição e põe o foco no apelido. */
@@ -31,7 +33,10 @@ export function TelaPerfil({ api, id, editar = false, usuario = null, googleClie
       )}
       {dados && (
         <>
-          <h1>{dados.usuario.apelido}</h1>
+          <h1 className="perfil-titulo">
+            <Avatar apelido={dados.usuario.apelido} avatar={dados.usuario.avatar} tamanho={56} />
+            {dados.usuario.apelido}
+          </h1>
           {id === null && (
             <EditarPerfil
               apelido={dados.usuario.apelido}
@@ -107,7 +112,7 @@ function EditarPerfil({
   apelido: string;
   usuario: UsuarioApi | null;
   editar: boolean;
-  api: Pick<Api, 'trocarApelido'> & Partial<Pick<Api, 'conectarGoogle'>>;
+  api: Pick<Api, 'trocarApelido'> & Partial<Pick<Api, 'conectarGoogle' | 'trocarAvatar'>>;
   googleClientId: string | null;
   aoSalvar: (u: UsuarioApi) => void;
 }) {
@@ -129,6 +134,7 @@ function EditarPerfil({
   return (
     <section className="editar-perfil" ref={bloco} aria-labelledby="titulo-editar-perfil">
       <h2 id="titulo-editar-perfil">Editar perfil</h2>
+      {usuario && api.trocarAvatar && <EscolherAvatar usuario={usuario} trocar={api.trocarAvatar} aoSalvar={aoSalvar} />}
       <FormApelido atual={apelido} api={api} aoSalvar={aoSalvar} />
       {usuario && (
         <dl className="dados-conta">
@@ -154,6 +160,85 @@ function EditarPerfil({
         </div>
       )}
     </section>
+  );
+}
+
+/** Foto de perfil: um dos desenhos do site ou uma foto do aparelho (reduzida antes de subir). */
+function EscolherAvatar({
+  usuario,
+  trocar,
+  aoSalvar,
+}: {
+  usuario: UsuarioApi;
+  trocar: (avatar: string | null) => Promise<{ usuario: UsuarioApi }>;
+  aoSalvar: (u: UsuarioApi) => void;
+}) {
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const arquivo = useRef<HTMLInputElement>(null);
+  const atual = usuario.avatar ?? null;
+  const salvar = async (valor: string | null | Promise<string>) => {
+    setErro(null);
+    setSalvando(true);
+    try {
+      aoSalvar((await trocar(await valor)).usuario);
+    } catch (x) {
+      setErro(x instanceof Error ? x.message : String(x));
+    } finally {
+      setSalvando(false);
+    }
+  };
+  return (
+    <fieldset className="escolher-avatar" aria-busy={salvando}>
+      <legend>Foto de perfil</legend>
+      <div className="avatar-atual">
+        <Avatar apelido={usuario.apelido} avatar={atual} tamanho={72} rotulo="Sua foto atual" />
+        <div className="avatar-acoes">
+          <button type="button" onClick={() => arquivo.current?.click()} disabled={salvando}>
+            Enviar foto
+          </button>
+          {atual && (
+            <button type="button" onClick={() => void salvar(null)} disabled={salvando}>
+              Tirar foto
+            </button>
+          )}
+          <input
+            ref={arquivo}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+            data-testid="avatar-arquivo"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (f) void salvar(reduzirFoto(f));
+            }}
+          />
+        </div>
+      </div>
+      <p className="avatar-dica">Ou escolha um dos nossos:</p>
+      <ul className="avatares-prontos">
+        {AVATARES_PRONTOS.map((id) => (
+          <li key={id}>
+            <button
+              type="button"
+              aria-pressed={atual === `pronto:${id}`}
+              aria-label={NOME_AVATAR[id]}
+              title={NOME_AVATAR[id]}
+              disabled={salvando}
+              onClick={() => void salvar(`pronto:${id}`)}
+            >
+              <DesenhoAvatar id={id} />
+            </button>
+          </li>
+        ))}
+      </ul>
+      {erro && (
+        <p className="erro-form" role="alert">
+          {erro}
+        </p>
+      )}
+    </fieldset>
   );
 }
 

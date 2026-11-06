@@ -62,7 +62,7 @@ describe('dados', () => {
     const { ana, bia, cookieAna } = await partidaRanqueada();
     expect((await app.pedir('/api/perfil')).status).toBe(401);
     const meu = await app.pedir('/api/perfil', { cookie: cookieAna });
-    expect(meu.json.usuario).toEqual({ id: ana.id, apelido: 'ana' });
+    expect(meu.json.usuario).toEqual({ id: ana.id, apelido: 'ana', avatar: null });
     expect(meu.json.variantes.mineiro).toMatchObject({ elo: 1016, pontos: 16, patente: 'Bronze', vitorias: 1 });
     expect((await app.pedir(`/api/perfil/${bia.id}`)).json.variantes.mineiro.elo).toBe(984);
     expect((await app.pedir('/api/perfil/999')).status).toBe(404);

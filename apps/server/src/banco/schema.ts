@@ -17,6 +17,8 @@ export const usuarios = pgTable(
     email: text('email').unique(),
     googleSub: text('google_sub').unique(),
     /** Regras da mesa que o usuário deixou na tela inicial (ver `PreferenciasMesa`); null = nunca salvou. */
+    /** Ver `UsuarioApi.avatar`. */
+    avatar: text('avatar'),
     preferencias: jsonb('preferencias').$type<PreferenciasMesa>(),
     criadoEm: quando('criado_em').notNull().defaultNow(),
   },

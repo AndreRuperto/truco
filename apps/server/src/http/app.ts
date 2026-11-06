@@ -20,6 +20,7 @@ import {
   lerPreferencias,
   normalizarEmail,
   trocarApelido,
+  trocarAvatar,
   type Usuario,
   usuarioDaSessao,
   usuarioPorId,
@@ -85,6 +86,14 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
       return;
     }
     next();
+  });
+  // A foto (já reduzida no navegador) passa do limite geral: rota própria antes do leitor de 16 kb.
+  api.put('/eu/avatar', express.json({ limit: '80kb' }), async (req, res) => {
+    const u = await usuarioDe(req);
+    if (!u) return void res.status(401).json({ erro: 'entre na sua conta' });
+    const novo = await trocarAvatar(s.banco, u.id, req.body?.avatar);
+    if (!novo) return void res.status(400).json({ erro: 'imagem inválida: use JPG, PNG ou WebP' });
+    res.json({ usuario: novo });
   });
   api.use(express.json({ limit: '16kb' }));
 

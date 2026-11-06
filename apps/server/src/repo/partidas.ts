@@ -207,7 +207,7 @@ export async function bloqueioAte(db: Banco, usuarioId: number, agora: Date): Pr
 }
 
 export async function perfil(db: Banco, usuarioId: number): Promise<PerfilApi | null> {
-  const [u] = await db.select({ id: usuarios.id, apelido: usuarios.apelido }).from(usuarios).where(eq(usuarios.id, usuarioId));
+  const [u] = await db.select({ id: usuarios.id, apelido: usuarios.apelido, avatar: usuarios.avatar }).from(usuarios).where(eq(usuarios.id, usuarioId));
   if (!u) return null;
   const rs = await db.select().from(ratings).where(eq(ratings.usuarioId, usuarioId));
   const est = await db

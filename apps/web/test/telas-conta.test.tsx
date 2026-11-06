@@ -50,6 +50,24 @@ describe('TelaPerfil', () => {
     expect(screen.queryByText(/Conecte sua conta Google/)).toBeNull();
   });
 
+  test('foto de perfil: 10 avatares do site; escolher salva e marca; tirar foto chama com null', async () => {
+    const usuario = { id: 1, apelido: 'ana', email: 'ana@x.com', google: false, avatar: null as string | null };
+    const trocarAvatar = vi.fn(async (avatar: string | null) => ({ usuario: { ...usuario, avatar } }));
+    const aoTrocarApelido = vi.fn();
+    const api = { perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn(), trocarAvatar };
+    const { rerender } = render(<TelaPerfil id={null} usuario={usuario} api={api} aoTrocarApelido={aoTrocarApelido} />);
+    const grupo = await screen.findByRole('group', { name: 'Foto de perfil' });
+    expect(within(grupo).getAllByRole('button', { pressed: false })).toHaveLength(10);
+    expect(within(grupo).queryByRole('button', { name: 'Tirar foto' })).toBeNull();
+    await userEvent.click(within(grupo).getByRole('button', { name: 'Galo' }));
+    expect(trocarAvatar).toHaveBeenCalledWith('pronto:galo');
+    expect(aoTrocarApelido).toHaveBeenCalledWith(expect.objectContaining({ avatar: 'pronto:galo' }));
+    rerender(<TelaPerfil id={null} usuario={{ ...usuario, avatar: 'pronto:galo' }} api={api} aoTrocarApelido={aoTrocarApelido} />);
+    expect(within(grupo).getByRole('button', { name: 'Galo' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(within(grupo).getByRole('button', { name: 'Tirar foto' }));
+    expect(trocarAvatar).toHaveBeenLastCalledWith(null);
+  });
+
   test('mostra patente, pontos, Elo e estatísticas por variante', async () => {
     render(<TelaPerfil id={null} api={{ perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn() }} />);
     expect(await screen.findByRole('heading', { name: 'ana' })).toBeInTheDocument();

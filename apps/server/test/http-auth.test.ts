@@ -153,6 +153,33 @@ describe('sair, Bearer e apelido', () => {
   });
 });
 
+describe('foto de perfil', () => {
+  // PNG 1x1 de verdade.
+  const PNG =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+  test('avatar pronto, foto, remover; recusa id desconhecido, tipo trocado e foto grande', async () => {
+    expect((await app.pedir('/api/eu/avatar', { metodo: 'PUT', corpo: { avatar: 'pronto:zap' } })).status).toBe(401);
+    const cookie = await entrarPorLink('ana@x.com');
+    expect((await app.pedir('/api/eu', { cookie })).json.usuario.avatar).toBeNull();
+    const r = await app.pedir('/api/eu/avatar', { metodo: 'PUT', corpo: { avatar: 'pronto:galo' }, cookie });
+    expect(r.status).toBe(200);
+    expect(r.json.usuario.avatar).toBe('pronto:galo');
+    expect((await app.pedir('/api/eu/avatar', { metodo: 'PUT', corpo: { avatar: 'pronto:nada' }, cookie })).status).toBe(400);
+    const foto = await app.pedir('/api/eu/avatar', { metodo: 'PUT', corpo: { avatar: PNG }, cookie });
+    expect(foto.json.usuario.avatar).toBe(PNG);
+    expect((await app.pedir('/api/perfil', { cookie })).json.usuario.avatar).toBe(PNG);
+    // diz que é jpeg mas é png
+    const trocado = PNG.replace('image/png', 'image/jpeg');
+    expect((await app.pedir('/api/eu/avatar', { metodo: 'PUT', corpo: { avatar: trocado }, cookie })).status).toBe(400);
+    const grande = 'data:image/png;base64,' + 'A'.repeat(70_000);
+    expect((await app.pedir('/api/eu/avatar', { metodo: 'PUT', corpo: { avatar: grande }, cookie })).status).toBe(400);
+    expect((await app.pedir('/api/eu/avatar', { metodo: 'PUT', corpo: { avatar: 'javascript:alert(1)' }, cookie })).status).toBe(400);
+    const sem = await app.pedir('/api/eu/avatar', { metodo: 'PUT', corpo: { avatar: null }, cookie });
+    expect(sem.json.usuario.avatar).toBeNull();
+  });
+});
+
 describe('preferências da mesa', () => {
   const prefs = {
     variante: 'mineiro',

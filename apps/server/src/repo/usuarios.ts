@@ -4,7 +4,7 @@ import type { PerfilGoogle } from '../auth/google';
 import { gerarToken, hashToken } from '../auth/tokens';
 import type { Banco } from '../banco/banco';
 import { linksMagicos, sessoes, usuarios } from '../banco/schema';
-import type { PreferenciasMesa } from '../api/tipos';
+import { AVATARES_PRONTOS, type PreferenciasMesa } from '../api/tipos';
 import { limparNome, opcoesDaSala } from '../mesa/protocolo';
 
 export interface Usuario {
@@ -13,12 +13,13 @@ export interface Usuario {
   email: string | null;
   /** Conta ligada a um login do Google. */
   google: boolean;
+  avatar: string | null;
 }
 
 export const DURACAO_SESSAO_MS = 30 * 24 * 60 * 60 * 1000;
 export const DURACAO_LINK_MS = 15 * 60 * 1000;
 
-const COLUNAS = { id: usuarios.id, apelido: usuarios.apelido, email: usuarios.email, google: sql<boolean>`(${usuarios.googleSub} is not null)` };
+const COLUNAS = { id: usuarios.id, apelido: usuarios.apelido, email: usuarios.email, avatar: usuarios.avatar, google: sql<boolean>`(${usuarios.googleSub} is not null)` };
 
 type ErroPg = { code?: string; constraint?: string; cause?: ErroPg } | null;
 
@@ -206,6 +207,39 @@ export async function conectarGoogle(db: Banco, id: number, sub: string): Promis
     if (ehViolacaoUnica(e)) throw new ErroGoogleOutraConta();
     throw e;
   }
+}
+
+// ---------- foto de perfil ----------
+
+/** Tamanho máximo da foto já reduzida pelo navegador (data URL inteira). */
+export const MAX_AVATAR_CHARS = 60_000;
+
+const ASSINATURAS: Record<string, (b: Buffer) => boolean> = {
+  jpeg: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
+  png: (b) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  webp: (b) => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP',
+};
+
+/**
+ * `pronto:<id>` de um avatar do site, ou uma imagem `data:` (jpeg, png ou webp) pequena cujo conteúdo
+ * bate com o tipo declarado. null = remover a foto; undefined = inválido.
+ */
+export function avatarValido(cru: unknown): string | null | undefined {
+  if (cru === null) return null;
+  if (typeof cru !== 'string') return undefined;
+  if (cru.startsWith('pronto:')) return (AVATARES_PRONTOS as readonly string[]).includes(cru.slice(7)) ? cru : undefined;
+  if (cru.length > MAX_AVATAR_CHARS) return undefined;
+  const m = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(cru);
+  if (!m) return undefined;
+  const bytes = Buffer.from(m[2], 'base64');
+  return bytes.length >= 12 && ASSINATURAS[m[1]](bytes) ? cru : undefined;
+}
+
+export async function trocarAvatar(db: Banco, id: number, cru: unknown): Promise<Usuario | null> {
+  const avatar = avatarValido(cru);
+  if (avatar === undefined) return null;
+  const [u] = await db.update(usuarios).set({ avatar }).where(eq(usuarios.id, id)).returning(COLUNAS);
+  return u ?? null;
 }
 
 // ---------- preferências da mesa ----------

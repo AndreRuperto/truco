@@ -1,5 +1,6 @@
 import type { UsuarioApi } from '@truco/api';
 import { useEffect, useId, useRef, useState } from 'react';
+import { Avatar } from './Avatar';
 
 interface Props {
   /** A sessão já respondeu; antes disso a área da conta fica escondida (sem "Entrar" piscando). */
@@ -65,9 +66,7 @@ function MenuConta({ usuario, aoSair, atual }: { usuario: UsuarioApi; aoSair: ()
         onClick={() => setAberto((a) => !a)}
         data-testid="usuario-logado"
       >
-        <span className="avatar" aria-hidden="true">
-          {usuario.apelido.slice(0, 1).toUpperCase()}
-        </span>
+        <Avatar apelido={usuario.apelido} avatar={usuario.avatar} />
         <span className="menu-conta-nome">{usuario.apelido}</span>
         <span className="menu-conta-seta" aria-hidden="true" />
       </button>
