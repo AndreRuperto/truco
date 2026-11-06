@@ -29,7 +29,7 @@ async function entrarNaFila(page: Page): Promise<void> {
 
 test('link mágico, fila 1x1 com dois jogadores e abandono que custa Elo e bloqueia a fila', async ({ browser }) => {
   const ana = await entrar(browser, 'ana.e2e@teste.dev');
-  await expect(ana.getByTestId('usuario-logado')).toHaveText('anae2e');
+  await expect(ana.getByTestId('usuario-logado')).toContainText('anae2e');
   const bia = await entrar(browser, 'bia.e2e@teste.dev');
   try {
     await entrarNaFila(ana);

@@ -1,18 +1,25 @@
 import type { RatingVariante, UsuarioApi } from '@truco/api';
 import type { Variante } from '@truco/engine';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { BotaoGoogle } from '../componentes/BotaoGoogle';
 import { NOME_VARIANTE } from '../logica/conta';
 import type { Api } from '../rede/api';
 import { useCarregar } from '../rede/hooks';
 
 interface Props {
-  api: Pick<Api, 'perfil' | 'trocarApelido'>;
+  api: Pick<Api, 'perfil' | 'trocarApelido'> & Partial<Pick<Api, 'conectarGoogle'>>;
   /** null = o próprio perfil (exige login). */
   id: number | null;
+  /** Veio de "Editar perfil": rola até o bloco de edição e põe o foco no apelido. */
+  editar?: boolean;
+  /** Quem está logado (para mostrar e-mail e Google no próprio perfil). */
+  usuario?: UsuarioApi | null;
+  /** Client ID do Google, se o login com Google estiver ligado no servidor. */
+  googleClientId?: string | null;
   aoTrocarApelido?: (u: UsuarioApi) => void;
 }
 
-export function TelaPerfil({ api, id, aoTrocarApelido }: Props) {
+export function TelaPerfil({ api, id, editar = false, usuario = null, googleClientId = null, aoTrocarApelido }: Props) {
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.perfil(id ?? undefined), [id]);
   return (
     <main className="tela-conta">
@@ -26,9 +33,12 @@ export function TelaPerfil({ api, id, aoTrocarApelido }: Props) {
         <>
           <h1>{dados.usuario.apelido}</h1>
           {id === null && (
-            <FormApelido
-              atual={dados.usuario.apelido}
+            <EditarPerfil
+              apelido={dados.usuario.apelido}
+              usuario={usuario}
+              editar={editar}
               api={api}
+              googleClientId={googleClientId}
               aoSalvar={(u) => {
                 aoTrocarApelido?.(u);
                 recarregar();
@@ -85,6 +95,68 @@ function CartaoVariante({ variante, r }: { variante: Variante; r: RatingVariante
   );
 }
 
+/** O próprio perfil: apelido, e-mail da conta e o login com Google. */
+function EditarPerfil({
+  apelido,
+  usuario,
+  editar,
+  api,
+  googleClientId,
+  aoSalvar,
+}: {
+  apelido: string;
+  usuario: UsuarioApi | null;
+  editar: boolean;
+  api: Pick<Api, 'trocarApelido'> & Partial<Pick<Api, 'conectarGoogle'>>;
+  googleClientId: string | null;
+  aoSalvar: (u: UsuarioApi) => void;
+}) {
+  const bloco = useRef<HTMLElement>(null);
+  const [erroGoogle, setErroGoogle] = useState<string | null>(null);
+  useEffect(() => {
+    if (!editar) return;
+    bloco.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    bloco.current?.querySelector<HTMLInputElement>('#apelido-conta')?.focus({ preventScroll: true });
+  }, [editar]);
+  const conectar = async (credencial: string) => {
+    setErroGoogle(null);
+    try {
+      if (api.conectarGoogle) aoSalvar((await api.conectarGoogle(credencial)).usuario);
+    } catch (x) {
+      setErroGoogle(x instanceof Error ? x.message : String(x));
+    }
+  };
+  return (
+    <section className="editar-perfil" ref={bloco} aria-labelledby="titulo-editar-perfil">
+      <h2 id="titulo-editar-perfil">Editar perfil</h2>
+      <FormApelido atual={apelido} api={api} aoSalvar={aoSalvar} />
+      {usuario && (
+        <dl className="dados-conta">
+          <div>
+            <dt>E-mail</dt>
+            <dd>{usuario.email ?? 'sem e-mail'}</dd>
+          </div>
+          <div>
+            <dt>Google</dt>
+            <dd data-testid="google-status">{usuario.google ? 'Conectado: dá para entrar com o Google' : 'Não conectado'}</dd>
+          </div>
+        </dl>
+      )}
+      {usuario && !usuario.google && googleClientId && api.conectarGoogle && (
+        <div className="conectar-google">
+          <p>Conecte sua conta Google para entrar com um clique, sem esperar o e-mail.</p>
+          <BotaoGoogle clientId={googleClientId} aoCredencial={(c) => void conectar(c)} />
+          {erroGoogle && (
+            <p className="erro-form" role="alert">
+              {erroGoogle}
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function FormApelido({ atual, api, aoSalvar }: { atual: string; api: Pick<Api, 'trocarApelido'>; aoSalvar: (u: UsuarioApi) => void }) {
   const [valor, setValor] = useState(atual);
   const [erro, setErro] = useState<string | null>(null);
@@ -103,7 +175,7 @@ function FormApelido({ atual, api, aoSalvar }: { atual: string; api: Pick<Api, '
         <label htmlFor="apelido-conta">Apelido</label>
         <input id="apelido-conta" type="text" maxLength={20} value={valor} onChange={(e) => setValor(e.target.value)} />
       </div>
-      <button type="submit">Salvar</button>
+      <button type="submit">Salvar apelido</button>
       {erro && (
         <p className="erro-form" role="alert">
           {erro}

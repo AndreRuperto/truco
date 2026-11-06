@@ -18,7 +18,7 @@ afterEach(async () => {
   window.history.replaceState(null, '', '/');
 });
 
-const USUARIO = { id: 1, apelido: 'ana', email: 'ana@x.com' };
+const USUARIO = { id: 1, apelido: 'ana', email: 'ana@x.com', google: false };
 const RV = { elo: 1000, pontos: 0, patente: 'Bronze', proxima: null, partidasRanqueadas: 0, jogos: 0, vitorias: 0, pctTrucoAceito: null, corridas: 0 };
 const PERFIL: PerfilApi = { usuario: { id: 1, apelido: 'ana' }, variantes: { paulista: RV, mineiro: RV } };
 
@@ -84,6 +84,7 @@ describe('App: conta', () => {
     window.history.replaceState(null, '', '/#/perfil');
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'ana' })).toBeInTheDocument();
+    await user.click(screen.getByTestId('usuario-logado'));
     await user.click(screen.getByRole('button', { name: 'Sair da conta' }));
     await waitFor(() => expect(window.location.hash).toBe('#/'));
     expect(screen.queryByRole('heading', { name: 'ana' })).toBeNull();

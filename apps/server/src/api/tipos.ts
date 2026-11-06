@@ -7,6 +7,8 @@ export interface UsuarioApi {
   id: number;
   apelido: string;
   email: string | null;
+  /** Conta ligada a um login do Google. */
+  google: boolean;
 }
 
 /** O que a tela inicial lembra entre visitas (na conta, para quem entrou). */

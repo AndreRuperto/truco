@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import { criarSessao } from '../src/rede/sessao';
 
-const USUARIO = { id: 1, apelido: 'ana', email: 'ana@x.com' };
+const USUARIO = { id: 1, apelido: 'ana', email: 'ana@x.com', google: false };
 
 describe('sessão', () => {
   test('carregar busca config e usuário', async () => {

@@ -1966,11 +1966,6 @@ button:disabled {
 .cabecalho a[aria-current='page']:focus-visible {
   outline-color: var(--grito);
 }
-.cabecalho-usuario {
-  margin-left: auto;
-  padding: 0 var(--e2);
-  font-weight: 600;
-}
 .cabecalho button {
   min-height: 44px;
 }
@@ -2499,7 +2494,7 @@ button:disabled {
   font-family: var(--fonte-giz);
   font-size: var(--t1);
 }
-.cabecalho-usuario ~ .cabecalho-ajuda {
+.menu-conta ~ .cabecalho-ajuda {
   margin-left: 0;
 }
 .cabecalho a.cabecalho-ajuda[aria-current='page'] {
@@ -2739,4 +2734,163 @@ button:disabled {
   margin: var(--e3) 0 0;
   color: var(--form-tinta-suave, var(--tinta-suave));
   font-size: var(--t-1);
+}
+
+/* Menu da conta: o apelido vira um botão com inicial; a lista cai embaixo, em lousa. */
+.menu-conta {
+  position: relative;
+  margin-left: auto;
+}
+.cabecalho .menu-conta-botao {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: 44px;
+  padding: 0 var(--e3) 0 var(--e1);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--giz);
+  font-weight: 700;
+}
+.cabecalho .menu-conta-botao:hover:not(:disabled),
+.cabecalho .menu-conta-botao[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--giz) 30%, transparent);
+  background: color-mix(in srgb, var(--lousa) 86%, var(--giz));
+}
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--madeira);
+  color: var(--papel);
+  font-weight: 800;
+}
+.menu-conta-nome {
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-conta-seta {
+  width: 7px;
+  height: 7px;
+  margin: -3px 2px 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  rotate: 45deg;
+  transition: rotate var(--dur) ease-out, margin var(--dur) ease-out;
+}
+.menu-conta-botao[aria-expanded='true'] .menu-conta-seta {
+  rotate: 225deg;
+  margin-top: 4px;
+}
+.menu-conta-lista {
+  position: absolute;
+  top: calc(100% + var(--e2));
+  right: 0;
+  z-index: 30;
+  display: grid;
+  min-width: 200px;
+  margin: 0;
+  padding: var(--e1);
+  border: 3px solid var(--lousa-borda);
+  border-radius: var(--raio-botao);
+  background: var(--lousa);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--sombra) 45%, transparent);
+  list-style: none;
+  animation: aparecer var(--dur) ease-out;
+}
+.cabecalho .menu-conta-lista a,
+.cabecalho .menu-conta-lista button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--e3);
+  border: 0;
+  border-radius: var(--raio-carta);
+  background: transparent;
+  color: var(--giz);
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+}
+.cabecalho .menu-conta-lista a:hover,
+.cabecalho .menu-conta-lista button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--lousa) 82%, var(--giz));
+  text-decoration: none;
+}
+.cabecalho .menu-conta-lista a[aria-current='page'] {
+  background: transparent;
+  color: var(--grito);
+  box-shadow: inset 3px 0 0 var(--grito);
+}
+.cabecalho .menu-conta-lista li:last-child {
+  margin-top: var(--e1);
+  padding-top: var(--e1);
+  border-top: 1px solid color-mix(in srgb, var(--giz) 18%, transparent);
+}
+@media (max-width: 480px) {
+  .menu-conta-nome {
+    display: none;
+  }
+}
+
+/* Próprio perfil: bloco de edição em lousa. */
+.editar-perfil {
+  margin: 0 0 var(--e5);
+  padding: var(--e4);
+  border: 3px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  --foco: var(--grito);
+  scroll-margin-top: var(--e4);
+}
+.editar-perfil h2 {
+  margin: 0 0 var(--e3);
+  font-size: var(--t1);
+}
+.editar-perfil .formulario.linha {
+  /* Dentro da lousa o formulário é sempre o escuro, nos dois temas. */
+  --form-fundo: transparent;
+  --form-borda: #3e4d45;
+  --form-campo: var(--lousa-noite);
+  --form-tinta: var(--giz);
+  --form-tinta-suave: var(--giz-suave);
+  --foco: var(--grito);
+  color-scheme: dark;
+  color: var(--giz);
+  margin-bottom: var(--e3);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.dados-conta {
+  display: grid;
+  gap: var(--e2);
+  margin: 0;
+}
+.dados-conta div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e1) var(--e3);
+}
+.dados-conta dt {
+  min-width: 7ch;
+  color: var(--giz-suave);
+  font-weight: 600;
+}
+.dados-conta dd {
+  margin: 0;
+}
+.conectar-google {
+  margin-top: var(--e3);
+}
+.conectar-google p {
+  margin: 0 0 var(--e2);
+  color: var(--giz-suave);
 }

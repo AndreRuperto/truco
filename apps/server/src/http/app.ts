@@ -7,6 +7,7 @@ import { chaveDeIp, LimiteTaxa } from '../auth/limite';
 import { VARIANTES } from '../banco/schema';
 import { bearer, COOKIE_SESSAO, cookieApagado, cookieSessao, lerCookie } from '../auth/tokens';
 import {
+  conectarGoogle,
   consumirLinkMagico,
   criarLinkMagico,
   criarSessao,
@@ -163,6 +164,26 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
       throw e;
     }
     await entrar(res, u);
+  });
+
+  api.post('/eu/google', async (req, res) => {
+    const u = await usuarioDe(req);
+    if (!u) return void res.status(401).json({ erro: 'entre na sua conta' });
+    if (!s.google) return void res.status(404).json({ erro: 'login com Google desligado' });
+    const credencial = typeof req.body?.credencial === 'string' ? req.body.credencial : '';
+    let g;
+    try {
+      g = await s.google.verificar(credencial);
+    } catch {
+      return void res.status(401).json({ erro: 'não foi possível validar o login do Google' });
+    }
+    try {
+      res.json({ usuario: await conectarGoogle(s.banco, u.id, g.sub) });
+    } catch (e) {
+      if (e instanceof ErroGoogleOutraConta)
+        return void res.status(409).json({ erro: 'esse Google já está ligado a outra conta (ou a sua já tem outro Google)' });
+      throw e;
+    }
   });
 
   api.post('/auth/sair', async (req, res) => {

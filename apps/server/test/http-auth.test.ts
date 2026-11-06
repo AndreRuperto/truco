@@ -209,4 +209,19 @@ describe('Google', () => {
     expect(r.status).toBe(409);
     expect(r.json.erro).toMatch(/outra conta Google/);
   });
+  test('conectar Google à conta do link mágico: 401 sem login, liga, vale para entrar e não rouba de outra conta', async () => {
+    expect((await app.pedir('/api/eu/google', { corpo: { credencial: 'credencial-boa' } })).status).toBe(401);
+    const cookie = await entrarPorLink('ana@x.com');
+    expect((await app.pedir('/api/eu', { cookie })).json.usuario).toMatchObject({ email: 'ana@x.com', google: false });
+    expect((await app.pedir('/api/eu/google', { corpo: { credencial: 'falsa' }, cookie })).status).toBe(401);
+    const r = await app.pedir('/api/eu/google', { corpo: { credencial: 'credencial-boa' }, cookie });
+    expect(r.status).toBe(200);
+    expect(r.json.usuario).toMatchObject({ email: 'ana@x.com', google: true });
+    // Entrar pelo Google agora cai na mesma conta (mesmo com o e-mail do Google sendo outro).
+    const g = await app.pedir('/api/auth/google', { corpo: { credencial: 'credencial-boa' } });
+    expect(g.json.usuario).toMatchObject({ id: r.json.usuario.id, google: true });
+    // Outra conta não consegue pegar o mesmo Google.
+    const outro = await entrarPorLink('caio@x.com');
+    expect((await app.pedir('/api/eu/google', { corpo: { credencial: 'credencial-boa' }, cookie: outro })).status).toBe(409);
+  });
 });

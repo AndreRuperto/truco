@@ -127,7 +127,15 @@ export function App() {
           rota.id === null && !ses.usuario ? (
             <PedirLogin titulo="Perfil" pronta={ses.pronta} />
           ) : (
-            <TelaPerfil key={rota.id ?? 'eu'} id={rota.id} api={api} aoTrocarApelido={(u) => sessao.definirUsuario(u)} />
+            <TelaPerfil
+              key={rota.id ?? 'eu'}
+              id={rota.id}
+              editar={rota.editar === true}
+              api={api}
+              usuario={ses.usuario}
+              googleClientId={ses.config.google}
+              aoTrocarApelido={(u) => sessao.definirUsuario(u)}
+            />
           );
         break;
       case 'historico':

@@ -17,6 +17,39 @@ const PERFIL: PerfilApi = {
 };
 
 describe('TelaPerfil', () => {
+  test('editar perfil: e-mail e Google; conectar liga a conta e atualiza o usuário', async () => {
+    const usuario = { id: 1, apelido: 'ana', email: 'ana@x.com', google: false };
+    const conectarGoogle = vi.fn(async () => ({ usuario: { ...usuario, google: true } }));
+    const aoTrocarApelido = vi.fn();
+    render(
+      <TelaPerfil
+        id={null}
+        editar
+        usuario={usuario}
+        googleClientId={null}
+        api={{ perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn(), conectarGoogle }}
+        aoTrocarApelido={aoTrocarApelido}
+      />,
+    );
+    const bloco = await screen.findByRole('region', { name: 'Editar perfil' });
+    expect(bloco).toHaveTextContent('ana@x.com');
+    expect(within(bloco).getByTestId('google-status')).toHaveTextContent('Não conectado');
+    // Sem Google ligado no servidor, não há botão de conectar.
+    expect(within(bloco).queryByText(/Conecte sua conta Google/)).toBeNull();
+    expect(screen.getByLabelText('Apelido')).toHaveFocus();
+  });
+
+  test('com Google ligado no servidor e conta sem Google, oferece conectar; já conectado, não', async () => {
+    const usuario = { id: 1, apelido: 'ana', email: 'ana@x.com', google: false };
+    const api = { perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn(), conectarGoogle: vi.fn() };
+    const { unmount } = render(<TelaPerfil id={null} usuario={usuario} googleClientId="cid" api={api} />);
+    expect(await screen.findByText(/Conecte sua conta Google/)).toBeInTheDocument();
+    unmount();
+    render(<TelaPerfil id={null} usuario={{ ...usuario, google: true }} googleClientId="cid" api={api} />);
+    expect(await screen.findByTestId('google-status')).toHaveTextContent('Conectado');
+    expect(screen.queryByText(/Conecte sua conta Google/)).toBeNull();
+  });
+
   test('mostra patente, pontos, Elo e estatísticas por variante', async () => {
     render(<TelaPerfil id={null} api={{ perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn() }} />);
     expect(await screen.findByRole('heading', { name: 'ana' })).toBeInTheDocument();
@@ -31,16 +64,16 @@ describe('TelaPerfil', () => {
 
   test('o próprio perfil troca o apelido; o de outro não', async () => {
     const user = userEvent.setup();
-    const trocarApelido = vi.fn(async () => ({ usuario: { id: 1, apelido: 'Aninha', email: null } }));
+    const trocarApelido = vi.fn(async () => ({ usuario: { id: 1, apelido: 'Aninha', email: null, google: false } }));
     const aoTrocarApelido = vi.fn();
     const perfil = vi.fn(async () => PERFIL);
     const { unmount } = render(<TelaPerfil id={null} api={{ perfil, trocarApelido }} aoTrocarApelido={aoTrocarApelido} />);
     const campo = await screen.findByLabelText('Apelido');
     await user.clear(campo);
     await user.type(campo, 'Aninha');
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar apelido' }));
     expect(trocarApelido).toHaveBeenCalledWith('Aninha');
-    expect(aoTrocarApelido).toHaveBeenCalledWith({ id: 1, apelido: 'Aninha', email: null });
+    expect(aoTrocarApelido).toHaveBeenCalledWith({ id: 1, apelido: 'Aninha', email: null, google: false });
     expect(perfil).toHaveBeenCalledTimes(2);
     unmount();
     render(<TelaPerfil id={2} api={{ perfil: vi.fn(async () => PERFIL), trocarApelido }} />);
@@ -51,7 +84,7 @@ describe('TelaPerfil', () => {
   test('erro de apelido em uso aparece', async () => {
     const user = userEvent.setup();
     render(<TelaPerfil id={null} api={{ perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn(async () => Promise.reject(new ErroApi(409, 'esse apelido já tem dono'))) }} />);
-    await user.click(await screen.findByRole('button', { name: 'Salvar' }));
+    await user.click(await screen.findByRole('button', { name: 'Salvar apelido' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('já tem dono');
   });
 });

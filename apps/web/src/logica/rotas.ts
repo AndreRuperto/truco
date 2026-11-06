@@ -3,7 +3,7 @@ import type { Variante } from '@truco/engine';
 export type Rota =
   | { tela: 'inicio' }
   | { tela: 'entrar'; token: string | null }
-  | { tela: 'perfil'; id: number | null }
+  | { tela: 'perfil'; id: number | null; editar?: true }
   | { tela: 'historico' }
   | { tela: 'ranking'; variante: Variante }
   | { tela: 'salas' }
@@ -18,8 +18,10 @@ export function lerRota(hash: string): Rota {
     case 'entrar':
       return { tela: 'entrar', token: new URLSearchParams(busca).get('token') || null };
     case 'perfil': {
-      const id = Number(partes[1]);
-      return { tela: 'perfil', id: Number.isInteger(id) && id > 0 ? id : null };
+      const n = Number(partes[1]);
+      const id = Number.isInteger(n) && n > 0 ? n : null;
+      // "?editar" (só no próprio perfil) leva direto ao bloco de edição.
+      return id === null && new URLSearchParams(busca).has('editar') ? { tela: 'perfil', id, editar: true } : { tela: 'perfil', id };
     }
     case 'historico':
       return { tela: 'historico' };
@@ -45,7 +47,7 @@ export function hrefDe(r: Rota): string {
     case 'entrar':
       return r.token ? `#/entrar?token=${encodeURIComponent(r.token)}` : '#/entrar';
     case 'perfil':
-      return r.id ? `#/perfil/${r.id}` : '#/perfil';
+      return r.id ? `#/perfil/${r.id}` : r.editar ? '#/perfil?editar' : '#/perfil';
     case 'historico':
       return '#/historico';
     case 'ranking':

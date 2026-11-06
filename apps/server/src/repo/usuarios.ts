@@ -11,12 +11,14 @@ export interface Usuario {
   id: number;
   apelido: string;
   email: string | null;
+  /** Conta ligada a um login do Google. */
+  google: boolean;
 }
 
 export const DURACAO_SESSAO_MS = 30 * 24 * 60 * 60 * 1000;
 export const DURACAO_LINK_MS = 15 * 60 * 1000;
 
-const COLUNAS = { id: usuarios.id, apelido: usuarios.apelido, email: usuarios.email };
+const COLUNAS = { id: usuarios.id, apelido: usuarios.apelido, email: usuarios.email, google: sql<boolean>`(${usuarios.googleSub} is not null)` };
 
 type ErroPg = { code?: string; constraint?: string; cause?: ErroPg } | null;
 
@@ -150,7 +152,7 @@ async function ligarGoogle(db: Banco, u: Usuario, sub: string): Promise<Usuario>
     .returning(COLUNAS);
   if (ligado) return ligado;
   const [atual] = await db.select({ googleSub: usuarios.googleSub }).from(usuarios).where(eq(usuarios.id, u.id));
-  if (atual?.googleSub === sub) return u; // outro pedido do mesmo login ligou primeiro
+  if (atual?.googleSub === sub) return { ...u, google: true }; // outro pedido do mesmo login ligou primeiro
   throw new ErroGoogleOutraConta();
 }
 
@@ -184,6 +186,24 @@ export async function trocarApelido(db: Banco, id: number, cru: unknown): Promis
     return 'ok';
   } catch (e) {
     if (ehViolacaoUnica(e)) return 'em-uso';
+    throw e;
+  }
+}
+
+/** Quem já entrou (por link mágico) liga um Google à própria conta, para entrar pelos dois. */
+export async function conectarGoogle(db: Banco, id: number, sub: string): Promise<Usuario> {
+  const dono = await usuarioPorGoogle(db, sub);
+  if (dono) {
+    if (dono.id !== id) throw new ErroGoogleOutraConta();
+    return dono;
+  }
+  const u = await usuarioPorId(db, id);
+  if (!u) throw new Error('usuário não existe');
+  try {
+    return await ligarGoogle(db, u, sub);
+  } catch (e) {
+    // corrida: outro pedido ligou este mesmo Google a outra conta
+    if (ehViolacaoUnica(e)) throw new ErroGoogleOutraConta();
     throw e;
   }
 }

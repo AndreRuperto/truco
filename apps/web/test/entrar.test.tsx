@@ -6,7 +6,7 @@ import { Cabecalho } from '../src/componentes/Cabecalho';
 import { ErroApi } from '../src/rede/api';
 import { TelaEntrar } from '../src/telas/Entrar';
 
-const USUARIO = { id: 1, apelido: 'ana', email: 'ana@x.com' };
+const USUARIO = { id: 1, apelido: 'ana', email: 'ana@x.com', google: false };
 const SEM_GOOGLE = { google: null, emailTeste: false };
 
 function apiFalsa() {
@@ -143,15 +143,26 @@ describe('BotaoGoogle', () => {
 });
 
 describe('Cabecalho', () => {
-  test('convidado vê Entrar; logado vê apelido, Perfil, Histórico e Sair da conta', async () => {
+  test('convidado vê Entrar; logado vê o apelido, que abre Meu perfil, Editar perfil, Histórico e Sair da conta', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<Cabecalho pronta usuario={null} aoSair={vi.fn()} />);
     expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '#/entrar');
     expect(screen.queryByRole('link', { name: 'Perfil' })).toBeNull();
     const aoSair = vi.fn();
     rerender(<Cabecalho pronta usuario={USUARIO} aoSair={aoSair} />);
-    expect(screen.getByTestId('usuario-logado')).toHaveTextContent('ana');
+    const conta = screen.getByTestId('usuario-logado');
+    expect(conta).toHaveTextContent('ana');
+    expect(conta).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: 'Sair da conta' })).toBeNull();
+    await user.click(conta);
+    expect(conta).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: 'Meu perfil' })).toHaveAttribute('href', '#/perfil');
+    expect(screen.getByRole('link', { name: 'Editar perfil' })).toHaveAttribute('href', '#/perfil?editar');
     expect(screen.getByRole('link', { name: 'Histórico' })).toHaveAttribute('href', '#/historico');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('link', { name: 'Meu perfil' })).toBeNull();
+    expect(conta).toHaveFocus();
+    await user.click(conta);
     await user.click(screen.getByRole('button', { name: 'Sair da conta' }));
     expect(aoSair).toHaveBeenCalled();
   });
