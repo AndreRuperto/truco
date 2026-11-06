@@ -270,6 +270,59 @@ button:disabled {
   color: var(--naipe-vermelho);
 }
 
+/*
+ * ---------- cartas soltas no fundo da tela inicial ----------
+ * Profundidade --d (0 longe, 1 perto): tamanho, desfoque e opacidade. Atrás de tudo
+ * (z-index -1 no contexto da página) e sem receber clique; o mouse é lido na janela.
+ */
+.fundo-cartas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.carta-solta {
+  --carta-l: calc(clamp(56px, 11vw, 112px) * (0.55 + var(--d) * 0.85));
+  position: absolute;
+  translate: -50% -50%;
+  rotate: var(--giro);
+  opacity: calc(0.3 + var(--d) * 0.6);
+  filter: blur(calc((1 - var(--d)) * 3.2px));
+}
+.carta-solta-mexe {
+  display: block;
+  will-change: transform;
+}
+.carta-solta-flutua {
+  display: block;
+  animation: carta-flutua var(--flutua-dur, 8s) ease-in-out var(--flutua-atraso, 0s) infinite alternate;
+}
+.carta-solta .carta {
+  box-shadow:
+    0 2px 0 color-mix(in srgb, var(--sombra) 25%, transparent),
+    0 calc(6px + var(--d) * 14px) calc(10px + var(--d) * 22px) color-mix(in srgb, var(--sombra) 45%, transparent);
+}
+/* No celular as cartas de perto chegam no letreiro: o fundo fica mais apagado. */
+@media (max-width: 600px) {
+  .fundo-cartas {
+    opacity: 0.6;
+  }
+}
+@keyframes carta-flutua {
+  from {
+    transform: translateY(-5px) rotate(-1.5deg);
+  }
+  to {
+    transform: translateY(5px) rotate(1.5deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .carta-solta-flutua {
+    animation: none;
+  }
+}
+
 /* ---------- lobby ---------- */
 .lobby,
 .sala-espera {
@@ -293,6 +346,11 @@ button:disabled {
   margin: 0 0 var(--e5);
   color: var(--texto-suave);
   text-align: center;
+  /* halo da cor do fundo: continua legível quando passa uma carta de papel atrás */
+  text-shadow:
+    0 0 2px var(--fundo),
+    0 0 6px var(--fundo),
+    0 0 12px var(--fundo);
 }
 @media (prefers-color-scheme: light) {
   .letreiro {

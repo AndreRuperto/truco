@@ -1,6 +1,7 @@
 import type { Pontuacao, RegrasMesa, Variante } from '@truco/engine';
 import type { NivelBot } from '@truco/protocolo';
 import { type FormEvent, useState } from 'react';
+import { FundoCartas } from '../componentes/FundoCartas';
 import {
   type FormLobby,
   formPadrao,
@@ -34,6 +35,7 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada }: Props) {
 
   return (
     <main className="lobby">
+      <FundoCartas />
       <h1 className="letreiro">Truco</h1>
       <p className="letreiro-sub">Senta, que a mesa tá posta.</p>
       <form className="formulario" onSubmit={enviar}>
