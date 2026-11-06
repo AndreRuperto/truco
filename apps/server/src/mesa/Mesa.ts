@@ -165,6 +165,8 @@ export class Mesa {
   private bots = 0;
   /** Carta que cada cadeira "sabe" que o parceiro tem (último sinal de manilha recebido nesta mão). */
   private dicas: (Carta | null)[] = [null, null, null, null];
+  /** Bots fora da vez que já decidiram a família nesta mão (uma decisão por mão: sem novo sorteio a cada mudança). */
+  private familiaDecidida = new Set<Cadeira>();
   /** Última mensagem de chat por cadeira (limite próprio, separado de sinais/falas). */
   private readonly ultimoChat: number[] = [-Infinity, -Infinity, -Infinity, -Infinity];
   /** Tampo da mesa ("bater na mesa"): rachaduras, dano e se já virou plástico. */
@@ -383,6 +385,7 @@ export class Mesa {
     if (acao.tipo === 'jogar') this.comentarRodada(antes, this.estado);
     if (acao.tipo === 'distribuir') {
       this.dicas = [null, null, null, null];
+      this.familiaDecidida.clear();
       this.sinaisDosBots();
     }
     // Quem pediu família trocou as cartas: o sinal que o parceiro tinha não vale mais.
@@ -443,19 +446,21 @@ export class Mesa {
 
   /**
    * Na janela de família, os bots fora da vez também podem pedir (`quemDeveAgir` só devolve
-   * a vez). Uma consulta por mudança de estado; só uma ação `familia` do próprio bot é aplicada.
+   * a vez). Cada bot decide uma vez por mão; só uma ação `familia` do próprio bot é aplicada.
+   * Cadeira de humano (mesmo desconectado) nunca: bot não pede família por humano.
    */
   private familiasDosBots(s: EstadoPartida, agentes: Cadeira[]): void {
     if (!janelaDeFamilia(s)) return;
     for (const c of CADEIRAS) {
-      if (agentes.includes(c) || this.humanoAtivo(c)) continue;
+      if (agentes.includes(c) || this.ocupantes[c].humano || this.familiaDecidida.has(c)) continue;
       this.agendar(this.tempos.botMs, () => this.familiaDoBot(c));
     }
   }
 
   private familiaDoBot(c: Cadeira): void {
     const s = this.estado;
-    if (!s || !janelaDeFamilia(s)) return;
+    if (!s || !janelaDeFamilia(s) || this.ocupantes[c].humano || this.familiaDecidida.has(c)) return;
+    this.familiaDecidida.add(c);
     let a: AcaoJogador | null = null;
     try {
       a = this.decidirBot(s, c);
@@ -532,6 +537,8 @@ export class Mesa {
       this.falha(new Error(`bot da cadeira ${c} tentou agir pela ${escolhida.cadeira}`));
       escolhida = null;
     }
+    // Jogando por um humano desconectado: a carta sim, a família não.
+    if (escolhida?.tipo === 'familia' && this.ocupantes[c].humano) escolhida = null;
     if (escolhida && this.aplicar(escolhida)) return;
     this.agirPor(c);
   }

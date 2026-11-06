@@ -134,4 +134,43 @@ describe('família na Mesa', () => {
       expect(t.estado('a')!.prazo!.ate).toBe(ate + 300);
     });
   });
+
+  test('bot não pede família por humano, nem desconectado', () => {
+    const consultas: Cadeira[] = [];
+    // Pede família (fechada) sempre que pode; quem roda a mesa é que não pode deixar sair pelo humano.
+    const sempre = (s: EstadoPartida, c: Cadeira): AcaoJogador | null => {
+      if (janelaDeFamilia(s) && s.mao!.vez !== c) consultas.push(c);
+      if (janelaDeFamilia(s) && s.monte.length >= 3) return { tipo: 'familia', cadeira: c };
+      return botFacil(s, c);
+    };
+    const t = criarMesa({ regras: MINEIRO, decidirBot: sempre, humanosEsperados: 2 });
+    t.mesa.sentar('a', 'Ana');
+    t.mesa.sentar('b', 'Bia');
+    t.mesa.desconectar('b');
+    avancarAte(() => t.mesa.partida!.fase === 'fimPartida', 10, 3_000_000);
+    expect(consultas.filter((c) => c === 0 || c === 2)).toEqual([]);
+    expect(t.de('a', 'acao').filter((x) => x.tipo === 'familia' && (x.cadeira === 0 || x.cadeira === 2))).toEqual([]);
+    expect(t.de('a', 'acao').some((x) => x.tipo === 'familia')).toBe(true);
+  });
+
+  test('cada bot fora da vez decide a família uma vez por mão', () => {
+    let mao = 0;
+    const vezes = new Map<string, number>();
+    const decidir = (s: EstadoPartida, c: Cadeira): AcaoJogador | null => {
+      if (janelaDeFamilia(s) && s.mao!.vez !== c) {
+        const k = `${mao}:${c}`;
+        vezes.set(k, (vezes.get(k) ?? 0) + 1);
+        // A 1ª consulta da cadeira 1 na mão pede (fechada): conferência e volta à janela.
+        if (c === 1 && vezes.get(k) === 1 && s.monte.length >= 3) return { tipo: 'familia', cadeira: 1 };
+        return null;
+      }
+      const a = botFacil(s, c);
+      return a?.tipo === 'familia' ? null : a;
+    };
+    const t = criarMesa({ regras: MINEIRO, decidirBot: decidir, aoAplicar: (a) => a.tipo === 'distribuir' && mao++ });
+    t.mesa.sentar('a', 'Ana');
+    avancarAte(() => mao >= 4 || t.mesa.partida!.fase === 'fimPartida', 10, 3_000_000);
+    expect(t.de('a', 'acao').some((x) => x.tipo === 'conferir')).toBe(true);
+    expect(Object.fromEntries([...vezes].filter(([, n]) => n > 1))).toEqual({});
+  });
 });
