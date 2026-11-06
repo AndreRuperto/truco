@@ -172,6 +172,16 @@ describe('TelaMesa no ritual e na família', () => {
     expect(screen.queryByTestId('minha-mao')).toBeNull();
   });
 
+  test('a linha de estado fica sempre montada (região viva) e só troca o texto', () => {
+    const { rerender } = render(<TelaMesa snap={snap(msgEstado(noRitual(), 3))} acoes={acoesFalsas()} />);
+    const linha = screen.getByTestId('etapa');
+    expect(linha).toHaveAttribute('role', 'status');
+    expect(linha).toHaveTextContent('Sua vez de embaralhar');
+    rerender(<TelaMesa snap={snap(msgEstado(distribuida(MINEIRO), 0))} acoes={acoesFalsas()} />);
+    expect(screen.getByTestId('etapa')).toBe(linha);
+    expect(linha).toBeEmptyDOMElement();
+  });
+
   test('quem corta: as 5 opções e o monte com ele', () => {
     const t = reduce(noRitual(), { tipo: 'passarCorte', cadeira: 3 });
     render(<TelaMesa snap={snap(msgEstado(t, 2))} acoes={acoesFalsas()} />);

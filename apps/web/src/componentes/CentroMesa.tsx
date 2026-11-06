@@ -33,17 +33,9 @@ export function CentroMesa({ mao, ultimaMao, minha, variante, extra }: Props) {
   const fonte = mao ?? ultimaMao;
   // A camada de animação fica fora do centro (irmã, no tampo): mãos e cópias não contam como jogadas.
   const capa = <div ref={camada} className="camada-voo" aria-hidden="true" />;
-  if (!fonte)
-    return (
-      <>
-        <div ref={centro} className="centro" data-testid="centro">
-          {extra}
-        </div>
-        {capa}
-      </>
-    );
   const { anterior } = exibicao;
-  const vira = fonte.vira;
+  const vira = fonte?.vira ?? null;
+  // Uma árvore só (com ou sem mão): o `extra` (monte, linha de estado) não é remontado entre mãos.
   return (
     <>
       <div ref={centro} className="centro" data-testid="centro">
@@ -54,19 +46,21 @@ export function CentroMesa({ mao, ultimaMao, minha, variante, extra }: Props) {
             <span className="vira-rotulo">vira</span>
           </div>
         )}
-        <div className="meio">
-          {vira && variante === 'paulista' && <span className="vira-manilha">manilha: {nomeValor(valorManilhaPaulista(vira))}</span>}
-          <div className="marcadores" aria-label="Rodadas">
-            {marcadoresRodadas(fonte.rodadas, minha).map((m, i) => (
-              <span key={i} className={cx('marcador', m)} title={`${i + 1}ª rodada: ${TITULO[m]}`}>
-                {SIGLA[m]}
-              </span>
-            ))}
-            {Array.from({ length: Math.max(0, 3 - fonte.rodadas.length) }, (_, i) => (
-              <span key={`vaga-${i}`} className="marcador vaga" aria-hidden="true" />
-            ))}
+        {fonte && (
+          <div className="meio">
+            {vira && variante === 'paulista' && <span className="vira-manilha">manilha: {nomeValor(valorManilhaPaulista(vira))}</span>}
+            <div className="marcadores" aria-label="Rodadas">
+              {marcadoresRodadas(fonte.rodadas, minha).map((m, i) => (
+                <span key={i} className={cx('marcador', m)} title={`${i + 1}ª rodada: ${TITULO[m]}`}>
+                  {SIGLA[m]}
+                </span>
+              ))}
+              {Array.from({ length: Math.max(0, 3 - fonte.rodadas.length) }, (_, i) => (
+                <span key={`vaga-${i}`} className="marcador vaga" aria-hidden="true" />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         {exibicao.jogadas.map(({ chave, jogada: j }) => (
           <div key={chave} data-chave={chave} className={cx('jogada', `pos-${posicaoRelativa(minha, j.cadeira)}`)}>
             <CartaVisual carta={j.coberta ? null : j.carta} variante={variante} vira={vira} esmaecida={anterior} />

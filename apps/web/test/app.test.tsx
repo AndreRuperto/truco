@@ -42,7 +42,7 @@ describe('App: telas conforme o status da loja', () => {
     expect(screen.queryByRole('heading', { name: 'Sala de espera' })).toBeNull();
 
     act(() => sala.emit('drop', 1006));
-    expect(screen.getByRole('status')).toHaveTextContent('reconectando');
+    expect(screen.getByText('Conexão caiu — reconectando…')).toHaveAttribute('role', 'status');
     expect(screen.getByTestId('minha-mao')).toBeInTheDocument();
 
     act(() => sala.emit('reconnect'));

@@ -105,11 +105,10 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           extra={
             <>
               <Monte qtd={v.qtdMonte} dono={donoDoMonte(v)} minha={minha} />
-              {etapa && (
-                <p className="etapa" role="status">
-                  {etapa}
-                </p>
-              )}
+              {/* Sempre montada: a região viva só anuncia mudanças de texto se já existia. */}
+              <p className="etapa" role="status" data-testid="etapa">
+                {etapa ?? ''}
+              </p>
             </>
           }
         />
