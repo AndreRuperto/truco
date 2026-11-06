@@ -1631,15 +1631,15 @@ button:disabled {
 .familia[data-conferida='sim'] figcaption {
   color: var(--grito);
 }
+/* Em cima e embaixo: ao lado do nome do jogador, fora da cruz das jogadas. */
 .familia.pos-cima {
-  top: 20%;
-  left: 50%;
-  translate: -50% 0;
+  top: var(--e2);
+  left: calc(50% - var(--carta-c) * 0.9);
+  translate: -100% 0;
 }
 .familia.pos-baixo {
-  bottom: 22%;
-  left: 50%;
-  translate: -50% 0;
+  bottom: var(--e2);
+  left: calc(50% + var(--carta-c) * 0.9);
 }
 .familia.pos-esquerda {
   left: 17%;
