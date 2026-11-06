@@ -8,6 +8,7 @@ import { Chat } from '../componentes/Chat';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { Cronometro } from '../componentes/Cronometro';
 import { FamiliasNaMesa } from '../componentes/FamiliasNaMesa';
+import { GuiaOrdem } from '../componentes/GuiaOrdem';
 import { Mao } from '../componentes/Mao';
 import { Monte } from '../componentes/Monte';
 import { FimDeMao, FimDePartida } from '../componentes/Overlays';
@@ -113,6 +114,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           }
         />
         <FamiliasNaMesa visao={v} nome={nome} />
+        <GuiaOrdem regras={v.regras} vira={vira} mao={m?.minhaMao ?? []} />
         <Assento
           posicao="baixo"
           info={msg.cadeiras[minha]}

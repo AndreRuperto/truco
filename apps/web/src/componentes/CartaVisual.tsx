@@ -1,6 +1,6 @@
 import { type Carta, ehCoringa, type Variante } from '@truco/engine';
 import type { ReactNode } from 'react';
-import { ehVermelha, nomeManilha, rotuloCarta, SIMBOLO } from '../logica/cartas';
+import { ehVermelha, rotuloCarta, SIMBOLO } from '../logica/cartas';
 import { cx } from './cx';
 import { ChapeuCoringa, type Figura, FiguraCarta, FiguraCoringa, OrnamentoAs } from './FiguraCarta';
 
@@ -18,7 +18,6 @@ interface Props {
 export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaecida = false }: Props) {
   const base = cx('carta', tamanho === 'pequena' && 'pequena', esmaecida && 'esmaecida');
   if (!carta) return <span className={cx(base, 'verso')} role="img" aria-label="carta virada" />;
-  const manilha = nomeManilha(carta, variante, vira);
   const coringa = ehCoringa(carta);
   /* O coringa usa o naipe só para a cor; o símbolo dele é o chapéu de bobo. */
   const simbolo: ReactNode = coringa ? <ChapeuCoringa /> : SIMBOLO[carta.naipe];
@@ -48,7 +47,6 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
       className={cx(
         base,
         ehVermelha(carta) ? 'vermelha' : 'preta',
-        manilha && 'manilha',
         coringa && 'coringa',
         (figura || as || coringa) && 'figurada',
       )}
@@ -78,11 +76,6 @@ export function CartaVisual({ carta, variante, vira, tamanho = 'normal', esmaeci
       {as && (
         <span className="figura figura-as">
           <OrnamentoAs naipe={carta.naipe} />
-        </span>
-      )}
-      {manilha && (
-        <span className="selo" aria-hidden="true">
-          {manilha}
         </span>
       )}
     </span>

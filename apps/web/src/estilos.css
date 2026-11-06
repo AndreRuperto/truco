@@ -950,22 +950,6 @@ button:disabled {
   font-size: calc(var(--carta-l) * 0.52);
   line-height: 1;
 }
-.carta .selo {
-  position: absolute;
-  bottom: 4%;
-  left: 50%;
-  padding: 1px 4px;
-  border-radius: 4px;
-  background: var(--tinta);
-  color: var(--papel);
-  font-size: calc(var(--carta-l) * 0.13);
-  font-weight: 800;
-  white-space: nowrap;
-  transform: translateX(-50%);
-}
-.carta.manilha .canto-b {
-  display: none;
-}
 /* Coringa estreito (< 48px): estrela num medalhão de filete tracejado, longe dos cantos. */
 .carta.coringa .naipe-central {
   inset: 29% 22%;
@@ -1175,8 +1159,7 @@ button:disabled {
 }
 .carta.pequena .canto-b,
 .carta.pequena .naipe-central,
-.carta.pequena .figura,
-.carta.pequena .selo {
+.carta.pequena .figura {
   display: none;
 }
 .carta.esmaecida {
@@ -2105,4 +2088,209 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: var(--e2);
+}
+
+/*
+ * ---------- guia da ordem das cartas (canto da mesa) ----------
+ * Lousa pequena com a escada de força, da mais forte (esquerda) para a mais fraca. Cada
+ * degrau é uma fichinha de papel; as da minha mão ganham anel amarelo e sobem um pouco.
+ * Sem nomes de manilha: só a carta e a posição.
+ */
+.guia-ordem {
+  position: absolute;
+  top: calc(var(--e2) + 4px);
+  left: calc(var(--e2) + 4px);
+  z-index: 8;
+  display: grid;
+  justify-items: start;
+  gap: var(--e1);
+  max-width: calc(100% - 2 * var(--e3));
+}
+.guia-ordem-botao {
+  position: relative;
+  min-height: 36px;
+  padding: 0 var(--e3);
+  border: 2px solid var(--lousa-borda);
+  border-radius: var(--raio-botao);
+  background: var(--lousa);
+  color: var(--giz);
+  font-size: var(--t-1);
+  font-weight: 800;
+}
+/* alvo de toque de 44px sem crescer o botão na mesa */
+.guia-ordem-botao::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+.guia-ordem.aberto .guia-ordem-botao {
+  color: var(--grito);
+}
+.guia-ordem-painel {
+  display: grid;
+  grid-template-areas:
+    'forte fraca'
+    'lista lista'
+    'nota nota';
+  justify-content: space-between;
+  gap: var(--e1) var(--e4);
+  padding: var(--e2) var(--e3) var(--e3);
+  border: 4px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  box-shadow: var(--sombra-tampo);
+}
+.guia-ordem-ponta {
+  color: var(--giz-suave);
+  font-family: var(--fonte-giz);
+  font-size: var(--t0);
+  line-height: 1;
+}
+.ponta-forte {
+  grid-area: forte;
+}
+.ponta-fraca {
+  grid-area: fraca;
+  justify-self: end;
+}
+.guia-ordem-lista {
+  grid-area: lista;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e1);
+  margin: 0;
+  padding: var(--e1) 0 0;
+  list-style: none;
+}
+.degrau {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.degrau-carta {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 34px;
+  padding: 0 3px;
+  border: 1px solid var(--papel-borda);
+  border-radius: 5px;
+  background: var(--papel);
+  color: var(--tinta);
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: translate var(--dur) ease-out;
+}
+.degrau-naipe {
+  font-size: 0.85em;
+}
+.degrau.vermelha .degrau-carta,
+.degrau-coringa .degrau-carta {
+  color: var(--naipe-vermelho);
+}
+.degrau-coringa .chapeu-coringa {
+  width: 1.15em;
+  height: 1.15em;
+}
+.degrau-pendente .degrau-carta {
+  border-style: dashed;
+  background: transparent;
+  color: var(--giz);
+}
+.degrau.minha .degrau-carta {
+  outline: 3px solid var(--grito);
+  outline-offset: 1px;
+  translate: 0 -3px;
+}
+/* marca abaixo, além do anel: a cor não é o único sinal */
+.degrau.minha::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--grito);
+}
+.degrau-qtd {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  padding: 0 3px;
+  border-radius: 6px;
+  background: var(--grito);
+  color: var(--tinta);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.degrau-divisa {
+  width: 2px;
+  height: 26px;
+  margin: 0 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--giz) 35%, transparent);
+}
+.guia-ordem-nota {
+  grid-area: nota;
+  margin: var(--e1) 0 0;
+  color: var(--giz-suave);
+  font-size: var(--t-1);
+}
+@media (max-width: 600px) {
+  .degrau-carta {
+    min-width: 22px;
+    height: 30px;
+    font-size: 0.85rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .degrau-carta {
+    transition: none;
+  }
+}
+/*
+ * Tela larga: sobra margem dos lados da mesa (900px). O guia sai da mesa e vira uma escada
+ * vertical no canto superior esquerdo da tela, sem cobrir carta nenhuma.
+ */
+@media (min-width: 1240px) {
+  .guia-ordem {
+    position: fixed;
+    top: var(--e4);
+    left: var(--e4);
+    max-width: none;
+  }
+  .guia-ordem-painel {
+    grid-template-areas: 'forte' 'lista' 'fraca' 'nota';
+    justify-content: stretch;
+    justify-items: center;
+    max-width: calc((100vw - 900px) / 2 - 2 * var(--e4));
+  }
+  .ponta-fraca {
+    justify-self: center;
+  }
+  .guia-ordem-lista {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 3px;
+  }
+  .degrau-carta {
+    min-width: 38px;
+    height: 28px;
+  }
+  .degrau.minha .degrau-carta {
+    translate: 4px 0;
+  }
+  .degrau.minha::after {
+    bottom: auto;
+    left: -10px;
+  }
+  .degrau-divisa {
+    width: 26px;
+    height: 2px;
+    margin: 2px 0;
+  }
 }

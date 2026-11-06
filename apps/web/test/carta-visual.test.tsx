@@ -7,7 +7,11 @@ describe('CartaVisual', () => {
   test('carta comum: valor e naipe nos cantos', () => {
     render(<CartaVisual carta={c('Ae')} variante="mineiro" vira={null} />);
     const carta = screen.getByRole('img', { name: 'Ás de espadas — Espadilha' });
-    expect(carta).toHaveClass('preta', 'manilha');
+    expect(carta).toHaveClass('preta');
+    // Nada na carta diz que ela é manilha: quem joga tem que saber (o nome fica só no rótulo acessível).
+    expect(carta).not.toHaveClass('manilha');
+    expect(carta.querySelector('.selo')).toBeNull();
+    expect(carta).not.toHaveTextContent('Espadilha');
     expect(carta).toHaveTextContent('A♠');
   });
 
@@ -76,11 +80,12 @@ describe('CartaVisual', () => {
     expect(carta.querySelector('.naipe-central')).toHaveTextContent(/[♥♠♦]/);
   });
 
-  test('figura que é manilha mantém o selo', () => {
+  test('figura que é manilha não ganha selo com o nome', () => {
     render(<CartaVisual carta={c('Kp')} variante="paulista" vira={c('Jo')} />);
     const carta = screen.getByRole('img', { name: 'Rei de paus — Zap' });
     expect(carta.querySelector('svg[data-figura="rei"]')).not.toBeNull();
-    expect(carta.querySelector('.selo')).toHaveTextContent('Zap');
+    expect(carta.querySelector('.selo')).toBeNull();
+    expect(carta).not.toHaveTextContent('Zap');
   });
 
   test('Ás: ornamento simples; A♠ com o ornamento da espadilha', () => {
@@ -90,7 +95,7 @@ describe('CartaVisual', () => {
     render(<CartaVisual carta={c('Ae')} variante="mineiro" vira={null} />);
     const espadilha = screen.getByRole('img', { name: 'Ás de espadas — Espadilha' });
     expect(espadilha.querySelector('svg[data-figura="as"]')).toHaveAttribute('data-ornamento', 'espadilha');
-    expect(espadilha.querySelector('.selo')).toHaveTextContent('Espadilha');
+    expect(espadilha).not.toHaveTextContent('Espadilha');
   });
 
   test('carta comum não ganha figura', () => {
