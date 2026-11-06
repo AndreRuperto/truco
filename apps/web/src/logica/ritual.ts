@@ -37,7 +37,7 @@ export function textoEtapa(v: Visao, nome: (c: Cadeira) => string): string | nul
 /** Legenda de uma família na mesa (com o resultado, se foi conferida). */
 export function textoFamilia(f: FamiliaVisivel, v: Pick<Visao, 'cadeira' | 'regras'>, nome: (c: Cadeira) => string): string {
   if (f.tipo === 'aberta') return `${nome(f.cadeira)} mostrou família`;
-  if (!f.conferida) return `${nome(f.cadeira)}: família fechada`;
+  if (!f.conferida) return f.cadeira === v.cadeira ? 'Você: família fechada' : `${nome(f.cadeira)}: família fechada`;
   const ganhou = f.conferida.real ? duplaDe(f.cadeira) : duplaDe(f.conferida.por);
   const pra = ganhou === duplaDe(v.cadeira) ? 'nós' : 'eles';
   const base = ESCADAS[v.regras.pontuacao][0];

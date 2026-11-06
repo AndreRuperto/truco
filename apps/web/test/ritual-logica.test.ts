@@ -45,6 +45,8 @@ describe('textoFamilia', () => {
     const t = reduce(s, { tipo: 'familia', cadeira: 0 });
     const v2 = visaoDoJogador(t, 2);
     expect(textoFamilia(v2.mao!.familias[0], v2, nome)).toBe('Ana: família fechada');
+    const v0 = visaoDoJogador(t, 0);
+    expect(textoFamilia(v0.mao!.familias[0], v0, nome)).toBe('Você: família fechada');
     const u = visaoDoJogador(reduce(t, { tipo: 'conferir', cadeira: 1, conferir: true }), 2);
     expect(textoFamilia(u.mao!.familias[0], u, nome)).toBe('Zé conferiu: era família! +2 pra nós');
     const b = visaoDoJogador(reduce(reduce(s, { tipo: 'familia', cadeira: 1 }), { tipo: 'conferir', cadeira: 0, conferir: true }), 1);
