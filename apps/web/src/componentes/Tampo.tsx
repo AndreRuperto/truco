@@ -71,6 +71,8 @@ export function Tampo({ fisica, minha, batida, children }: Props) {
   const estilo = ativa ? ({ '--forca': ativa.forca.toFixed(2) } as CSSProperties) : undefined;
 
   return (
+    <div className={cx('mesa-ambiente', tipo === 'plastico' && 'ambiente-plastico')}>
+      <Mobilia />
     <div data-testid="tampo" className={cx('tampo', tipo === 'plastico' && 'tampo-plastico', ativa && 'tremendo')} style={estilo}>
       {tipo === 'plastico' && <EstampaZapada />}
       <Rachaduras rachaduras={fisica?.rachaduras ?? []} tipo={tipo} minha={minha} novaId={ativa?.rachadura?.id ?? null} />
@@ -95,6 +97,31 @@ export function Tampo({ fisica, minha, batida, children }: Props) {
           Bateram tão forte que a mesa quebrou! Trouxeram uma de plástico.
         </span>
       )}
+    </div>
+    </div>
+  );
+}
+
+/**
+ * O que fica em volta do tampo, por baixo dele: uma cadeira em cada lado (vista de cima, o encosto
+ * para fora e o assento enfiado sob a mesa) e os pés da mesa aparecendo nos cantos de baixo.
+ */
+function Mobilia() {
+  return (
+    <div className="mobilia" aria-hidden="true">
+      {(['cima', 'direita', 'baixo', 'esquerda'] as const).map((lado) => (
+        <svg key={lado} className={`cadeira cadeira-${lado}`} viewBox="0 0 100 90" focusable="false">
+          <rect className="cadeira-pe" x="10" y="78" width="12" height="10" rx="3" />
+          <rect className="cadeira-pe" x="78" y="78" width="12" height="10" rx="3" />
+          <rect className="cadeira-assento" x="8" y="22" width="84" height="62" rx="12" />
+          <path className="cadeira-ripa" d="M20 40h60M20 54h60M20 68h60" />
+          <rect className="cadeira-pe" x="12" y="6" width="10" height="22" rx="3" />
+          <rect className="cadeira-pe" x="78" y="6" width="10" height="22" rx="3" />
+          <rect className="cadeira-encosto" x="4" y="2" width="92" height="16" rx="7" />
+        </svg>
+      ))}
+      <span className="pe-mesa pe-esq" />
+      <span className="pe-mesa pe-dir" />
     </div>
   );
 }

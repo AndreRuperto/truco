@@ -798,6 +798,134 @@ button:disabled {
   font-size: var(--t1);
 }
 
+/*
+ * Ambiente do bar: piso de ladrilho em volta e, por baixo do tampo, as cadeiras e os pés da mesa.
+ * Tudo atrás (z-index -1), então placar, cronômetro e mão cobrem o que sobrar.
+ */
+:root {
+  --piso: #1a231f;
+  --piso-junta: #121915;
+  --piso-motivo: #22302a;
+  --cadeira: #6b4325;
+  --cadeira-luz: #84552f;
+  --cadeira-linha: #4a2d17;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --piso: #d9cfbd;
+    --piso-junta: #c5b9a3;
+    --piso-motivo: #cdbfa6;
+  }
+}
+body:has(.tela-mesa) {
+  background-color: var(--piso);
+  /* Ladrilho hidráulico gasto: losango no meio de cada peça de 64 px e a junta. */
+  background-image:
+    linear-gradient(var(--piso-junta) 2px, transparent 2px),
+    linear-gradient(90deg, var(--piso-junta) 2px, transparent 2px),
+    conic-gradient(from 45deg at 50% 50%, var(--piso-motivo) 0 25%, transparent 0 50%, var(--piso-motivo) 0 75%, transparent 0),
+    radial-gradient(circle at 50% 50%, transparent 0 13px, var(--piso-motivo) 14px 16px, transparent 17px);
+  background-size: 64px 64px, 64px 64px, 22px 22px, 64px 64px;
+  background-position: -1px -1px, -1px -1px, 21px 21px, 0 0;
+  overflow-x: clip;
+}
+.mesa-ambiente {
+  position: relative;
+  display: grid;
+  min-height: 0;
+}
+.mobilia {
+  position: absolute;
+  /* Atrás de tudo da tela (placar, cronômetro e mão por cima), mas acima do piso do body. */
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+}
+.cadeira {
+  position: absolute;
+  width: clamp(84px, 16vw, 128px);
+  height: auto;
+  filter: drop-shadow(0 6px 6px color-mix(in srgb, var(--sombra) 45%, transparent));
+}
+.cadeira-assento {
+  fill: var(--cadeira);
+  stroke: var(--cadeira-linha);
+  stroke-width: 3;
+}
+.cadeira-encosto {
+  fill: var(--cadeira-luz);
+  stroke: var(--cadeira-linha);
+  stroke-width: 3;
+}
+.cadeira-pe {
+  fill: var(--cadeira-linha);
+}
+.cadeira-ripa {
+  stroke: var(--cadeira-linha);
+  stroke-width: 2;
+  opacity: 0.5;
+}
+/* Encosto para fora; o assento passa uns 40 % por baixo do tampo. */
+.cadeira-cima {
+  top: 0;
+  left: 50%;
+  translate: -50% -52%;
+}
+.cadeira-baixo {
+  bottom: 0;
+  left: 50%;
+  translate: -50% 52%;
+  rotate: 180deg;
+}
+.cadeira-esquerda {
+  top: 50%;
+  left: 0;
+  translate: -62% -50%;
+  rotate: -90deg;
+}
+.cadeira-direita {
+  top: 50%;
+  right: 0;
+  translate: 62% -50%;
+  rotate: 90deg;
+}
+.pe-mesa {
+  position: absolute;
+  bottom: -14px;
+  width: 22px;
+  height: 30px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(90deg, var(--madeira-funda), var(--madeira-veio) 45%, var(--madeira-funda));
+  box-shadow: 0 6px 8px color-mix(in srgb, var(--sombra) 50%, transparent);
+}
+.pe-esq {
+  left: 9%;
+}
+.pe-dir {
+  right: 9%;
+}
+/* Mesa de plástico: cadeiras de plástico vermelhas e pés tubulares. */
+.ambiente-plastico {
+  --cadeira: #c0392b;
+  --cadeira-luz: #d6503f;
+  --cadeira-linha: #7e2016;
+}
+.ambiente-plastico .pe-mesa {
+  width: 14px;
+  border-radius: 0 0 7px 7px;
+  background: linear-gradient(90deg, #8f949a, #d8dce0 45%, #8f949a);
+}
+/* No celular a mesa ocupa a largura: só as cadeiras de cima e de baixo, menores. */
+@media (max-width: 600px) {
+  .cadeira-esquerda,
+  .cadeira-direita {
+    display: none;
+  }
+  .cadeira {
+    width: 76px;
+  }
+}
+
 /* Tampo de madeira */
 .tampo {
   position: relative;
