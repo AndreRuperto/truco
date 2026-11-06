@@ -1,5 +1,5 @@
 import type { Carta, Variante } from '@truco/engine';
-import { type ReactNode, useId } from 'react';
+import { type ReactNode, useId, useState } from 'react';
 import { FALA_TEXTO } from '../logica/eventos';
 import { INFO_SINAL } from '../logica/sinais';
 import { CartaVisual } from './CartaVisual';
@@ -33,7 +33,58 @@ interface SecaoInfo {
 const SINAIS_ORDEM = ['zap', 'copas', 'espadilha', 'picafumo', 'coringa', 'tres', 'dois', 'as', 'nada'] as const;
 const FALAS_ORDEM = ['truco', 'seis', 'nove', 'doze', 'desce', 'corro', 'boa', 'vixe', 'bora'] as const;
 
-const SECOES: SecaoInfo[] = [
+const NOME: Record<Variante, string> = { paulista: 'Paulista', mineiro: 'Mineiro' };
+
+/** Comuns da mais forte para a mais fraca, em naipes que não são manilha nos exemplos. */
+const COMUNS: Carta[] = [
+  k('3', 'ouros'),
+  k('2', 'copas'),
+  k('A', 'paus'),
+  k('K', 'ouros'),
+  k('J', 'copas'),
+  k('Q', 'paus'),
+  k('7', 'espadas'),
+  k('6', 'ouros'),
+  k('5', 'copas'),
+  k('4', 'espadas'),
+];
+const VIRA_EXEMPLO = k('7', 'ouros');
+
+function secoesDe(v: Variante): SecaoInfo[] {
+  const paulista = v === 'paulista';
+  const secoes: (SecaoInfo | false)[] = [
+  {
+    id: 'resumo',
+    titulo: `Resumo do ${NOME[v]}`,
+    corpo: paulista ? (
+      <>
+        <p>
+          O <strong>paulista</strong> tem <strong>vira</strong>: depois de dar as cartas, uma carta fica virada no meio da mesa e
+          as quatro cartas do número seguinte a ela são as manilhas daquela mão. A cada mão, manilhas diferentes.
+        </p>
+        <ul>
+          <li>Manilhas: o número seguinte à vira, nos quatro naipes (paus › copas › espadas › ouros).</li>
+          <li>Pontuação costumeira: 1, 3, 6, 9, 12.</li>
+          <li>Mão de 11 ligada; sem família e sem mão de 10.</li>
+          <li>É exatamente assim na ranqueada do paulista.</li>
+        </ul>
+      </>
+    ) : (
+      <>
+        <p>
+          O <strong>mineiro</strong> não tem vira: as quatro manilhas são <strong>sempre as mesmas</strong> (4 de paus, 7 de
+          copas, Ás de espadas e 7 de ouros). Você decora uma vez e pronto.
+        </p>
+        <ul>
+          <li>Manilhas fixas: zap (4♣), 7♥, espadilha (A♠) e pica-fumo (7♦).</li>
+          <li>Pontuação costumeira: 2, 4, 8, 10, 12.</li>
+          <li>Mão de 10 e família fechada ligadas.</li>
+          <li>Opção de mão limpa: baralho sem 4 a 7 e com 2 coringas.</li>
+          <li>A ranqueada do mineiro usa 2, 4, 8, 10, 12, mão de 10 e família fechada.</li>
+        </ul>
+      </>
+    ),
+  },
   {
     id: 'basico',
     titulo: 'O básico',
@@ -52,7 +103,7 @@ const SECOES: SecaoInfo[] = [
         <p>
           <strong>Ganha a partida a dupla que chegar a 12 pontos primeiro.</strong>
         </p>
-        <p>Existem duas variantes, e você escolhe na tela inicial:</p>
+        <p>Existem duas variantes, e você escolhe na tela inicial (este guia é do {NOME[v]}; dá para trocar lá em cima):</p>
         <ul>
           <li>
             <strong>Paulista</strong>: depois de dar as cartas, vira-se uma carta na mesa (a <em>vira</em>), e ela decide
@@ -71,25 +122,59 @@ const SECOES: SecaoInfo[] = [
     corpo: (
       <>
         <p>
-          O baralho tem 40 cartas: sai 8, 9 e 10. Fora as manilhas (próxima seção), a força depende só do número; o naipe
-          não importa. Da mais forte para a mais fraca:
+          O baralho tem 40 cartas: sai 8, 9 e 10. No topo ficam as <strong>4 manilhas</strong>; depois vêm as cartas
+          comuns, em que só o número importa (o naipe não).{' '}
+          {paulista ? 'Exemplo com a vira 7 de ouros' : 'No mineiro é sempre esta'}, da mais forte para a mais fraca:
         </p>
-        <Cartas
-          variante="mineiro"
-          cartas={[k('3', 'ouros'), k('2', 'copas'), k('A', 'paus'), k('K', 'ouros'), k('J', 'copas'), k('Q', 'paus'), k('7', 'espadas'), k('6', 'ouros'), k('5', 'copas'), k('4', 'espadas')]}
-        />
-        <p className="manual-ordem" aria-label="3, 2, Ás, Rei, Valete, Dama, 7, 6, 5, 4">
-          3 › 2 › A › K › J › Q › 7 › 6 › 5 › 4
-        </p>
+        <h3>Manilhas</h3>
+        {paulista ? (
+          <Cartas
+            variante="paulista"
+            vira={VIRA_EXEMPLO}
+            cartas={[k('Q', 'paus'), k('Q', 'copas'), k('Q', 'espadas'), k('Q', 'ouros')]}
+            legenda={['Q de paus', 'Q de copas', 'Q de espadas', 'Q de ouros']}
+          />
+        ) : (
+          <Cartas
+            variante="mineiro"
+            cartas={[k('4', 'paus'), k('7', 'copas'), k('A', 'espadas'), k('7', 'ouros')]}
+            legenda={['Zap (4♣)', '7 de copas', 'Espadilha (A♠)', 'Pica-fumo (7♦)']}
+          />
+        )}
+        <h3>Comuns</h3>
+        <Cartas variante={v} vira={paulista ? VIRA_EXEMPLO : null} cartas={paulista ? COMUNS.filter((c) => c.valor !== 'Q') : COMUNS} />
+        {paulista ? (
+          <p
+            className="manual-ordem"
+            aria-label="Manilhas: Dama de paus, de copas, de espadas e de ouros; depois 3, 2, Ás, Rei, Valete, 7, 6, 5, 4"
+          >
+            Q♣ › Q♥ › Q♠ › Q♦ › 3 › 2 › A › K › J › 7 › 6 › 5 › 4
+          </p>
+        ) : (
+          <p
+            className="manual-ordem"
+            aria-label="Manilhas: 4 de paus, 7 de copas, Ás de espadas, 7 de ouros; depois 3, 2, Ás, Rei, Valete, Dama, 7, 6, 5, 4"
+          >
+            4♣ › 7♥ › A♠ › 7♦ › 3 › 2 › A › K › J › Q › 7 › 6 › 5 › 4
+          </p>
+        )}
+        {paulista ? (
+          <p>
+            Com outra vira, a escada muda: as manilhas passam a ser o número seguinte, e esse número sai das comuns. Fora as
+            manilhas, a ordem das comuns é sempre <strong>3 › 2 › A › K › J › Q › 7 › 6 › 5 › 4</strong>.
+          </p>
+        ) : (
+          <p>
+            Só aquelas quatro são manilhas: os outros 4, 7 e Ases (como o 4 de espadas ou o Ás de paus) são cartas comuns. Com
+            a mão limpa ligada, os 2 coringas entram entre as manilhas e o 3.
+          </p>
+        )}
         <p>
           Repare que o <strong>3 e o 2 ganham do Ás</strong>, e que a <strong>Dama (Q) é mais fraca que o Valete (J)</strong>.
+          Duas cartas comuns do mesmo número empatam: um K de copas e um K de paus têm a mesma força.
         </p>
         <p>
-          Duas cartas comuns do mesmo número têm a mesma força: um K de copas e um K de paus empatam.
-        </p>
-        <p>
-          Na mesa, o botão <strong>Ordem</strong> abre um guia com essa escada inteira (manilhas incluídas) e marca onde estão
-          as cartas da sua mão.
+          Na mesa, o botão <strong>Ordem</strong> abre essa escada inteira e marca onde estão as cartas da sua mão.
         </p>
       </>
     ),
@@ -103,6 +188,8 @@ const SECOES: SecaoInfo[] = [
           Manilhas são as quatro cartas mais fortes da mão. Elas ganham de qualquer carta comum e, entre elas, nunca empatam: a
           ordem vai pelo naipe.
         </p>
+        {!paulista && (
+          <>
         <h3>No mineiro: sempre as mesmas</h3>
         <Cartas
           variante="mineiro"
@@ -114,6 +201,10 @@ const SECOES: SecaoInfo[] = [
           <strong>Ás de espadas</strong> (a espadilha) e <strong>7 de ouros</strong> (o pica-fumo). Os outros 4, 7 e Ases
           continuam cartas comuns.
         </p>
+          </>
+        )}
+        {paulista && (
+          <>
         <h3>No paulista: depende da vira</h3>
         <p>
           A vira é a carta que fica virada no meio da mesa. As manilhas são <strong>as quatro cartas do número seguinte ao da
@@ -132,6 +223,8 @@ const SECOES: SecaoInfo[] = [
           Entre as manilhas do paulista a ordem dos naipes é sempre <strong>paus › copas › espadas › ouros</strong>. Enquanto a
           vira vale, aquele número deixa de ser carta comum: no exemplo, nenhuma Dama é carta comum.
         </p>
+          </>
+        )}
         <p>As cartas não trazem o nome da manilha escrito: você aprende a reconhecer. O guia Ordem, na mesa, ajuda.</p>
       </>
     ),
@@ -185,7 +278,11 @@ const SECOES: SecaoInfo[] = [
             <strong>Subindo</strong>: uma de cada vez, de baixo do monte, em três voltas.
           </li>
         </ul>
-        <p>No paulista, depois das mãos, a carta seguinte vira na mesa: é a vira.</p>
+        {paulista ? (
+          <p>Depois de dar as mãos, a carta seguinte do monte fica virada na mesa: é a vira, que define as manilhas.</p>
+        ) : (
+          <p>No mineiro não tem vira: as manilhas são sempre as mesmas.</p>
+        )}
         <p>
           Se você não fizer nada no seu tempo, o jogo faz o movimento por você. Durante a partida, cada jogada tem 20 segundos.
         </p>
@@ -381,9 +478,9 @@ const SECOES: SecaoInfo[] = [
       </>
     ),
   },
-  {
+  !paulista && {
     id: 'mao-limpa',
-    titulo: 'Mão limpa (só no mineiro)',
+    titulo: 'Mão limpa',
     corpo: (
       <>
         <p>
@@ -408,7 +505,7 @@ const SECOES: SecaoInfo[] = [
           <strong>Sinais</strong> manda uma careta para o seu parceiro:
         </p>
         <ul className="manual-sinais">
-          {SINAIS_ORDEM.map((s) => (
+          {SINAIS_ORDEM.filter((s) => !paulista || s !== 'coringa').map((s) => (
             <li key={s}>
               <span aria-hidden="true">{INFO_SINAL[s].emoji}</span> {INFO_SINAL[s].descricao}
               {s === 'coringa' && <small> (só na mão limpa)</small>}
@@ -502,16 +599,20 @@ const SECOES: SecaoInfo[] = [
       </dl>
     ),
   },
-];
+  ];
+  return secoes.filter((x): x is SecaoInfo => x !== false);
+}
 
-/** Ids das seções, na ordem (para testes e links). */
-export const SECOES_MANUAL = SECOES.map((s) => ({ id: s.id, titulo: s.titulo }));
+/** Ids e títulos das seções de cada guia, na ordem (para testes e links). */
+export const secoesManual = (v: Variante) => secoesDe(v).map((s) => ({ id: s.id, titulo: s.titulo }));
 
 /**
  * O manual inteiro com sumário. Os links do sumário são botões que rolam até a seção: o app usa
  * o hash da URL para as telas, então âncoras `#secao` trocariam de tela.
  */
-export function Manual() {
+export function Manual({ varianteInicial = 'mineiro' }: { varianteInicial?: Variante }) {
+  const [v, setV] = useState<Variante>(varianteInicial);
+  const secoes = secoesDe(v);
   const prefixo = useId();
   const idDe = (s: string) => `${prefixo}-${s}`;
   const ir = (s: string) => {
@@ -521,9 +622,16 @@ export function Manual() {
   };
   return (
     <div className="manual">
+      <div className="manual-variante" role="group" aria-label="Guia da variante">
+        {(['paulista', 'mineiro'] as const).map((x) => (
+          <button key={x} type="button" aria-pressed={v === x} onClick={() => setV(x)}>
+            Guia do {NOME[x]}
+          </button>
+        ))}
+      </div>
       <nav className="manual-sumario" aria-label="Sumário do manual">
         <ol>
-          {SECOES.map((s) => (
+          {secoes.map((s) => (
             <li key={s.id}>
               <button type="button" onClick={() => ir(s.id)}>
                 {s.titulo}
@@ -532,7 +640,7 @@ export function Manual() {
           ))}
         </ol>
       </nav>
-      {SECOES.map((s) => (
+      {secoes.map((s) => (
         <section key={s.id} className="manual-secao" aria-labelledby={idDe(s.id)}>
           <h2 id={idDe(s.id)} tabIndex={-1}>
             {s.titulo}

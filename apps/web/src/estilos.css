@@ -3027,3 +3027,25 @@ button:disabled {
 .mv-verso {
   fill: var(--verso);
 }
+
+/* Manual: escolha do guia (paulista ou mineiro), em duas fichas lado a lado. */
+.manual-variante {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  margin: 0 0 var(--e4);
+}
+.manual-variante button {
+  flex: 1 1 160px;
+  min-height: 48px;
+  font-size: var(--t1);
+  font-weight: 800;
+}
+.manual-variante button[aria-pressed='true'] {
+  border-color: var(--grito);
+  background: var(--grito);
+  color: var(--tinta);
+}
+.manual-secao h3 + .manual-cartas {
+  margin-top: var(--e2);
+}

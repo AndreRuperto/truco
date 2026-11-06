@@ -1,8 +1,9 @@
+import type { Variante } from '@truco/engine';
 import { useEffect, useRef } from 'react';
 import { Manual } from './Manual';
 
 /** O manual por cima da mesa: a partida continua rodando atrás. Fecha no botão ou no Esc. */
-export function ManualMesa({ aoFechar }: { aoFechar: () => void }) {
+export function ManualMesa({ aoFechar, variante }: { aoFechar: () => void; variante?: Variante }) {
   const fechar = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const anterior = document.activeElement as HTMLElement | null;
@@ -26,7 +27,7 @@ export function ManualMesa({ aoFechar }: { aoFechar: () => void }) {
           </button>
         </header>
         <div className="manual-mesa-corpo">
-          <Manual />
+          <Manual varianteInicial={variante} />
         </div>
       </div>
     </div>

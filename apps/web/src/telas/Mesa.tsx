@@ -186,7 +186,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           {textoSinalRecebido(sinal)}
         </div>
       )}
-      {manual && <ManualMesa aoFechar={fecharManual} />}
+      {manual && <ManualMesa aoFechar={fecharManual} variante={variante} />}
       {resumoMao && <FimDeMao titulo={resumoMao.titulo} detalhe={resumoMao.detalhe} />}
       {fim && <FimDePartida titulo={fim.titulo} placar={fim.placar} venceu={fim.venceu} aoJogarDeNovo={aoJogarDeNovo} aoVoltar={() => void acoes.sair()} />}
     </main>
