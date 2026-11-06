@@ -4,6 +4,7 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { posicaoRelativa } from '../logica/posicoes';
 import { movimentoReduzido } from './animacaoMesa';
 import { cx } from './cx';
+import { EstampaZapada } from './EstampaZapada';
 import { Rachaduras } from './Rachaduras';
 import './estilos-mesa-fisica.css';
 
@@ -71,6 +72,7 @@ export function Tampo({ fisica, minha, batida, children }: Props) {
 
   return (
     <div data-testid="tampo" className={cx('tampo', tipo === 'plastico' && 'tampo-plastico', ativa && 'tremendo')} style={estilo}>
+      {tipo === 'plastico' && <EstampaZapada />}
       <Rachaduras rachaduras={fisica?.rachaduras ?? []} tipo={tipo} minha={minha} novaId={ativa?.rachadura?.id ?? null} />
       {children}
       {ativa && (

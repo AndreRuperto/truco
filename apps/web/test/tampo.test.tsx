@@ -67,6 +67,20 @@ describe('Tampo', () => {
     expect(container.querySelectorAll('.rachadura:not(.marca)')).toHaveLength(0);
   });
 
+  test('a estampa da cerveja Zapada só aparece na mesa de plástico', () => {
+    const madeiraR = render(<Tampo fisica={madeira()} minha={0}>x</Tampo>);
+    expect(madeiraR.queryByTestId('estampa')).toBeNull();
+    madeiraR.unmount();
+    render(
+      <Tampo fisica={{ tipo: 'plastico', rachaduras: [], dano: 0 }} minha={0}>
+        x
+      </Tampo>,
+    );
+    const estampa = screen.getByTestId('estampa');
+    expect(estampa).toHaveAttribute('aria-hidden', 'true');
+    expect(estampa).toHaveTextContent('ZAPADA');
+  });
+
   test('batida nova: o tampo treme e aparece o TUM!, que some depois', () => {
     vi.useFakeTimers();
     const { rerender } = render(

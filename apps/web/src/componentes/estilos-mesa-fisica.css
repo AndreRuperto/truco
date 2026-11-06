@@ -10,6 +10,8 @@
   --plastico-borda: #c99712;
   --plastico-relevo: #fff1b8;
   --plastico-sombra: #8a6400;
+  --zapada-verde: #1f5a36;
+  --zapada-creme: #fbf3dc;
 }
 
 /* As fendas ficam sob as cartas: o centro passa a ser posicionado (pinta por cima do SVG). */
@@ -278,6 +280,53 @@
     inset 0 -8px 22px color-mix(in srgb, var(--plastico-sombra) 30%, transparent),
     var(--sombra-tampo);
 }
+/*
+ * Estampa da cerveja da casa no meio da mesa, dentro do anel menor, por baixo de tudo
+ * (z-index -1 no tampo isolado). Impressão meio apagada: decoração, não informação.
+ */
+.tampo.tampo-plastico {
+  isolation: isolate;
+}
+.tampo > .estampa-zapada {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: -1;
+  width: min(44%, 52vh, 300px);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  rotate: -8deg;
+  opacity: 0.82;
+  pointer-events: none;
+}
+.estampa-zapada .z-tampa,
+.estampa-zapada .z-miolo {
+  fill: var(--zapada-verde);
+}
+.estampa-zapada .z-aro,
+.estampa-zapada .z-paus,
+.estampa-zapada .z-estrela {
+  fill: var(--zapada-creme);
+}
+.estampa-zapada .z-fio {
+  fill: none;
+  stroke: var(--zapada-creme);
+  stroke-width: 2;
+}
+.estampa-zapada .z-nome {
+  fill: var(--zapada-creme);
+  font-family: var(--fonte-ui);
+  font-weight: 800;
+  font-size: 25px;
+  letter-spacing: 2px;
+}
+.estampa-zapada .z-sub {
+  fill: var(--zapada-creme);
+  font-family: var(--fonte-giz);
+  font-size: 15px;
+  letter-spacing: 0.5px;
+}
+
 .tampo.tampo-plastico > .quebra {
   border-radius: 48px;
 }
