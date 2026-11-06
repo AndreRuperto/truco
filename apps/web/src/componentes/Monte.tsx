@@ -18,11 +18,16 @@ export function Monte({ qtd, dono, minha }: Props) {
   const lugar = dono === null ? 'meio' : posicaoRelativa(minha, dono);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    // Sem monte na mesa (0 cartas), não há de onde deslizar: o próximo aparece no lugar.
+    if (!el) {
+      antes.current = null;
+      return;
+    }
     const a = antes.current;
     if (a && a.lugar !== lugar) deslizarDe(el, a.ret);
+    // Mede de novo também quando a contagem muda (a pilha muda de tamanho).
     antes.current = { lugar, ret: el.getBoundingClientRect() };
-  }, [lugar]);
+  }, [lugar, qtd]);
   if (qtd === 0) return null;
   const camadas = Math.max(1, Math.min(5, Math.ceil(qtd / 8)));
   return (
