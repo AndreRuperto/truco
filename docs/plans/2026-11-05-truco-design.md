@@ -46,9 +46,11 @@ Ativa quando uma dupla chega a 11 (padrão: qualquer dupla). Todos recebem as ca
 
 ### Família
 Mão com 3 cartas só de {Q, J, K, A}, qualquer combinação — inclusive com o A♠ (espadilha no mineiro), se o jogador quiser abrir mão dele.
-- **Aberta**: mostra as 3 cartas à mesa; validado → redistribui.
-- **Fechada**: pede sem mostrar (o servidor ainda valida); redistribui.
-- Janela: antes da 1ª carta da mão.
+Detalhes em `2026-11-05-ritual-da-mao-design.md`. Não há mais redistribuição: quem pede deixa as 3 cartas na mesa e recebe 3 do topo do monte (sem 3 cartas no monte, não pode pedir).
+- **Fechada**: as 3 ficam viradas e pode ser **blefe**. A dupla adversária pode conferir: família real → a dupla de quem pediu ganha o valor base; blefe → a adversária ganha; ninguém conferiu → ninguém pontua.
+- **Aberta**: mostra as 3 cartas, precisa ser família real e não pontua.
+- Limite: até 3 fechadas por mão, contando o "abrir 3" do corte; depois disso a família da mesa fechada sai aberta.
+- Janela: antes da 1ª carta da mão, em mão normal (bloqueada na mão de 10 e na de ferro). Pontos de família podem encerrar a partida.
 
 ---
 
@@ -56,8 +58,8 @@ Mão com 3 cartas só de {Q, J, K, A}, qualquer combinação — inclusive com o
 
 Monorepo TypeScript (pnpm workspaces):
 
-- **`packages/engine`** — regras puras, sem I/O. Máquina de estados `reduce(estado, acao) → estado`. Ações: `distribuir`, `jogarCarta`, `jogarCoberta`, `pedirTruco`, `aceitar`, `correr`, `aumentar`, `pedirFamilia`, `decidirMao10`. Inclui os bots. Função `visaoDoJogador(estado, cadeira)` gera o estado filtrado (sem cartas alheias).
-- **`apps/server`** — Node + Colyseus. Servidor autoritativo: embaralha (CSPRNG), distribui, valida ações e envia a cada cliente só a própria visão. Bots ocupam cadeiras vagas e cadeiras de quem caiu. Postgres + Drizzle (contas, partidas, Elo). Auth: link mágico por e-mail + Google.
+- **`packages/engine`** — regras puras, sem I/O. Máquina de estados `reduce(estado, acao) → estado`. Ações: `monte` (só do servidor: o monte inicial), `embaralhar`, `passarCorte`, `cortar`, `abrir3`, `dar3`, `devolver`, `distribuir{modo}`, `conferir`, `jogarCarta`, `jogarCoberta`, `pedirTruco`, `aceitar`, `correr`, `aumentar`, `pedirFamilia`, `decidirMao10`. Inclui os bots. Função `visaoDoJogador(estado, cadeira)` gera o estado filtrado (sem cartas alheias).
+- **`apps/server`** — Node + Colyseus. Servidor autoritativo: sorteia o monte inicial e a sorte de cada riffle e corte (CSPRNG), valida ações e envia a cada cliente só a própria visão. Bots ocupam cadeiras vagas e cadeiras de quem caiu. Postgres + Drizzle (contas, partidas, Elo). Auth: link mágico por e-mail + Google.
 - **`apps/web`** — React + Vite, mesa em DOM/CSS + Framer Motion. Mobile-first.
 
 ### Mesas
@@ -78,13 +80,13 @@ Monorepo TypeScript (pnpm workspaces):
 ## 3. Fluxo da mão, UI e bots
 
 ### Fluxo
-1. Servidor embaralha e distribui (mostra a vira no paulista).
-2. Janela de família (se ligada).
+1. Ritual da mão sobre um **monte físico persistente** (as cartas da mão anterior voltam por cima; só a 1ª mão da partida recebe um monte sorteado pelo servidor): o pé embaralha (riffle com a sorte do servidor) quantas vezes quiser e passa; o da esquerda corta — cortar, embaralhar, abrir 3 ou dar 3 (3 movimentos) — ou devolve; o pé distribui num dos 3 modos — por cima, por baixo ou subindo alternado (a vira, no paulista, sai na mesma direção). Vale em todas as mesas, inclusive a ranqueada.
+2. Janela de família (se ligada): fechada (pode ser blefe; a dupla adversária confere) ou aberta, até 3 fechadas por mão.
 3. Na vez: jogar aberta, jogar coberta (2ª rodada+) ou pedir truco/aumento.
 4. Truco pausa a mão; a dupla adversária responde (vale a 1ª resposta de qualquer um dos dois).
 5. Fim da mão: placar animado → checa mão de 10 / mão de 11 / fim de partida.
 
-Timer de 20 s por jogada. Estourou: joga a carta mais fraca (ou corre se houver truco pendente). Desconexão: bot assume até reconectar.
+Timer de 20 s por jogada (e um prazo por etapa do ritual). Estourou: joga a carta mais fraca (ou corre se houver truco pendente); no ritual, embaralha até 3 vezes e passa, corta normal e dá por cima; na família fechada, não confere. Desconexão: bot assume até reconectar.
 
 ### UI
 - Mesa vista de cima: você embaixo, parceiro à frente, adversários nas laterais.

@@ -121,7 +121,7 @@ Quem recebeu "dar 3" fica com aquelas cartas e é pulado. A mão de 10 e a de fe
 
 ### 2.7 Atalhos para testes
 
-`atalhos.ts` (exportado): `monteRodaARoda(baralho)` converte um baralho na ordem antiga (roda a roda a partir de `pe + 1`, vira na posição 12) para o monte "por cima" equivalente; `ritualMinimo(s)` (passa, devolve, por cima) e `distribuirSemRitual(s, baralho)` (= `monte` + ritual mínimo). Assim os helpers `distribuida(...)` de engine, servidor e web continuam entregando **as mesmas mãos** de antes e quase nenhum teste muda.
+`testes.ts` (fora da API pública; importado como `@truco/engine/testes` em servidor e web, e como `../src/testes` no engine), apoiado em `monteRodaARoda(baralho)` (de `ritual.ts`), que converte um baralho na ordem antiga (roda a roda a partir de `pe + 1`, vira na posição 12) para o monte "por cima" equivalente; `ritualMinimo(s)` (passa, devolve, por cima) e `distribuirSemRitual(s, baralho)` (= `monte` + ritual mínimo). Assim os helpers `distribuida(...)` de engine, servidor e web continuam entregando **as mesmas mãos** de antes e quase nenhum teste muda.
 
 ### 2.8 Bots (`bots/ritual.ts`)
 
