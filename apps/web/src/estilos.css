@@ -3077,10 +3077,11 @@ button:disabled {
   display: grid;
   justify-items: center;
   gap: var(--e1);
-  width: 52px;
+  width: 58px;
 }
+/* 52 px: acima de 48 px a carta mostra o desenho de Rei, Valete e Dama (ver @container da carta). */
 .escada-carta .carta {
-  --carta-l: 44px;
+  --carta-l: 52px;
 }
 .escada-manilha .carta {
   box-shadow:
@@ -3102,7 +3103,7 @@ button:disabled {
   display: grid;
   place-items: center;
   width: 16px;
-  height: calc(44px * 1.45);
+  height: calc(52px * 1.45);
   color: var(--manual-tinta, var(--texto));
   font-size: 1.5rem;
   font-weight: 800;

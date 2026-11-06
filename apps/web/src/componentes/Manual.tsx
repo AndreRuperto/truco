@@ -46,10 +46,11 @@ function Escada({
   legendaManilhas?: string[];
   comuns: Carta[];
 }) {
+  // Sobe da mais fraca (esquerda) para a mais forte (direita): comuns e depois as manilhas.
   const degraus = [
     ...manilhas.map((c, i) => ({ c, grupo: 'manilha' as const, legenda: legendaManilhas?.[i] })),
-    ...comuns.map((c) => ({ c, grupo: 'comum' as const, legenda: undefined })),
-  ];
+    ...comuns.map((c) => ({ c, grupo: 'comum' as const, legenda: undefined as string | undefined })),
+  ].reverse();
   return (
     <figure className="escada">
       <figcaption>{rotulo}</figcaption>
@@ -170,15 +171,15 @@ function secoesDe(v: Variante): SecaoInfo[] {
     corpo: (
       <>
         <p>
-          O baralho tem 40 cartas: sai 8, 9 e 10. No topo ficam as <strong>4 manilhas</strong>; depois vêm as cartas
-          comuns, em que só o número importa (o naipe não).{' '}
-          {paulista ? 'Exemplo com a vira 7 de ouros' : 'No mineiro é sempre esta'}, da mais forte para a mais fraca:
+          O baralho tem 40 cartas: sai 8, 9 e 10. Nas cartas comuns só o número importa (o naipe não), e acima de todas
+          ficam as <strong>4 manilhas</strong>. {paulista ? 'Exemplo com a vira 7 de ouros' : 'No mineiro é sempre esta'}, da
+          mais fraca para a mais forte (cada seta aponta para a carta que ganha):
         </p>
         {paulista ? (
           <Escada
             variante="paulista"
             vira={VIRA_EXEMPLO}
-            rotulo="Da mais forte para a mais fraca, com a vira 7 de ouros"
+            rotulo="Da mais fraca para a mais forte, com a vira 7 de ouros"
             manilhas={[k('Q', 'paus'), k('Q', 'copas'), k('Q', 'espadas'), k('Q', 'ouros')]}
             comuns={COMUNS.filter((c) => c.valor !== 'Q')}
           />
@@ -186,7 +187,7 @@ function secoesDe(v: Variante): SecaoInfo[] {
           <Escada
             variante="mineiro"
             vira={null}
-            rotulo="Da mais forte para a mais fraca, no mineiro"
+            rotulo="Da mais fraca para a mais forte, no mineiro"
             manilhas={[k('4', 'paus'), k('7', 'copas'), k('A', 'espadas'), k('7', 'ouros')]}
             legendaManilhas={['Zap', '7 de copas', 'Espadilha', 'Pica-fumo']}
             comuns={COMUNS}

@@ -30,19 +30,22 @@ describe('manual de como jogar', () => {
   test('um guia para cada variante: escada completa, vira e mão limpa só onde existem', async () => {
     const user = userEvent.setup();
     render(<Manual varianteInicial="mineiro" />);
-    const escadaMineiro = screen.getByRole('list', { name: 'Da mais forte para a mais fraca, no mineiro' });
+    const escadaMineiro = screen.getByRole('list', { name: 'Da mais fraca para a mais forte, no mineiro' });
     const nomes = within(escadaMineiro).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'));
-    expect(nomes.slice(0, 5)).toEqual(['4 de paus, manilha', '7 de copas, manilha', 'Ás de espadas, manilha', '7 de ouros, manilha', '3 de ouros']);
+    // Sobe do 4 comum até o zap.
+    expect(nomes[0]).toBe('4 de espadas');
+    expect(nomes.slice(-5)).toEqual(['3 de ouros', '7 de ouros, manilha', 'Ás de espadas, manilha', '7 de copas, manilha', '4 de paus, manilha']);
     expect(nomes).toHaveLength(14);
     expect(screen.getByRole('heading', { level: 2, name: 'Resumo do Mineiro' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Mão limpa' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'No paulista: depende da vira' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Guia do Paulista' }));
     expect(screen.getByRole('button', { name: 'Guia do Paulista' })).toHaveAttribute('aria-pressed', 'true');
-    const escadaPaulista = screen.getByRole('list', { name: 'Da mais forte para a mais fraca, com a vira 7 de ouros' });
+    const escadaPaulista = screen.getByRole('list', { name: 'Da mais fraca para a mais forte, com a vira 7 de ouros' });
     const itens = within(escadaPaulista).getAllByRole('listitem');
     expect(itens).toHaveLength(13);
-    expect(itens[0]).toHaveAccessibleName('Dama de paus, manilha');
+    expect(itens.at(-1)).toHaveAccessibleName('Dama de paus, manilha');
+    expect(itens[0]).toHaveAccessibleName('4 de espadas');
     expect(itens.some((li) => /^Dama/.test(li.getAttribute('aria-label') ?? '') && !/manilha/.test(li.getAttribute('aria-label') ?? ''))).toBe(false);
     expect(screen.getByRole('heading', { name: 'No paulista: depende da vira' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: 'Mão limpa' })).toBeNull();
