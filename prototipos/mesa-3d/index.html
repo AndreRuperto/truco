@@ -80,7 +80,7 @@ button:disabled { opacity: .6; cursor: default; }
 <body>
 <div id="palco"></div>
 <header class="barra">
-  <div class="marca"><b>Truco de boteco</b><span>protótipo de mesa 3D · arraste para olhar em volta</span></div>
+  <div class="marca"><b>Truco de boteco</b><span>protótipo de mesa 3D · arraste para mexer a cabeça</span></div>
   <nav class="botoes" aria-label="Controles da mesa">
     <button id="bt-demo" class="primario" type="button">Demo</button>
     <button id="bt-mesa" type="button">Mesa de plástico</button>
@@ -408,7 +408,8 @@ const LX = 2.1, ZF = -1.75, ZB = 2.6, ALT = 2.8, RODAPE = 1.15;
 
   // placa Zapada e lousa
   const placa = malha(new THREE.PlaneGeometry(.7, .35), new THREE.MeshStandardMaterial({ map: texPlaca, roughness: .5, emissive: '#ffffff', emissiveMap: texPlaca, emissiveIntensity: .12 }));
-  placa.position.set(.62, 1.5, ZF + .01); sala.add(placa);
+  // À frente da moldura (face em ZF + .01): no mesmo plano as duas brigavam (z-fighting); sem sombra própria.
+  placa.position.set(.62, 1.5, ZF + .02); placa.castShadow = false; sala.add(placa);
   const moldura = malha(new THREE.BoxGeometry(.76, .41, .02), mat(COR.madeiraFunda)); moldura.position.set(.62, 1.5, ZF + .0); sala.add(moldura);
   const lousa = malha(new THREE.PlaneGeometry(.6, .4), new THREE.MeshStandardMaterial({ map: texLousa, roughness: .9 }));
   lousa.rotation.y = PI / 2; lousa.position.set(-LX + .02, 1.5, -.35); sala.add(lousa);
@@ -873,10 +874,16 @@ btMesa.addEventListener('click', () => {
 // ---------------------------------------------------------------- câmera
 const controles = new OrbitControls(camera, renderer.domElement);
 controles.enablePan = false; controles.enableDamping = true; controles.dampingFactor = .08;
-controles.rotateSpeed = .6; controles.zoomSpeed = .6;
-controles.minAzimuthAngle = -.75; controles.maxAzimuthAngle = .75;
-controles.minPolarAngle = .45; controles.maxPolarAngle = 1.38;
-controles.minDistance = 1.0; controles.maxDistance = 3.0;
+// Você está sentado: dá só para mexer um pouco a cabeça (sem rodear a mesa e ver as cartas dos outros, sem zoom).
+controles.rotateSpeed = .35; controles.enableZoom = false;
+const GIRO = .14, INCLINA = .1;
+controles.minAzimuthAngle = -GIRO; controles.maxAzimuthAngle = GIRO;
+function travarNaCadeira() {
+  const polar = controles.getPolarAngle();
+  controles.minPolarAngle = polar - INCLINA; controles.maxPolarAngle = polar + INCLINA;
+  const d = camera.position.distanceTo(controles.target);
+  controles.minDistance = d; controles.maxDistance = d;
+}
 function vistaPadrao() {
   const a = innerWidth / innerHeight;
   if (a >= 1) return { fov: 57, pos: V(0, 1.36, 1.2), alvo: V(0, .9, -.12) };
@@ -895,7 +902,7 @@ function ajustarVM() {
 function aplicarVista(animado) {
   const v = vistaPadrao();
   camera.fov = v.fov; camera.updateProjectionMatrix(); ajustarVM();
-  if (!animado) { camera.position.copy(v.pos); controles.target.copy(v.alvo); controles.update(); return; }
+  if (!animado) { camera.position.copy(v.pos); controles.target.copy(v.alvo); controles.update(); travarNaCadeira(); return; }
   const p0 = camera.position.clone(), a0 = controles.target.clone();
   animar(.8, k => { camera.position.lerpVectors(p0, v.pos, k); controles.target.lerpVectors(a0, v.alvo, k); });
 }
