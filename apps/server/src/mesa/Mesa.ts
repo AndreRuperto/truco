@@ -460,6 +460,12 @@ export class Mesa {
   private familiaDoBot(c: Cadeira): void {
     const s = this.estado;
     if (!s || !janelaDeFamilia(s) || this.ocupantes[c].humano || this.familiaDecidida.has(c)) return;
+    // Marcado já aqui, antes de saber se pede: o bot fora da vez que trocou as cartas por família
+    // não reavalia as 3 novas nesta mão (`familiaDecidida` só limpa na mão seguinte). Aceitável:
+    // as 3 cartas de reposição formarem outra família é raro, o limite de fechadas por mão é
+    // compartilhado pela mesa, e reavaliar a cada mudança de estado reagendaria timers sem fim
+    // (e deixaria o bot encadear famílias mais rápido do que um humano consegue reagir). O bot
+    // da vez continua reavaliando: `decidirBot` passa por `querFamilia` a cada jogada dele.
     this.familiaDecidida.add(c);
     let a: AcaoJogador | null = null;
     try {
