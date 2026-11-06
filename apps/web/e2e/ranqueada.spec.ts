@@ -1,4 +1,5 @@
 import { type Browser, devices, expect, type Page, test } from '@playwright/test';
+import { agirNoRitual } from './apoio';
 
 const WEB = 'http://127.0.0.1:5180';
 const API = 'http://127.0.0.1:2570';
@@ -35,8 +36,14 @@ test('link mágico, fila 1x1 com dois jogadores e abandono que custa Elo e bloqu
     await expect(ana.getByRole('status')).toContainText(/Procurando adversário|Adversário encontrado/);
     await entrarNaFila(bia);
 
-    await expect(ana.getByTestId('minha-mao')).toBeVisible({ timeout: 30_000 });
-    await expect(bia.getByTestId('minha-mao')).toBeVisible({ timeout: 30_000 });
+    // Quem estiver com o monte faz a etapa padrão até as cartas chegarem às duas.
+    const limite = Date.now() + 60_000;
+    while (!(await ana.getByTestId('minha-mao').isVisible()) || !(await bia.getByTestId('minha-mao').isVisible())) {
+      if (Date.now() > limite) throw new Error('as cartas não chegaram');
+      await agirNoRitual(ana).catch(() => false);
+      await agirNoRitual(bia).catch(() => false);
+      await ana.waitForTimeout(150);
+    }
 
     // Ana abandona: confirma a saída.
     await ana.getByRole('button', { name: 'Sair', exact: true }).click();

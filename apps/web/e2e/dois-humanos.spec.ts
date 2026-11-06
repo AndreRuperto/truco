@@ -1,4 +1,5 @@
 import { type Browser, devices, expect, type Page, test } from '@playwright/test';
+import { agirNoRitual } from './apoio';
 
 async function novaPagina(browser: Browser): Promise<Page> {
   const ctx = await browser.newContext({ ...devices['Pixel 7'], baseURL: test.info().project.use.baseURL });
@@ -19,11 +20,12 @@ async function entrar(page: Page, nome: string) {
 }
 
 /**
- * Faz a primeira ação disponível (aceitar truco > jogar a mão de 10 > primeira carta jogável).
+ * Faz a primeira ação disponível (etapa do ritual > aceitar truco > jogar a mão de 10 > primeira carta jogável).
  * Devolve o rótulo da carta jogada, ou null se não jogou carta.
  */
 async function agir(page: Page): Promise<string | null> {
   try {
+    if (await agirNoRitual(page)) return null;
     const aceitar = page.getByRole('button', { name: 'Aceitar', exact: true });
     const jogarMao = page.getByRole('button', { name: 'Jogar a mão', exact: true });
     const carta = page.getByTestId('minha-mao').locator('button.carta-botao:enabled').first();

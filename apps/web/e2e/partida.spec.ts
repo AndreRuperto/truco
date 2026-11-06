@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { agirNoRitual } from './apoio';
 
 test('1 humano + 3 bots fáceis jogam até o fim da partida', async ({ page }) => {
   await page.goto('/');
@@ -14,8 +15,7 @@ test('1 humano + 3 bots fáceis jogam até o fim da partida', async ({ page }) =
   const aceitar = page.getByRole('button', { name: 'Aceitar', exact: true });
   const jogarMao = page.getByRole('button', { name: 'Jogar a mão', exact: true });
   const carta = page.getByTestId('minha-mao').locator('button.carta-botao:enabled').first();
-  await expect(page.getByTestId('minha-mao')).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByTestId('centro')).toBeVisible();
+  await expect(page.getByTestId('centro')).toBeVisible({ timeout: 15_000 });
 
   let maos = 0;
   let viuFimDeMao = false;
@@ -23,10 +23,12 @@ test('1 humano + 3 bots fáceis jogam até o fim da partida', async ({ page }) =
   while (!(await fim.isVisible())) {
     if (Date.now() > limite) throw new Error(`a partida não terminou a tempo (${maos} cliques)`);
     try {
-      // Sempre a primeira ação disponível: aceitar truco > jogar a mão de 10 > primeira carta jogável.
+      // Sempre a primeira ação disponível: aceitar truco > jogar a mão de 10 > etapa do ritual > primeira carta jogável.
       if (await aceitar.isVisible()) await aceitar.click({ timeout: 1_000 });
       else if (await jogarMao.isVisible()) await jogarMao.click({ timeout: 1_000 });
-      else if (await carta.isVisible()) {
+      else if (await agirNoRitual(page)) {
+        // etapa do ritual feita
+      } else if (await carta.isVisible()) {
         await carta.click({ timeout: 1_000 });
         maos++;
       } else if (!viuFimDeMao && (await page.getByTestId('fim-mao').isVisible())) {
