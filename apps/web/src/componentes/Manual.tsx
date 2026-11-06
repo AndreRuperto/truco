@@ -189,7 +189,7 @@ function secoesDe(v: Variante): SecaoInfo[] {
             vira={null}
             rotulo="Da mais fraca para a mais forte, no mineiro"
             manilhas={[k('4', 'paus'), k('7', 'copas'), k('A', 'espadas'), k('7', 'ouros')]}
-            legendaManilhas={['Zap', '7 de copas', 'Espadilha', 'Pica-fumo']}
+            legendaManilhas={['Zap', 'Copas', 'Espadilha', 'Ouros']}
             comuns={COMUNS}
           />
         )}
