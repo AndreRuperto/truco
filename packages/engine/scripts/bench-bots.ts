@@ -1,4 +1,17 @@
-import { botDificil, botFacil, type Cadeira, duplaDe, embaralhar, mulberry32, novaPartida, novoBaralho, reduce, REGRAS_RANQUEADA, visaoDoJogador } from '../src';
+import {
+  baralhoDaMesa,
+  botDificil,
+  botFacil,
+  type Cadeira,
+  completarSorte,
+  duplaDe,
+  embaralhar,
+  mulberry32,
+  novaPartida,
+  reduce,
+  REGRAS_RANQUEADA,
+  visaoDoJogador,
+} from '../src';
 
 const PARTIDAS = Number(process.argv[2] ?? 40);
 const rand = mulberry32(2026);
@@ -7,17 +20,16 @@ const t0 = Date.now();
 
 for (let p = 0; p < PARTIDAS; p++) {
   const regras = p % 2 === 0 ? REGRAS_RANQUEADA.paulista : REGRAS_RANQUEADA.mineiro;
-  let s = novaPartida(regras, (p % 4) as Cadeira);
+  // O monte entra uma vez; daí em diante os próprios bots fazem o ritual de cada mão.
+  let s = reduce(novaPartida(regras, (p % 4) as Cadeira), { tipo: 'monte', baralho: embaralhar(baralhoDaMesa(regras), rand) });
   while (s.fase !== 'fimPartida') {
-    if (s.fase === 'aguardandoDistribuicao') {
-      s = reduce(s, { tipo: 'distribuir', baralho: embaralhar(novoBaralho(), rand) });
-      continue;
-    }
     const atual = s;
     const acao = ([0, 1, 2, 3] as Cadeira[])
       .map((c) => (duplaDe(c) === 0 ? botDificil(visaoDoJogador(atual, c), rand, { amostras: 16 }) : botFacil(atual, c)))
-      .find((a) => a !== null)!;
-    s = reduce(s, acao);
+      .find((a) => a !== null);
+    if (!acao) throw new Error(`nenhum bot age na fase ${s.fase}`);
+    // Embaralhar/cortar levam a sorte do "servidor".
+    s = reduce(s, completarSorte(acao, s, rand));
   }
   if (s.vencedor === 0) vitorias++;
 }
