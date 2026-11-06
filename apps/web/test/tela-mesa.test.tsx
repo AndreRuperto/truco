@@ -207,7 +207,8 @@ describe('TelaMesa no ritual e na família', () => {
     expect(linha).toHaveTextContent('Sua vez de embaralhar');
     rerender(<TelaMesa snap={snap(msgEstado(distribuida(MINEIRO), 0))} acoes={acoesFalsas()} />);
     expect(screen.getByTestId('etapa')).toBe(linha);
-    expect(linha).toBeEmptyDOMElement();
+    // Sem etapa do ritual, a linha diz de quem é a vez.
+    expect(linha).toHaveTextContent(/^Sua vez/);
   });
 
   test('quem corta: as 5 opções e o monte com ele', () => {

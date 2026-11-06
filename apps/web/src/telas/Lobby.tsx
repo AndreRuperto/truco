@@ -52,8 +52,8 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
     return () => clearTimeout(t);
     // a chave resume `prefs`; o callback pode mudar a cada render da App
   }, [chavePrefs]);
-  // Regras abertas de cara só em tela larga; no celular o "Jogar agora" fica na primeira dobra.
-  const [regrasAbertas, setRegrasAbertas] = useState(() => window.matchMedia?.('(min-width: 900px)').matches ?? false);
+  // Regras fechadas de cara: o resumo já diz o que está valendo; quem quiser mudar abre.
+  const [regrasAbertas, setRegrasAbertas] = useState(false);
   // O apelido não conta como mexer nas regras (não impede as da conta de chegarem).
   const mudar = <K extends keyof FormLobby>(k: K, v: FormLobby[K]) => (k === 'nome' ? setFCru : setF)((x) => ({ ...x, [k]: v }));
 

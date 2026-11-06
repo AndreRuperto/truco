@@ -1,7 +1,7 @@
 import { reduce, visaoDoJogador } from '@truco/engine';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { CentroMesa } from '../src/componentes/CentroMesa';
+import { CentroMesa, MOSTRA_RODADA_MS } from '../src/componentes/CentroMesa';
 import { distribuida, jogar, PAULISTA } from './fixtures';
 
 // Paulista, vira 7♦ (manilha = Dama). A cadeira 0 tem os 3 e o 2: leva as duas rodadas.
@@ -16,6 +16,21 @@ const inicio = () => distribuida(PAULISTA, MAOS, [0, 0], '7o');
 const jogadaDe = (pos: string) => document.querySelector(`.jogada.pos-${pos}`) as HTMLElement | null;
 
 describe('CentroMesa', () => {
+  test('rodada encerrada fica um instante no meio e depois vai para a pilha do canto', () => {
+    vi.useFakeTimers();
+    const s = jogar(inicio(), [[0, 0], [1, 0], [2, 0], [3, 0]]);
+    const v = visaoDoJogador(s, 0);
+    render(<CentroMesa mao={v.mao} ultimaMao={v.ultimaMao} minha={0} variante="paulista" />);
+    expect(document.querySelectorAll('.jogada')).toHaveLength(4);
+    expect(document.querySelectorAll('.pilha-rodada')).toHaveLength(0);
+    act(() => {
+      vi.advanceTimersByTime(MOSTRA_RODADA_MS);
+    });
+    expect(document.querySelectorAll('.jogada')).toHaveLength(0);
+    expect(screen.getByLabelText('1 rodada recolhida').querySelectorAll('.pilha-rodada')).toHaveLength(1);
+    vi.useRealTimers();
+  });
+
   test('sem mão nem última mão o centro existe e mostra o extra (monte)', () => {
     render(<CentroMesa mao={null} ultimaMao={null} minha={0} variante="paulista" extra={<span>monte aqui</span>} />);
     expect(screen.getByTestId('centro')).toHaveTextContent('monte aqui');

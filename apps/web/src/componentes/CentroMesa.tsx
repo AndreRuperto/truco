@@ -1,5 +1,5 @@
 import { type Cadeira, type Variante, type VisaoMao, type VisaoResultadoMao } from '@truco/engine';
-import { type ReactNode, useRef } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
 import { exibicaoMesa } from '../logica/jogadas';
 import { posicaoRelativa } from '../logica/posicoes';
 import { marcadoresRodadas } from '../logica/textos';
@@ -8,6 +8,8 @@ import { CartaVisual } from './CartaVisual';
 import { cx } from './cx';
 
 const SIGLA = { nos: 'N', eles: 'E', empate: '=' } as const;
+/** Quanto a rodada que acabou fica no meio (para ver quem levou) antes de ir para a pilha do canto. */
+export const MOSTRA_RODADA_MS = 1_400;
 const TITULO = { nos: 'Nossa', eles: 'Deles', empate: 'Cangou' } as const;
 
 interface Props {
@@ -27,8 +29,20 @@ interface Props {
 export function CentroMesa({ mao, ultimaMao, minha, variante, extra }: Props) {
   const centro = useRef<HTMLDivElement>(null);
   const camada = useRef<HTMLDivElement>(null);
-  const exibicao = exibicaoMesa(mao, ultimaMao);
+  const completa = exibicaoMesa(mao, ultimaMao);
+  // Rodada encerrada no meio da mão: fica um instante e depois a mesa é limpa (as cartas vão para o canto).
+  const chaveRodada = mao && completa.anterior && completa.jogadas.length > 0 ? completa.jogadas.map((j) => j.chave).join(',') : null;
+  const [limpa, setLimpa] = useState<string | null>(null);
+  useEffect(() => {
+    if (!chaveRodada) return;
+    const t = setTimeout(() => setLimpa(chaveRodada), MOSTRA_RODADA_MS);
+    return () => clearTimeout(t);
+  }, [chaveRodada]);
+  const limpou = chaveRodada !== null && limpa === chaveRodada;
+  const exibicao = limpou ? { ...completa, jogadas: [] } : completa;
   useAnimacaoJogadas(exibicao, minha, centro, camada);
+  // Rodadas já recolhidas: todas as encerradas, menos a que ainda está no meio.
+  const naPilha = mao ? mao.rodadasJogadas.length - (completa.anterior && !limpou && completa.jogadas.length > 0 ? 1 : 0) : 0;
   const fonte = mao ?? ultimaMao;
   // A camada de animação fica fora do centro (irmã, no tampo): mãos e cópias não contam como jogadas.
   const capa = <div ref={camada} className="camada-voo" aria-hidden="true" />;
@@ -57,6 +71,15 @@ export function CentroMesa({ mao, ultimaMao, minha, variante, extra }: Props) {
                 <span key={`vaga-${i}`} className="marcador vaga" aria-hidden="true" />
               ))}
             </div>
+          </div>
+        )}
+        {mao && (
+          <div className="pilha-rodadas" aria-label={naPilha > 0 ? `${naPilha} ${naPilha === 1 ? 'rodada recolhida' : 'rodadas recolhidas'}` : undefined}>
+            {Array.from({ length: naPilha }, (_, i) => (
+              <span key={i} className="pilha-rodada" style={{ '--i': i } as CSSProperties} aria-hidden="true">
+                <CartaVisual carta={null} variante={variante} vira={null} />
+              </span>
+            ))}
           </div>
         )}
         {exibicao.jogadas.map(({ chave, jogada: j }) => (

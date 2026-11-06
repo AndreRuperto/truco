@@ -530,6 +530,13 @@ button:disabled {
   margin: 0 auto;
   padding: var(--e5) var(--e4) var(--e7);
 }
+/* Com as regras fechadas o formulário cabe na tela: fica no meio da altura (abaixo do cabeçalho). */
+.lobby {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(100dvh - 64px);
+}
 .letreiro {
   margin: 0 0 var(--e1);
   font-size: clamp(3rem, 18vw, 4.8rem);
@@ -974,6 +981,24 @@ body:has(.tela-mesa) {
   text-align: center;
 }
 
+/* Pilha das rodadas já jogadas, no canto da cruz (mesa limpa no meio). */
+.pilha-rodadas {
+  grid-area: canto;
+  position: relative;
+  width: calc(var(--carta-c) * 0.62);
+  aspect-ratio: 5 / 7;
+  align-self: end;
+  justify-self: end;
+  pointer-events: none;
+}
+.pilha-rodada {
+  --carta-l: calc(var(--carta-c) * 0.62);
+  position: absolute;
+  inset: 0;
+  transform: translate(calc(var(--i) * 3px), calc(var(--i) * -3px)) rotate(calc(var(--i) * 9deg - 6deg));
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--sombra) 40%, transparent));
+}
+
 /* Tampo de madeira */
 .tampo {
   position: relative;
@@ -1048,9 +1073,15 @@ body:has(.tela-mesa) {
   overflow-wrap: anywhere;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--giz) 18%, transparent);
 }
+/* A vez salta aos olhos: a plaquinha vira amarela (tinta escura), com aro pulsando. */
 .assento.da-vez .assento-nome {
+  background: var(--grito);
+  color: var(--tinta);
   box-shadow: 0 0 0 2px var(--grito);
   animation: pulso 1.8s ease-in-out infinite;
+}
+.assento.da-vez .etiqueta.vez {
+  color: var(--tinta);
 }
 .etiqueta {
   font-size: var(--t-1);
@@ -1063,15 +1094,11 @@ body:has(.tela-mesa) {
   color: var(--grito);
   line-height: 1;
 }
-/* Nas laterais a vez já aparece no aro amarelo pulsando: o texto fica só para leitor de tela. */
-.assento.pos-esquerda .etiqueta.vez,
-.assento.pos-direita .etiqueta.vez {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
+/* Linha da vez no meio da mesa: de quem é e quanto tempo falta. */
+.etapa.vez-linha {
+  background: var(--grito);
+  color: var(--tinta);
+  font-weight: 700;
 }
 .assento.pos-esquerda .assento-nome,
 .assento.pos-direita .assento-nome {
@@ -1126,7 +1153,7 @@ body:has(.tela-mesa) {
   grid-template-areas:
     'vira cima meio'
     'esquerda . direita'
-    '. baixo .';
+    '. baixo canto';
   grid-template-columns: minmax(0, calc(var(--carta-c) * 1.4)) var(--carta-c) minmax(0, calc(var(--carta-c) * 1.4));
   grid-template-rows: repeat(3, var(--cruz-h));
   place-content: center;

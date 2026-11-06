@@ -257,13 +257,21 @@ class Animador {
       );
   }
 
-  /** Cópias das cartas da rodada que saiu deslizam juntas para quem levou (ou somem no lugar). */
-  recolher(cartas: { el: HTMLElement; ret: Ret }[], destino: Posicao | null) {
+  /**
+   * Cópias das cartas da rodada que saiu deslizam juntas para quem levou (ou somem no lugar).
+   * Com `canto` (a pilha de rodadas no canto da mesa), vão inteiras até ela.
+   */
+  recolher(cartas: { el: HTMLElement; ret: Ret }[], destino: Posicao | null, canto: DOMRect | null = null) {
     if (cartas.length === 0 || !podeAnimar(this.camada)) return;
     const base = this.camada.getBoundingClientRect();
     let vx = 0;
     let vy = 0;
-    if (destino) {
+    if (canto) {
+      const mx = base.left + cartas.reduce((s, c) => s + c.ret.x + c.ret.w / 2, 0) / cartas.length;
+      const my = base.top + cartas.reduce((s, c) => s + c.ret.y + c.ret.h / 2, 0) / cartas.length;
+      vx = canto.left + canto.width / 2 - mx;
+      vy = canto.top + canto.height / 2 - my;
+    } else if (destino) {
       const meio = {
         x: base.left + cartas.reduce((s, c) => s + c.ret.x + c.ret.w / 2, 0) / cartas.length,
         y: base.top + cartas.reduce((s, c) => s + c.ret.y + c.ret.h / 2, 0) / cartas.length,
@@ -283,7 +291,13 @@ class Animador {
       });
       for (const filho of Array.from(el.childNodes)) f.appendChild(filho.cloneNode(true));
       const remover = this.adicionar(f);
-      const quadros = destino
+      const quadros = canto
+        ? [
+            { transform: 'translate(0px, 0px) scale(1) rotate(0deg)', opacity: 1 },
+            { offset: 0.8, opacity: 1 },
+            { transform: `translate(${vx}px, ${vy}px) scale(0.45) rotate(8deg)`, opacity: 0 },
+          ]
+        : destino
         ? [
             { transform: 'translate(0px, 0px) scale(1)', opacity: 1 },
             { offset: 0.6, opacity: 0.9 },
@@ -298,7 +312,7 @@ class Animador {
           ];
       this.seguir(
         f.animate(quadros, {
-          duration: DUR_RECOLHER,
+          duration: canto ? DUR_RECOLHER * 2 : DUR_RECOLHER,
           easing: 'cubic-bezier(0.45, 0, 0.55, 1)',
           fill: 'forwards',
         }),
@@ -356,7 +370,9 @@ export function useAnimacaoJogadas(exibicao: Exibicao, minha: Cadeira, centro: R
         const ret = mem.rets.get(k);
         return el && ret ? [{ el, ret }] : [];
       });
-      ani.recolher(cartas, recolhida.destino);
+      // Rodada limpa no meio da mão: as cartas vão para a pilha do canto; senão, para quem levou.
+      const pilha = raiz.querySelector<HTMLElement>('.pilha-rodadas');
+      ani.recolher(cartas, recolhida.destino, pilha ? pilha.getBoundingClientRect() : null);
     }
 
     const base = capa.getBoundingClientRect();

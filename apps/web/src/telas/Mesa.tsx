@@ -78,6 +78,8 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   // No ritual a última rodada só fica no centro enquanto o resumo está na tela (depois as cartas já voltaram ao monte).
   const ultimaVisivel = emRitual && !resumoMao ? null : v.ultimaMao;
   const etapa = textoEtapa(v, nome);
+  // Sem etapa do ritual: a linha do meio diz de quem é a vez e, se é de humano, quanto tempo falta.
+  const vezTexto = etapa || msg.janelaFamilia ? null : textoVez(v, agentes, minha, nome, msg.prazo, agora);
   const fim = v.fase === 'fimPartida' ? resumoFimPartida(v) : null;
   const pedido = textoPedidoPendente(v);
 
@@ -112,8 +114,8 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
             <>
               <Monte qtd={v.qtdMonte} dono={donoDoMonte(v)} minha={minha} />
               {/* Sempre montada: a região viva só anuncia mudanças de texto se já existia. */}
-              <p className="etapa" role="status" data-testid="etapa">
-                {etapa ?? ''}
+              <p className={vezTexto ? 'etapa vez-linha' : 'etapa'} role="status" data-testid="etapa" aria-live={vezTexto ? 'off' : undefined}>
+                {etapa ?? vezTexto ?? ''}
               </p>
             </>
           }
@@ -231,4 +233,20 @@ function JanelaFamilia({ restam, decidi, aoPassar }: { restam: number; decidi: b
       )}
     </div>
   );
+}
+
+/** "Sua vez · 18s", "Vez de Bia · 9s", "Vez de Bot Zé": só na hora de jogar carta (uma cadeira agindo). */
+function textoVez(
+  v: { fase: string },
+  agentes: Cadeira[],
+  minha: Cadeira,
+  nome: (c: Cadeira) => string,
+  prazo: { cadeiras: Cadeira[]; ate: number } | null,
+  agora: number,
+): string | null {
+  if (v.fase !== 'jogando' || agentes.length !== 1) return null;
+  const c = agentes[0];
+  const s = prazo?.cadeiras.includes(c) ? Math.max(0, Math.ceil((prazo.ate - agora) / 1000)) : null;
+  const quem = c === minha ? 'Sua vez' : `Vez de ${nome(c)}`;
+  return s === null ? quem : `${quem} · ${s}s`;
 }
