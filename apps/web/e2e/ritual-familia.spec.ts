@@ -6,7 +6,7 @@ test('ritual completo e família fechada conferida', async ({ page }) => {
   await page.getByText('Regras da mesa', { exact: true }).click();
   await page.getByLabel('Apelido').fill('Ritual E2E');
   await page.getByLabel('Variante').selectOption('mineiro');
-  await page.getByLabel('Família').selectOption('fechada');
+  await page.getByLabel('Família', { exact: true }).selectOption('fechada');
   await page.getByLabel('Humanos').selectOption('1');
   await page.getByLabel('Bots').selectOption('facil');
   await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
