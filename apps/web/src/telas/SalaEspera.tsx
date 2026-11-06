@@ -1,5 +1,6 @@
 import type { MsgChat, MsgEstado } from '@truco/protocolo';
 import { useRef, useState } from 'react';
+import { Avatar } from '../componentes/Avatar';
 import { Chat } from '../componentes/Chat';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { linkConvite } from '../logica/rotas';
@@ -32,7 +33,10 @@ export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = win
       <ul className="lista-cadeiras">
         {msg.cadeiras.map((c, i) => (
           <li key={i}>
-            <span>{c.nome ? (i === msg.minhaCadeira ? `${c.nome} (você)` : c.nome) : 'Lugar vago'}</span>
+            <span className="cadeira-quem">
+              {c.nome && <Avatar apelido={c.nome} avatar={c.avatar} tamanho={32} />}
+              {c.nome ? (i === msg.minhaCadeira ? `${c.nome} (você)` : c.nome) : 'Lugar vago'}
+            </span>
             <span>
               {c.tipo === 'bot' ? 'bot' : c.tipo === 'humano' ? (c.conectado ? 'pronto' : 'desconectado') : ''}
               {i % 2 === msg.minhaCadeira % 2 ? ' · sua dupla' : ''}

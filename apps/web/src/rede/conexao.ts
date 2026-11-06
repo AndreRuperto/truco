@@ -118,8 +118,14 @@ export const criarMesaPrivada = (loja: Loja, opcoes: OpcoesEntrada, cliente?: Cl
   conectarCom(loja, (c) => c.create('mesa', { ...opcoes, modo: 'privada' }), cliente, 'Não foi possível criar a mesa');
 
 /** Mesa por código (link de convite ou lista de salas). */
-export const entrarPorCodigo = (loja: Loja, codigo: string, nome: string, cliente?: ClienteSala) =>
-  conectarCom(loja, (c) => c.joinById(codigo, { nome }), cliente, 'Não foi possível entrar na mesa', traduzirEntrada);
+export const entrarPorCodigo = (loja: Loja, codigo: string, quem: string | { nome: string; avatar?: string | null }, cliente?: ClienteSala) =>
+  conectarCom(
+    loja,
+    (c) => c.joinById(codigo, typeof quem === 'string' ? { nome: quem } : { nome: quem.nome, avatar: quem.avatar ?? null }),
+    cliente,
+    'Não foi possível entrar na mesa',
+    traduzirEntrada,
+  );
 
 /**
  * Mesa ranqueada criada pela fila (reserva vinda da mensagem `pareado`). A reserva vence em

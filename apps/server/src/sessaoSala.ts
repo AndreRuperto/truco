@@ -6,6 +6,7 @@ import type { Servicos } from './servicos';
 export interface UsuarioConexao {
   usuarioId: number;
   apelido: string;
+  avatar?: string | null;
 }
 
 /** Sessão a partir do cookie (navegador) ou do Bearer (`client.auth.token` do SDK). */
@@ -20,7 +21,7 @@ export async function usuarioDaConexao(
   for (const bruto of new Set(candidatos)) {
     if (!bruto) continue;
     const u = await usuarioDaSessao(s.banco, bruto, s.agora());
-    if (u) return { usuarioId: u.id, apelido: u.apelido };
+    if (u) return { usuarioId: u.id, apelido: u.apelido, avatar: u.avatar };
   }
   return null;
 }

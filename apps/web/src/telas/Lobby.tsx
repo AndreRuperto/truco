@@ -1,3 +1,4 @@
+import { SeletorAvatar } from '../componentes/SeletorAvatar';
 import type { PreferenciasMesa } from '@truco/api';
 import type { Pontuacao, RegrasMesa, Variante } from '@truco/engine';
 import { type NivelBot, TEMPOS_FAMILIA_S } from '@truco/protocolo';
@@ -21,6 +22,9 @@ interface Props {
   aoJogar: (o: OpcoesEntrada) => void;
   aoRanqueada?: () => void;
   aoCriarPrivada?: (o: OpcoesEntrada) => void;
+  /** Foto atual (da conta ou do aparelho) e como trocar. Sem `aoTrocarAvatar`, sem seletor. */
+  avatar?: string | null;
+  aoTrocarAvatar?: (avatar: string | null) => void | Promise<void>;
   /** Preferências salvas na conta: undefined = sem conta (ou ainda carregando), null = conta sem nada salvo. */
   preferenciasConta?: PreferenciasMesa | null;
   /** Grava na conta (só com login). Chamado pouco depois de cada mudança nas regras. */
@@ -30,7 +34,7 @@ interface Props {
 /** Espera depois da última mudança antes de mandar para a conta. */
 const ESPERA_SALVAR_MS = 600;
 
-export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta, aoSalvarNaConta }: Props) {
+export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta, aoSalvarNaConta, avatar = null, aoTrocarAvatar }: Props) {
   const [f, setFCru] = useState<FormLobby>(() => formInicial(lerApelido(), lerPreferenciasLocais()));
   // Só grava depois que a pessoa mexe: abrir a tela não sobrescreve o que está na conta.
   const mexeu = useRef(false);
@@ -74,15 +78,18 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
         <div className="lobby-principal">
           <div className="campo">
             <label htmlFor="apelido">Apelido</label>
-            <input
-              id="apelido"
-              type="text"
-              value={f.nome}
-              maxLength={20}
-              autoComplete="nickname"
-              placeholder="Como te chamam na mesa"
-              onChange={(e) => mudar('nome', e.target.value)}
-            />
+            <div className="apelido-com-foto">
+              {aoTrocarAvatar && <SeletorAvatar apelido={f.nome} valor={avatar} aoMudar={aoTrocarAvatar} />}
+              <input
+                id="apelido"
+                type="text"
+                value={f.nome}
+                maxLength={20}
+                autoComplete="nickname"
+                placeholder="Como te chamam na mesa"
+                onChange={(e) => mudar('nome', e.target.value)}
+              />
+            </div>
           </div>
           <button type="submit" className="botao-principal">
             {f.privada && aoCriarPrivada ? 'Criar mesa privada' : 'Jogar agora'}

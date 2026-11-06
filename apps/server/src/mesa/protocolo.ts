@@ -76,6 +76,8 @@ export interface InfoCadeira {
   tipo: 'vazia' | 'humano' | 'bot';
   nome: string | null;
   conectado: boolean;
+  /** Foto: `pronto:<id>` ou imagem `data:` (da conta, ou escolhida por quem entrou sem conta); null = sem. */
+  avatar?: string | null;
 }
 
 export interface MsgEstado {

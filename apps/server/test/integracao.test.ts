@@ -9,7 +9,7 @@ import { FilaRoom } from '../src/FilaRoom';
 import { MesaRoom } from '../src/MesaRoom';
 import { chaveRegras, SAIDA_PARTIDA_CANCELADA } from '../src/mesa/protocolo';
 import { ratingDe } from '../src/repo/partidas';
-import { criarSessao, entrarComEmail } from '../src/repo/usuarios';
+import { criarSessao, entrarComEmail, trocarAvatar } from '../src/repo/usuarios';
 import { criarServidor } from '../src/servidor';
 import { type Servicos, servicosDeTeste } from '../src/servicos';
 import { type BancoDeTeste, bancoDeTeste } from './banco-helpers';
@@ -153,6 +153,22 @@ describe('MesaRoom', () => {
     } finally {
       process.off('unhandledRejection', ouvir);
     }
+  });
+
+  test('foto de quem entra sem conta: ícone do site ou imagem válida; lixo vira null; logado usa a da conta', async () => {
+    const sala = await colyseus.createRoom('mesa', { humanos: 3 });
+    const a = await colyseus.connectTo(sala, { nome: 'Ana', avatar: 'pronto:galo' });
+    const ma = coletor(a);
+    await colyseus.connectTo(sala, { nome: 'Bia', avatar: 'javascript:alert(1)' });
+    const { cliente: logadoCli, u: usuario } = await logado('cid@x.com');
+    await trocarAvatar(banco.db, usuario.id, 'pronto:viola');
+    // a sessão é lida de novo ao entrar: a foto vem da conta, não das opções
+    await logadoCli.joinById(sala.roomId, { nome: 'ignorado', avatar: 'pronto:lua' });
+    await esperar(() => (ma.estado?.at(-1)?.cadeiras ?? []).filter((c: any) => c.tipo === 'humano').length === 3);
+    const cads = ma.estado.at(-1).cadeiras;
+    expect(cads[0].avatar).toBe('pronto:galo');
+    expect(cads[2].avatar).toBeNull();
+    expect(cads.find((c: any) => c.nome === 'cid').avatar).toBe('pronto:viola');
   });
 
   test('dois humanos ficam parceiros', async () => {

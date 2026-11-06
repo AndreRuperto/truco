@@ -3,7 +3,7 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Cabecalho } from './componentes/Cabecalho';
 import { FundoCartas } from './componentes/FundoCartas';
 import { Toast } from './componentes/Toast';
-import { formInicial, lerApelido, lerPreferenciasLocais, type OpcoesEntrada, opcoesDeEntrada } from './logica/lobby';
+import { formInicial, gravarAvatarLocal, lerApelido, lerAvatarLocal, lerPreferenciasLocais, type OpcoesEntrada, opcoesDeEntrada } from './logica/lobby';
 import { criarMesaPrivada, entrarNaMesa, entrarPorCodigo, tentarReconectar } from './rede/conexao';
 import { useFila, useLoja, useSessao } from './rede/hooks';
 import { api, loja, lojaFila, sessao } from './rede/instancia';
@@ -80,6 +80,18 @@ export function App() {
     api.salvarPreferencias(p).catch(() => {});
   }, []);
   const nomePadrao = () => ses.usuario?.apelido ?? (lerApelido() || 'Jogador');
+  // Foto: com conta, a da conta (o servidor usa essa); sem conta, a escolhida e guardada no aparelho.
+  const [avatarLocal, setAvatarLocal] = useState<string | null>(lerAvatarLocal);
+  const avatar = ses.usuario ? (ses.usuario.avatar ?? null) : avatarLocal;
+  const trocarAvatar = async (v: string | null) => {
+    if (ses.usuario) {
+      sessao.definirUsuario((await api.trocarAvatar(v)).usuario);
+      return;
+    }
+    gravarAvatarLocal(v);
+    setAvatarLocal(v);
+  };
+  const comFoto = (o: OpcoesEntrada): OpcoesEntrada => ({ ...o, avatar: ses.usuario ? null : avatarLocal });
 
   useEffect(() => {
     void tentarReconectar(loja);
@@ -148,11 +160,11 @@ export function App() {
         conteudo = (
           <TelaSalas
             api={api}
-            aoEntrar={(id) => void entrarPorCodigo(loja, id, nomePadrao())}
+            aoEntrar={(id) => void entrarPorCodigo(loja, id, { nome: nomePadrao(), avatar: ses.usuario ? null : avatarLocal })}
             aoJogarComBots={() => {
               // As regras de sempre (conta > aparelho > padrão), só eu contra 3 bots.
               const f = { ...formInicial(nomePadrao(), prefsConta ?? lerPreferenciasLocais()), humanos: 1 };
-              const o = opcoesDeEntrada(f);
+              const o = comFoto(opcoesDeEntrada(f));
               ultimaEntrada = { tipo: 'mesa', opcoes: o };
               void entrarNaMesa(loja, o);
             }}
@@ -165,10 +177,12 @@ export function App() {
             key={rota.codigo}
             codigo={rota.codigo}
             nomeInicial={ses.usuario?.apelido ?? lerApelido()}
+            avatar={avatar}
+            aoTrocarAvatar={trocarAvatar}
             aoEntrar={(nome) => {
               // ao sair da mesa volta ao início, não à tela do convite
               navegar({ tela: 'inicio' });
-              void entrarPorCodigo(loja, rota.codigo, nome);
+              void entrarPorCodigo(loja, rota.codigo, { nome, avatar: ses.usuario ? null : avatarLocal });
             }}
           />
         );
@@ -192,14 +206,18 @@ export function App() {
       default:
         conteudo = (
           <Lobby
-            aoJogar={(o) => {
+            aoJogar={(cru) => {
+              const o = comFoto(cru);
               ultimaEntrada = { tipo: 'mesa', opcoes: o };
               void entrarNaMesa(loja, o);
             }}
-            aoCriarPrivada={(o) => {
+            aoCriarPrivada={(cru) => {
+              const o = comFoto(cru);
               ultimaEntrada = { tipo: 'privada', opcoes: o };
               void criarMesaPrivada(loja, o);
             }}
+            avatar={avatar}
+            aoTrocarAvatar={trocarAvatar}
             aoRanqueada={() => navegar(ses.usuario ? { tela: 'fila' } : { tela: 'entrar', token: null })}
             preferenciasConta={ses.usuario ? prefsConta : undefined}
             aoSalvarNaConta={ses.usuario ? salvarPrefs : undefined}

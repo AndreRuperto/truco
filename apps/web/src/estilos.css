@@ -1255,6 +1255,96 @@ body:has(.tela-mesa) {
   text-align: center;
 }
 
+/* Foto ao lado do apelido (tela inicial e convite). */
+.apelido-com-foto {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+}
+.apelido-com-foto input {
+  flex: 1;
+  min-width: 0;
+}
+.seletor-avatar {
+  flex: none;
+}
+.formulario .seletor-avatar-botao {
+  position: relative;
+  display: block;
+  width: 48px;
+  height: 48px;
+  min-height: 0;
+  padding: 2px;
+  border: 2px solid var(--form-borda, var(--lousa-borda));
+  border-radius: 50%;
+  background: transparent;
+}
+.seletor-avatar-botao .avatar {
+  width: 100% !important;
+  height: 100% !important;
+}
+.seletor-avatar-lapis {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--grito);
+  color: var(--tinta);
+  font-size: 12px;
+  line-height: 1;
+}
+.seletor-avatar-painel {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  margin-top: var(--e2);
+  padding: var(--e3);
+  border: 3px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--sombra) 45%, transparent);
+  animation: aparecer var(--dur) ease-out;
+}
+.campo:has(.seletor-avatar) {
+  position: relative;
+}
+.seletor-avatar-painel .avatares-prontos {
+  max-width: none;
+}
+.formulario .seletor-avatar-painel .avatares-prontos button {
+  display: block;
+  width: 48px;
+  height: 48px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.formulario .seletor-avatar-painel .avatares-prontos button[aria-pressed='true'] {
+  box-shadow: 0 0 0 3px var(--lousa), 0 0 0 6px var(--grito);
+}
+.seletor-avatar-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  margin-top: var(--e3);
+}
+.cadeira-quem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+}
+.assento-nome .avatar {
+  align-self: center;
+}
+
 /* Tampo de madeira */
 .tampo {
   position: relative;

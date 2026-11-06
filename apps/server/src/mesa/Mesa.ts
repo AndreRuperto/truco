@@ -124,6 +124,8 @@ interface Ocupante {
   humano: boolean;
   conectado: boolean;
   ultimaMensagem: number;
+  /** Já validado por quem senta (MesaRoom): ver `InfoCadeira.avatar`. */
+  avatar?: string | null;
 }
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
@@ -234,7 +236,7 @@ export class Mesa {
   // ---------- lobby ----------
 
   /** Senta na `cadeira` pedida (ranqueada: a que a fila reservou) ou na próxima livre. */
-  sentar(id: string, nome: unknown, cadeira?: Cadeira): Cadeira | null {
+  sentar(id: string, nome: unknown, cadeira?: Cadeira, avatar: string | null = null): Cadeira | null {
     if (this.iniciada || this.cadeiraDe(id) !== null) return null;
     const cad =
       cadeira !== undefined
@@ -249,6 +251,7 @@ export class Mesa {
       humano: true,
       conectado: true,
       ultimaMensagem: -Infinity,
+      avatar,
     };
     if (this.humanosSentados() >= this.o.humanosEsperados) this.iniciar();
     else this.enviarEstados();
@@ -695,6 +698,7 @@ export class Mesa {
       tipo: o.humano ? 'humano' : o.nome ? 'bot' : 'vazia',
       nome: o.nome,
       conectado: o.humano ? o.conectado : true,
+      avatar: o.avatar ?? null,
     }));
   }
 

@@ -43,10 +43,32 @@ export interface OpcoesEntrada {
    */
   chaveRegras: string;
   modo: 'classica' | 'desafio' | 'privada';
+  /** Foto de quem entra sem conta (`pronto:<id>` ou `data:`); logado, o servidor usa a da conta. */
+  avatar?: string | null;
 }
 
 export const CHAVE_APELIDO = 'truco:apelido';
 export const CHAVE_PREFERENCIAS = 'truco:regras';
+export const CHAVE_AVATAR = 'truco:avatar';
+
+/** Foto escolhida por quem joga sem conta, guardada no aparelho. */
+export function lerAvatarLocal(): string | null {
+  try {
+    const v = localStorage.getItem(CHAVE_AVATAR);
+    return v && (v.startsWith('pronto:') || v.startsWith('data:image/')) && v.length <= 60_000 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function gravarAvatarLocal(v: string | null): void {
+  try {
+    if (v) localStorage.setItem(CHAVE_AVATAR, v);
+    else localStorage.removeItem(CHAVE_AVATAR);
+  } catch {
+    // modo privado / storage cheio: vale só nesta visita
+  }
+}
 
 /** Como a tela inicial abre na primeira visita (sem nada salvo). */
 export const PREFERENCIAS_PADRAO: Readonly<PreferenciasMesa> = Object.freeze({
