@@ -1,4 +1,4 @@
-import type { AcaoJogador, Cadeira, EstadoPartida } from './estado';
+import type { AcaoJogador, Cadeira, EstadoPartida, Fase } from './estado';
 import { ErroJogada, reduce } from './reducer';
 import { completarSorte } from './ritual';
 
@@ -33,9 +33,27 @@ function candidatas(cadeira: Cadeira): AcaoJogador[] {
   ];
 }
 
+/**
+ * Tipos que o `reduce` pode aceitar em cada fase (as demais falham logo na checagem de fase).
+ * Só um atalho de desempenho: a legalidade de verdade continua sendo decidida pelo `reduce`.
+ */
+const TIPOS_DA_FASE: Record<Fase, readonly AcaoJogador['tipo'][]> = {
+  aguardandoMonte: [],
+  embaralhando: ['embaralhar', 'passarCorte'],
+  cortando: ['embaralhar', 'cortar', 'abrir3', 'dar3', 'devolver'],
+  escolhendoDistribuicao: ['distribuir'],
+  decisaoMao10: ['mao10'],
+  jogando: ['jogar', 'truco', 'familia'],
+  respondendoTruco: ['aceitar', 'correr', 'aumentar'],
+  conferindoFamilia: ['conferir'],
+  fimPartida: [],
+};
+
 /** Testa cada candidata; embaralhar/cortar são testados com uma sorte qualquer e devolvidos sem ela. */
 function legais(s: EstadoPartida, acoes: AcaoJogador[]): AcaoJogador[] {
+  const daFase = TIPOS_DA_FASE[s.fase];
   return acoes.filter((a) => {
+    if (!daFase.includes(a.tipo)) return false;
     try {
       reduce(s, completarSorte(a, s, () => 0));
       return true;
