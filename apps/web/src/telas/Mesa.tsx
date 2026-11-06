@@ -1,5 +1,6 @@
 import { type Cadeira, ehFaseRitual, parceiroDe, quemDeveAgir } from '@truco/engine';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useAnimacaoRitual } from '../componentes/animacaoMesa';
 import { Assento } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
 import { CentroMesa } from '../componentes/CentroMesa';
@@ -45,6 +46,8 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   const v = msg.visao!;
   const m = v.mao;
   const minha = msg.minhaCadeira;
+  const camadaRitual = useRef<HTMLDivElement>(null);
+  useAnimacaoRitual(snap.movimentos, minha, camadaRitual);
   const variante = v.regras.variante;
   const vira = m?.vira ?? null;
   const ui = agruparAcoes(msg.minhasAcoes, v);
@@ -121,6 +124,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           variante={variante}
           vira={vira}
         />
+        <div ref={camadaRitual} className="camada-voo" aria-hidden="true" />
       </Tampo>
       {prazoEhMeu(msg) && msg.prazo && <Cronometro prazo={msg.prazo} agora={agora} />}
       {m ? <Mao cartas={m.minhaMao} jogaveis={ui.jogaveis} cobriveis={ui.cobriveis} variante={variante} vira={vira} aoJogar={jogar} /> : <div />}

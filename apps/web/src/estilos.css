@@ -1626,6 +1626,23 @@ button:disabled {
   left: 50%;
   translate: 55% -160%;
 }
+/* Fantasmas do ritual (animacaoMesa.ts): pilhas de versos que voam do monte. */
+.fantasma-ritual {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.fantasma-ritual .carta {
+  --carta-l: 100%;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: translate(calc(var(--i) * -1.5px), calc(var(--i) * -1.5px));
+}
+.mao-pe {
+  pointer-events: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,
