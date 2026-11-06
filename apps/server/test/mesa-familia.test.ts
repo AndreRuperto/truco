@@ -83,6 +83,64 @@ describe('família na Mesa', () => {
     expect(t.estado('a')!.visao!.placar).toEqual(placar);
   });
 
+  describe('janela de família (igual para todos)', () => {
+    const JANELA = { ...TEMPOS, janelaFamiliaMs: 5_000, jogadaMs: 20_000 };
+    /** Bot fácil que nunca pede família (o teste não depende das mãos sorteadas). */
+    const semFamilia = (s: EstadoPartida, c: Cadeira): AcaoJogador | null => {
+      const a = botFacil(s, c);
+      return a?.tipo === 'familia' ? null : a;
+    };
+    const aposDar = (extra = {}) => {
+      const t = criarMesa({ regras: MINEIRO, decidirBot: semFamilia, tempos: JANELA, ...extra });
+      t.mesa.sentar('a', 'Ana');
+      avancarAte(() => !!t.estado('a')?.janelaFamilia, 1);
+      return t;
+    };
+
+    test('depois de dar, ninguém joga até o fim da janela; nem quem começa', () => {
+      const t = aposDar();
+      const e = t.estado('a')!;
+      expect(e.janelaFamilia!.decidiram).toEqual([]);
+      expect(e.prazo).toEqual({ cadeiras: [0], ate: e.janelaFamilia!.ate });
+      expect(e.minhasAcoes.some((a) => a.tipo === 'jogar')).toBe(false);
+      const n = t.de('a', 'acao').length;
+      // quem é da vez tenta jogar: recusado
+      const vez = t.mesa.partida!.mao!.vez;
+      if (vez === 0) {
+        t.mesa.acao('a', { tipo: 'jogar', carta: t.mesa.partida!.mao!.maos[0][0] });
+        expect(t.de('a', 'erro').at(-1)?.mensagem).toMatch(/hora de pedir família/);
+      }
+      vi.advanceTimersByTime(e.janelaFamilia!.ate - Date.now() - 1);
+      expect(t.de('a', 'acao').slice(n).some((x) => x.tipo === 'jogar')).toBe(false);
+      vi.advanceTimersByTime(1);
+      expect(t.estado('a')!.janelaFamilia).toBeNull();
+      avancarAte(() => vezDeJogar(t) || t.de('a', 'acao').slice(n).some((x) => x.tipo === 'jogar'), 1);
+    });
+
+    test('"sem família" de todos os humanos fecha a janela na hora', () => {
+      const t = aposDar();
+      const n = t.de('a', 'acao').length;
+      t.mesa.semFamilia('a');
+      expect(t.estado('a')!.janelaFamilia).toBeNull();
+      if (t.mesa.partida!.mao!.vez === 0) expect(t.estado('a')!.minhasAcoes.some((a) => a.tipo === 'jogar')).toBe(true);
+      else {
+        avancarAte(() => t.de('a', 'acao').slice(n).some((x) => x.tipo === 'jogar'), 1, 2_000);
+      }
+    });
+
+    test('com dois humanos, só fecha antes quando os dois decidem', () => {
+      const t = criarMesa({ regras: MINEIRO, decidirBot: semFamilia, tempos: JANELA, humanosEsperados: 2 });
+      t.mesa.sentar('a', 'Ana');
+      t.mesa.sentar('b', 'Bia');
+      avancarAte(() => !!t.estado('a')?.janelaFamilia, 1);
+      t.mesa.semFamilia('a');
+      expect(t.estado('a')!.janelaFamilia!.decidiram).toEqual([0]);
+      expect(t.estado('a')!.prazo!.cadeiras).toEqual([2]);
+      t.mesa.semFamilia('b');
+      expect(t.estado('a')!.janelaFamilia).toBeNull();
+    });
+  });
+
   describe('família aberta e o prazo do humano da vez', () => {
     const ABERTA = { ...MINEIRO, familia: 'aberta' as const };
     /** Bots pedem família (aberta) só quando têm uma de verdade; senão jogam o fácil. */
@@ -103,7 +161,8 @@ describe('família na Mesa', () => {
       expect(ehFamilia(mao)).toBe(true);
     }
     const naJanelaDaAna = () => {
-      const t = criarMesa({ regras: ABERTA, decidirBot: soComFamilia });
+      // Sem a janela de família do servidor: aqui se testa o prazo da vez depois dela.
+      const t = criarMesa({ regras: ABERTA, decidirBot: soComFamilia, tempos: { ...TEMPOS, janelaFamiliaMs: 0 } });
       t.mesa.sentar('a', 'Ana');
       avancarAte(() => vezDeJogar(t) && janelaDeFamilia(t.mesa.partida!) && !t.mesa.partida!.mao!.maos.some((m) => ehFamilia(m)), 1);
       return t;

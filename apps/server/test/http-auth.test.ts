@@ -191,6 +191,7 @@ describe('preferências da mesa', () => {
     humanos: 1,
     nivelBot: 'dificil',
     chanceInterceptarSinal: 0.25,
+    tempoFamiliaS: 25,
   };
 
   test('401 sem login; nulo antes de salvar; salva, lê de volta e valida', async () => {

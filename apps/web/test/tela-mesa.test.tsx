@@ -37,6 +37,21 @@ describe('TelaMesa', () => {
     expect(acoes.enviarAcao).toHaveBeenLastCalledWith({ tipo: 'truco', cadeira: 0 });
   });
 
+  test('hora da família: faixa com o tempo e "Sem família"; depois de decidir, só espera', async () => {
+    const user = userEvent.setup();
+    const acoes = { ...acoesFalsas(), enviarSemFamilia: vi.fn() };
+    const s = distribuida(MINEIRO);
+    const ate = Date.now() + 20_000;
+    const { rerender } = render(<TelaMesa snap={snap(msgEstado(s, 0, { janelaFamilia: { ate, decidiram: [] }, minhasAcoes: [] }))} acoes={acoes} />);
+    const faixa = screen.getByRole('group', { name: 'Hora de pedir família' });
+    expect(faixa).toHaveTextContent(/Tem família\? (19|20)s/);
+    await user.click(within(faixa).getByRole('button', { name: 'Sem família' }));
+    expect(acoes.enviarSemFamilia).toHaveBeenCalled();
+    rerender(<TelaMesa snap={snap(msgEstado(s, 0, { janelaFamilia: { ate, decidiram: [0] }, minhasAcoes: [] }))} acoes={acoes} />);
+    expect(faixa).toHaveTextContent('Esperando os outros');
+    expect(within(faixa).queryByRole('button')).toBeNull();
+  });
+
   test('assentos: nomes nas posições certas e balão de quem trucou', () => {
     const balao: Evento = { id: 1, em: Date.now(), tipo: 'acao', de: 1, texto: 'TRUCO!' };
     render(<TelaMesa snap={snap(msgEstado(distribuida(PAULISTA)), [balao])} acoes={acoesFalsas()} />);

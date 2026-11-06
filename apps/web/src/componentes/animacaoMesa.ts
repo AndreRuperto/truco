@@ -394,11 +394,11 @@ export function useAnimacaoJogadas(exibicao: Exibicao, minha: Cadeira, centro: R
 
 export const DUR_RIFFLE = 560;
 export const DUR_CORTE = 480;
-export const DUR_DADA = 650;
+export const DUR_DADA = 820;
 /** Intervalo entre um voo e o próximo na distribuição (leva de 3 cartas). */
-export const PASSO_DADA = 380;
+export const PASSO_DADA = 540;
 /** Intervalo entre voos de uma carta só (dar "subindo"): 12 voos, mais curtos. */
-export const PASSO_DADA_UMA = 240;
+export const PASSO_DADA_UMA = 340;
 const DUR_ENTRADA = 380;
 /** Quanto esperar o `estado` (que chega depois da mensagem `acao`) montar o alvo. */
 const ESPERA_ESTADO = 900;

@@ -67,7 +67,10 @@ export interface Tempos {
   ritualMs: number;
   /** Prazo da dupla adversária para conferir uma família fechada. */
   conferirMs: number;
-  /** Quanto o bot da vez espera antes da 1ª carta quando a família está ligada. */
+  /**
+   * Hora de pedir família, contada depois da distribuição: ninguém joga carta antes (nem quem
+   * começa). Acaba antes se todos os humanos decidirem. 0 = sem janela (só a espera da distribuição).
+   */
   janelaFamiliaMs: number;
   /** Quanto o bot da vez espera antes da 1ª carta: dá tempo de a animação da distribuição terminar. */
   distribuicaoMs: number;
@@ -80,8 +83,8 @@ export const TEMPOS_PADRAO: Tempos = {
   intervaloMensagemMs: 1_000,
   ritualMs: 12_000,
   conferirMs: 6_000,
-  janelaFamiliaMs: 2_500,
-  distribuicaoMs: 3_600,
+  janelaFamiliaMs: 20_000,
+  distribuicaoMs: 5_000,
 };
 
 export interface OpcoesMesa {
@@ -170,6 +173,8 @@ export class Mesa {
   private dicas: (Carta | null)[] = [null, null, null, null];
   /** Bots fora da vez que já decidiram a família nesta mão (uma decisão por mão: sem novo sorteio a cada mudança). */
   private familiaDecidida = new Set<Cadeira>();
+  /** Janela de família da mão atual (ver `Tempos.janelaFamiliaMs`); null = a mão não teve. */
+  private janela: { ate: number; decidiram: Set<Cadeira>; fechada: boolean } | null = null;
   /** Última mensagem de chat por cadeira (limite próprio, separado de sinais/falas). */
   private readonly ultimoChat: number[] = [-Infinity, -Infinity, -Infinity, -Infinity];
   /** Tampo da mesa ("bater na mesa"): rachaduras, dano e se já virou plástico. */
@@ -322,6 +327,14 @@ export class Mesa {
     this.paraHumanos((destino) => this.o.enviar(destino, 'fala', { de: c, fala }));
   }
 
+  /** "Sem família": o humano abre mão de pedir nesta janela; com todos decididos, o jogo segue. */
+  semFamilia(id: string): void {
+    const c = this.cadeiraDe(id);
+    if (c === null || !this.janelaAberta()) return;
+    this.janela!.decidiram.add(c);
+    this.conferirFimDaJanela();
+  }
+
   /** Bater na mesa: só quem acabou de pedir seis/nove/doze, uma vez por pedido, dentro da janela. */
   batida(id: string, forcaCrua: unknown): void {
     const c = this.cadeiraDe(id);
@@ -360,6 +373,10 @@ export class Mesa {
   private aplicar(pedida: AcaoJogador, idHumano?: string): boolean {
     if (!this.estado) return false;
     const antes = this.estado;
+    if (pedida.tipo === 'jogar' && this.janelaAberta()) {
+      if (idHumano) this.erro(idHumano, 'espere: ainda é a hora de pedir família');
+      return false;
+    }
     const fechaEtapa = !ehFaseRitual(antes.fase) && quemDeveAgir(antes).includes(pedida.cadeira);
     const acao = completarSorte(semSorte(pedida), antes, this.rand);
     try {
@@ -389,8 +406,13 @@ export class Mesa {
     if (acao.tipo === 'distribuir') {
       this.dicas = [null, null, null, null];
       this.familiaDecidida.clear();
+      this.janela =
+        this.tempos.janelaFamiliaMs > 0 && janelaDeFamilia(this.estado)
+          ? { ate: this.relogio.agora() + this.tempos.distribuicaoMs + this.tempos.janelaFamiliaMs, decidiram: new Set(), fechada: false }
+          : null;
       this.sinaisDosBots();
     }
+    if (acao.tipo === 'familia' && this.janela && this.ocupantes[acao.cadeira].humano) this.janela.decidiram.add(acao.cadeira);
     // Quem pediu família trocou as cartas: o sinal que o parceiro tinha não vale mais.
     if (acao.tipo === 'familia') this.dicas[parceiroDe(acao.cadeira)] = null;
     this.atualizar();
@@ -430,6 +452,16 @@ export class Mesa {
       this.enviarEstados();
       return;
     }
+    // Hora de pedir família: ninguém joga; os bots (até o da vez) decidem a família e o relógio
+    // fecha a janela no fim (ou antes, quando todos os humanos decidirem).
+    if (this.janelaAberta()) {
+      const faltam = CADEIRAS.filter((c) => this.humanoAtivo(c) && !this.janela!.decidiram.has(c));
+      this.prazo = { cadeiras: faltam, ate: this.janela!.ate };
+      this.agendar(Math.max(0, this.janela!.ate - this.relogio.agora()), () => this.fecharJanela());
+      this.familiasDosBots(s, []);
+      this.enviarEstados();
+      return;
+    }
     // Os agentes são sempre de uma só dupla (ou uma cadeira, no ritual). Havendo humano ativo
     // entre eles, ninguém decide por ele: espera o prazo; no fim, o parceiro bot (se houver) decide.
     const agentes = quemDeveAgir(s);
@@ -458,6 +490,25 @@ export class Mesa {
       if (agentes.includes(c) || this.ocupantes[c].humano || this.familiaDecidida.has(c)) continue;
       this.agendar(this.tempos.botMs, () => this.familiaDoBot(c));
     }
+  }
+
+  /** Janela de família aberta agora: dentro do prazo, mão ainda na hora de família e algum humano por decidir. */
+  private janelaAberta(): boolean {
+    const j = this.janela;
+    if (!j || j.fechada || !this.estado || !janelaDeFamilia(this.estado)) return false;
+    if (this.relogio.agora() >= j.ate) return false;
+    return CADEIRAS.some((c) => this.humanoAtivo(c) && !j.decidiram.has(c));
+  }
+
+  private conferirFimDaJanela(): void {
+    if (this.janela && !this.janela.fechada && !this.janelaAberta()) this.fecharJanela();
+    else this.atualizar();
+  }
+
+  private fecharJanela(): void {
+    if (!this.janela || this.janela.fechada) return;
+    this.janela.fechada = true;
+    this.atualizar(true);
   }
 
   private familiaDoBot(c: Cadeira): void {
@@ -497,7 +548,8 @@ export class Mesa {
     const agentes = quemDeveAgir(s);
     const marcas = agentes.map((c) => `${c}${this.humanoAtivo(c) ? 'h' : 'b'}`);
     const marco = agentes.some((c) => this.humanoAtivo(c)) ? `e${this.etapa}` : `v${this.versao}`;
-    return `${marco}|${s.fase}|${marcas.join(',')}`;
+    const j = this.janelaAberta() ? `|jf${[...this.janela!.decidiram].join('')}` : '';
+    return `${marco}|${s.fase}|${marcas.join(',')}${j}`;
   }
 
   /** Prazo do humano: etapa do ritual (+ a pausa do resumo, na 1ª de uma mão nova), conferir família ou jogada. */
@@ -511,8 +563,10 @@ export class Mesa {
   /** Espera do bot. A 1ª embaralhada de uma mão nova espera a pausa (o resumo da mão anterior aparece). */
   private atrasoBot(s: EstadoPartida): number {
     if (this.inicioDeMaoNova(s)) return this.tempos.pausaMaoMs;
-    // A vez espera a janela de família: dá tempo de alguém (humano) pedir antes da 1ª carta.
-    if (janelaDeFamilia(s)) return Math.max(this.tempos.botMs, this.tempos.janelaFamiliaMs, this.tempos.distribuicaoMs);
+    // Depois da janela de família a distribuição já acabou faz tempo: a vez joga no ritmo normal.
+    if (this.janela?.fechada) return this.tempos.botMs;
+    // Só bots na mesa (sem janela aberta): a vez ainda espera a janela, para a família dos bots sair antes.
+    if (this.janela && janelaDeFamilia(s)) return Math.max(this.tempos.botMs, this.janela.ate - this.relogio.agora());
     // Cartas acabaram de ser dadas: espera a distribuição (animada no cliente) chegar às mãos.
     if (acabouDeDar(s)) return Math.max(this.tempos.botMs, this.tempos.distribuicaoMs);
     return this.tempos.botMs;
@@ -603,7 +657,8 @@ export class Mesa {
       humanosEsperados: this.o.humanosEsperados,
       visao: s ? visaoDoJogador(s, c) : null,
       prazo: this.prazo,
-      minhasAcoes: s ? acoesValidas(s, c) : [],
+      janelaFamilia: this.janelaAberta() ? { ate: this.janela!.ate, decidiram: [...this.janela!.decidiram] } : null,
+      minhasAcoes: s ? acoesValidas(s, c).filter((a) => a.tipo !== 'jogar' || !this.janelaAberta()) : [],
       mesaFisica: this.fisica,
     };
     this.o.enviar(this.ocupantes[c].id!, 'estado', msg);

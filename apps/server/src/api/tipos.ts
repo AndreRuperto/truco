@@ -1,5 +1,5 @@
 import type { RegrasMesa, Variante } from '@truco/engine';
-import type { ModoMesa, NivelBot } from '../mesa/protocolo';
+import type { ModoMesa, NivelBot, TempoFamiliaS } from '../mesa/protocolo';
 
 export type Formato = '1x1' | '2x2';
 
@@ -28,6 +28,7 @@ export interface PreferenciasMesa {
   humanos: number;
   nivelBot: NivelBot;
   chanceInterceptarSinal: number;
+  tempoFamiliaS?: TempoFamiliaS;
 }
 
 export interface ConfigApi {

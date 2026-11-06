@@ -27,7 +27,8 @@ describe('Lobby', () => {
       nivelBot: 'dificil',
       regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada', maoLimpa: false },
       chanceInterceptarSinal: 0.25,
-      chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|lim:0|int:0.25',
+      tempoFamiliaS: 20,
+      chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|lim:0|int:0.25|tf:20',
       modo: 'desafio',
     });
     expect(localStorage.getItem(CHAVE_APELIDO)).toBe('Ana');
@@ -81,7 +82,7 @@ describe('Lobby', () => {
     expect(campo).toHaveDisplayValue('Às vezes');
     await user.selectOptions(campo, 'Nunca');
     await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
-    expect(aoJogar.mock.calls[0][0]).toMatchObject({ chanceInterceptarSinal: 0, chaveRegras: expect.stringMatching(/\|int:0$/) });
+    expect(aoJogar.mock.calls[0][0]).toMatchObject({ chanceInterceptarSinal: 0, chaveRegras: expect.stringContaining('|int:0|') });
     await user.selectOptions(campo, 'Fácil');
     await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
     expect(aoJogar.mock.calls[1][0]).toMatchObject({ chanceInterceptarSinal: 0.5 });

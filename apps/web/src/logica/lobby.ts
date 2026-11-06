@@ -1,6 +1,6 @@
 import { type Pontuacao, REGRAS_RANQUEADA, type RegrasMesa, type Variante } from '@truco/engine';
 import type { PreferenciasMesa } from '@truco/api';
-import { chaveRegras, type NivelBot } from '@truco/protocolo';
+import { chaveRegras, type NivelBot, TEMPOS_FAMILIA_S, type TempoFamiliaS } from '@truco/protocolo';
 
 export interface FormLobby {
   nome: string;
@@ -15,6 +15,8 @@ export interface FormLobby {
   nivelBot: NivelBot;
   /** Chance (0–1) de cada adversário ver um sinal. */
   chanceInterceptarSinal: number;
+  /** Segundos para pedir família depois de dar as cartas. */
+  tempoFamiliaS: TempoFamiliaS;
   /** Mesa privada (link de convite). */
   privada: boolean;
 }
@@ -34,8 +36,9 @@ export interface OpcoesEntrada {
   nivelBot: NivelBot;
   regras: Omit<RegrasMesa, 'variante'>;
   chanceInterceptarSinal: number;
+  tempoFamiliaS: TempoFamiliaS;
   /**
-   * `chaveRegras(regras, chance)`: o servidor só junta numa sala quem manda a mesma chave
+   * `chaveRegras(regras, chance, tempoFamiliaS)`: o servidor só junta numa sala quem manda a mesma chave
    * (quem omite aceita qualquer sala), então o cliente oficial sempre manda.
    */
   chaveRegras: string;
@@ -56,11 +59,12 @@ export const PREFERENCIAS_PADRAO: Readonly<PreferenciasMesa> = Object.freeze({
   humanos: 1,
   nivelBot: 'dificil',
   chanceInterceptarSinal: 0.25,
+  tempoFamiliaS: 20,
 });
 
 /** Formulário inicial: o padrão da casa com o que estiver salvo por cima. */
 export function formInicial(nome: string, salvas: Partial<PreferenciasMesa> | null = null): FormLobby {
-  return { ...PREFERENCIAS_PADRAO, ...(salvas ?? {}), nome, privada: false };
+  return { tempoFamiliaS: 20, ...PREFERENCIAS_PADRAO, ...(salvas ?? {}), nome, privada: false };
 }
 
 /** O que do formulário vale lembrar (sem apelido e sem "mesa privada", que é por partida). */
@@ -75,6 +79,7 @@ export function preferenciasDe(f: FormLobby): PreferenciasMesa {
     humanos: f.humanos,
     nivelBot: f.nivelBot,
     chanceInterceptarSinal: f.chanceInterceptarSinal,
+    tempoFamiliaS: f.tempoFamiliaS,
   };
 }
 
@@ -94,6 +99,7 @@ export function limparPreferencias(cru: unknown): Partial<PreferenciasMesa> | nu
   if (umDe(o.humanos, [1, 2, 3, 4] as const)) p.humanos = o.humanos;
   if (umDe(o.nivelBot, ['facil', 'dificil'] as const)) p.nivelBot = o.nivelBot;
   if (umDe(o.chanceInterceptarSinal, OPCOES_INTERCEPTACAO.map((x) => x.valor))) p.chanceInterceptarSinal = o.chanceInterceptarSinal;
+  if (umDe(o.tempoFamiliaS, TEMPOS_FAMILIA_S)) p.tempoFamiliaS = o.tempoFamiliaS;
   return Object.keys(p).length ? p : null;
 }
 
@@ -128,6 +134,7 @@ export function formPadrao(variante: Variante = 'paulista', nome = ''): FormLobb
     humanos: 1,
     nivelBot: 'facil',
     chanceInterceptarSinal: 0,
+    tempoFamiliaS: 20,
     privada: false,
   };
 }
@@ -138,6 +145,7 @@ export function trocarVariante(f: FormLobby, variante: Variante): FormLobby {
     humanos: f.humanos,
     nivelBot: f.nivelBot,
     chanceInterceptarSinal: f.chanceInterceptarSinal,
+    tempoFamiliaS: f.tempoFamiliaS,
     privada: f.privada,
   };
 }
@@ -158,7 +166,8 @@ export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
     nivelBot: f.nivelBot,
     regras,
     chanceInterceptarSinal: chance,
-    chaveRegras: chaveRegras({ variante: f.variante, ...regras }, chance),
+    tempoFamiliaS: f.tempoFamiliaS,
+    chaveRegras: chaveRegras({ variante: f.variante, ...regras }, chance, f.tempoFamiliaS),
     modo: f.privada ? 'privada' : f.nivelBot === 'dificil' ? 'desafio' : 'classica',
   };
 }

@@ -26,6 +26,7 @@ describe('preferências da tela inicial (lógica)', () => {
       humanos: 1,
       nivelBot: 'dificil',
       chanceInterceptarSinal: 0.25,
+      tempoFamiliaS: 20,
     });
     expect(formInicial('Ana')).toEqual({ ...PREFERENCIAS_PADRAO, nome: 'Ana', privada: false });
   });

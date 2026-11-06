@@ -173,6 +173,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
     enviarAcao: (a: AcaoJogador) => sala?.send('acao', a),
     enviarSinal: (x: Sinal) => sala?.send('sinal', x),
     enviarFala: (f: Fala) => sala?.send('fala', f),
+    enviarSemFamilia: () => sala?.send('semFamilia'),
     enviarChat: (texto: string) => sala?.send('chat', texto),
     /** Logo depois do pedido de seis/nove/doze (o servidor só aceita nessa janela). */
     enviarBatida: (forca: number) => sala?.send('batida', { forca }),

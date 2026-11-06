@@ -149,7 +149,7 @@ export class MesaRoom extends Room {
   onCreate(options: unknown) {
     const cru = (options && typeof options === 'object' ? options : {}) as Record<string, unknown>;
     const opcoes = opcoesDaSala(cru);
-    const { modo, regras, humanos, nivelBot, chanceInterceptarSinal } = opcoes;
+    const { modo, regras, humanos, nivelBot, chanceInterceptarSinal, tempoFamiliaS } = opcoes;
     if (modo === 'ranqueada') {
       if (cru.fichaInterna !== MesaRoom.fichaInterna) throw new Error('mesa ranqueada só pela fila');
       this.reservados = jogadoresReservados(cru.jogadores);
@@ -179,7 +179,8 @@ export class MesaRoom extends Room {
       humanosEsperados: humanos,
       chanceInterceptarSinal,
       chanceFalaBot: 0.2,
-      tempos: MesaRoom.tempos,
+      // O tempo de família vem da mesa; `MesaRoom.tempos` (testes, E2E) pode encurtar.
+      tempos: { janelaFamiliaMs: tempoFamiliaS * 1000, ...MesaRoom.tempos },
       rand: randCripto,
       relogio: {
         agendar: (ms, fn) => {
@@ -205,6 +206,7 @@ export class MesaRoom extends Room {
     this.onMessage('acao', (client, payload) => this.mesa.acao(client.sessionId, payload));
     this.onMessage('sinal', (client, payload) => this.mesa.sinal(client.sessionId, payload));
     this.onMessage('fala', (client, payload) => this.mesa.fala(client.sessionId, payload));
+    this.onMessage('semFamilia', (client) => this.mesa.semFamilia(client.sessionId));
     this.onMessage('batida', (client, payload) => this.mesa.batida(client.sessionId, (payload as { forca?: unknown } | null)?.forca));
     this.onMessage('chat', (client, payload) => this.mesa.chat(client.sessionId, payload));
     // Ranqueada começa sozinha quando todos os reservados sentam; ninguém completa com bots.

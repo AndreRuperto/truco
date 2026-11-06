@@ -926,6 +926,29 @@ body:has(.tela-mesa) {
   }
 }
 
+/* Hora de pedir família: faixa de giz acima das ações. */
+.janela-familia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2) var(--e3);
+  padding: var(--e1) var(--e3);
+  border: 1px solid var(--lousa-borda);
+  border-radius: var(--raio-botao);
+  background: var(--lousa);
+  color: var(--giz);
+}
+.janela-familia-texto {
+  font-family: var(--fonte-giz);
+  font-size: var(--t1);
+}
+.janela-familia-texto strong {
+  font-weight: 400;
+  color: var(--grito);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Tampo de madeira */
 .tampo {
   position: relative;

@@ -1,6 +1,6 @@
 import type { PreferenciasMesa } from '@truco/api';
 import type { Pontuacao, RegrasMesa, Variante } from '@truco/engine';
-import type { NivelBot } from '@truco/protocolo';
+import { type NivelBot, TEMPOS_FAMILIA_S } from '@truco/protocolo';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { FundoCartas } from '../componentes/FundoCartas';
 import {
@@ -137,6 +137,18 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
                 <option value="fechada">Fechada</option>
               </select>
             </div>
+            {f.familia !== 'off' && (
+              <div className="campo">
+                <label htmlFor="tempo-familia">Tempo para pedir família</label>
+                <select id="tempo-familia" value={String(f.tempoFamiliaS)} onChange={(e) => mudar('tempoFamiliaS', Number(e.target.value) as FormLobby['tempoFamiliaS'])}>
+                  {TEMPOS_FAMILIA_S.map((s) => (
+                    <option key={s} value={String(s)}>
+                      {s} segundos
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="campo">
               <label htmlFor="humanos">Humanos</label>
               <select id="humanos" value={String(f.humanos)} onChange={(e) => mudar('humanos', Number(e.target.value))}>

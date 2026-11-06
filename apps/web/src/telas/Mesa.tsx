@@ -33,7 +33,7 @@ const DURACAO_SINAL_MS = 4_000;
 interface Props {
   /** Precisa ter `msg.visao` (a App só mostra a mesa depois que a partida começa). */
   snap: EstadoLoja;
-  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida'>>;
+  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida' | 'enviarSemFamilia'>>;
   aoChat?: (texto: string) => void;
   /** Começa outra partida com as mesmas opções (a App decide como). Sem ele, o fim só volta ao início. */
   aoJogarDeNovo?: () => void;
@@ -133,6 +133,13 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
       {prazoEhMeu(msg) && msg.prazo && <Cronometro prazo={msg.prazo} agora={agora} />}
       {m ? <Mao cartas={m.minhaMao} jogaveis={ui.jogaveis} cobriveis={ui.cobriveis} variante={variante} vira={vira} aoJogar={jogar} /> : <div />}
       <div className="rodape-mesa">
+        {msg.janelaFamilia && (
+          <JanelaFamilia
+            restam={Math.max(0, Math.ceil((msg.janelaFamilia.ate - agora) / 1000))}
+            decidi={msg.janelaFamilia.decidiram.includes(minha)}
+            aoPassar={acoes.enviarSemFamilia}
+          />
+        )}
         <BarraAcoes
           botoes={ui.botoes}
           pedido={pedido}
@@ -190,5 +197,24 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
       {resumoMao && <FimDeMao titulo={resumoMao.titulo} detalhe={resumoMao.detalhe} />}
       {fim && <FimDePartida titulo={fim.titulo} placar={fim.placar} venceu={fim.venceu} aoJogarDeNovo={aoJogarDeNovo} aoVoltar={() => void acoes.sair()} />}
     </main>
+  );
+}
+
+/**
+ * Hora de pedir família, logo depois de dar: ninguém joga carta ainda (nem quem começa).
+ * "Família!" fica na barra de ações; aqui o "Sem família" adianta o jogo quando todos decidem.
+ */
+function JanelaFamilia({ restam, decidi, aoPassar }: { restam: number; decidi: boolean; aoPassar?: () => void }) {
+  return (
+    <div className="janela-familia" role="group" aria-label="Hora de pedir família">
+      <span className="janela-familia-texto">
+        {decidi ? 'Esperando os outros' : 'Tem família?'} <strong>{restam}s</strong>
+      </span>
+      {!decidi && aoPassar && (
+        <button type="button" onClick={aoPassar}>
+          Sem família
+        </button>
+      )}
+    </div>
   );
 }

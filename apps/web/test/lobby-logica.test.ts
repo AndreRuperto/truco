@@ -15,6 +15,7 @@ describe('formulário do lobby', () => {
       humanos: 1,
       nivelBot: 'facil',
       chanceInterceptarSinal: 0,
+      tempoFamiliaS: 20,
       privada: false,
     });
     expect(formPadrao('mineiro')).toMatchObject({ pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'off', familia: 'fechada', maoLimpa: false });
@@ -33,6 +34,7 @@ describe('formulário do lobby', () => {
       nivelBot: 'dificil',
       regras: { pontuacao: '1-3-6-9-12', maoDe10: false, maoDe11: 'qualquerDupla', familia: 'off', maoLimpa: false },
       chanceInterceptarSinal: 0,
+      tempoFamiliaS: 20,
       chaveRegras: '1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|lim:0|int:0',
       modo: 'desafio',
     });
@@ -47,7 +49,7 @@ describe('formulário do lobby', () => {
     expect(s.nivelBot).toBe('facil');
     expect(s.chanceInterceptarSinal).toBe(0.25);
     // a chave que o cliente manda é a mesma que a sala recalcula
-    expect(o.chaveRegras).toBe(chaveRegras(s.regras, s.chanceInterceptarSinal));
+    expect(o.chaveRegras).toBe(chaveRegras(s.regras, s.chanceInterceptarSinal, s.tempoFamiliaS));
   });
 
   test('mão limpa: vai nas regras e na chave só no mineiro; trocar de variante desmarca', () => {
@@ -57,7 +59,7 @@ describe('formulário do lobby', () => {
     expect(o.chaveRegras).toContain('|lim:1|');
     const s = opcoesDaSala(o);
     expect(s.regras).toEqual({ variante: 'mineiro', ...o.regras });
-    expect(o.chaveRegras).toBe(chaveRegras(s.regras, s.chanceInterceptarSinal));
+    expect(o.chaveRegras).toBe(chaveRegras(s.regras, s.chanceInterceptarSinal, s.tempoFamiliaS));
     expect(trocarVariante(limpa, 'paulista').maoLimpa).toBe(false);
     // mesmo que o estado fique marcado no paulista, não vai para a sala
     expect(opcoesDeEntrada({ ...formPadrao('paulista'), maoLimpa: true }).regras.maoLimpa).toBe(false);

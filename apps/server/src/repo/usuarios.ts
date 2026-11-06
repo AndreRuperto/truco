@@ -251,7 +251,7 @@ export function preferenciasValidas(cru: unknown): PreferenciasMesa | null {
   // Mesmo formato da criação de sala: regras dentro de `regras`, o resto por fora.
   const o = opcoesDaSala({ ...c, regras: c, modo: 'privada' });
   const { variante, ...regras } = o.regras;
-  return { variante, ...regras, maoLimpa: regras.maoLimpa === true, humanos: o.humanos, nivelBot: o.nivelBot, chanceInterceptarSinal: o.chanceInterceptarSinal };
+  return { variante, ...regras, maoLimpa: regras.maoLimpa === true, humanos: o.humanos, nivelBot: o.nivelBot, chanceInterceptarSinal: o.chanceInterceptarSinal, tempoFamiliaS: o.tempoFamiliaS };
 }
 
 export async function lerPreferencias(db: Banco, id: number): Promise<PreferenciasMesa | null> {
