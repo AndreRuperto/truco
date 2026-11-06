@@ -277,6 +277,106 @@ button:disabled {
 .campo input {
   width: 100%;
 }
+/*
+ * Seleção: seta própria (chevron em CSS) em todo navegador; onde há select customizável
+ * (Chrome/Edge 135+) a lista aberta também ganha o visual da casa: mesmo fundo do
+ * formulário, opções de 44 px, a marcada com faixa amarela e um ✓. O resto fica nativo.
+ */
+.campo select {
+  appearance: none;
+  padding-right: 40px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--form-tinta-suave, var(--tinta-suave)) 50%),
+    linear-gradient(-45deg, transparent 50%, var(--form-tinta-suave, var(--tinta-suave)) 50%);
+  background-position:
+    calc(100% - 20px) 50%,
+    calc(100% - 15px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+@supports (appearance: base-select) {
+  .campo select,
+  .campo select::picker(select) {
+    appearance: base-select;
+  }
+  .campo select {
+    display: flex;
+    align-items: center;
+    background-image: none;
+    padding-right: var(--e3);
+  }
+  .campo select::picker-icon {
+    content: '';
+    width: 8px;
+    height: 8px;
+    margin: -4px 4px 0 auto;
+    border-right: 2px solid var(--form-tinta-suave, var(--tinta-suave));
+    border-bottom: 2px solid var(--form-tinta-suave, var(--tinta-suave));
+    rotate: 45deg;
+    transition: rotate var(--dur) ease-out, margin var(--dur) ease-out;
+  }
+  .campo select:open::picker-icon {
+    rotate: 225deg;
+    margin-top: 4px;
+  }
+  .campo select:open,
+  .campo select:open:hover {
+    border-color: var(--grito);
+  }
+  .campo select::picker(select) {
+    position-area: block-end span-inline-end;
+    position-try: most-block-size flip-block;
+    margin-block: var(--e1);
+    padding: var(--e1);
+    border: 2px solid var(--form-borda, var(--papel-borda));
+    border-radius: var(--raio-botao);
+    background: var(--form-campo, var(--branco));
+    color: var(--form-tinta, var(--tinta));
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--sombra) 45%, transparent);
+  }
+  .campo select option {
+    display: flex;
+    align-items: center;
+    gap: var(--e2);
+    min-height: 44px;
+    padding: 0 var(--e3);
+    border-left: 4px solid transparent;
+    border-radius: var(--raio-carta);
+    cursor: pointer;
+  }
+  .campo select option::checkmark {
+    order: 1;
+    margin-left: auto;
+    content: '✓';
+    font-weight: 800;
+    color: var(--grito);
+  }
+  .campo select option:hover,
+  .campo select option:focus-visible {
+    background: color-mix(in srgb, var(--form-campo, var(--branco)) 82%, var(--form-tinta, var(--tinta)));
+    outline: none;
+  }
+  .campo select option:checked {
+    border-left-color: var(--grito);
+    font-weight: 800;
+  }
+}
+@media (prefers-color-scheme: light) {
+  @supports (appearance: base-select) {
+    /* Amarelo some no papel: no claro o ✓ e a faixa vão para a madeira (contraste 9.6). */
+    .campo select option::checkmark {
+      color: var(--madeira-funda);
+    }
+    .campo select option:checked {
+      border-left-color: var(--madeira);
+    }
+    .campo select:open,
+    .campo select:open:hover {
+      border-color: var(--tinta);
+    }
+  }
+}
 .campo select:hover,
 .campo input:hover {
   border-color: var(--form-tinta-suave, var(--tinta-suave));
