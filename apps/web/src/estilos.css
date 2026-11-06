@@ -1195,6 +1195,66 @@ body:has(.tela-mesa) {
   }
 }
 
+/* Vista 3D: a cena ocupa o lugar do tampo; etapa, famílias e guia ficam por cima. */
+.mesa-3d {
+  position: relative;
+  min-height: 280px;
+  overflow: hidden;
+  border-radius: var(--raio-tampo);
+  background: #120d09;
+}
+.mesa-3d-cena {
+  position: absolute;
+  inset: 0;
+}
+.mesa-3d-carregando {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--giz-suave);
+  font-family: var(--fonte-giz);
+  font-size: var(--t1);
+}
+.mesa-3d-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.mesa-3d-hud > * {
+  pointer-events: auto;
+}
+.mesa-3d-hud > .etapa {
+  position: absolute;
+  top: auto;
+  bottom: var(--e2);
+  left: 50%;
+  translate: -50% 0;
+  max-width: 90%;
+  margin: 0;
+}
+.mesa-3d-hud > .etapa:empty {
+  display: none;
+}
+.mesa-3d-parceiro {
+  position: absolute;
+  top: var(--e2);
+  right: var(--e2);
+  display: flex;
+  gap: 2px;
+  padding: var(--e1);
+  border-radius: var(--raio-carta);
+  background: color-mix(in srgb, var(--lousa) 85%, transparent);
+}
+.aviso-3d {
+  margin: 0;
+  padding: var(--e1) var(--e3);
+  border-radius: var(--raio-botao);
+  background: var(--lousa);
+  color: var(--erro-texto);
+  text-align: center;
+}
+
 /* Tampo de madeira */
 .tampo {
   position: relative;

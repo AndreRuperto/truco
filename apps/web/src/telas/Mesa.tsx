@@ -1,9 +1,10 @@
 import { type Cadeira, ehFaseRitual, parceiroDe, quemDeveAgir } from '@truco/engine';
 import { useCallback, useRef, useState } from 'react';
+import { CartaVisual } from '../componentes/CartaVisual';
 import { useAnimacaoRitual } from '../componentes/animacaoMesa';
 import { Assento, GRITOS } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
-import { CentroMesa } from '../componentes/CentroMesa';
+import { CentroMesa, useRodadaNaMesa } from '../componentes/CentroMesa';
 import { Chat } from '../componentes/Chat';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { Cronometro } from '../componentes/Cronometro';
@@ -11,6 +12,7 @@ import { FamiliasNaMesa } from '../componentes/FamiliasNaMesa';
 import { GuiaOrdem } from '../componentes/GuiaOrdem';
 import { ManualMesa } from '../componentes/ManualMesa';
 import { Mao } from '../componentes/Mao';
+import { Mesa3D } from '../componentes/Mesa3D';
 import { Monte } from '../componentes/Monte';
 import { FimDeMao, FimDePartida } from '../componentes/Overlays';
 import { PainelFalas } from '../componentes/PainelFalas';
@@ -19,7 +21,9 @@ import { Placar } from '../componentes/Placar';
 import { Tampo } from '../componentes/Tampo';
 import { agruparAcoes } from '../logica/acoes';
 import { botaoBate } from '../logica/batida';
+import { rotuloCarta } from '../logica/cartas';
 import { baloesAtivos } from '../logica/eventos';
+import { estadoMesa3D } from '../logica/mesa3d';
 import { cadeiraNaPosicao } from '../logica/posicoes';
 import { prazoEhMeu } from '../logica/prazo';
 import { donoDoMonte, mostrarResumoMao, textoEtapa } from '../logica/ritual';
@@ -29,6 +33,23 @@ import { useAgora } from '../rede/hooks';
 import type { EstadoLoja, Loja } from '../rede/loja';
 
 const DURACAO_SINAL_MS = 4_000;
+/** Escolha da vista (2D ou 3D), lembrada no aparelho. */
+export const CHAVE_VISTA_3D = 'truco:vista3d';
+
+function lerVista3D(): boolean {
+  try {
+    return localStorage.getItem(CHAVE_VISTA_3D) === '1';
+  } catch {
+    return false;
+  }
+}
+function gravarVista3D(ligada: boolean): void {
+  try {
+    localStorage.setItem(CHAVE_VISTA_3D, ligada ? '1' : '0');
+  } catch {
+    // modo privado: segue sem lembrar
+  }
+}
 
 interface Props {
   /** Precisa ter `msg.visao` (a App só mostra a mesa depois que a partida começa). */
@@ -45,6 +66,20 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   const [confirmarSaida, setConfirmarSaida] = useState(false);
   const [manual, setManual] = useState(false);
   const fecharManual = useCallback(() => setManual(false), []);
+  const [vista3d, setVista3d] = useState(lerVista3D);
+  const [aviso3d, setAviso3d] = useState<string | null>(null);
+  const trocarVista = () => {
+    setAviso3d(null);
+    setVista3d((x) => {
+      gravarVista3D(!x);
+      return !x;
+    });
+  };
+  const falhar3d = useCallback((motivo: string) => {
+    console.warn('[vista 3D]', motivo);
+    setVista3d(false);
+    setAviso3d('Não deu para abrir a vista 3D neste aparelho. Voltamos para a mesa normal.');
+  }, []);
   const msg = snap.msg!;
   const modo = msg.modo;
   const v = msg.visao!;
@@ -79,13 +114,61 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   const ultimaVisivel = emRitual && !resumoMao ? null : v.ultimaMao;
   const etapa = textoEtapa(v, nome);
   // Sem etapa do ritual: a linha do meio diz de quem é a vez e, se é de humano, quanto tempo falta.
-  const vezTexto = etapa || msg.janelaFamilia ? null : textoVez(v, agentes, minha, nome, msg.prazo, agora);
+  // Na vista 3D a cena já marca a vez (anel e segundos): a linha fica só para o ritual.
+  const vezTexto = etapa || msg.janelaFamilia || vista3d ? null : textoVez(v, agentes, minha, nome, msg.prazo, agora);
   const fim = v.fase === 'fimPartida' ? resumoFimPartida(v) : null;
   const pedido = textoPedidoPendente(v);
+  const rodada = useRodadaNaMesa(m, ultimaVisivel);
+  const linhaEtapa = (
+    // Sempre montada: a região viva só anuncia mudanças de texto se já existia.
+    <p className={vezTexto ? 'etapa vez-linha' : 'etapa'} role="status" data-testid="etapa" aria-live={vezTexto ? 'off' : undefined}>
+      {etapa ?? vezTexto ?? ''}
+    </p>
+  );
 
   return (
     <main className="tela-mesa">
       <Placar nos={nos} eles={eles} valor={m ? valorMao(v.regras, m.nivel) : null} pedido={pedido?.replace(/\.$/, '') ?? null} />
+      {vista3d ? (
+        <div className="mesa-3d" data-testid="mesa-3d">
+          <Mesa3D
+            estado={estadoMesa3D({
+              visao: v,
+              minha,
+              cadeiras: msg.cadeiras,
+              prazo: msg.prazo,
+              mesaFisica: msg.mesaFisica,
+              baloes,
+              exibicao: rodada.exibicao,
+              naPilha: rodada.naPilha,
+              agora,
+            })}
+            minha={minha}
+            batida={snap.batida}
+            aoFalhar={falhar3d}
+          />
+          <div className="mesa-3d-hud">
+            {linhaEtapa}
+            <FamiliasNaMesa visao={v} nome={nome} />
+            <GuiaOrdem regras={v.regras} vira={vira} mao={m?.minhaMao ?? []} />
+            {m?.maoParceiro && (
+              <div className="mesa-3d-parceiro" aria-label={`Mão de ${nome(parceiroDe(minha))}`}>
+                {m.maoParceiro.map((c) => (
+                  <CartaVisual key={`${c.valor}${c.naipe}`} carta={c} variante={variante} vira={vira} tamanho="pequena" />
+                ))}
+              </div>
+            )}
+            {/* A cena é desenho: o que está na mesa vai em texto para o leitor de tela. */}
+            <ul className="so-leitor" aria-label="Cartas na mesa">
+              {rodada.exibicao.jogadas.map(({ chave, jogada: j }) => (
+                <li key={chave}>
+                  {nome(j.cadeira)}: {j.coberta || !j.carta ? 'carta coberta' : rotuloCarta(j.carta, variante, vira)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : (
       <Tampo
         fisica={msg.mesaFisica}
         minha={minha}
@@ -121,10 +204,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           extra={
             <>
               <Monte qtd={v.qtdMonte} dono={donoDoMonte(v)} minha={minha} />
-              {/* Sempre montada: a região viva só anuncia mudanças de texto se já existia. */}
-              <p className={vezTexto ? 'etapa vez-linha' : 'etapa'} role="status" data-testid="etapa" aria-live={vezTexto ? 'off' : undefined}>
-                {etapa ?? vezTexto ?? ''}
-              </p>
+              {linhaEtapa}
             </>
           }
         />
@@ -142,6 +222,12 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
         />
         <div ref={camadaRitual} className="camada-voo" aria-hidden="true" />
       </Tampo>
+      )}
+      {aviso3d && (
+        <p className="aviso-3d" role="alert">
+          {aviso3d}
+        </p>
+      )}
       {prazoEhMeu(msg) && msg.prazo && <Cronometro prazo={msg.prazo} agora={agora} />}
       {m ? (
         <Mao
@@ -183,6 +269,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
               Chat
             </button>
           )}
+          <button type="button" aria-pressed={vista3d} onClick={trocarVista}>
+            3D
+          </button>
           <button type="button" className="botao-ajuda" aria-label="Como jogar" title="Como jogar" onClick={() => setManual(true)}>
             ?
           </button>
