@@ -702,6 +702,9 @@ button:disabled {
   --carta-l: var(--carta-c);
 }
 .jogada {
+  /* Acima do monte (que fica encostado em quem deu): a carta jogada nunca some atrás dele. */
+  position: relative;
+  z-index: 3;
   animation: aparecer var(--dur) ease-out;
 }
 /* Carta em voo (Web Animations, em animacaoMesa.ts): por cima de tudo e sem pegar clique. */
@@ -1495,8 +1498,10 @@ button:disabled {
 }
 
 /* ---------- Ritual: monte, linha de estado, abertas e famílias ---------- */
+/* O centro fica acima das famílias: a carta jogada nunca some atrás de uma família da mesa. */
 .centro {
   position: relative;
+  z-index: 2;
 }
 .monte {
   --monte-l: calc(var(--carta-c) * 0.8);
@@ -1556,24 +1561,45 @@ button:disabled {
   top: 50%;
   translate: 0 -50%;
 }
+/* Linha de estado do ritual: no meio da cruz (vazia durante o ritual), entre os lados do monte,
+   para não cobrir o meu assento nem a barra; quebra em até 2 linhas no celular. */
 .etapa {
   position: absolute;
+  z-index: 3;
   left: 50%;
-  bottom: -1.9em;
-  translate: -50% 0;
+  top: 50%;
+  translate: -50% -50%;
   margin: 0;
-  max-width: calc(100vw - 32px);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  width: max-content;
+  max-width: max(140px, calc(100% - 2 * var(--carta-c) * 0.8 - 16px));
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--lousa) 72%, transparent);
   color: var(--giz);
-  font-size: 0.8rem;
-  text-shadow: 0 1px 2px var(--sombra);
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-align: center;
+  text-wrap: balance;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  pointer-events: none;
+}
+/* Monte num dos lados: a linha desce para a faixa de baixo da cruz (vazia no ritual). */
+.monte-esquerda ~ .etapa,
+.monte-direita ~ .etapa {
+  top: 80%;
+}
+.etapa:empty {
+  padding: 0;
+  background: none;
 }
 .familias {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 1;
   pointer-events: none;
 }
 .familia {
@@ -1586,8 +1612,12 @@ button:disabled {
 .familia-cartas {
   display: flex;
 }
+/* Um pouco maiores que as pequenas da mão dos outros; sobrepostas só em parte (as 3 aparecem). */
+.familia-cartas .carta.pequena {
+  --carta-l: calc(var(--carta-c) * 0.5);
+}
 .familia-cartas .carta + .carta {
-  margin-left: calc(var(--carta-c) * -0.35);
+  margin-left: calc(var(--carta-l) * -0.3);
 }
 .familia figcaption {
   max-width: 42vw;
@@ -1612,12 +1642,12 @@ button:disabled {
   translate: -50% 0;
 }
 .familia.pos-esquerda {
-  left: 3%;
+  left: 17%;
   top: 50%;
   translate: 0 -50%;
 }
 .familia.pos-direita {
-  right: 3%;
+  right: 17%;
   top: 50%;
   translate: 0 -50%;
 }
