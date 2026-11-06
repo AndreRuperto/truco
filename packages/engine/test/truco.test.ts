@@ -1,12 +1,41 @@
 import { describe, expect, test } from 'vitest';
+import { acoesValidas } from '../src/acoes';
 import type { Acao } from '../src/estado';
 import { ErroJogada, reduce } from '../src/reducer';
-import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, distribuida, jogarSeq } from './helpers';
+import {
+  MAOS_DUPLA0_VENCE,
+  MINEIRO,
+  PAULISTA,
+  PRIMEIRA_RODADA_PAULISTA_DUPLA0,
+  distribuida,
+  jogarPrimeiraRodada,
+  jogarSeq,
+} from './helpers';
 
 const seq = (s: ReturnType<typeof distribuida>, acoes: Acao[]) => acoes.reduce(reduce, s);
-const base = () => distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p');
+const inicio = () => distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p');
+/** Truco só a partir da 2ª rodada: a dupla 0 vence a 1ª e a cadeira 0 volta a ter a vez. */
+const base = () => jogarPrimeiraRodada(inicio(), PRIMEIRA_RODADA_PAULISTA_DUPLA0);
+const baseMineiro = () => jogarPrimeiraRodada(distribuida(MINEIRO, MAOS_DUPLA0_VENCE));
 
 describe('truco', () => {
+  test('na 1ª rodada não se truca; da 2ª em diante pode', () => {
+    let s = inicio();
+    expect(s.mao!.vez).toBe(0);
+    expect(() => reduce(s, { tipo: 'truco', cadeira: 0 })).toThrow(ErroJogada);
+    expect(acoesValidas(s, 0).some((a) => a.tipo === 'truco')).toBe(false);
+    // Nem no meio da 1ª rodada.
+    s = reduce(s, { tipo: 'jogar', cadeira: 0, indice: PRIMEIRA_RODADA_PAULISTA_DUPLA0[0] });
+    expect(() => reduce(s, { tipo: 'truco', cadeira: 1 })).toThrow(ErroJogada);
+    expect(acoesValidas(s, 1).some((a) => a.tipo === 'truco')).toBe(false);
+
+    s = base();
+    expect(s.mao!.rodadas).toEqual([0]);
+    expect(s.mao!.vez).toBe(0);
+    expect(acoesValidas(s, 0)).toContainEqual({ tipo: 'truco', cadeira: 0 });
+    expect(reduce(s, { tipo: 'truco', cadeira: 0 }).fase).toBe('respondendoTruco');
+  });
+
   test('pedir pausa a mão; aceitar sobe para 3 e devolve a vez', () => {
     let s = reduce(base(), { tipo: 'truco', cadeira: 0 });
     expect(s.fase).toBe('respondendoTruco');
@@ -32,7 +61,7 @@ describe('truco', () => {
   });
 
   test('escada vai até doze e para (mineiro: dupla 0 vence jogando índice 0)', () => {
-    let s = seq(distribuida(MINEIRO, MAOS_DUPLA0_VENCE), [
+    let s = seq(baseMineiro(), [
       { tipo: 'truco', cadeira: 0 },
       { tipo: 'aumentar', cadeira: 1 },
       { tipo: 'aumentar', cadeira: 0 },
@@ -42,15 +71,15 @@ describe('truco', () => {
     expect(() => reduce(s, { tipo: 'aumentar', cadeira: 0 })).toThrow(ErroJogada);
     s = reduce(s, { tipo: 'aceitar', cadeira: 2 });
     expect(s.mao!.nivel).toBe(4);
-    s = jogarSeq(s, [[0, 0], [1, 0], [2, 0], [3, 0], [0, 0], [1, 0], [2, 0], [3, 0]]);
+    s = jogarSeq(s, [[0, 0], [1, 0], [2, 0], [3, 0]]);
     expect(s.placar[0] + s.placar[1]).toBe(12);
     expect(s.fase).toBe('fimPartida');
   });
 
   test('no preset 2-4-8-10-12 truco aceito vale 4', () => {
-    let s = distribuida(MINEIRO, MAOS_DUPLA0_VENCE);
+    let s = baseMineiro();
     s = seq(s, [{ tipo: 'truco', cadeira: 0 }, { tipo: 'aceitar', cadeira: 1 }]);
-    s = jogarSeq(s, [[0, 0], [1, 0], [2, 0], [3, 0], [0, 0], [1, 0], [2, 0], [3, 0]]);
+    s = jogarSeq(s, [[0, 0], [1, 0], [2, 0], [3, 0]]);
     expect(s.placar).toEqual([4, 0]);
   });
 

@@ -9,6 +9,19 @@ export interface UsuarioApi {
   email: string | null;
 }
 
+/** O que a tela inicial lembra entre visitas (na conta, para quem entrou). */
+export interface PreferenciasMesa {
+  variante: Variante;
+  pontuacao: RegrasMesa['pontuacao'];
+  maoDe10: boolean;
+  maoDe11: RegrasMesa['maoDe11'];
+  familia: RegrasMesa['familia'];
+  maoLimpa: boolean;
+  humanos: number;
+  nivelBot: NivelBot;
+  chanceInterceptarSinal: number;
+}
+
 export interface ConfigApi {
   /** Client ID do Google (liga o botão) ou null. */
   google: string | null;

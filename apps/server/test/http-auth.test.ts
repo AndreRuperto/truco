@@ -153,6 +153,44 @@ describe('sair, Bearer e apelido', () => {
   });
 });
 
+describe('preferências da mesa', () => {
+  const prefs = {
+    variante: 'mineiro',
+    pontuacao: '1-3-6-9-12',
+    maoDe10: true,
+    maoDe11: 'qualquerDupla',
+    familia: 'fechada',
+    maoLimpa: true,
+    humanos: 1,
+    nivelBot: 'dificil',
+    chanceInterceptarSinal: 0.25,
+  };
+
+  test('401 sem login; nulo antes de salvar; salva, lê de volta e valida', async () => {
+    expect((await app.pedir('/api/preferencias')).status).toBe(401);
+    expect((await app.pedir('/api/preferencias', { metodo: 'PUT', corpo: { preferencias: prefs } })).status).toBe(401);
+    const cookie = await entrarPorLink('ana@x.com');
+    expect((await app.pedir('/api/preferencias', { cookie })).json).toEqual({ preferencias: null });
+    const salvo = await app.pedir('/api/preferencias', { metodo: 'PUT', corpo: { preferencias: prefs }, cookie });
+    expect(salvo.status).toBe(200);
+    expect(salvo.json.preferencias).toEqual(prefs);
+    expect((await app.pedir('/api/preferencias', { cookie })).json.preferencias).toEqual(prefs);
+    expect((await app.pedir('/api/preferencias', { metodo: 'PUT', corpo: { preferencias: 'x' }, cookie })).status).toBe(400);
+  });
+
+  test('valores estranhos viram os da regra válida (mão limpa só no mineiro, humanos 1..4)', async () => {
+    const cookie = await entrarPorLink('ana@x.com');
+    const r = await app.pedir('/api/preferencias', {
+      metodo: 'PUT',
+      corpo: { preferencias: { ...prefs, variante: 'paulista', humanos: 9, pontuacao: 'xx', modo: 'ranqueada' } },
+      cookie,
+    });
+    expect(r.status).toBe(200);
+    expect(r.json.preferencias).toMatchObject({ variante: 'paulista', maoLimpa: false, humanos: 1, pontuacao: '1-3-6-9-12', nivelBot: 'dificil' });
+    expect(r.json.preferencias).not.toHaveProperty('modo');
+  });
+});
+
 describe('Google', () => {
   test('credencial boa cria/entra; ruim → 401; desligado → 404', async () => {
     const r = await app.pedir('/api/auth/google', { corpo: { credencial: 'credencial-boa' } });

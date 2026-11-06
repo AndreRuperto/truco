@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
-import { boolean, index, integer, pgTable, primaryKey, serial, smallint, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import type { PreferenciasMesa } from '../api/tipos';
+import { boolean, index, integer, jsonb, pgTable, primaryKey, serial, smallint, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const VARIANTES = ['paulista', 'mineiro'] as const;
 export const MODOS = ['classica', 'desafio', 'privada', 'ranqueada'] as const;
@@ -15,6 +16,8 @@ export const usuarios = pgTable(
     /** Sempre minúsculo (`normalizarEmail`). */
     email: text('email').unique(),
     googleSub: text('google_sub').unique(),
+    /** Regras da mesa que o usuário deixou na tela inicial (ver `PreferenciasMesa`); null = nunca salvou. */
+    preferencias: jsonb('preferencias').$type<PreferenciasMesa>(),
     criadoEm: quando('criado_em').notNull().defaultNow(),
   },
   // "Ana" e "ana" são o mesmo apelido.

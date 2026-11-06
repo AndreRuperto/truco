@@ -4,7 +4,8 @@ import type { PerfilGoogle } from '../auth/google';
 import { gerarToken, hashToken } from '../auth/tokens';
 import type { Banco } from '../banco/banco';
 import { linksMagicos, sessoes, usuarios } from '../banco/schema';
-import { limparNome } from '../mesa/protocolo';
+import type { PreferenciasMesa } from '../api/tipos';
+import { limparNome, opcoesDaSala } from '../mesa/protocolo';
 
 export interface Usuario {
   id: number;
@@ -185,6 +186,30 @@ export async function trocarApelido(db: Banco, id: number, cru: unknown): Promis
     if (ehViolacaoUnica(e)) return 'em-uso';
     throw e;
   }
+}
+
+// ---------- preferências da mesa ----------
+
+/** Valida as preferências cruas (mesmas regras da criação de sala); null se não for um objeto. */
+export function preferenciasValidas(cru: unknown): PreferenciasMesa | null {
+  if (!cru || typeof cru !== 'object' || Array.isArray(cru)) return null;
+  const c = cru as Record<string, unknown>;
+  // Mesmo formato da criação de sala: regras dentro de `regras`, o resto por fora.
+  const o = opcoesDaSala({ ...c, regras: c, modo: 'privada' });
+  const { variante, ...regras } = o.regras;
+  return { variante, ...regras, maoLimpa: regras.maoLimpa === true, humanos: o.humanos, nivelBot: o.nivelBot, chanceInterceptarSinal: o.chanceInterceptarSinal };
+}
+
+export async function lerPreferencias(db: Banco, id: number): Promise<PreferenciasMesa | null> {
+  const [x] = await db.select({ p: usuarios.preferencias }).from(usuarios).where(eq(usuarios.id, id)).limit(1);
+  return x?.p ? preferenciasValidas(x.p) : null;
+}
+
+export async function gravarPreferencias(db: Banco, id: number, cru: unknown): Promise<PreferenciasMesa | null> {
+  const p = preferenciasValidas(cru);
+  if (!p) return null;
+  await db.update(usuarios).set({ preferencias: p }).where(eq(usuarios.id, id));
+  return p;
 }
 
 // ---------- sessões ----------

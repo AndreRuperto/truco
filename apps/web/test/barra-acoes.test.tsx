@@ -5,12 +5,12 @@ import { describe, expect, test, vi } from 'vitest';
 import { BarraAcoes } from '../src/componentes/BarraAcoes';
 import { agruparAcoes } from '../src/logica/acoes';
 import { textoPedidoPendente } from '../src/logica/textos';
-import { distribuida, PAULISTA } from './fixtures';
+import { distribuida, naSegundaRodada, PAULISTA } from './fixtures';
 
 describe('BarraAcoes', () => {
   test('mostra o pedido e os botões na ordem; clicar envia a ação de minhasAcoes', async () => {
     const user = userEvent.setup();
-    const s = reduce(distribuida(PAULISTA), { tipo: 'truco', cadeira: 0 });
+    const s = reduce(naSegundaRodada(distribuida(PAULISTA)), { tipo: 'truco', cadeira: 0 });
     const v = visaoDoJogador(s, 1);
     const aoEscolher = vi.fn();
     render(<BarraAcoes botoes={agruparAcoes(acoesValidas(s, 1), v).botoes} pedido={textoPedidoPendente(v)} aoEscolher={aoEscolher} />);

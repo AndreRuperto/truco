@@ -9,11 +9,19 @@ import {
   type Jogada,
   parceiroDe,
 } from '../estado';
+import { FORCA_MANILHA_MIN, forca } from '../forca';
 import { reduce } from '../reducer';
 import { embaralhar } from '../rng';
 import type { JogadaVisivel, Visao } from '../visao';
 import { botFacil } from './facil';
 import { decidirEtapa, querFamilia } from './ritual';
+
+/** A, 2 e 3 (força comum 8, 9 e 10) contam como cartas altas para segurar um truco. */
+const FORCA_ALTA = 8;
+/** Quanto, em pontos por mundo simulado, subir a aposta precisa render a mais que não subir. */
+const MARGEM_APOSTA = 0.75;
+/** Chance mínima de ganhar a mão (sem subir) para pedir truco ou aumentar. */
+const CHANCE_PARA_SUBIR = 0.7;
 
 /** O que o bot sabe por sinal do parceiro. */
 export interface DicaAmostra {
@@ -111,12 +119,34 @@ export interface OpcoesBotDificil {
   dica?: DicaAmostra;
 }
 
-/** Joga o resto da mão com o bot fácil em todas as cadeiras; devolve o saldo de pontos da `dupla`. */
+/**
+ * Resposta a truco dentro da simulação. O bot fácil só aceita com manilha, e simular os adversários
+ * assim fazia qualquer pedido parecer lucro (quase todo mundo corria): o bot difícil trucava sempre.
+ * Aqui quem responde aceita com o que um jogador de verdade seguraria: manilha, duas cartas altas
+ * (A, 2, 3), ou uma alta com uma rodada já ganha pela dupla.
+ */
+function respostaSimulada(s: EstadoPartida): AcaoJogador | null {
+  const m = s.mao;
+  const p = m?.trucoPendente;
+  if (!m || !p) return null;
+  const cadeira = ([0, 1, 2, 3] as Cadeira[]).find((c) => duplaDe(c) !== p.dupla)!;
+  const dupla = duplaDe(cadeira);
+  const forcas = m.maos[cadeira].map((c) => forca(c, s.regras.variante, m.vira));
+  const altas = forcas.filter((f) => f >= FORCA_ALTA).length;
+  const ganhou = m.rodadas.some((r) => r === dupla);
+  const aceita = forcas.some((f) => f >= FORCA_MANILHA_MIN) || altas >= 2 || (ganhou && altas >= 1);
+  return { tipo: aceita ? 'aceitar' : 'correr', cadeira };
+}
+
+/** Joga o resto da mão (bot fácil, com a resposta a truco acima) e devolve o saldo de pontos da `dupla`. */
 function simularResto(inicio: EstadoPartida, dupla: Dupla): number {
   let s = inicio;
   for (let guarda = 0; s.mao && guarda < 200; guarda++) {
     const atual = s;
-    const a = ([0, 1, 2, 3] as Cadeira[]).map((c) => botFacil(atual, c)).find((x) => x !== null);
+    const a =
+      atual.fase === 'respondendoTruco'
+        ? respostaSimulada(atual)
+        : ([0, 1, 2, 3] as Cadeira[]).map((c) => botFacil(atual, c)).find((x) => x !== null);
     if (!a) break;
     s = reduce(s, a);
   }
@@ -130,7 +160,7 @@ function simularResto(inicio: EstadoPartida, dupla: Dupla): number {
  * Recebe só a `Visao` — não tem como "roubar" olhando cartas alheias.
  */
 export function botDificil(v: Visao, rand: () => number, opcoes: OpcoesBotDificil = {}): AcaoJogador | null {
-  const { amostras = 24, chanceBlefe = 0.08, orcamentoMs, minAmostras = 4, dica } = opcoes;
+  const { amostras = 24, chanceBlefe = 0.03, orcamentoMs, minAmostras = 4, dica } = opcoes;
   if (!v.mao || v.fase === 'conferindoFamilia') return decidirEtapa(v, rand, 'dificil');
   if (querFamilia(v, rand, 'dificil')) return { tipo: 'familia', cadeira: v.cadeira };
   const inicio = orcamentoMs === undefined ? 0 : performance.now();
@@ -147,13 +177,31 @@ export function botDificil(v: Visao, rand: () => number, opcoes: OpcoesBotDifici
 
   const dupla = duplaDe(v.cadeira);
   const soma = candidatas.map(() => 0);
+  const vence = candidatas.map(() => 0);
+  let feitas = 0;
   for (let k = 0; k < amostras && !estourou(k); k++) {
     const mundo = k === 0 ? primeiro : amostrarMundo(v, rand, dica);
     candidatas.forEach((a, i) => {
-      soma[i] += simularResto(reduce(mundo, a), dupla);
+      const saldo = simularResto(reduce(mundo, a), dupla);
+      soma[i] += saldo;
+      if (saldo > 0) vence[i]++;
     });
+    feitas++;
   }
-  let melhor = 0;
-  for (let i = 1; i < soma.length; i++) if (soma[i] > soma[melhor]) melhor = i;
+  const melhorEntre = (idx: number[]) => idx.reduce((b, i) => (soma[i] > soma[b] ? i : b), idx[0]);
+  const todas = candidatas.map((_, i) => i);
+  const melhor = melhorEntre(todas);
+  // Subir a aposta só com mão boa de verdade: a melhor jogada sem subir ganha a mão na maioria dos
+  // mundos, e subir ainda rende claramente mais que ela. (O blefe raro fica por conta de `chanceBlefe`.)
+  const sobe = (a: AcaoJogador) => a.tipo === 'truco' || a.tipo === 'aumentar';
+  if (sobe(candidatas[melhor])) {
+    const semSubir = todas.filter((i) => !sobe(candidatas[i]));
+    if (semSubir.length) {
+      const alt = melhorEntre(semSubir);
+      const n = Math.max(1, feitas);
+      const confiante = vence[alt] / n >= CHANCE_PARA_SUBIR;
+      if (!confiante || soma[melhor] - soma[alt] < MARGEM_APOSTA * n) return candidatas[alt];
+    }
+  }
   return candidatas[melhor];
 }

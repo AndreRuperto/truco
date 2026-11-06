@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { BarraAcoes } from '../src/componentes/BarraAcoes';
 import { agruparAcoes } from '../src/logica/acoes';
 import { botaoBate } from '../src/logica/batida';
-import { distribuida, PAULISTA } from './fixtures';
+import { distribuida, naSegundaRodada, PAULISTA } from './fixtures';
 
 let t = 0;
 beforeEach(() => {
@@ -16,7 +16,7 @@ afterEach(() => vi.restoreAllMocks());
 
 /** Cadeira 1 diante de um truco: pode pedir Seis. */
 function barraComSeis() {
-  const s = reduce(distribuida(PAULISTA), { tipo: 'truco', cadeira: 0 });
+  const s = reduce(naSegundaRodada(distribuida(PAULISTA)), { tipo: 'truco', cadeira: 0 });
   const v = visaoDoJogador(s, 1);
   const ordem: string[] = [];
   const aoEscolher = vi.fn(() => ordem.push('acao'));
@@ -106,7 +106,7 @@ describe('BarraAcoes: bater na mesa', () => {
   });
 
   test('Truco (nível 1) é botão comum: segurar não bate', () => {
-    const s = distribuida(PAULISTA);
+    const s = naSegundaRodada(distribuida(PAULISTA)); // truco só da 2ª rodada em diante
     const v = visaoDoJogador(s, 0);
     const aoEscolher = vi.fn();
     const aoBater = vi.fn();

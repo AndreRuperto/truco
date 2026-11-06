@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, test } from 'vitest';
-import { todasAcoesValidas } from '../src/acoes';
+import { acoesValidas, todasAcoesValidas } from '../src/acoes';
 import { baralhoDaMesa, idCarta } from '../src/cartas';
 import { type Cadeira, novaPartida } from '../src/estado';
 import { ehFamilia, fechadasUsadas, tipoDaProximaFamilia } from '../src/familia';
@@ -114,6 +114,13 @@ describe('propriedades do ritual', () => {
       if (corte === 'abrir3') expect(s.mao!.abertasNoCorte).toHaveLength(3);
       else expect(s.mao!.pulada).toBe(0);
       expect(s.mao!.maos.flat()).toHaveLength(12);
+      // Truco só a partir da 2ª rodada: joga a 1ª (primeira carta válida de cada um), conferindo as cartas.
+      for (let k = 0; k < 4; k++) {
+        const jogada = acoesValidas(s, s.mao!.vez).find((a) => a.tipo === 'jogar')!;
+        s = reduce(s, jogada);
+        conservou(s, regras);
+      }
+      expect(s.mao!.rodadas).toHaveLength(1);
       s = reduce(reduce(s, { tipo: 'truco', cadeira: s.mao!.vez }), { tipo: 'correr', cadeira: ((s.mao!.vez + 1) % 4) as Cadeira });
       expect(s.mao).toBeNull();
       conservou(s, regras);

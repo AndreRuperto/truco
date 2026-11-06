@@ -7,7 +7,16 @@ import { escada, reduce } from '../src/reducer';
 import { NIVEL_MAXIMO } from '../src/regras';
 import type { RegrasMesa } from '../src/regras';
 import { embaralhar, mulberry32 } from '../src/rng';
-import { MINEIRO, MINEIRO_LIMPA, PAULISTA, distribuida, MAOS_DUPLA0_VENCE, avancarSemJogadas } from './helpers';
+import {
+  MINEIRO,
+  MINEIRO_LIMPA,
+  PAULISTA,
+  PRIMEIRA_RODADA_PAULISTA_DUPLA0,
+  distribuida,
+  jogarPrimeiraRodada,
+  MAOS_DUPLA0_VENCE,
+  avancarSemJogadas,
+} from './helpers';
 
 const TODAS_REGRAS: RegrasMesa[] = [
   PAULISTA,
@@ -30,18 +39,26 @@ function cartasEmJogo(s: EstadoPartida): Carta[] {
 }
 
 describe('acoesValidas', () => {
-  test('início da mão: só quem está na vez joga ou truca', () => {
-    const acoes = todasAcoesValidas(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'));
+  test('início da mão: só quem está na vez joga (truco só a partir da 2ª rodada)', () => {
+    const s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p');
+    const acoes = todasAcoesValidas(s);
     expect(acoes.every((a) => a.cadeira === 0)).toBe(true);
     expect(acoes.filter((a) => a.tipo === 'jogar')).toHaveLength(3);
-    expect(acoes.some((a) => a.tipo === 'truco')).toBe(true);
+    expect(acoes.some((a) => a.tipo === 'truco')).toBe(false);
+    // 2ª rodada: a cadeira 0 venceu a 1ª e agora joga ou truca.
+    const r2 = todasAcoesValidas(jogarPrimeiraRodada(s, PRIMEIRA_RODADA_PAULISTA_DUPLA0));
+    expect(r2.every((a) => a.cadeira === 0)).toBe(true);
+    expect(r2.some((a) => a.tipo === 'truco')).toBe(true);
   });
 
   test('por cadeira: só devolve ações da cadeira pedida', () => {
     const s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p');
     expect(acoesValidas(s, 1)).toEqual([]);
     expect(acoesValidas(s, 0)).toEqual(todasAcoesValidas(s));
-    const t = reduce(s, { tipo: 'truco', cadeira: 0 });
+    const r2 = jogarPrimeiraRodada(s, PRIMEIRA_RODADA_PAULISTA_DUPLA0);
+    expect(acoesValidas(r2, 1)).toEqual([]);
+    expect(acoesValidas(r2, 0)).toEqual(todasAcoesValidas(r2));
+    const t = reduce(r2, { tipo: 'truco', cadeira: 0 });
     expect(acoesValidas(t, 0)).toEqual([]);
     expect(acoesValidas(t, 3).every((a) => a.cadeira === 3)).toBe(true);
     expect(acoesValidas(t, 3).map((a) => a.tipo).sort()).toEqual(['aceitar', 'aumentar', 'correr']);

@@ -5,7 +5,18 @@ import type { Acao, Cadeira, EstadoPartida } from '../src/estado';
 import { proximaCadeira } from '../src/estado';
 import { ErroJogada, reduce } from '../src/reducer';
 import { embaralhar, mulberry32 } from '../src/rng';
-import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, baralhoCom, distribuida, jogarSeq, partida, ritualSorteado } from './helpers';
+import {
+  MAOS_DUPLA0_VENCE,
+  MINEIRO,
+  PAULISTA,
+  PRIMEIRA_RODADA_PAULISTA_DUPLA0,
+  baralhoCom,
+  distribuida,
+  jogarPrimeiraRodada,
+  jogarSeq,
+  partida,
+  ritualSorteado,
+} from './helpers';
 
 const seq = (s: EstadoPartida, acoes: Acao[]) => acoes.reduce(reduce, s);
 const RODADA_IDX0: [Cadeira, number][] = [[0, 0], [1, 0], [2, 0], [3, 0]];
@@ -54,7 +65,8 @@ describe('três rodadas empatadas', () => {
 });
 
 describe('correr de apostas altas (1-3-6-9-12)', () => {
-  const base = () => distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p');
+  // Truco só da 2ª rodada em diante: a dupla 0 vence a 1ª e a cadeira 0 tem a vez.
+  const base = () => jogarPrimeiraRodada(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'), PRIMEIRA_RODADA_PAULISTA_DUPLA0);
 
   test('correr do nove paga 6', () => {
     const s = seq(base(), [
@@ -79,9 +91,9 @@ describe('correr de apostas altas (1-3-6-9-12)', () => {
 });
 
 describe('depois de truco → seis aceito', () => {
-  // cad0 truca, cad1 pede seis, cad0 aceita: a aposta aceita é da dupla 1.
+  // Depois da 1ª rodada (vencida pela cadeira 0): cad0 truca, cad1 pede seis, cad0 aceita: a aposta aceita é da dupla 1.
   const aceito = () =>
-    seq(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'), [
+    seq(jogarPrimeiraRodada(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'), PRIMEIRA_RODADA_PAULISTA_DUPLA0), [
       { tipo: 'truco', cadeira: 0 },
       { tipo: 'aumentar', cadeira: 1 },
       { tipo: 'aceitar', cadeira: 0 },
@@ -111,8 +123,9 @@ describe('depois de truco → seis aceito', () => {
 });
 
 describe('rotação do pé', () => {
-  /** Encerra a mão: quem está na vez truca, o próximo corre. */
+  /** Encerra a mão: joga a 1ª rodada (truco só a partir da 2ª), quem está na vez truca, o próximo corre. */
   const encerrar = (s: EstadoPartida) => {
+    s = jogarPrimeiraRodada(s);
     const vez = s.mao!.vez;
     return seq(s, [
       { tipo: 'truco', cadeira: vez },
@@ -164,7 +177,8 @@ describe('reduce não muta a entrada', () => {
   });
 
   test('truco', () => {
-    intacto(distribuida(MINEIRO, MAOS_DUPLA0_VENCE), { tipo: 'truco', cadeira: 0 });
+    const s = jogarSeq(distribuida(MINEIRO, MAOS_DUPLA0_VENCE), RODADA_IDX0);
+    intacto(s, { tipo: 'truco', cadeira: s.mao!.vez });
   });
 
   test('família', () => {

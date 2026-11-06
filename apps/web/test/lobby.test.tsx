@@ -10,6 +10,8 @@ describe('Lobby', () => {
     const aoJogar = vi.fn();
     render(<Lobby aoJogar={aoJogar} />);
     await user.type(screen.getByLabelText('Apelido'), 'Ana');
+    // Trocar de variante põe as regras da ranqueada dela (mantém humanos, bots e sinais).
+    await user.selectOptions(screen.getByLabelText('Variante'), 'paulista');
     await user.selectOptions(screen.getByLabelText('Variante'), 'mineiro');
     expect(screen.getByLabelText('Pontuação')).toHaveValue('2-4-8-10-12');
     expect(screen.getByLabelText('Mão de 10')).toBeChecked();
@@ -24,8 +26,8 @@ describe('Lobby', () => {
       humanos: 2,
       nivelBot: 'dificil',
       regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada', maoLimpa: false },
-      chanceInterceptarSinal: 0,
-      chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|lim:0|int:0',
+      chanceInterceptarSinal: 0.25,
+      chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|lim:0|int:0.25',
       modo: 'desafio',
     });
     expect(localStorage.getItem(CHAVE_APELIDO)).toBe('Ana');
@@ -35,6 +37,7 @@ describe('Lobby', () => {
     const user = userEvent.setup();
     const aoJogar = vi.fn();
     render(<Lobby aoJogar={aoJogar} />);
+    await user.selectOptions(screen.getByLabelText('Variante'), 'paulista');
     await user.click(screen.getByLabelText('Mão de 10'));
     await user.selectOptions(screen.getByLabelText('Pontuação'), '2-4-8-10-12');
     await user.selectOptions(screen.getByLabelText('Família'), 'aberta');
@@ -50,6 +53,7 @@ describe('Lobby', () => {
     const user = userEvent.setup();
     const aoJogar = vi.fn();
     render(<Lobby aoJogar={aoJogar} />);
+    await user.selectOptions(screen.getByLabelText('Variante'), 'paulista');
     expect(screen.queryByLabelText(/Mão limpa/)).toBeNull();
     await user.selectOptions(screen.getByLabelText('Variante'), 'mineiro');
     const caixa = screen.getByRole('checkbox', { name: /Mão limpa/ });
@@ -69,15 +73,15 @@ describe('Lobby', () => {
     expect(screen.getByRole('checkbox', { name: /Mão limpa/ })).not.toBeChecked();
   });
 
-  test('interceptação de sinais: padrão "Nunca"; escolher manda a chance', async () => {
+  test('interceptação de sinais: padrão "Às vezes"; escolher manda a chance', async () => {
     const user = userEvent.setup();
     const aoJogar = vi.fn();
     render(<Lobby aoJogar={aoJogar} />);
     const campo = screen.getByLabelText('Adversários podem interceptar sinais');
-    expect(campo).toHaveDisplayValue('Nunca');
-    await user.selectOptions(campo, 'Às vezes');
+    expect(campo).toHaveDisplayValue('Às vezes');
+    await user.selectOptions(campo, 'Nunca');
     await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
-    expect(aoJogar.mock.calls[0][0]).toMatchObject({ chanceInterceptarSinal: 0.25, chaveRegras: expect.stringMatching(/\|int:0\.25$/) });
+    expect(aoJogar.mock.calls[0][0]).toMatchObject({ chanceInterceptarSinal: 0, chaveRegras: expect.stringMatching(/\|int:0$/) });
     await user.selectOptions(campo, 'Fácil');
     await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
     expect(aoJogar.mock.calls[1][0]).toMatchObject({ chanceInterceptarSinal: 0.5 });
@@ -98,9 +102,11 @@ describe('Lobby', () => {
     render(<Lobby aoJogar={vi.fn()} />);
     const resumo = screen.getByText('Regras da mesa').closest('summary')!;
     expect(resumo.closest('details')).not.toHaveAttribute('open');
-    expect(resumo).toHaveTextContent('Paulista, 1-3-6-9-12, mão de 11, sem família, 3 bots fáceis');
+    expect(resumo).toHaveTextContent(
+      'Mineiro, 1-3-6-9-12, mão de 10, mão de 11, família fechada, mão limpa, 3 bots difíceis, sinais interceptáveis',
+    );
     await user.selectOptions(screen.getByLabelText('Humanos'), '2');
-    expect(resumo).toHaveTextContent('2 bots fáceis');
+    expect(resumo).toHaveTextContent('2 bots difíceis');
   });
 
   test('mesa privada: chama aoCriarPrivada em vez de aoJogar', async () => {

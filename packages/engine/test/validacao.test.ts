@@ -2,7 +2,16 @@ import { describe, expect, test } from 'vitest';
 import { type Carta, novoBaralho } from '../src/cartas';
 import type { Acao } from '../src/estado';
 import { ErroJogada, ehAcaoJogador, reduce } from '../src/reducer';
-import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, distribuida, jogarSeq, partida } from './helpers';
+import {
+  MAOS_DUPLA0_VENCE,
+  MINEIRO,
+  PAULISTA,
+  PRIMEIRA_RODADA_PAULISTA_DUPLA0,
+  distribuida,
+  jogarPrimeiraRodada,
+  jogarSeq,
+  partida,
+} from './helpers';
 
 /** Simula uma mensagem crua de cliente, sem garantias de tipo. */
 const cru = (x: unknown) => x as Acao;
@@ -25,7 +34,9 @@ function erroDe(fn: () => unknown): unknown {
 
 describe('validação de ações em tempo de execução', () => {
   test('cadeira fora de 0..3 no aceitar com truco pendente → ErroJogada', () => {
-    const s = reduce(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'), { tipo: 'truco', cadeira: 0 });
+    const r2 = jogarPrimeiraRodada(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'), PRIMEIRA_RODADA_PAULISTA_DUPLA0);
+    const s = reduce(r2, { tipo: 'truco', cadeira: 0 });
+    expect(s.fase).toBe('respondendoTruco');
     expect(() => reduce(s, cru({ tipo: 'aceitar', cadeira: 5 }))).toThrow(ErroJogada);
   });
 

@@ -3,7 +3,15 @@ import { type Carta, idCarta } from '../src/cartas';
 import type { Cadeira } from '../src/estado';
 import { reduce } from '../src/reducer';
 import { visaoDoJogador } from '../src/visao';
-import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, distribuida, jogarSeq } from './helpers';
+import {
+  MAOS_DUPLA0_VENCE,
+  MINEIRO,
+  PAULISTA,
+  PRIMEIRA_RODADA_PAULISTA_DUPLA0,
+  distribuida,
+  jogarPrimeiraRodada,
+  jogarSeq,
+} from './helpers';
 
 const RODADA: [Cadeira, number][] = [[0, 0], [1, 0], [2, 0], [3, 0]];
 const ids = (r: { carta: Carta | null }[]) => r.map((j) => (j.carta ? idCarta(j.carta) : null));
@@ -35,12 +43,14 @@ describe('ultimaMao guarda a mão encerrada', () => {
   });
 
   test('correu no meio da rodada: guarda o que já foi jogado', () => {
-    let s = reduce(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'), { tipo: 'jogar', cadeira: 0, indice: 0 });
+    // Truco só a partir da 2ª rodada: a dupla 0 vence a 1ª (6o) e a cadeira 0 abre a 2ª.
+    let s = jogarPrimeiraRodada(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p'), PRIMEIRA_RODADA_PAULISTA_DUPLA0);
+    s = reduce(s, { tipo: 'jogar', cadeira: 0, indice: 0 });
     s = reduce(s, { tipo: 'truco', cadeira: 1 });
     s = reduce(s, { tipo: 'correr', cadeira: 2 });
     const u = s.ultimaMao!;
-    expect(u).toMatchObject({ vencedor: 1, pontos: 1, motivo: 'correu', rodadas: [] });
-    expect(u.rodadasJogadas.map(ids)).toEqual([['4p']]);
+    expect(u).toMatchObject({ vencedor: 1, pontos: 1, motivo: 'correu', rodadas: [0] });
+    expect(u.rodadasJogadas.map(ids)).toEqual([['6o', '3e', 'Qo', '2e'], ['4p']]);
     expect(idCarta(u.vira!)).toBe('5p');
   });
 

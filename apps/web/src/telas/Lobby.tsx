@@ -1,15 +1,19 @@
+import type { PreferenciasMesa } from '@truco/api';
 import type { Pontuacao, RegrasMesa, Variante } from '@truco/engine';
 import type { NivelBot } from '@truco/protocolo';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { FundoCartas } from '../componentes/FundoCartas';
 import {
   type FormLobby,
-  formPadrao,
+  formInicial,
   gravarApelido,
+  gravarPreferenciasLocais,
   lerApelido,
+  lerPreferenciasLocais,
   OPCOES_INTERCEPTACAO,
   type OpcoesEntrada,
   opcoesDeEntrada,
+  preferenciasDe,
   trocarVariante,
 } from '../logica/lobby';
 
@@ -17,13 +21,41 @@ interface Props {
   aoJogar: (o: OpcoesEntrada) => void;
   aoRanqueada?: () => void;
   aoCriarPrivada?: (o: OpcoesEntrada) => void;
+  /** Preferências salvas na conta: undefined = sem conta (ou ainda carregando), null = conta sem nada salvo. */
+  preferenciasConta?: PreferenciasMesa | null;
+  /** Grava na conta (só com login). Chamado pouco depois de cada mudança nas regras. */
+  aoSalvarNaConta?: (p: PreferenciasMesa) => void;
 }
 
-export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada }: Props) {
-  const [f, setF] = useState<FormLobby>(() => formPadrao('paulista', lerApelido()));
+/** Espera depois da última mudança antes de mandar para a conta. */
+const ESPERA_SALVAR_MS = 600;
+
+export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta, aoSalvarNaConta }: Props) {
+  const [f, setFCru] = useState<FormLobby>(() => formInicial(lerApelido(), lerPreferenciasLocais()));
+  // Só grava depois que a pessoa mexe: abrir a tela não sobrescreve o que está na conta.
+  const mexeu = useRef(false);
+  const setF: typeof setFCru = (v) => {
+    mexeu.current = true;
+    setFCru(v);
+  };
+  // As da conta chegam depois do primeiro render; valem se a pessoa ainda não mexeu em nada.
+  useEffect(() => {
+    if (preferenciasConta && !mexeu.current) setFCru((x) => ({ ...formInicial(x.nome, preferenciasConta), privada: x.privada }));
+  }, [preferenciasConta]);
+  const prefs = preferenciasDe(f);
+  const chavePrefs = JSON.stringify(prefs);
+  useEffect(() => {
+    if (!mexeu.current) return;
+    gravarPreferenciasLocais(prefs);
+    if (!aoSalvarNaConta) return;
+    const t = setTimeout(() => aoSalvarNaConta(prefs), ESPERA_SALVAR_MS);
+    return () => clearTimeout(t);
+    // a chave resume `prefs`; o callback pode mudar a cada render da App
+  }, [chavePrefs]);
   // Regras abertas de cara só em tela larga; no celular o "Jogar agora" fica na primeira dobra.
   const [regrasAbertas, setRegrasAbertas] = useState(() => window.matchMedia?.('(min-width: 900px)').matches ?? false);
-  const mudar = <K extends keyof FormLobby>(k: K, v: FormLobby[K]) => setF((x) => ({ ...x, [k]: v }));
+  // O apelido não conta como mexer nas regras (não impede as da conta de chegarem).
+  const mudar = <K extends keyof FormLobby>(k: K, v: FormLobby[K]) => (k === 'nome' ? setFCru : setF)((x) => ({ ...x, [k]: v }));
 
   const enviar = (e: FormEvent) => {
     e.preventDefault();
@@ -148,6 +180,9 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada }: Props) {
               </label>
             )}
           </div>
+          <p className="regras-salvas">
+            {aoSalvarNaConta ? 'Estas regras ficam salvas na sua conta.' : 'Estas regras ficam salvas neste aparelho. Entre na conta para levar para qualquer lugar.'}
+          </p>
         </details>
       </form>
     </main>

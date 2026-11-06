@@ -69,6 +69,24 @@ export function jogarSeq(s: EstadoPartida, seq: [Cadeira, number][]): EstadoPart
 }
 
 /**
+ * Joga a 1ª rodada inteira (4 cartas, a partir de quem está na vez) — truco só vale da 2ª rodada em diante.
+ * `indices[cadeira]` = índice da carta que cada cadeira joga (padrão: 0 para todas).
+ */
+export function jogarPrimeiraRodada(s: EstadoPartida, indices: readonly number[] = [0, 0, 0, 0]): EstadoPartida {
+  for (let k = 0; k < 4; k++) {
+    const cadeira = s.mao!.vez;
+    s = reduce(s, { tipo: 'jogar', cadeira, indice: indices[cadeira] });
+  }
+  return s;
+}
+
+/**
+ * Paulista, vira '5p', MAOS_DUPLA0_VENCE: a cadeira 0 joga o 6o (manilha) e vence a 1ª rodada,
+ * então volta a ter a vez na 2ª.
+ */
+export const PRIMEIRA_RODADA_PAULISTA_DUPLA0: readonly number[] = [2, 0, 0, 0];
+
+/**
  * No mineiro a dupla 0 vence as duas primeiras rodadas jogando sempre o índice 0
  * (R1: zap 4p; R2: Jo da cadeira 2). No paulista use vira '5p' (manilha 6).
  */

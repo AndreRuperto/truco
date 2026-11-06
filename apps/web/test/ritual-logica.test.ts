@@ -1,7 +1,7 @@
 import { reduce, visaoDoJogador } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
 import { donoDoMonte, mostrarResumoMao, passosDistribuicao, textoEtapa, textoFamilia } from '../src/logica/ritual';
-import { distribuida, MINEIRO, noRitual } from './fixtures';
+import { distribuida, MINEIRO, naSegundaRodada, noRitual } from './fixtures';
 
 const nome = (c: number) => ['Ana', 'Zé', 'Tião', 'Dita'][c];
 
@@ -75,8 +75,10 @@ describe('passosDistribuicao', () => {
 
 describe('mostrarResumoMao', () => {
   test('o resumo da mão fica até o pé novo embaralhar a 1ª vez', () => {
-    let s = distribuida(MINEIRO);
-    s = reduce(reduce(s, { tipo: 'truco', cadeira: 0 }), { tipo: 'correr', cadeira: 1 });
+    // Truco só da 2ª rodada em diante: no mineiro padrão o zap da cadeira 3 leva a 1ª e ela truca.
+    let s = naSegundaRodada(distribuida(MINEIRO));
+    expect(s.mao!.vez).toBe(3);
+    s = reduce(reduce(s, { tipo: 'truco', cadeira: 3 }), { tipo: 'correr', cadeira: 0 });
     expect(mostrarResumoMao(visaoDoJogador(s, 0))).toBe(true);
     const e = reduce(s, { tipo: 'embaralhar', cadeira: s.pe, bits: s.monte.map(() => 0 as const) });
     expect(mostrarResumoMao(visaoDoJogador(e, 0))).toBe(false);

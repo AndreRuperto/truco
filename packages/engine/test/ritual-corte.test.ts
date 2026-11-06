@@ -3,7 +3,7 @@ import { type Carta, idCarta, novoBaralho } from '../src/cartas';
 import { ErroJogada, reduce } from '../src/reducer';
 import type { RegrasMesa } from '../src/regras';
 import type { ModoDistribuicao } from '../src/ritual';
-import { MINEIRO, PAULISTA, partida } from './helpers';
+import { MINEIRO, PAULISTA, jogarPrimeiraRodada, partida } from './helpers';
 
 const ids = (cs: readonly Carta[]) => cs.map(idCarta);
 const B = novoBaralho().map(idCarta);
@@ -33,10 +33,14 @@ describe('abrir 3', () => {
   });
 
   test('no fim da mão as abertas voltam ao monte depois das mãos', () => {
-    let s = dar(MINEIRO, 'abrir3');
-    s = reduce(s, { tipo: 'truco', cadeira: 0 });
-    s = reduce(s, { tipo: 'correr', cadeira: 1 });
-    expect(ids(s.monte)).toEqual([...B.slice(3, 15), ...B.slice(0, 3), ...B.slice(15)]);
+    // Truco só a partir da 2ª rodada: a 1ª rodada (índice 0, da cadeira 0 à 3) vem antes das mãos.
+    let s = jogarPrimeiraRodada(dar(MINEIRO, 'abrir3'));
+    const vez = s.mao!.vez;
+    s = reduce(s, { tipo: 'truco', cadeira: vez });
+    s = reduce(s, { tipo: 'correr', cadeira: ((vez + 1) % 4) as 0 | 1 | 2 | 3 });
+    const rodada1 = [B[3], B[6], B[9], B[12]];
+    const maos = [B[4], B[5], B[7], B[8], B[10], B[11], B[13], B[14]];
+    expect(ids(s.monte)).toEqual([...rodada1, ...maos, ...B.slice(0, 3), ...B.slice(15)]);
   });
 });
 

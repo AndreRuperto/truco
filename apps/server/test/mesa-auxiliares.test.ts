@@ -38,7 +38,11 @@ describe('jogadaAutomatica', () => {
     expect(jogadaAutomatica(s, 3)).toEqual({ tipo: 'jogar', cadeira: 3, indice: 1 });
   });
   test('corre do truco e da mão de 10', () => {
-    expect(jogadaAutomatica(reduce(inicio(), { tipo: 'truco', cadeira: 0 }), 1)).toEqual({ tipo: 'correr', cadeira: 1 });
+    // Truco só a partir da 2ª rodada: na 1ª (4o, 4e, 4c, 4p) o zap da cadeira 3 vence e ela truca.
+    let s = inicio();
+    for (const cadeira of [0, 1, 2, 3] as const) s = reduce(s, { tipo: 'jogar', cadeira, indice: 0 });
+    expect(s.mao!.vez).toBe(3);
+    expect(jogadaAutomatica(reduce(s, { tipo: 'truco', cadeira: 3 }), 0)).toEqual({ tipo: 'correr', cadeira: 0 });
     expect(jogadaAutomatica(inicio([4, 10]), 3)).toEqual({ tipo: 'mao10', cadeira: 3, jogar: false });
   });
 });

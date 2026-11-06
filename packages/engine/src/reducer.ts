@@ -369,6 +369,7 @@ function pedirTruco(s: EstadoPartida, cadeira: Cadeira): void {
   if (s.fase !== 'jogando') falha('não é hora de trucar');
   if (m.vez !== cadeira) falha('só pode trucar na sua vez');
   if (m.tipo !== 'normal') falha('não se truca nesta mão');
+  if (m.rodadas.length === 0) falha('truco só a partir da 2ª rodada');
   // Pontos de família no meio da mão podem ter levado o placar a 10/11: aí não se truca mais.
   if (tipoDaMao(s) !== 'normal') falha('não se truca nesta mão');
   const dupla = duplaDe(cadeira);

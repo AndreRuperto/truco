@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 import { Mesa, type OpcoesMesa } from '../src/mesa/Mesa';
 import type { MsgEstado } from '../src/mesa/protocolo';
 
-export const TEMPOS = { jogadaMs: 1_000, botMs: 10, pausaMaoMs: 20, intervaloMensagemMs: 100, ritualMs: 1_000, conferirMs: 500, janelaFamiliaMs: 30 };
+export const TEMPOS = { jogadaMs: 1_000, botMs: 10, pausaMaoMs: 20, intervaloMensagemMs: 100, ritualMs: 1_000, conferirMs: 500, janelaFamiliaMs: 30, distribuicaoMs: 30 };
 
 /** Regras padrão dos testes da Mesa: mineiro ranqueado sem família (família tem testes próprios). */
 export const MINEIRO_SEM_FAMILIA = { ...REGRAS_RANQUEADA.mineiro, familia: 'off' as const };

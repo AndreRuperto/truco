@@ -18,10 +18,12 @@ function mesaComParceiroBot() {
   return t;
 }
 
-/** Espera a vez de `c` e pede truco contra a dupla de `a`. */
+/** Espera a vez de `c` (da 2ª rodada em diante: truco não vale na 1ª) e pede truco contra a dupla de `a`. */
 function cTruca() {
   const t = mesaComParceiroBot();
-  avancarAte(() => t.mesa.partida?.fase === 'jogando' && t.mesa.partida.mao!.vez === 1);
+  avancarAte(
+    () => t.mesa.partida?.fase === 'jogando' && t.mesa.partida.mao!.vez === 1 && t.mesa.partida.mao!.rodadas.length >= 1,
+  );
   t.mesa.acao('c', { tipo: 'truco' });
   expect(t.mesa.partida!.fase).toBe('respondendoTruco');
   expect(t.estado('a')!.prazo!.cadeiras).toEqual([0]);

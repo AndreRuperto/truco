@@ -2726,3 +2726,17 @@ button:disabled {
   font-family: var(--fonte-giz);
   font-size: var(--t1);
 }
+
+/* Distribuição: as cartas de quem ainda não recebeu ficam escondidas até o voo chegar (ver animacaoMesa). */
+.tela-mesa[data-dando~='baixo'] [data-testid='minha-mao'] .carta,
+.tela-mesa[data-dando~='cima'] [data-testid='assento-cima'] .assento-cartas,
+.tela-mesa[data-dando~='esquerda'] [data-testid='assento-esquerda'] .assento-cartas,
+.tela-mesa[data-dando~='direita'] [data-testid='assento-direita'] .assento-cartas {
+  visibility: hidden;
+}
+
+.regras-salvas {
+  margin: var(--e3) 0 0;
+  color: var(--form-tinta-suave, var(--tinta-suave));
+  font-size: var(--t-1);
+}

@@ -394,9 +394,11 @@ export function useAnimacaoJogadas(exibicao: Exibicao, minha: Cadeira, centro: R
 
 export const DUR_RIFFLE = 560;
 export const DUR_CORTE = 480;
-export const DUR_DADA = 320;
-/** Intervalo entre um voo e o próximo na distribuição. */
-export const PASSO_DADA = 85;
+export const DUR_DADA = 650;
+/** Intervalo entre um voo e o próximo na distribuição (leva de 3 cartas). */
+export const PASSO_DADA = 380;
+/** Intervalo entre voos de uma carta só (dar "subindo"): 12 voos, mais curtos. */
+export const PASSO_DADA_UMA = 240;
 const DUR_ENTRADA = 380;
 /** Quanto esperar o `estado` (que chega depois da mensagem `acao`) montar o alvo. */
 const ESPERA_ESTADO = 900;
@@ -419,6 +421,7 @@ class AnimadorRitual {
   private vivas = new Set<Animation>();
   private nos = new Set<Element>();
   private timers = new Set<ReturnType<typeof setTimeout>>();
+  private mesaDando: HTMLElement | null = null;
 
   constructor(private camada: HTMLElement) {}
 
@@ -632,9 +635,17 @@ class AnimadorRitual {
   }
 
   /** Cartas saindo do monte (do topo ou do fundo) para cada destino, uma leva por vez. */
-  dar(monte: HTMLElement, dono: Posicao, passos: { para: DOMRect | null; qtd: number; deBaixo: boolean }[]) {
-    this.marcar(monte, 'distribuir', passos.length * PASSO_DADA + DUR_DADA);
+  dar(monte: HTMLElement, dono: Posicao, passos: { para: DOMRect | null; qtd: number; deBaixo: boolean; pos?: Posicao }[]) {
+    const inicio = passos.map((p, i) => passos.slice(0, i).reduce((t, q) => t + (q.qtd === 1 ? PASSO_DADA_UMA : PASSO_DADA), 0));
+    const total = (inicio.at(-1) ?? 0) + DUR_DADA;
+    this.marcar(monte, 'distribuir', total);
     if (!podeAnimar(this.camada)) return;
+    // As cartas de verdade (que chegam pelo estado) ficam escondidas até o último voo chegar ao lugar delas.
+    const chegada = new Map<Posicao, number>();
+    passos.forEach((p, i) => {
+      if (p.pos) chegada.set(p.pos, inicio[i] + DUR_DADA * 0.85);
+    });
+    this.esconderAte(chegada);
     const r = monte.getBoundingClientRect();
     if (passos.length > 1)
       this.maoNoMonte(
@@ -644,7 +655,7 @@ class AnimadorRitual {
       );
     passos.forEach((p, i) => {
       const para = p.para;
-      if (para) this.depois(i * PASSO_DADA, () => this.voo(r, para, p.qtd, p.deBaixo, (i % 2 ? 1 : -1) * 12));
+      if (para) this.depois(inicio[i], () => this.voo(r, para, p.qtd, p.deBaixo, (i % 2 ? 1 : -1) * 12));
     });
   }
 
@@ -750,7 +761,7 @@ class AnimadorRitual {
           this.dar(
             monte,
             pos,
-            passosDistribuicao(a, minha).map((p) => ({ para: retDestino(p.pos), qtd: p.qtd, deBaixo: p.deBaixo })),
+            passosDistribuicao(a, minha).map((p) => ({ para: retDestino(p.pos), qtd: p.qtd, deBaixo: p.deBaixo, pos: p.pos })),
           );
         break;
       case 'familia':
@@ -764,7 +775,26 @@ class AnimadorRitual {
     }
   }
 
+  /** Marca a mesa com `data-dando` (as posições cujas cartas ainda estão voando) e tira cada uma na hora. */
+  private esconderAte(chegada: Map<Posicao, number>) {
+    const mesa = this.camada.closest<HTMLElement>('.tela-mesa');
+    if (!mesa || chegada.size === 0) return;
+    this.mesaDando = mesa;
+    const pendentes = new Set(chegada.keys());
+    const escrever = () => {
+      if (pendentes.size) mesa.dataset.dando = [...pendentes].join(' ');
+      else delete mesa.dataset.dando;
+    };
+    escrever();
+    for (const [pos, ms] of chegada)
+      this.depois(ms, () => {
+        pendentes.delete(pos);
+        escrever();
+      });
+  }
+
   limpar() {
+    if (this.mesaDando) delete this.mesaDando.dataset.dando;
     for (const a of Array.from(this.vivas)) a.cancel();
     for (const t of this.timers) clearTimeout(t);
     for (const n of this.nos) n.remove();

@@ -53,6 +53,16 @@ export function jogar(s: EstadoPartida, seq: [Cadeira, number][]): EstadoPartida
   return seq.reduce((acc, [cadeira, indice]) => reduce(acc, { tipo: 'jogar', cadeira, indice }), s);
 }
 
+/**
+ * Joga a 1ª rodada inteira (índice 0, a partir de quem está na vez): truco só vale da 2ª rodada em diante.
+ * Com o `novoBaralho()` padrão: no paulista os quatro 4 cangam e a cadeira 0 volta a ter a vez;
+ * no mineiro o zap da cadeira 3 leva a rodada e a vez é dela.
+ */
+export function naSegundaRodada(s: EstadoPartida): EstadoPartida {
+  for (let k = 0; k < 4; k++) s = reduce(s, { tipo: 'jogar', cadeira: s.mao!.vez, indice: 0 });
+  return s;
+}
+
 export const CADEIRAS_PADRAO: InfoCadeira[] = [
   { tipo: 'humano', nome: 'Ana', conectado: true },
   { tipo: 'bot', nome: 'Bot Zé', conectado: true },

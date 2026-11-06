@@ -15,6 +15,8 @@ import {
   entrarComEmail,
   entrarComGoogle,
   ErroGoogleOutraConta,
+  gravarPreferencias,
+  lerPreferencias,
   normalizarEmail,
   trocarApelido,
   type Usuario,
@@ -100,6 +102,20 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (r === 'invalido') return void res.status(400).json({ erro: 'o apelido precisa ter de 3 a 20 caracteres' });
     if (r === 'em-uso') return void res.status(409).json({ erro: 'esse apelido já tem dono' });
     res.json({ usuario: await usuarioPorId(s.banco, u.id) });
+  });
+
+  api.get('/preferencias', async (req, res) => {
+    const u = await usuarioDe(req);
+    if (!u) return void res.status(401).json({ erro: 'entre na sua conta' });
+    res.json({ preferencias: await lerPreferencias(s.banco, u.id) });
+  });
+
+  api.put('/preferencias', async (req, res) => {
+    const u = await usuarioDe(req);
+    if (!u) return void res.status(401).json({ erro: 'entre na sua conta' });
+    const p = await gravarPreferencias(s.banco, u.id, req.body?.preferencias);
+    if (!p) return void res.status(400).json({ erro: 'preferências inválidas' });
+    res.json({ preferencias: p });
   });
 
   api.post('/auth/link', async (req, res) => {

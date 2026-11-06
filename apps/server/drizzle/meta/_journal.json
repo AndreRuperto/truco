@@ -15,6 +15,13 @@
       "when": 1793899376954,
       "tag": "0001_apelido_sem_caixa",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793959913308,
+      "tag": "0002_preferencias",
+      "breakpoints": true
     }
   ]
 }

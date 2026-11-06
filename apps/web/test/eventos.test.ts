@@ -1,11 +1,11 @@
 import { reduce, visaoDoJogador } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
 import { baloesAtivos, type Evento, FALA_TEXTO, textoDaAcao } from '../src/logica/eventos';
-import { distribuida, jogar, PAULISTA } from './fixtures';
+import { distribuida, jogar, naSegundaRodada, PAULISTA } from './fixtures';
 
 describe('texto dos balões de ação', () => {
   test('truco e aumento usam o nível do estado anterior', () => {
-    const s = distribuida(PAULISTA);
+    const s = naSegundaRodada(distribuida(PAULISTA)); // truco só da 2ª rodada em diante
     expect(textoDaAcao({ cadeira: 0, tipo: 'truco' }, visaoDoJogador(s, 1))).toBe('TRUCO!');
     const pendente = reduce(s, { tipo: 'truco', cadeira: 0 });
     expect(textoDaAcao({ cadeira: 1, tipo: 'aumentar' }, visaoDoJogador(pendente, 0))).toBe('SEIS!');

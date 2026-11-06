@@ -132,10 +132,11 @@ describe('recolhimento', () => {
   });
 
   test('quem correu: a rodada incompleta vem antes das mãos', () => {
-    let s = jogarSeq(distribuida(MINEIRO, MAOS_DUPLA0_VENCE), [[0, 0]]);
+    // Truco só a partir da 2ª rodada: 1ª rodada completa, uma carta da 2ª, e a cadeira 1 truca.
+    let s = jogarSeq(distribuida(MINEIRO, MAOS_DUPLA0_VENCE), [[0, 0], [1, 0], [2, 0], [3, 0], [0, 0]]);
     s = reduce(s, { tipo: 'truco', cadeira: 1 });
     s = reduce(s, { tipo: 'correr', cadeira: 0 });
-    expect(ids(s.monte).slice(0, 12)).toEqual(['4p', '5o', '6o', '3e', '5e', '6e', 'Qo', 'Jo', 'Ko', '2e', '5c', '6c']);
+    expect(ids(s.monte).slice(0, 12)).toEqual(['4p', '3e', 'Qo', '2e', '5o', '6o', '5e', '6e', 'Jo', 'Ko', '5c', '6c']);
     expect(cartasDaPartida(s)).toHaveLength(40);
   });
 });

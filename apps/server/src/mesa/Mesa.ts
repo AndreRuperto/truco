@@ -69,6 +69,8 @@ export interface Tempos {
   conferirMs: number;
   /** Quanto o bot da vez espera antes da 1ª carta quando a família está ligada. */
   janelaFamiliaMs: number;
+  /** Quanto o bot da vez espera antes da 1ª carta: dá tempo de a animação da distribuição terminar. */
+  distribuicaoMs: number;
 }
 
 export const TEMPOS_PADRAO: Tempos = {
@@ -79,6 +81,7 @@ export const TEMPOS_PADRAO: Tempos = {
   ritualMs: 12_000,
   conferirMs: 6_000,
   janelaFamiliaMs: 2_500,
+  distribuicaoMs: 3_600,
 };
 
 export interface OpcoesMesa {
@@ -509,7 +512,9 @@ export class Mesa {
   private atrasoBot(s: EstadoPartida): number {
     if (this.inicioDeMaoNova(s)) return this.tempos.pausaMaoMs;
     // A vez espera a janela de família: dá tempo de alguém (humano) pedir antes da 1ª carta.
-    if (janelaDeFamilia(s)) return Math.max(this.tempos.botMs, this.tempos.janelaFamiliaMs);
+    if (janelaDeFamilia(s)) return Math.max(this.tempos.botMs, this.tempos.janelaFamiliaMs, this.tempos.distribuicaoMs);
+    // Cartas acabaram de ser dadas: espera a distribuição (animada no cliente) chegar às mãos.
+    if (acabouDeDar(s)) return Math.max(this.tempos.botMs, this.tempos.distribuicaoMs);
     return this.tempos.botMs;
   }
 
@@ -711,4 +716,10 @@ export class Mesa {
     for (const cancelar of this.cancelamentos) cancelar();
     this.cancelamentos = [];
   }
+}
+
+/** Mão recém-distribuída: ninguém jogou, pediu truco nem família ainda. */
+function acabouDeDar(s: EstadoPartida): boolean {
+  const m = s.mao;
+  return s.fase === 'jogando' && !!m && m.rodadas.length === 0 && m.mesa.length === 0 && m.nivel === 0 && m.familias.length === 0;
 }

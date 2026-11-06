@@ -5,7 +5,7 @@ import type { Evento } from '../src/logica/eventos';
 import type { EstadoLoja } from '../src/rede/loja';
 import { TelaMesa } from '../src/telas/Mesa';
 import { reduce } from '@truco/engine';
-import { distribuida, jogar, MINEIRO, msgEstado, noRitual, PAULISTA } from './fixtures';
+import { distribuida, jogar, MINEIRO, msgEstado, naSegundaRodada, noRitual, PAULISTA } from './fixtures';
 
 const acoesFalsas = () => ({ enviarAcao: vi.fn(), enviarSinal: vi.fn(), enviarFala: vi.fn(), sair: vi.fn() });
 const snap = (msg: EstadoLoja['msg'], eventos: Evento[] = []): EstadoLoja => ({ status: 'na-mesa', msg, eventos, erro: null, chat: [], salaId: 'r1' });
@@ -23,12 +23,16 @@ describe('TelaMesa', () => {
   test('mostra placar, valor da mão e minha mão; clicar joga a carta', async () => {
     const user = userEvent.setup();
     const acoes = acoesFalsas();
-    render(<TelaMesa snap={snap(msgEstado(distribuida(PAULISTA)))} acoes={acoes} />);
+    const s = distribuida(PAULISTA);
+    const { rerender } = render(<TelaMesa snap={snap(msgEstado(s))} acoes={acoes} />);
     expect(screen.getByRole('group', { name: 'Placar: Nós 0, Eles 0, mão vale 1' })).toHaveTextContent('Mão vale 1');
     const mao = screen.getByTestId('minha-mao');
     expect(within(mao).getAllByRole('button', { name: /de ouros$/ })).toHaveLength(3);
     await user.click(screen.getByRole('button', { name: '4 de ouros' }));
     expect(acoes.enviarAcao).toHaveBeenCalledWith({ tipo: 'jogar', cadeira: 0, indice: 0 });
+    // Truco só da 2ª rodada em diante.
+    expect(screen.queryByRole('button', { name: 'Truco!' })).toBeNull();
+    rerender(<TelaMesa snap={snap(msgEstado(naSegundaRodada(s)))} acoes={acoes} />);
     await user.click(screen.getByRole('button', { name: 'Truco!' }));
     expect(acoes.enviarAcao).toHaveBeenLastCalledWith({ tipo: 'truco', cadeira: 0 });
   });
@@ -43,7 +47,7 @@ describe('TelaMesa', () => {
   });
 
   test('vez: na resposta a truco marca a minha dupla inteira, mesmo com prazo só meu', () => {
-    const s = reduce(jogar(distribuida(PAULISTA), [[0, 0]]), { tipo: 'truco', cadeira: 1 });
+    const s = reduce(jogar(naSegundaRodada(distribuida(PAULISTA)), [[0, 0]]), { tipo: 'truco', cadeira: 1 });
     const msg = msgEstado(s, 0, { prazo: { cadeiras: [0], ate: Date.now() + 20_000 } });
     render(<TelaMesa snap={snap(msg)} acoes={acoesFalsas()} />);
     expect(screen.getByTestId('assento-baixo')).toHaveClass('da-vez');
@@ -68,7 +72,7 @@ describe('TelaMesa', () => {
   });
 
   test('com prazo meu e do parceiro: barra grande para mim e pequeno no assento dele', () => {
-    const s = reduce(jogar(distribuida(PAULISTA), [[0, 0]]), { tipo: 'truco', cadeira: 1 });
+    const s = reduce(jogar(naSegundaRodada(distribuida(PAULISTA)), [[0, 0]]), { tipo: 'truco', cadeira: 1 });
     const cadeiras = [
       { tipo: 'humano' as const, nome: 'Ana', conectado: true },
       { tipo: 'bot' as const, nome: 'Bot Zé', conectado: true },
@@ -242,7 +246,7 @@ describe('TelaMesa no ritual e na família', () => {
   });
 
   test('entre mãos: o resumo fica até o pé novo embaralhar', () => {
-    let s = distribuida(PAULISTA);
+    let s = naSegundaRodada(distribuida(PAULISTA)); // truco só da 2ª rodada em diante
     s = reduce(reduce(s, { tipo: 'truco', cadeira: 0 }), { tipo: 'correr', cadeira: 1 });
     const { rerender } = render(<TelaMesa snap={snap(msgEstado(s, 0))} acoes={acoesFalsas()} />);
     expect(screen.getByTestId('fim-mao')).toBeInTheDocument();

@@ -9,9 +9,10 @@ import {
   textoPedidoPendente,
   valorMao,
 } from '../src/logica/textos';
-import { distribuida, jogar, MINEIRO, PAULISTA } from './fixtures';
+import { distribuida, jogar, MINEIRO, naSegundaRodada, PAULISTA } from './fixtures';
 
-const trucado = () => reduce(distribuida(PAULISTA), { tipo: 'truco', cadeira: 0 });
+/** Truco só da 2ª rodada em diante (paulista padrão: a 1ª canga e a cadeira 0 volta a ter a vez). */
+const trucado = () => reduce(naSegundaRodada(distribuida(PAULISTA)), { tipo: 'truco', cadeira: 0 });
 
 describe('pedido e valor da mão', () => {
   test('nomes por nível', () => {

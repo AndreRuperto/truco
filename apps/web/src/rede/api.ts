@@ -1,5 +1,5 @@
 import type { Variante } from '@truco/engine';
-import type { ConfigApi, ItemHistorico, LinhaRanking, PerfilApi, SalaAberta, UsuarioApi } from '@truco/api';
+import type { ConfigApi, ItemHistorico, LinhaRanking, PerfilApi, PreferenciasMesa, SalaAberta, UsuarioApi } from '@truco/api';
 
 export class ErroApi extends Error {
   constructor(
@@ -48,6 +48,9 @@ export function criarApi(f: typeof fetch = (...a) => fetch(...a), base = '', aoN
     historico: () => pedir<{ partidas: ItemHistorico[] }>('GET', '/api/historico', undefined, true),
     ranking: (v: Variante) => pedir<{ linhas: LinhaRanking[] }>('GET', `/api/ranking/${v}`),
     salas: () => pedir<{ salas: SalaAberta[] }>('GET', '/api/salas'),
+    preferencias: () => pedir<{ preferencias: PreferenciasMesa | null }>('GET', '/api/preferencias', undefined, true),
+    salvarPreferencias: (preferencias: PreferenciasMesa) =>
+      pedir<{ preferencias: PreferenciasMesa }>('PUT', '/api/preferencias', { preferencias }, true),
   };
 }
 

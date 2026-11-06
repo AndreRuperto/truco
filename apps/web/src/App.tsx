@@ -1,5 +1,5 @@
-import type { UsuarioApi } from '@truco/api';
-import { Fragment, useCallback, useEffect } from 'react';
+import type { PreferenciasMesa, UsuarioApi } from '@truco/api';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Cabecalho } from './componentes/Cabecalho';
 import { Toast } from './componentes/Toast';
 import { lerApelido } from './logica/lobby';
@@ -60,6 +60,25 @@ export function App() {
   const ses = useSessao(sessao);
   const rota = useRota();
   const fila = useFila(lojaFila);
+  // Regras da tela inicial guardadas na conta: undefined = sem conta ou carregando.
+  const [prefsConta, setPrefsConta] = useState<PreferenciasMesa | null | undefined>(undefined);
+  const idUsuario = ses.usuario?.id;
+  useEffect(() => {
+    setPrefsConta(undefined);
+    if (idUsuario === undefined) return;
+    let vivo = true;
+    api
+      .preferencias()
+      .then((r) => vivo && setPrefsConta(r.preferencias))
+      .catch(() => vivo && setPrefsConta(null));
+    return () => {
+      vivo = false;
+    };
+  }, [idUsuario]);
+  const salvarPrefs = useCallback((p: PreferenciasMesa) => {
+    // Falhar ao salvar não atrapalha o jogo: o aparelho já guardou uma cópia.
+    api.salvarPreferencias(p).catch(() => {});
+  }, []);
   const nomePadrao = () => ses.usuario?.apelido ?? (lerApelido() || 'Jogador');
 
   useEffect(() => {
@@ -162,6 +181,8 @@ export function App() {
               void criarMesaPrivada(loja, o);
             }}
             aoRanqueada={() => navegar(ses.usuario ? { tela: 'fila' } : { tela: 'entrar', token: null })}
+            preferenciasConta={ses.usuario ? prefsConta : undefined}
+            aoSalvarNaConta={ses.usuario ? salvarPrefs : undefined}
           />
         );
     }

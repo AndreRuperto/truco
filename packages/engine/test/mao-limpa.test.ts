@@ -7,7 +7,7 @@ import { ErroJogada, reduce } from '../src/reducer';
 import { REGRAS_RANQUEADA } from '../src/regras';
 import { embaralhar, mulberry32 } from '../src/rng';
 import { visaoDoJogador } from '../src/visao';
-import { MINEIRO, MINEIRO_LIMPA, PAULISTA, c, distribuida, jogarSeq, partida } from './helpers';
+import { MINEIRO, MINEIRO_LIMPA, PAULISTA, c, distribuida, jogarPrimeiraRodada, jogarSeq, partida } from './helpers';
 
 const ESPERADO_LIMPA = [
   ...['Q', 'J', 'K', 'A', '2', '3'].flatMap((v) => ['o', 'e', 'c', 'p'].map((n) => `${v}${n}`)),
@@ -99,10 +99,14 @@ describe('coringa em jogo', () => {
   });
 
   test('botFacil corre de truco só com coringa e aceita com manilha', () => {
-    const s = reduce(
-      distribuida(MINEIRO_LIMPA, [['3e', 'Qe', 'Je'], ['Cc', 'Cp', '3o'], ['Qo', 'Jo', 'Ko'], ['7o', 'Qc', 'Jc']]),
-      { tipo: 'truco', cadeira: 0 },
+    // Truco só a partir da 2ª rodada: 1ª rodada 3e, Qe, Qo, Qc → a cadeira 0 vence e truca;
+    // a cadeira 1 fica só com os coringas e a 3 guarda o 7o (manilha).
+    const r2 = jogarPrimeiraRodada(
+      distribuida(MINEIRO_LIMPA, [['3e', 'Ke', 'Je'], ['Cc', 'Cp', 'Qe'], ['Qo', 'Jo', 'Ko'], ['7o', 'Qc', 'Jc']]),
+      [0, 2, 0, 1],
     );
+    expect(r2.mao!.vez).toBe(0);
+    const s = reduce(r2, { tipo: 'truco', cadeira: 0 });
     expect(botFacil(s, 1)).toEqual({ tipo: 'correr', cadeira: 1 });
     expect(botFacil(s, 3)).toEqual({ tipo: 'aceitar', cadeira: 3 });
   });

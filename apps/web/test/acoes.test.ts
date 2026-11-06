@@ -1,21 +1,23 @@
 import { acoesValidas, type Cadeira, type EstadoPartida, reduce, visaoDoJogador } from '@truco/engine';
 import { describe, expect, test } from 'vitest';
 import { agruparAcoes } from '../src/logica/acoes';
-import { distribuida, jogar, MINEIRO, noRitual, PAULISTA } from './fixtures';
+import { distribuida, jogar, MINEIRO, naSegundaRodada, noRitual, PAULISTA } from './fixtures';
 
 const ui = (s: EstadoPartida, c: Cadeira) => agruparAcoes(acoesValidas(s, c), visaoDoJogador(s, c));
 const rotulos = (s: EstadoPartida, c: Cadeira) => ui(s, c).botoes.map((b) => b.rotulo);
 
 describe('agruparAcoes', () => {
-  test('início da mão: jogar as 3 abertas e trucar', () => {
+  test('início da mão: jogar as 3 abertas, sem truco (só da 2ª rodada em diante)', () => {
     const s = distribuida(PAULISTA);
-    expect(ui(s, 0)).toMatchObject({ jogaveis: [0, 1, 2], cobriveis: [] });
-    expect(ui(s, 0).botoes).toEqual([{ chave: 'truco', rotulo: 'Truco!', acao: { tipo: 'truco', cadeira: 0 }, tom: 'principal' }]);
+    expect(ui(s, 0)).toEqual({ jogaveis: [0, 1, 2], cobriveis: [], botoes: [] });
     expect(ui(s, 1)).toEqual({ jogaveis: [], cobriveis: [], botoes: [] });
+    const r2 = naSegundaRodada(s);
+    expect(ui(r2, 0).botoes).toEqual([{ chave: 'truco', rotulo: 'Truco!', acao: { tipo: 'truco', cadeira: 0 }, tom: 'principal' }]);
+    expect(ui(r2, 1)).toEqual({ jogaveis: [], cobriveis: [], botoes: [] });
   });
 
   test('respondendo truco: Aceitar, Seis!, Correr — nessa ordem', () => {
-    const s = reduce(distribuida(PAULISTA), { tipo: 'truco', cadeira: 0 });
+    const s = reduce(naSegundaRodada(distribuida(PAULISTA)), { tipo: 'truco', cadeira: 0 });
     expect(rotulos(s, 1)).toEqual(['Aceitar', 'Seis!', 'Correr']);
     expect(rotulos(s, 3)).toEqual(['Aceitar', 'Seis!', 'Correr']);
     expect(ui(s, 1).jogaveis).toEqual([]);
@@ -23,7 +25,7 @@ describe('agruparAcoes', () => {
   });
 
   test('depois do truco aceito, a outra dupla pede "Seis!"', () => {
-    const aceito = reduce(reduce(distribuida(PAULISTA), { tipo: 'truco', cadeira: 0 }), { tipo: 'aceitar', cadeira: 1 });
+    const aceito = reduce(reduce(naSegundaRodada(distribuida(PAULISTA)), { tipo: 'truco', cadeira: 0 }), { tipo: 'aceitar', cadeira: 1 });
     expect(rotulos(aceito, 0)).toEqual([]); // dupla 0 não pode aumentar o próprio pedido
     expect(rotulos(jogar(aceito, [[0, 0]]), 1)).toEqual(['Seis!']);
   });
@@ -43,7 +45,7 @@ describe('agruparAcoes', () => {
 
   test('família fechada aparece para todos na janela (blefe vale)', () => {
     const s = distribuida(MINEIRO, [['Qo', 'Jo', 'Ko'], ['3e', '5e', '6e'], ['4c', '5c', '6c'], ['2e', '5p', '6p']]);
-    expect(rotulos(s, 0)).toEqual(['Truco!', 'Pedir família fechada']);
+    expect(rotulos(s, 0)).toEqual(['Pedir família fechada']); // truco só da 2ª rodada em diante
     expect(rotulos(s, 1)).toEqual(['Pedir família fechada']);
   });
 });
@@ -64,7 +66,7 @@ describe('agruparAcoes no ritual e na família', () => {
 
   test('mesa aberta pede aberta; conferir é da dupla adversária', () => {
     const fam = [['Qo', 'Jo', 'Ko']];
-    expect(rotulos(distribuida({ ...PAULISTA, familia: 'aberta' }, fam), 0)).toEqual(['Truco!', 'Pedir família aberta']);
+    expect(rotulos(distribuida({ ...PAULISTA, familia: 'aberta' }, fam), 0)).toEqual(['Pedir família aberta']);
     const t = reduce(distribuida(MINEIRO, fam), { tipo: 'familia', cadeira: 0 });
     expect(rotulos(t, 1)).toEqual(['Conferir', 'Deixar passar']);
     expect(rotulos(t, 0)).toEqual([]);

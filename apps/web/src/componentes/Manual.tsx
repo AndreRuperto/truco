@@ -236,8 +236,9 @@ const SECOES: SecaoInfo[] = [
     corpo: (
       <>
         <p>
-          Toda mão começa valendo pouco. A qualquer momento, <strong>na sua vez</strong>, você pode pedir{' '}
-          <strong>Truco!</strong> para a mão valer mais. A escada de valores depende da pontuação escolhida na mesa:
+          Toda mão começa valendo pouco. <strong>Depois que a 1ª rodada termina</strong>, na sua vez, você pode pedir{' '}
+          <strong>Truco!</strong> para a mão valer mais. Na 1ª rodada não se pede truco. A escada de valores depende da
+          pontuação escolhida na mesa:
         </p>
         <table className="manual-tabela">
           <caption>Quanto a mão vale em cada pedido</caption>

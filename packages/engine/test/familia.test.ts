@@ -6,7 +6,7 @@ import { acoesValidas } from '../src/acoes';
 import { ErroJogada, reduce } from '../src/reducer';
 import { visaoDoJogador } from '../src/visao';
 import { cartasDaPartida } from '../src/ritual';
-import { MINEIRO, c, distribuida, partida } from './helpers';
+import { MINEIRO, c, distribuida, jogarPrimeiraRodada, partida } from './helpers';
 
 const ids = (cs: readonly Carta[]) => cs.map(idCarta);
 /** Mineiro (base 2), pe = 3, a cadeira 0 começa e tem família real (Ae conta, mesmo sendo manilha). */
@@ -134,8 +134,14 @@ describe('quando pode', () => {
     const ferro = distribuida({ ...MINEIRO, maoDe11: 'qualquerDupla' }, MAOS, undefined, [11, 0]);
     expect(ferro.mao!.tipo).toBe('mao11');
     expect(() => pedir(ferro, 0)).toThrow(ErroJogada);
-    const trucada = reduce(reduce(s, { tipo: 'truco', cadeira: 0 }), { tipo: 'aceitar', cadeira: 1 });
-    expect(() => pedir(trucada, 2)).toThrow(ErroJogada);
+    // Truco só a partir da 2ª rodada (a cadeira 2 vence a 1ª com o zap); depois do truco aceito, nada de família.
+    const r2 = jogarPrimeiraRodada(s);
+    const vez = r2.mao!.vez;
+    const trucada = reduce(reduce(r2, { tipo: 'truco', cadeira: vez }), {
+      tipo: 'aceitar',
+      cadeira: ((vez + 1) % 4) as 0 | 1 | 2 | 3,
+    });
+    expect(() => pedir(trucada, vez)).toThrow(ErroJogada);
   });
 
   test('pontos de família podem fechar a partida', () => {
