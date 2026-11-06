@@ -30,6 +30,9 @@ export function Cabecalho({ pronta, usuario, aoSair, atual }: Props) {
       ) : (
         <a href="#/entrar" aria-current={aba('entrar')}>Entrar</a>
       )}
+      <a href="#/como-jogar" className="cabecalho-ajuda" aria-current={aba('manual')} aria-label="Como jogar" title="Como jogar">
+        ?
+      </a>
     </nav>
   );
 }

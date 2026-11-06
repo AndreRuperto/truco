@@ -405,6 +405,70 @@ button:disabled {
 .formulario .erro-form {
   color: var(--form-erro);
 }
+/*
+ * Caixinha de marcar da casa: quadrado com o mesmo campo do formulário; marcada, enche de
+ * amarelo-giz (no claro, madeira) com o ✓ em tinta (tinta/grito 8.9, papel/madeira-funda 9.6).
+ */
+.campo-check input[type='checkbox'],
+.alternar-privada input[type='checkbox'] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  margin: 0;
+  border: 2px solid var(--form-tinta-suave, var(--tinta-suave));
+  border-radius: 6px;
+  background: var(--form-campo, var(--branco));
+  cursor: pointer;
+  transition:
+    background-color var(--dur) ease-out,
+    border-color var(--dur) ease-out;
+}
+.campo-check input[type='checkbox']::before,
+.alternar-privada input[type='checkbox']::before {
+  content: '';
+  width: 11px;
+  height: 6px;
+  margin-top: -3px;
+  border-left: 3px solid var(--check-tinta, var(--tinta));
+  border-bottom: 3px solid var(--check-tinta, var(--tinta));
+  rotate: -45deg;
+  scale: 0;
+  transition: scale var(--dur) ease-out;
+}
+.campo-check input[type='checkbox']:checked,
+.alternar-privada input[type='checkbox']:checked {
+  border-color: var(--check-fundo, var(--grito));
+  background: var(--check-fundo, var(--grito));
+}
+.campo-check input[type='checkbox']:checked::before,
+.alternar-privada input[type='checkbox']:checked::before {
+  scale: 1;
+}
+.campo-check input[type='checkbox']:hover,
+.alternar-privada input[type='checkbox']:hover {
+  border-color: var(--form-tinta, var(--tinta));
+}
+.campo-check input[type='checkbox']:checked:hover,
+.alternar-privada input[type='checkbox']:checked:hover {
+  border-color: var(--check-fundo, var(--grito));
+}
+.campo-check,
+.alternar-privada {
+  cursor: pointer;
+}
+@media (prefers-color-scheme: light) {
+  .formulario {
+    --check-fundo: var(--madeira-funda);
+    --check-tinta: var(--papel);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .campo-check input[type='checkbox']::before,
+  .alternar-privada input[type='checkbox']::before {
+    transition: none;
+  }
+}
+
 
 /*
  * ---------- cartas soltas no fundo da tela inicial ----------
@@ -588,7 +652,8 @@ button:disabled {
 
 /* ---------- sala de espera ---------- */
 .sala-espera h1,
-.tela-conta h1 {
+.tela-conta h1,
+.tela-manual h1 {
   margin: 0 0 var(--e4);
   padding: var(--e3) var(--e4);
   border: 4px solid var(--lousa-borda);
@@ -2418,4 +2483,246 @@ button:disabled {
     height: 2px;
     margin: 2px 0;
   }
+}
+
+/*
+ * ---------- manual (como jogar) ----------
+ * Na página usa a tinta do tema (giz no escuro, tinta no claro); por cima da mesa vira lousa.
+ * Coluna de leitura de ~68 caracteres; sumário em fichas que rolam até a seção.
+ */
+.cabecalho-ajuda {
+  justify-content: center;
+  min-width: 44px;
+  margin-left: auto;
+  border: 2px solid color-mix(in srgb, var(--giz) 45%, transparent);
+  border-radius: 50% !important;
+  font-family: var(--fonte-giz);
+  font-size: var(--t1);
+}
+.cabecalho-usuario ~ .cabecalho-ajuda {
+  margin-left: 0;
+}
+.cabecalho a.cabecalho-ajuda[aria-current='page'] {
+  border-color: var(--madeira);
+  box-shadow: none;
+}
+.tela-manual {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--e4) var(--e4) var(--e7);
+  color: var(--texto);
+}
+.manual-intro {
+  max-width: 68ch;
+  margin: 0 0 var(--e5);
+  line-height: 1.55;
+}
+.manual {
+  --manual-tinta: var(--texto);
+  --manual-suave: var(--texto-suave);
+  --manual-linha: color-mix(in srgb, var(--texto) 22%, transparent);
+  --manual-destaque: var(--grito);
+  color: var(--manual-tinta);
+  line-height: 1.55;
+}
+@media (prefers-color-scheme: light) {
+  .tela-manual .manual {
+    --manual-destaque: var(--madeira-funda);
+  }
+}
+.manual-sumario ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  margin: 0 0 var(--e5);
+  padding: 0;
+  list-style: none;
+}
+.manual-sumario button {
+  min-height: 40px;
+  padding: 0 var(--e3);
+  border-radius: 999px;
+  font-size: var(--t-1);
+}
+.manual-secao {
+  max-width: 68ch;
+  padding: var(--e5) 0 var(--e2);
+  border-top: 2px dashed var(--manual-linha);
+  scroll-margin-top: var(--e4);
+}
+.manual-secao h2 {
+  margin: 0 0 var(--e3);
+  font-family: var(--fonte-giz);
+  font-size: var(--t3);
+  font-weight: 400;
+  color: var(--manual-destaque);
+  scroll-margin-top: var(--e4);
+}
+.manual-secao h2:focus {
+  outline: none;
+}
+.manual-secao h3 {
+  margin: var(--e4) 0 var(--e2);
+  font-size: var(--t1);
+}
+.manual-secao p,
+.manual-secao li {
+  max-width: 68ch;
+}
+.manual-secao li + li {
+  margin-top: var(--e1);
+}
+.manual-secao em {
+  font-style: italic;
+}
+.manual-ordem {
+  font-weight: 800;
+  font-size: var(--t1);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.manual-cartas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e3) var(--e2);
+  margin: var(--e3) 0;
+  padding: 0;
+  list-style: none;
+}
+.manual-cartas li {
+  display: grid;
+  justify-items: center;
+  gap: var(--e1);
+  margin: 0 !important;
+  max-width: 88px;
+  text-align: center;
+  font-size: var(--t-1);
+  line-height: 1.25;
+  color: var(--manual-suave);
+}
+.manual-cartas .carta {
+  --carta-l: 60px;
+}
+.manual-tabela {
+  width: 100%;
+  margin: var(--e3) 0;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.manual-tabela caption {
+  margin-bottom: var(--e2);
+  text-align: left;
+  color: var(--manual-suave);
+  font-size: var(--t-1);
+}
+.manual-tabela th,
+.manual-tabela td {
+  padding: var(--e2);
+  border-bottom: 1px solid var(--manual-linha);
+  text-align: center;
+}
+.manual-tabela th[scope='row'],
+.manual-tabela thead th:first-child {
+  text-align: left;
+}
+.manual-sinais {
+  padding-left: 0;
+  list-style: none;
+}
+.manual-sinais span {
+  display: inline-block;
+  width: 1.6em;
+  font-size: 1.25em;
+}
+.manual-sinais small {
+  color: var(--manual-suave);
+}
+.manual-glossario {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--e2) var(--e4);
+  margin: 0;
+}
+.manual-glossario dt {
+  font-weight: 800;
+}
+.manual-glossario dd {
+  margin: 0;
+}
+@media (max-width: 480px) {
+  .manual-glossario {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .manual-glossario dd {
+    margin-bottom: var(--e2);
+  }
+  .manual-tabela th,
+  .manual-tabela td {
+    padding: var(--e2) var(--e1);
+    font-size: var(--t-1);
+  }
+}
+
+/* Por cima da mesa: lousa com moldura de madeira, rola por dentro. */
+.manual-mesa-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  padding: var(--e3);
+  background: color-mix(in srgb, var(--sombra) 60%, transparent);
+  animation: aparecer var(--dur) ease-out;
+}
+.manual-mesa {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(760px, 100%);
+  max-height: calc(100dvh - 2 * var(--e3));
+  border: 5px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  --foco: var(--grito);
+  color-scheme: dark;
+}
+.manual-mesa-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+  padding: var(--e2) var(--e2) var(--e2) var(--e4);
+  border-bottom: 2px solid var(--lousa-borda);
+}
+.manual-mesa-topo h2 {
+  margin: 0;
+  font-family: var(--fonte-giz);
+  font-size: var(--t2);
+  font-weight: 400;
+  color: var(--grito);
+}
+.manual-mesa-topo button {
+  background: color-mix(in srgb, var(--lousa) 86%, var(--giz));
+}
+.manual-mesa-corpo {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--e4);
+}
+.manual-mesa .manual {
+  --manual-tinta: var(--giz);
+  --manual-suave: var(--giz-suave);
+  --manual-linha: color-mix(in srgb, var(--giz) 22%, transparent);
+  --manual-destaque: var(--grito);
+}
+.manual-mesa .manual-sumario button {
+  background: color-mix(in srgb, var(--lousa) 86%, var(--giz));
+}
+.barra-social .botao-ajuda {
+  min-width: 44px;
+  padding: 0;
+  border-radius: 50%;
+  font-family: var(--fonte-giz);
+  font-size: var(--t1);
 }

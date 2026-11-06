@@ -8,7 +8,8 @@ export type Rota =
   | { tela: 'ranking'; variante: Variante }
   | { tela: 'salas' }
   | { tela: 'privada'; codigo: string }
-  | { tela: 'fila' };
+  | { tela: 'fila' }
+  | { tela: 'manual' };
 
 export function lerRota(hash: string): Rota {
   const [caminho, busca = ''] = hash.replace(/^#/, '').split('?');
@@ -30,6 +31,8 @@ export function lerRota(hash: string): Rota {
       return partes[1] && /^[A-Za-z0-9_-]{4,40}$/.test(partes[1]) ? { tela: 'privada', codigo: partes[1] } : { tela: 'inicio' };
     case 'fila':
       return { tela: 'fila' };
+    case 'como-jogar':
+      return { tela: 'manual' };
     default:
       return { tela: 'inicio' };
   }
@@ -53,6 +56,8 @@ export function hrefDe(r: Rota): string {
       return `#/privada/${r.codigo}`;
     case 'fila':
       return '#/fila';
+    case 'manual':
+      return '#/como-jogar';
   }
 }
 

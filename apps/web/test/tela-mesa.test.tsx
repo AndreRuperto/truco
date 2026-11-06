@@ -11,6 +11,15 @@ const acoesFalsas = () => ({ enviarAcao: vi.fn(), enviarSinal: vi.fn(), enviarFa
 const snap = (msg: EstadoLoja['msg'], eventos: Evento[] = []): EstadoLoja => ({ status: 'na-mesa', msg, eventos, erro: null, chat: [], salaId: 'r1' });
 
 describe('TelaMesa', () => {
+  test('botão ? abre o manual por cima da mesa e Voltar fecha', async () => {
+    const user = userEvent.setup();
+    render(<TelaMesa snap={snap(msgEstado(distribuida(PAULISTA)))} acoes={acoesFalsas()} />);
+    await user.click(screen.getByRole('button', { name: 'Como jogar' }));
+    expect(screen.getByRole('dialog', { name: 'Como jogar' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Voltar pra mesa' }));
+    expect(screen.queryByRole('dialog', { name: 'Como jogar' })).toBeNull();
+  });
+
   test('mostra placar, valor da mão e minha mão; clicar joga a carta', async () => {
     const user = userEvent.setup();
     const acoes = acoesFalsas();

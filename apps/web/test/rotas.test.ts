@@ -17,11 +17,12 @@ describe('rotas por hash', () => {
     expect(lerRota('#/privada/AbC123xyz')).toEqual({ tela: 'privada', codigo: 'AbC123xyz' });
     expect(lerRota('#/privada/<script>')).toEqual({ tela: 'inicio' });
     expect(lerRota('#/fila')).toEqual({ tela: 'fila' });
+    expect(lerRota('#/como-jogar')).toEqual({ tela: 'manual' });
     expect(lerRota('#/nada')).toEqual({ tela: 'inicio' });
   });
 
   test('hrefDe é o inverso de lerRota', () => {
-    for (const h of ['#/', '#/entrar', '#/entrar?token=t1', '#/perfil', '#/perfil/3', '#/historico', '#/ranking/mineiro', '#/salas', '#/privada/abcd', '#/fila']) {
+    for (const h of ['#/', '#/entrar', '#/entrar?token=t1', '#/perfil', '#/perfil/3', '#/historico', '#/ranking/mineiro', '#/salas', '#/privada/abcd', '#/fila', '#/como-jogar']) {
       expect(hrefDe(lerRota(h))).toBe(h);
     }
   });

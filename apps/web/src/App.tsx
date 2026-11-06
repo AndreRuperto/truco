@@ -18,6 +18,7 @@ import { TelaPerfil } from './telas/Perfil';
 import { TelaRanking } from './telas/Ranking';
 import { SalaEspera } from './telas/SalaEspera';
 import { TelaSalas } from './telas/Salas';
+import { TelaComoJogar } from './telas/ComoJogar';
 
 /** Tela que exige login: espera a sessão; convidado (ou sessão expirada) recebe o link para entrar. */
 function PedirLogin({ titulo, pronta }: { titulo: string; pronta: boolean }) {
@@ -132,6 +133,9 @@ export function App() {
             }}
           />
         );
+        break;
+      case 'manual':
+        conteudo = <TelaComoJogar />;
         break;
       case 'fila':
         conteudo =

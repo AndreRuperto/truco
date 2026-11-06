@@ -1,5 +1,5 @@
 import { type Cadeira, ehFaseRitual, parceiroDe, quemDeveAgir } from '@truco/engine';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useAnimacaoRitual } from '../componentes/animacaoMesa';
 import { Assento } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
@@ -9,6 +9,7 @@ import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { Cronometro } from '../componentes/Cronometro';
 import { FamiliasNaMesa } from '../componentes/FamiliasNaMesa';
 import { GuiaOrdem } from '../componentes/GuiaOrdem';
+import { ManualMesa } from '../componentes/ManualMesa';
 import { Mao } from '../componentes/Mao';
 import { Monte } from '../componentes/Monte';
 import { FimDeMao, FimDePartida } from '../componentes/Overlays';
@@ -42,6 +43,8 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   const agora = useAgora(250);
   const [painel, setPainel] = useState<'sinais' | 'falas' | 'chat' | null>(null);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
+  const [manual, setManual] = useState(false);
+  const fecharManual = useCallback(() => setManual(false), []);
   const msg = snap.msg!;
   const modo = msg.modo;
   const v = msg.visao!;
@@ -149,6 +152,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
               Chat
             </button>
           )}
+          <button type="button" className="botao-ajuda" aria-label="Como jogar" title="Como jogar" onClick={() => setManual(true)}>
+            ?
+          </button>
           <button type="button" onClick={() => setConfirmarSaida(true)}>
             Sair
           </button>
@@ -180,6 +186,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           {textoSinalRecebido(sinal)}
         </div>
       )}
+      {manual && <ManualMesa aoFechar={fecharManual} />}
       {resumoMao && <FimDeMao titulo={resumoMao.titulo} detalhe={resumoMao.detalhe} />}
       {fim && <FimDePartida titulo={fim.titulo} placar={fim.placar} venceu={fim.venceu} aoJogarDeNovo={aoJogarDeNovo} aoVoltar={() => void acoes.sair()} />}
     </main>
