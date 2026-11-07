@@ -59,7 +59,7 @@ export function Tampo({ fisica, aparencia = 'madeira', minha, batida, jogadores 
       <Mobilia jogadores={jogadores} />
     <div data-testid="tampo" className={cx('tampo', tipo === 'feltro' && 'tampo-feltro', tipo === 'plastico' && 'tampo-plastico', ativa && 'tremendo')} data-superficie={tipo} style={estilo}>
       {tipo === 'plastico' && <EstampaZapada />}
-      <Rachaduras rachaduras={fisica?.rachaduras ?? []} tipo={tipo} minha={minha} novaId={ativa?.rachadura?.id ?? null} />
+      <Rachaduras rachaduras={fisica?.rachaduras ?? []} tipo={tipo === 'feltro' ? 'madeira' : tipo} minha={minha} novaId={ativa?.rachadura?.id ?? null} />
       {children}
       {ativa && (
         <span key={ativa.id} className={cx('tum', `pos-${posicaoRelativa(minha, ativa.de)}`)} aria-hidden="true">
