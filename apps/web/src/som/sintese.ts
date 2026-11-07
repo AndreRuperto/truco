@@ -20,7 +20,8 @@ export type NomeSom =
   | 'derrota'
   | 'vez'
   | 'tique'
-  | 'tum';
+  | 'tum'
+  | 'grito';
 
 const VOLUME = 0.45;
 
@@ -120,6 +121,33 @@ function grito(c: AudioContext, t: number, freq: number, vol: number, dur: numbe
   o.stop(t + dur + 0.05);
 }
 
+const audios = new Map<string, Promise<AudioBuffer | null>>();
+
+/** Toca um áudio do site (as falas gravadas), pelo mesmo volume/botão "Som"; baixa e guarda na 1ª vez. */
+export function tocarArquivo(url: string, atraso = 0): void {
+  const c = ctx;
+  if (!c || !mestre || c.state !== 'running') return;
+  let carregando = audios.get(url);
+  if (!carregando) {
+    carregando = fetch(url)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      .then((b) => c.decodeAudioData(b))
+      .catch(() => null);
+    audios.set(url, carregando);
+  }
+  const pedidoEm = c.currentTime;
+  void carregando.then((buf) => {
+    // chegou tarde demais (rede lenta): a fala perdeu a hora, não toca
+    if (!buf || !mestre || c.currentTime - pedidoEm > 1.5) return;
+    const fonte = c.createBufferSource();
+    fonte.buffer = buf;
+    const g = c.createGain();
+    g.gain.value = 1.6;
+    fonte.connect(g).connect(mestre);
+    fonte.start(Math.max(c.currentTime, pedidoEm + atraso));
+  });
+}
+
 const DO = 523.25;
 const MI = 659.25;
 const SOL = 783.99;
@@ -143,10 +171,13 @@ export function sintetizar(nome: NomeSom, atraso = 0, forca = 0.6): void {
       pancada(c, t + 0.1, 140, 0.25);
       break;
     case 'truco':
+      // As batidas na mesa; o grito vem da voz gravada (ou, sem ela, o metal sintetizado).
       pancada(c, t, 95, 0.6);
       pancada(c, t + 0.14, 95, 0.55);
-      grito(c, t + 0.05, 233, 0.12, 0.35);
-      grito(c, t + 0.05, 311, 0.08, 0.35);
+      break;
+    case 'grito':
+      grito(c, t, 233, 0.12, 0.35);
+      grito(c, t, 311, 0.08, 0.35);
       break;
     case 'aceito':
       nota(c, t, SOL, 0.3, 0.25);

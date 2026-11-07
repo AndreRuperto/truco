@@ -1,8 +1,11 @@
 import type { Visao } from '@truco/engine';
 import { useEffect, useRef } from 'react';
 import type { EstadoLoja } from '../rede/loja';
+import { cadeiraNaPosicao } from '../logica/posicoes';
+import { tiposDaMesa } from '../componentes/Personagem';
 import { sonsDaAcao, sonsDoEstado } from './decidir';
-import { destravarAudio, sintetizar } from './sintese';
+import { arquivoDaFala, FALAS, falaDoBalao } from './falas';
+import { destravarAudio, sintetizar, tocarArquivo } from './sintese';
 
 export const CHAVE_SOM = 'truco:som';
 
@@ -83,6 +86,27 @@ export function useSonsDaMesa(snap: EstadoLoja, ligado: boolean, agora: number):
     ultimoTique.current = restam;
     if (ligado) sintetizar('tique');
   }, [restam, ligado]);
+
+  // Falas: cada balão novo (ação ou fala) sai na voz do tipo de jogador de quem falou —
+  // o mesmo desenho do 2.5D (cima, esquerda, direita) e um quarto tipo para mim.
+  const ultimoEvento = snap.eventos.at(-1)?.id ?? 0;
+  const eventoVisto = useRef<number | null>(null);
+  useEffect(() => {
+    const desde = eventoVisto.current;
+    eventoVisto.current = ultimoEvento;
+    if (desde === null || ultimoEvento < desde || !ligado || !msg) return;
+    const ordem = (['cima', 'esquerda', 'direita', 'baixo'] as const).map((p) => cadeiraNaPosicao(minha, p));
+    const tipos = tiposDaMesa(ordem.map((c) => msg.cadeiras[c]?.nome ?? `Cadeira ${c + 1}`));
+    for (const e of snap.eventos) {
+      if (e.id <= desde || e.tipo === 'sinal') continue;
+      const fala = falaDoBalao(e.texto);
+      if (!fala) continue;
+      const tipo = tipos[ordem.indexOf(e.de)];
+      const n = Math.floor(Math.random() * FALAS[fala].ditos.length);
+      tocarArquivo(arquivoDaFala(tipo, fala, n), 0.05);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ultimoEvento]);
 
   const idBatida = snap.batida?.id;
   useEffect(() => {
