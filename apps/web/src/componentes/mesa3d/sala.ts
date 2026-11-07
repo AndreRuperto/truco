@@ -203,25 +203,28 @@ export function criarMesas(tx: Texturas): Mesas {
   const madeira = new THREE.Group();
   const plastico = new THREE.Group();
 
-  const tampo = malha(new THREE.BoxGeometry(MEIA * 2, 0.045, MEIA * 2), matMadeira);
-  tampo.position.y = TOPO - 0.0225;
-  madeira.add(tampo);
-  const saias: Array<[number, number, number, number]> = [
-    [MEIA * 1.8, 0.03, 0, MEIA - 0.06], [MEIA * 1.8, 0.03, 0, -MEIA + 0.06],
-    [0.03, MEIA * 1.8, MEIA - 0.06, 0], [0.03, MEIA * 1.8, -MEIA + 0.06, 0],
-  ];
-  for (const [w, d, x, z] of saias) {
-    const s = malha(new THREE.BoxGeometry(w, 0.08, d), matMadeiraEsc);
-    s.position.set(x, TOPO - 0.085, z);
-    madeira.add(s);
-  }
-  const geoPerna = new THREE.BoxGeometry(0.06, TOPO - 0.045, 0.06);
-  for (const x of [-MEIA + 0.05, MEIA - 0.05])
-    for (const z of [-MEIA + 0.05, MEIA - 0.05]) {
-      const p = malha(geoPerna, matMadeiraEsc);
-      p.position.set(x, (TOPO - 0.045) / 2, z);
-      madeira.add(p);
-    }
+  // Mesmo desenho oval da vitrine do clube: madeira aparente na borda,
+  // filete dourado e feltro verde. O centro continua em TOPO para não alterar
+  // animações, colisões, localização das cartas e gestos da partida.
+  const matFeltro = new THREE.MeshStandardMaterial({
+    map: repetida(tx.reboco, 2, 2),
+    color: '#235c43',
+    roughness: 0.97,
+    metalness: 0,
+  });
+  const matFilete = mat('#b79a5a', { metalness: 0.25, roughness: 0.52 });
+  const elipse = (raioX: number, raioZ: number, altura: number, y: number, material: THREE.Material): THREE.Mesh => {
+    const m = malha(new THREE.CylinderGeometry(1, 1, altura, 80), material);
+    m.scale.set(raioX, 1, raioZ);
+    m.position.y = y;
+    madeira.add(m);
+    return m;
+  };
+  elipse(0.595, 0.466, 0.07, TOPO - 0.041, matMadeiraEsc);
+  elipse(0.585, 0.456, 0.012, TOPO - 0.011, matMadeira);
+  elipse(0.568, 0.439, 0.004, TOPO - 0.004, matFilete);
+  // Feltro rente a TOPO: os cards permanecem visíveis sem z-fighting.
+  elipse(0.558, 0.429, 0.003, TOPO - 0.0016, matFeltro);
 
   const tampoP = malha(new THREE.BoxGeometry(MEIA * 2 - 0.02, 0.03, MEIA * 2 - 0.02), matPlastico);
   tampoP.position.y = TOPO - 0.015;
