@@ -14,6 +14,16 @@ export const VOZES = [
   { tipo: 'chapéu de feltro', nome: 'Rogério', id: 'z7lpKSQt5qSE9gT4lYbl' },
 ] as const;
 
+/**
+ * Vozes pessoais: quem tem a própria voz clonada fala com ela. O servidor só marca a cadeira
+ * (`InfoCadeira.voz`) quando a CONTA logada é a dona (ver `apps/server/src/mesa/vozes.ts`).
+ */
+export const VOZES_PESSOAIS = {
+  andre: { nome: 'André Ruperto', id: 'ChFE4wGBF3kV520SLSvN' },
+} as const;
+export type VozPessoal = keyof typeof VOZES_PESSOAIS;
+export const ehVozPessoal = (x: unknown): x is VozPessoal => typeof x === 'string' && Object.hasOwn(VOZES_PESSOAIS, x);
+
 export interface Fala {
   /** Textos de balão que disparam esta fala (os de `logica/eventos.ts`). */
   baloes: string[];
@@ -53,4 +63,5 @@ export function falaDoBalao(texto: string): IdFala | null {
   return null;
 }
 
-export const arquivoDaFala = (tipo: number, fala: IdFala, n: number) => `/vozes/${tipo}-${fala}-${n}.mp3`;
+/** `tipo`: índice em `VOZES` ou a chave de uma voz pessoal. */
+export const arquivoDaFala = (tipo: number | VozPessoal, fala: IdFala, n: number) => `/vozes/${tipo}-${fala}-${n}.mp3`;

@@ -7,7 +7,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FALAS, type IdFala, VOZES } from '../src/som/falas.ts';
+import { FALAS, type IdFala, VOZES, VOZES_PESSOAIS } from '../src/som/falas.ts';
 
 const aqui = dirname(fileURLToPath(import.meta.url));
 const raiz = join(aqui, '..', '..', '..');
@@ -29,7 +29,8 @@ const GRITOS = new Set<IdFala>(['truco', 'seis', 'nove', 'doze']);
 let gerados = 0;
 let pulados = 0;
 let caracteres = 0;
-for (const [tipo, voz] of VOZES.entries()) {
+const todas: [string | number, { nome: string; id: string }][] = [...VOZES.entries(), ...Object.entries(VOZES_PESSOAIS)];
+for (const [tipo, voz] of todas) {
   for (const [id, fala] of Object.entries(FALAS) as [IdFala, { ditos: readonly string[] }][]) {
     for (const [n, texto] of fala.ditos.entries()) {
       const arquivo = join(saida, `${tipo}-${id}-${n}.mp3`);

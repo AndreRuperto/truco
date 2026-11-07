@@ -4,7 +4,7 @@ import type { EstadoLoja } from '../rede/loja';
 import { cadeiraNaPosicao } from '../logica/posicoes';
 import { tiposDaMesa } from '../componentes/Personagem';
 import { sonsDaAcao, sonsDoEstado } from './decidir';
-import { arquivoDaFala, FALAS, falaDoBalao } from './falas';
+import { arquivoDaFala, ehVozPessoal, FALAS, falaDoBalao } from './falas';
 import { destravarAudio, sintetizar, tocarArquivo } from './sintese';
 
 export const CHAVE_SOM = 'truco:som';
@@ -101,7 +101,9 @@ export function useSonsDaMesa(snap: EstadoLoja, ligado: boolean, agora: number):
       if (e.id <= desde || e.tipo === 'sinal') continue;
       const fala = falaDoBalao(e.texto);
       if (!fala) continue;
-      const tipo = tipos[ordem.indexOf(e.de)];
+      // Conta com voz própria (marcada pelo servidor) fala com ela; o resto, com a voz do tipo.
+      const pessoal = msg.cadeiras[e.de]?.voz;
+      const tipo = ehVozPessoal(pessoal) ? pessoal : tipos[ordem.indexOf(e.de)];
       const n = Math.floor(Math.random() * FALAS[fala].ditos.length);
       tocarArquivo(arquivoDaFala(tipo, fala, n), 0.05);
     }

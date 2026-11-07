@@ -171,6 +171,18 @@ describe('MesaRoom', () => {
     expect(cads.find((c: any) => c.nome === 'cid').avatar).toBe('pronto:viola');
   });
 
+  test('voz pessoal: só a conta logada dona ganha; convidado com o mesmo nome, não', async () => {
+    const sala = await colyseus.createRoom('mesa', { humanos: 2 });
+    const a = await colyseus.connectTo(sala, { nome: 'andreruperto' });
+    const ma = coletor(a);
+    const { cliente } = await logado('andreruperto@x.com');
+    await cliente.joinById(sala.roomId, { nome: 'qualquer' });
+    await esperar(() => (ma.estado?.at(-1)?.cadeiras ?? []).filter((c: any) => c.tipo === 'humano').length === 2);
+    const cads = ma.estado.at(-1).cadeiras;
+    expect(cads[0]).toMatchObject({ nome: 'andreruperto', voz: null });
+    expect(cads[2]).toMatchObject({ voz: 'andre' });
+  });
+
   test('dois humanos ficam parceiros', async () => {
     const sala = await colyseus.createRoom('mesa', { humanos: 2 });
     const a = await colyseus.connectTo(sala, { nome: 'Ana' });

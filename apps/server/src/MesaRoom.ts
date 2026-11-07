@@ -5,6 +5,7 @@ import { Mesa, type Tempos } from './mesa/Mesa';
 import { filtroDaSala, limparNome, opcoesDaSala, SAIDA_PARTIDA_CANCELADA } from './mesa/protocolo';
 import { RegistroMesa } from './registroMesa';
 import { avatarValido } from './repo/usuarios';
+import { vozDaConta } from './mesa/vozes';
 import type { Servicos } from './servicos';
 import { type UsuarioConexao, usuarioDaConexao } from './sessaoSala';
 
@@ -233,14 +234,15 @@ export class MesaRoom extends Room {
     const auth = client.auth as UsuarioConexao | undefined;
     // Logado: a foto da conta. Sem conta: a que escolheu ao pôr o apelido (mesmas regras da conta).
     const avatar = auth ? (auth.avatar ?? null) : (avatarValido(options?.avatar) ?? null);
+    const voz = auth ? vozDaConta(auth.apelido) : null;
     if (auth && this.registro.temUsuario(auth.usuarioId)) throw new Error('você já está nesta mesa (outra aba?)');
     let cadeira: Cadeira | null;
     if (this.reservados) {
       const r = auth ? this.reservados.find((j) => j.usuarioId === auth.usuarioId) : undefined;
       if (!r || !auth) throw new Error('lugar não reservado para você');
-      cadeira = this.mesa.sentar(client.sessionId, auth.apelido, r.cadeira, avatar);
+      cadeira = this.mesa.sentar(client.sessionId, auth.apelido, r.cadeira, avatar, voz);
     } else {
-      cadeira = this.mesa.sentar(client.sessionId, auth?.apelido ?? options?.nome, undefined, avatar);
+      cadeira = this.mesa.sentar(client.sessionId, auth?.apelido ?? options?.nome, undefined, avatar, voz);
     }
     if (cadeira === null) throw new Error('mesa cheia ou já iniciada');
     this.registro.sentou({ cadeira, usuarioId: auth?.usuarioId ?? null, nome: auth?.apelido ?? limparNome(options?.nome) });

@@ -78,6 +78,8 @@ export interface InfoCadeira {
   conectado: boolean;
   /** Foto: `pronto:<id>` ou imagem `data:` (da conta, ou escolhida por quem entrou sem conta); null = sem. */
   avatar?: string | null;
+  /** Voz pessoal da conta (ex.: 'andre'): as falas dessa cadeira saem com ela. Só para contas logadas. */
+  voz?: string | null;
 }
 
 export interface MsgEstado {
