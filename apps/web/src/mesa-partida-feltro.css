@@ -1,0 +1,271 @@
+/*
+ * Mesa de partida oval: o mesmo feltro e a borda de madeira vistos nos cards.
+ * Só aplica à mesa intacta. Ao quebrar, permanece a mesa de plástico original,
+ * incluindo animações, marcas, hitboxes e controles.
+ *
+ * A grade do tampo continua retangular e transparente para os assentos,
+ * cartas, monte, drag-and-drop e animações não precisarem ser reposicionados.
+ * A superfície real é desenhada atrás com pseudo-elementos sem pointer events.
+ */
+.tela-mesa .mesa-ambiente > .tampo.tampo-feltro {
+  --feltro-mesa: #184d37;
+  position: relative;
+  isolation: isolate;
+  border-radius: 50% / 47%;
+  background: none;
+  box-shadow: none;
+}
+
+/* Borda maciça — a madeira aparece por fora de toda a oval. */
+.tela-mesa .mesa-ambiente > .tampo.tampo-feltro::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 -10px;
+  border-radius: 50% / 47%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 56% at 50% 0%, rgba(217, 165, 88, .18), transparent 72%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 7px),
+    linear-gradient(90deg, #4a2c1b 0%, #91603a 23%, #5a3621 58%, #3d2519 100%);
+  box-shadow:
+    inset 0 0 0 3px #2d1b13,
+    inset 0 0 0 7px rgba(208, 151, 87, .62),
+    inset 0 0 0 12px rgba(25, 16, 11, .92),
+    0 11px 0 -3px #342016,
+    0 24px 38px rgba(5, 10, 7, .55);
+}
+
+/* Feltro verde com textura e filete ornamental no aro. */
+.tela-mesa .mesa-ambiente > .tampo.tampo-feltro::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 2.4% 2.1% 1.5%;
+  border-radius: 50% / 47%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 72% 54% at 47% 38%, rgba(138, 186, 128, .14), transparent 83%),
+    radial-gradient(ellipse 80% 80% at 70% 96%, rgba(2, 19, 12, .3), transparent 85%),
+    repeating-linear-gradient(45deg, rgba(235, 255, 218, .025) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-45deg, rgba(1, 12, 6, .035) 0 1px, transparent 1px 4px),
+    var(--feltro-mesa);
+  box-shadow:
+    inset 0 0 0 2px rgba(175, 148, 86, .83),
+    inset 0 0 0 9px rgba(2, 22, 14, .58),
+    inset 0 0 0 10px rgba(209, 197, 129, .13),
+    inset 0 0 46px rgba(2, 13, 8, .7);
+}
+
+/* As marcas das batidas ficam sobre o feltro e atrás das cartas, sem ultrapassar a madeira. */
+.tampo.tampo-feltro > .rachaduras {
+  clip-path: ellipse(47% 47% at 50% 50%);
+}
+.tampo.tampo-feltro > .quebra {
+  border-radius: 50% / 47%;
+}
+.tampo.tampo-feltro .assento-nome {
+  background: rgba(40, 28, 19, .93);
+  box-shadow: inset 0 0 0 1px rgba(245, 219, 172, .22), 0 3px 8px rgba(3, 17, 10, .25);
+}
+.tampo.tampo-feltro .assento.da-vez .assento-nome {
+  background: var(--grito);
+}
+
+/* Os pés continuam por baixo do novo aro curvo. */
+.mesa-ambiente:has(> .tampo-feltro) .pe-esq { left: 22%; }
+.mesa-ambiente:has(> .tampo-feltro) .pe-dir { right: 22%; }
+
+/*
+ * A antiga versão 2.5D pintava o retângulo em perspectiva nos mesmos pseudo-elementos.
+ * Estas regras prevalecem também no desktop alto; personagens, parede e cadeiras
+ * continuam nas suas posições e não cobrem o tabuleiro.
+ */
+@media (min-width: 900px) and (min-height: 820px) {
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro {
+    background: none;
+    box-shadow: none;
+  }
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro::before {
+    inset: -7% .3% -14px;
+    height: auto;
+    transform: perspective(1200px) rotateX(10deg);
+    transform-origin: 50% 76%;
+  }
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro::after {
+    inset: -4.5% 2.4% 1.5%;
+    transform: perspective(1200px) rotateX(10deg);
+    transform-origin: 50% 76%;
+  }
+}
+
+/* Tela pequena: a oval continua preenchendo o espaço das cartas sem cortar a mão. */
+@media (max-width: 520px) {
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro::before {
+    inset: 0 -1% -7px;
+    box-shadow:
+      inset 0 0 0 2px #2d1b13,
+      inset 0 0 0 5px rgba(208, 151, 87, .65),
+      inset 0 0 0 9px rgba(25, 16, 11, .9),
+      0 8px 15px rgba(5, 10, 7, .45);
+  }
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro::after {
+    inset: 2.2% 1.1% 1.4%;
+    box-shadow:
+      inset 0 0 0 1px rgba(175, 148, 86, .75),
+      inset 0 0 0 6px rgba(2, 22, 14, .48),
+      inset 0 0 30px rgba(2, 13, 8, .55);
+  }
+}
+
+/* Painel de personalização individual, acessível pelo ♣ do menu da partida. */
+.personalizar-mesa {
+  position: absolute;
+  z-index: 55;
+  top: 58px;
+  right: var(--e2);
+  width: min(455px, calc(100vw - 2 * var(--e2)));
+  max-height: min(80dvh, 670px);
+  overflow-y: auto;
+  padding: clamp(14px, 2vw, 22px);
+  border: 2px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--madeira) 15%, transparent), transparent 70%),
+    var(--lousa);
+  color: var(--giz);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, .55);
+}
+.personalizar-mesa-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.personalizar-mesa-selo {
+  color: var(--grito);
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+.personalizar-mesa-cabecalho h2 {
+  margin: 5px 0 0;
+  color: var(--giz);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.25rem, 3vw, 1.65rem);
+}
+.personalizar-mesa-fechar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--lousa-borda);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--giz);
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+.personalizar-mesa-explica,
+.personalizar-mesa-rodape {
+  color: var(--giz-suave);
+  font-size: .83rem;
+  line-height: 1.55;
+}
+.personalizar-mesa-opcoes {
+  display: grid;
+  gap: 9px;
+}
+.personalizar-mesa-opcao {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 90px;
+  width: 100%;
+  padding: 9px;
+  border: 2px solid color-mix(in srgb, var(--giz) 17%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lousa-noite) 65%, var(--lousa));
+  color: var(--giz);
+  text-align: left;
+  cursor: pointer;
+  transition: background .18s, border-color .18s;
+}
+.personalizar-mesa-opcao:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--giz) 7%, var(--lousa));
+}
+.personalizar-mesa-opcao[aria-pressed='true'] {
+  border-color: var(--grito);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--grito) 42%, transparent);
+}
+.personalizar-mesa-opcao:focus-visible,
+.personalizar-mesa-fechar:focus-visible {
+  outline: 3px solid var(--grito);
+  outline-offset: 2px;
+}
+.personalizar-mesa-opcao:disabled {
+  cursor: not-allowed;
+  opacity: .63;
+}
+.personalizar-mesa-descricao {
+  display: grid;
+  gap: 3px;
+}
+.personalizar-mesa-descricao strong { font-size: .96rem; }
+.personalizar-mesa-descricao small { color: var(--giz-suave); line-height: 1.3; }
+.personalizar-mesa-descricao em {
+  justify-self: start;
+  font-style: normal;
+  color: var(--grito);
+  font-size: .64rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+.amostra-mesa {
+  display: grid;
+  place-items: center;
+  width: 85px;
+  height: 65px;
+  border: 5px solid #684027;
+  background: #996039;
+  border-radius: 12px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, .35), inset 0 0 10px rgba(0, 0, 0, .2);
+}
+.amostra-mesa > span {
+  width: 16px;
+  height: 23px;
+  border: 2px solid #f1ead5;
+  border-radius: 3px;
+  background: #b8202a;
+  transform: rotate(-12deg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .5);
+}
+.amostra-feltro {
+  border-radius: 50% / 45%;
+  border-color: #5a3423;
+  background: radial-gradient(ellipse at 40% 25%, #2f7550, #11452e 78%);
+  box-shadow: inset 0 0 0 3px #a89154, 0 5px 10px rgba(0,0,0,.35);
+}
+.amostra-plastico {
+  border: 5px solid #c99712;
+  border-radius: 16px;
+  background: #f4c430;
+}
+.personalizar-mesa .personalizar-mesa-rodape { margin-bottom: 0; }
+@media (max-width: 480px) {
+  .personalizar-mesa {
+    top: 54px;
+    left: var(--e2);
+    right: var(--e2);
+    width: auto;
+  }
+  .personalizar-mesa-opcao { grid-template-columns: 75px minmax(0,1fr); gap: 9px; }
+  .amostra-mesa { width: 71px; height: 59px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .personalizar-mesa-opcao { transition: none; }
+}

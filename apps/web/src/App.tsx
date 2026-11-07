@@ -124,6 +124,7 @@ export function App() {
     else
       tela = (
         <TelaMesa
+          temConta={!!ses.usuario}
           snap={snap}
           acoes={loja}
           aoChat={loja.enviarChat}

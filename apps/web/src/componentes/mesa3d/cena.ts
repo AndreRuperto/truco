@@ -162,7 +162,7 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
   const mesas = criarMesas(tx);
   const mesaGrupo = new THREE.Group();
   cena.add(mesaGrupo);
-  mesaGrupo.add(mesas.madeira, mesas.plastico);
+  mesaGrupo.add(mesas.madeira, mesas.feltro, mesas.plastico);
   const copo = copoDeCerveja();
   copo.position.set(MEIA - 0.1, TOPO, MEIA - 0.13);
   mesaGrupo.add(copo);
@@ -574,9 +574,11 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
     const ant = new Map<Posicao, Jogador3D>((anterior?.jogadores ?? []).map((j) => [j.pos, j]));
 
     // mesa
-    mesas.madeira.visible = !e.plastico;
-    mesas.plastico.visible = e.plastico;
-    for (const m of pecasCadeira) m.material = e.plastico ? mesas.matPlastico : mesas.matMadeiraEsc;
+    const plasticoVisivel = e.plastico || e.aparenciaMesa === 'plastico';
+    mesas.madeira.visible = !plasticoVisivel && e.aparenciaMesa !== 'feltro';
+    mesas.feltro.visible = !plasticoVisivel && e.aparenciaMesa === 'feltro';
+    mesas.plastico.visible = plasticoVisivel;
+    for (const m of pecasCadeira) m.material = plasticoVisivel ? mesas.matPlastico : mesas.matMadeiraEsc;
 
     // personagens
     for (const j of e.jogadores) {
