@@ -1,5 +1,5 @@
 import { type Cadeira, ehFaseRitual, parceiroDe, quemDeveAgir } from '@truco/engine';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CartaVisual } from '../componentes/CartaVisual';
 import { useAnimacaoRitual } from '../componentes/animacaoMesa';
 import { Assento, GRITOS } from '../componentes/Assento';
@@ -30,6 +30,7 @@ import { donoDoMonte, mostrarResumoMao, textoEtapa } from '../logica/ritual';
 import { type SinalRecebido, temCoringa, textoSinalRecebido } from '../logica/sinais';
 import { placarRelativo, resumoFimMao, resumoFimPartida, textoPedidoPendente, valorMao } from '../logica/textos';
 import { useAvisoNaAba } from '../logica/avisoAba';
+import { dicaAgora, gravarDicas, type IdDica, lerDicas } from '../logica/dicas';
 import { useAgora } from '../rede/hooks';
 import { gravarSomLigado, lerSomLigado, useSonsDaMesa } from '../som/useSons';
 import type { EstadoLoja, Loja } from '../rede/loja';
@@ -124,6 +125,23 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   const vezTexto = etapa || msg.janelaFamilia || vista3d ? null : textoVez(v, agentes, minha, nome, msg.prazo, agora);
   const fim = v.fase === 'fimPartida' ? resumoFimPartida(v) : null;
   const pedido = textoPedidoPendente(v);
+  // Primeira partida guiada: uma dica por vez; some ao tocar "Entendi" ou quando a pessoa já agiu.
+  const [dicas, setDicas] = useState(lerDicas);
+  const dica = dicas.desligadas ? null : dicaAgora(msg, ui, dicas.vistas);
+  const marcarVista = useCallback((id: IdDica) => {
+    setDicas((d) => {
+      if (d.vistas.includes(id)) return d;
+      const nova = { ...d, vistas: [...d.vistas, id] };
+      gravarDicas(nova);
+      return nova;
+    });
+  }, []);
+  const dicaAnterior = useRef<IdDica | null>(null);
+  useEffect(() => {
+    const antes = dicaAnterior.current;
+    dicaAnterior.current = dica?.id ?? null;
+    if (antes && antes !== dica?.id) marcarVista(antes);
+  }, [dica?.id, marcarVista]);
   const rodada = useRodadaNaMesa(m, ultimaVisivel);
   const linhaEtapa = (
     // Sempre montada: a região viva só anuncia mudanças de texto se já existia.
@@ -233,6 +251,27 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
         <p className="aviso-3d" role="alert">
           {aviso3d}
         </p>
+      )}
+      {dica && (
+        <aside className="dica-mesa" aria-label="Dica">
+          <p>{dica.texto}</p>
+          <div className="dica-mesa-botoes">
+            <button type="button" onClick={() => marcarVista(dica.id)}>
+              Entendi
+            </button>
+            <button
+              type="button"
+              className="botao-discreto"
+              onClick={() => {
+                const nova = { ...dicas, desligadas: true };
+                gravarDicas(nova);
+                setDicas(nova);
+              }}
+            >
+              Sem dicas
+            </button>
+          </div>
+        </aside>
       )}
       {prazoEhMeu(msg) && msg.prazo && <Cronometro prazo={msg.prazo} agora={agora} />}
       {m ? (

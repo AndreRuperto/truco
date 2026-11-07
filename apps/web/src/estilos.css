@@ -1351,6 +1351,37 @@ body:has(.tela-mesa) {
   opacity: 0.85;
 }
 
+/* Dica da primeira partida: lousa presa logo abaixo do placar, por cima da mesa. */
+.dica-mesa {
+  position: fixed;
+  z-index: 40;
+  top: 92px;
+  left: 50%;
+  translate: -50% 0;
+  width: min(440px, calc(100vw - 2 * var(--e3)));
+  padding: var(--e3);
+  border: 3px solid var(--grito);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--sombra) 50%, transparent);
+  animation: aparecer var(--dur) ease-out;
+}
+.dica-mesa p {
+  margin: 0 0 var(--e2);
+  line-height: 1.4;
+}
+.dica-mesa-botoes {
+  display: flex;
+  gap: var(--e2);
+  justify-content: flex-end;
+}
+.dica-mesa .botao-discreto {
+  border-color: transparent;
+  background: transparent;
+  color: var(--giz-suave);
+}
+
 /* Tampo de madeira */
 .tampo {
   position: relative;
