@@ -1,6 +1,7 @@
 import { type Cadeira, ehFaseRitual, fechadasUsadas, LIMITE_FAMILIAS_FECHADAS, parceiroDe, quemDeveAgir } from '@truco/engine';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CartaVisual } from '../componentes/CartaVisual';
+import { SeletorAparenciaMesa } from '../componentes/SeletorAparenciaMesa';
 import { useAnimacaoRitual } from '../componentes/animacaoMesa';
 import { Assento, GRITOS } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
@@ -22,6 +23,7 @@ import { PainelSinais } from '../componentes/PainelSinais';
 import { Placar } from '../componentes/Placar';
 import { Tampo } from '../componentes/Tampo';
 import { agruparAcoes } from '../logica/acoes';
+import { aparenciaPermitida, lerAparenciaMesa, salvarAparenciaMesa, type AparenciaMesa } from '../logica/aparenciaMesa';
 import { botaoBate } from '../logica/batida';
 import { rotuloCarta } from '../logica/cartas';
 import { baloesAtivos } from '../logica/eventos';
@@ -59,13 +61,15 @@ function gravarVista3D(ligada: boolean): void {
 interface Props {
   /** Precisa ter `msg.visao` (a App só mostra a mesa depois que a partida começa). */
   snap: EstadoLoja;
+  /** Feltro em prévia gratuita para contas; não há cobrança. */
+  temConta?: boolean;
   acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida' | 'enviarSemFamilia' | 'enviarRevanche'>>;
   aoChat?: (texto: string) => void;
   /** Começa outra partida com as mesmas opções (a App decide como). Sem ele, o fim só volta ao início. */
   aoJogarDeNovo?: () => void;
 }
 
-export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
+export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false }: Props) {
   const agora = useAgora(250);
   const [painel, setPainel] = useState<'sinais' | 'falas' | 'chat' | null>(null);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
@@ -76,6 +80,14 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   // Em outra aba/app: o título pisca e o celular vibra quando é a minha vez de agir.
   useAvisoNaAba(prazoEhMeu(snap.msg!), 'Sua vez! · Truco', somLigado);
   const [vista3d, setVista3d] = useState(lerVista3D);
+  const [aparenciaSalva, setAparenciaSalva] = useState<AparenciaMesa>(lerAparenciaMesa);
+  const [personalizando, setPersonalizando] = useState(false);
+  const aparencia = aparenciaPermitida(aparenciaSalva, temConta);
+  const mudarAparencia = (escolhida: AparenciaMesa) => {
+    if (escolhida === 'feltro' && !temConta) return;
+    setAparenciaSalva(escolhida);
+    salvarAparenciaMesa(escolhida);
+  };
   const [aviso3d, setAviso3d] = useState<string | null>(null);
   const trocarVista = () => {
     setAviso3d(null);
@@ -169,6 +181,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
             <IconeChat />
           </button>
         )}
+        <button type="button" className="icone-mesa" aria-label="Personalizar mesa" title="Escolher madeira, feltro ou plástico" aria-expanded={personalizando} aria-controls="personalizar-mesa" onClick={() => setPersonalizando((v) => !v)}>
+          <span aria-hidden="true">♣</span>
+        </button>
         <button type="button" className="icone-mesa" aria-label="3D" title={vista3d ? 'Voltar para a mesa 2D' : 'Ver a mesa em 3D'} aria-pressed={vista3d} onClick={trocarVista}>
           <Icone3D />
         </button>
@@ -194,11 +209,19 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           <IconeSair />
         </button>
       </nav>
+      {personalizando && (
+        <SeletorAparenciaMesa
+          valor={aparencia}
+          temConta={temConta}
+          aoEscolher={mudarAparencia}
+          aoFechar={() => setPersonalizando(false)}
+        />
+      )}
       <Placar nos={nos} eles={eles} valor={m ? valorMao(v.regras, m.nivel) : null} pedido={pedido?.replace(/\.$/, '') ?? null} />
       {vista3d ? (
         <div className="mesa-3d" data-testid="mesa-3d">
           <Mesa3D
-            estado={estadoMesa3D({
+            estado={{ ...estadoMesa3D({
               visao: v,
               minha,
               cadeiras: msg.cadeiras,
@@ -208,7 +231,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
               exibicao: rodada.exibicao,
               naPilha: rodada.naPilha,
               agora,
-            })}
+            }), aparenciaMesa: aparencia }}
             minha={minha}
             batida={snap.batida}
             aoFalhar={falhar3d}
@@ -237,6 +260,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
         </div>
       ) : (
       <Tampo
+        aparencia={aparencia}
         fisica={msg.mesaFisica}
         minha={minha}
         batida={snap.batida}
