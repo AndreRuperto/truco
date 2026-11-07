@@ -434,6 +434,10 @@ export class Mesa {
       if (idHumano) this.erro(idHumano, 'espere: ainda é a hora de pedir família');
       return false;
     }
+    if (pedida.tipo === 'familia' && idHumano && this.janela && !this.janelaAberta()) {
+      this.erro(idHumano, 'a janela de família já terminou');
+      return false;
+    }
     const fechaEtapa = !ehFaseRitual(antes.fase) && quemDeveAgir(antes).includes(pedida.cadeira);
     const acao = completarSorte(semSorte(pedida), antes, this.rand);
     try {
@@ -744,7 +748,10 @@ export class Mesa {
       prazo: this.prazo,
       janelaFamilia: this.janelaAberta() ? { ate: this.janela!.ate, decidiram: [...this.janela!.decidiram] } : null,
       revanche: this.podeRevanche() ? { votos: [...this.votosRevanche], faltam: this.faltamRevanche() } : null,
-      minhasAcoes: s ? acoesValidas(s, c).filter((a) => a.tipo !== 'jogar' || !this.janelaAberta()) : [],
+      minhasAcoes: s ? acoesValidas(s, c).filter((a) =>
+        (a.tipo !== 'jogar' || !this.janelaAberta()) &&
+        (a.tipo !== 'familia' || !this.janela || this.janelaAberta())
+      ) : [],
       mesaFisica: this.fisica,
     };
     this.o.enviar(this.ocupantes[c].id!, 'estado', msg);
