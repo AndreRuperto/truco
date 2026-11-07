@@ -25,7 +25,7 @@
 
 /* A mesa clássica recupera o tampo de madeira plano e as cadeiras desenhadas. */
 .tela-mesa[data-visualizacao='cadeiras'] .mesa-ambiente > .tampo:not(.tampo-feltro) {
-  isolation: auto;
+  isolation: isolate;
   background: var(--tampo-fundo);
   box-shadow: var(--tampo-borda), var(--sombra-tampo);
 }
