@@ -29,6 +29,7 @@ export interface PreferenciasMesa {
   nivelBot: NivelBot;
   chanceInterceptarSinal: number;
   tempoFamiliaS?: TempoFamiliaS;
+  sinais?: boolean;
 }
 
 export interface ConfigApi {

@@ -181,20 +181,26 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
                 <option value="dificil">Difícil</option>
               </select>
             </div>
-            <div className="campo largo">
-              <label htmlFor="interceptar">Adversários podem interceptar sinais</label>
-              <select
-                id="interceptar"
-                value={String(f.chanceInterceptarSinal)}
-                onChange={(e) => mudar('chanceInterceptarSinal', Number(e.target.value))}
-              >
-                {OPCOES_INTERCEPTACAO.map((o) => (
-                  <option key={o.valor} value={String(o.valor)}>
-                    {o.rotulo}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <label className="campo-check largo">
+              <input type="checkbox" checked={f.sinais} onChange={(e) => mudar('sinais', e.target.checked)} />
+              Sinais entre parceiros
+            </label>
+            {f.sinais && (
+              <div className="campo largo">
+                <label htmlFor="interceptar">Adversários podem interceptar sinais</label>
+                <select
+                  id="interceptar"
+                  value={String(f.chanceInterceptarSinal)}
+                  onChange={(e) => mudar('chanceInterceptarSinal', Number(e.target.value))}
+                >
+                  {OPCOES_INTERCEPTACAO.map((o) => (
+                    <option key={o.valor} value={String(o.valor)}>
+                      {o.rotulo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <label className="campo-check largo">
               <input type="checkbox" checked={f.maoDe10} onChange={(e) => mudar('maoDe10', e.target.checked)} />
               Mão de 10
@@ -232,7 +238,7 @@ function resumoLobby(f: FormLobby): string {
     TEXTO_FAMILIA[f.familia],
     f.variante === 'mineiro' && f.maoLimpa ? 'mão limpa' : null,
     bots > 0 ? `${bots} ${bots === 1 ? 'bot' : 'bots'} ${nivel}` : 'só humanos',
-    f.chanceInterceptarSinal > 0 ? 'sinais interceptáveis' : null,
+    !f.sinais ? 'sem sinais' : f.chanceInterceptarSinal > 0 ? 'sinais interceptáveis' : null,
   ];
   return partes.filter(Boolean).join(', ');
 }

@@ -91,6 +91,8 @@ export interface MsgEstado {
   regras: RegrasMesa;
   /** Chance (0–1) de cada adversário ver um sinal; 0 = sinais são só do parceiro. */
   chanceInterceptarSinal: number;
+  /** Sinais liberados nesta mesa (false = ninguém sinaliza; o botão some). Ausente = ligados. */
+  sinais?: boolean;
   /** Quantos humanos a mesa espera antes de começar sozinha (o resto vira bot). */
   humanosEsperados: number;
   visao: Visao | null;
@@ -190,7 +192,12 @@ export interface OpcoesSala {
   chanceInterceptarSinal: number;
   /** Segundos para pedir família depois de dar as cartas (iguais para todos). */
   tempoFamiliaS: TempoFamiliaS;
+  /** Sinais entre parceiros liberados. Padrão: desligados no mineiro, ligados no paulista. */
+  sinais: boolean;
 }
+
+/** Sinais vêm ligados no paulista e desligados no mineiro (quem quiser liga na mesa). */
+export const sinaisPadrao = (variante: Variante) => variante !== 'mineiro';
 
 export const TEMPOS_FAMILIA_S = [20, 25, 30] as const;
 export type TempoFamiliaS = (typeof TEMPOS_FAMILIA_S)[number];
@@ -201,7 +208,7 @@ export type TempoFamiliaS = (typeof TEMPOS_FAMILIA_S)[number];
  * ela já tem filtro próprio. O cliente oficial sempre manda esta chave em
  * `joinOrCreate`; a sala a recalcula a partir das opções validadas (ver `MesaRoom.onCreate`).
  */
-export function chaveRegras(regras: RegrasMesa, chanceInterceptarSinal: number, tempoFamiliaS: number = 20): string {
+export function chaveRegras(regras: RegrasMesa, chanceInterceptarSinal: number, tempoFamiliaS: number = 20, sinais: boolean = sinaisPadrao(regras.variante)): string {
   return [
     regras.pontuacao,
     `m10:${regras.maoDe10 ? 1 : 0}`,
@@ -210,6 +217,7 @@ export function chaveRegras(regras: RegrasMesa, chanceInterceptarSinal: number, 
     `lim:${regras.maoLimpa === true ? 1 : 0}`,
     `int:${chanceInterceptarSinal}`,
     ...(regras.familia === 'off' ? [] : [`tf:${tempoFamiliaS}`]),
+    `sin:${sinais ? 1 : 0}`,
   ].join('|');
 }
 
@@ -240,16 +248,17 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
   const chanceInterceptarSinal = typeof ch === 'number' && ch >= 0 && ch <= 1 ? ch : 0;
   const tf = o.tempoFamiliaS;
   const tempoFamiliaS: TempoFamiliaS = (TEMPOS_FAMILIA_S as readonly unknown[]).includes(tf) ? (tf as TempoFamiliaS) : 20;
+  const sinais = typeof o.sinais === 'boolean' ? o.sinais : sinaisPadrao(variante);
   const nivelPedido = um(o.nivelBot, ['facil', 'dificil'] as const, 'facil');
   const modo = um(o.modo, MODOS_MESA, nivelPedido === 'dificil' ? 'desafio' : 'classica');
   if (modo === 'ranqueada') {
-    return { modo, regras: { ...REGRAS_RANQUEADA[variante] }, humanos: h === 4 ? 4 : 2, nivelBot: 'dificil', chanceInterceptarSinal: 0, tempoFamiliaS: 20 };
+    return { modo, regras: { ...REGRAS_RANQUEADA[variante] }, humanos: h === 4 ? 4 : 2, nivelBot: 'dificil', chanceInterceptarSinal: 0, tempoFamiliaS: 20, sinais: sinaisPadrao(variante) };
   }
   const nivelBot: NivelBot = modo === 'classica' ? 'facil' : modo === 'desafio' ? 'dificil' : nivelPedido;
   // Mesa privada é para chamar gente pelo link: com 1 humano ela começaria na hora, sem sala de
   // espera (e sem link). Espera até 4; o dono pode começar com bots quando quiser.
   const humanosMesa = modo === 'privada' && humanos < 2 ? 4 : humanos;
-  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS };
+  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais };
 }
 
 /** Campos do `filterBy` da sala `mesa`, sempre preenchidos com valores validados. */
@@ -267,6 +276,6 @@ export function filtroDaSala(o: OpcoesSala): FiltroSala {
     variante: o.regras.variante,
     humanos: o.humanos,
     nivelBot: o.nivelBot,
-    chaveRegras: chaveRegras(o.regras, o.chanceInterceptarSinal, o.tempoFamiliaS),
+    chaveRegras: chaveRegras(o.regras, o.chanceInterceptarSinal, o.tempoFamiliaS, o.sinais),
   };
 }

@@ -155,9 +155,11 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
     <main className="tela-mesa">
       {/* Menu da mesa: ícones no canto de cima (o nome de cada um vai no aria-label e no title). */}
       <nav className="barra-mesa" aria-label="Menu da mesa">
-        <button type="button" className="icone-mesa" aria-label="Sinais" title="Sinais" aria-pressed={painel === 'sinais'} onClick={() => alternar('sinais')}>
-          <IconeSinais />
-        </button>
+        {msg.sinais !== false && (
+          <button type="button" className="icone-mesa" aria-label="Sinais" title="Sinais" aria-pressed={painel === 'sinais'} onClick={() => alternar('sinais')}>
+            <IconeSinais />
+          </button>
+        )}
         <button type="button" className="icone-mesa" aria-label="Falas" title="Falas" aria-pressed={painel === 'falas'} onClick={() => alternar('falas')}>
           <IconeFalas />
         </button>
@@ -342,7 +344,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           aoBater={acoes.enviarBatida}
         />
       </div>
-      {painel === 'sinais' && (
+      {painel === 'sinais' && msg.sinais !== false && (
         <PainelSinais
           chanceInterceptar={msg.chanceInterceptarSinal}
           ultimo={sinal}

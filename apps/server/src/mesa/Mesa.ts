@@ -99,6 +99,8 @@ export interface OpcoesMesa {
   chanceInterceptarSinal?: number;
   /** Bots sinalizam ao parceiro a melhor carta no início da mão. Padrão: só com bot difícil. */
   sinaisBot?: boolean;
+  /** Sinais liberados na mesa (padrão: sim). Desligados, ninguém sinaliza (nem os bots). */
+  sinais?: boolean;
   /** Chance (0–1) de um bot comentar o fim de uma rodada ("boa", "bora", "vixe"). Padrão 0. */
   chanceFalaBot?: number;
   aoTerminar?: (s: EstadoPartida) => void;
@@ -369,6 +371,10 @@ export class Mesa {
   sinal(id: string, sinal: unknown): void {
     const c = this.cadeiraDe(id);
     if (c === null || !this.estado || !ehSinal(sinal) || !this.podeMandar(c)) return;
+    if (this.o.sinais === false) {
+      this.erro(id, 'nesta mesa não vale passar sinal');
+      return;
+    }
     this.enviarSinal(c, sinal);
   }
 
@@ -723,6 +729,7 @@ export class Mesa {
       modo: this.o.modo ?? 'classica',
       regras: this.o.regras,
       chanceInterceptarSinal: this.o.chanceInterceptarSinal ?? 0,
+      sinais: this.o.sinais !== false,
       humanosEsperados: this.o.humanosEsperados,
       visao: s ? visaoDoJogador(s, c) : null,
       prazo: this.prazo,
@@ -748,7 +755,7 @@ export class Mesa {
   private sinaisDosBots(): void {
     const s = this.estado;
     if (!s?.mao || s.mao.tipo !== 'normal') return;
-    if (!(this.o.sinaisBot ?? this.o.nivelBot === 'dificil')) return;
+    if (this.o.sinais === false || !(this.o.sinaisBot ?? this.o.nivelBot === 'dificil')) return;
     for (const c of CADEIRAS) {
       if (this.ocupantes[c].humano) continue;
       this.enviarSinal(c, sinalDaMao(s.mao.maos[c], s.regras.variante, s.mao.vira));

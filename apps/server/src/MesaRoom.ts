@@ -151,7 +151,7 @@ export class MesaRoom extends Room {
   onCreate(options: unknown) {
     const cru = (options && typeof options === 'object' ? options : {}) as Record<string, unknown>;
     const opcoes = opcoesDaSala(cru);
-    const { modo, regras, humanos, nivelBot, chanceInterceptarSinal, tempoFamiliaS } = opcoes;
+    const { modo, regras, humanos, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais } = opcoes;
     if (modo === 'ranqueada') {
       if (cru.fichaInterna !== MesaRoom.fichaInterna) throw new Error('mesa ranqueada só pela fila');
       this.reservados = jogadoresReservados(cru.jogadores);
@@ -180,6 +180,7 @@ export class MesaRoom extends Room {
       nivelBot,
       humanosEsperados: humanos,
       chanceInterceptarSinal,
+      sinais,
       chanceFalaBot: 0.2,
       // O tempo de família vem da mesa; `MesaRoom.tempos` (testes, E2E) pode encurtar.
       tempos: { janelaFamiliaMs: tempoFamiliaS * 1000, ...MesaRoom.tempos },

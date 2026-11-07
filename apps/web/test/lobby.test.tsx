@@ -28,7 +28,8 @@ describe('Lobby', () => {
       regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada', maoLimpa: false },
       chanceInterceptarSinal: 0.25,
       tempoFamiliaS: 20,
-      chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|lim:0|int:0.25|tf:20',
+      sinais: false,
+      chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|lim:0|int:0.25|tf:20|sin:0',
       modo: 'desafio',
     });
     expect(localStorage.getItem(CHAVE_APELIDO)).toBe('Ana');
@@ -74,10 +75,21 @@ describe('Lobby', () => {
     expect(screen.getByRole('checkbox', { name: /Mão limpa/ })).not.toBeChecked();
   });
 
-  test('interceptação de sinais: padrão "Às vezes"; escolher manda a chance', async () => {
+  test('sinais: desligados no mineiro, ligados no paulista; ligar mostra a interceptação', async () => {
     const user = userEvent.setup();
     const aoJogar = vi.fn();
     render(<Lobby aoJogar={aoJogar} />);
+    const sinais = screen.getByRole('checkbox', { name: 'Sinais entre parceiros' });
+    expect(sinais).not.toBeChecked();
+    expect(screen.queryByLabelText('Adversários podem interceptar sinais')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
+    expect(aoJogar.mock.calls[0][0]).toMatchObject({ sinais: false, chaveRegras: expect.stringContaining('|sin:0') });
+    await user.selectOptions(screen.getByLabelText('Variante'), 'paulista');
+    expect(sinais).toBeChecked();
+    await user.selectOptions(screen.getByLabelText('Variante'), 'mineiro');
+    expect(sinais).not.toBeChecked();
+    await user.click(sinais);
+    aoJogar.mockClear();
     const campo = screen.getByLabelText('Adversários podem interceptar sinais');
     expect(campo).toHaveDisplayValue('Às vezes');
     await user.selectOptions(campo, 'Nunca');
@@ -104,7 +116,7 @@ describe('Lobby', () => {
     const resumo = screen.getByText('Regras da mesa').closest('summary')!;
     expect(resumo.closest('details')).not.toHaveAttribute('open');
     expect(resumo).toHaveTextContent(
-      'Mineiro, 1-3-6-9-12, mão de 10, mão de 11, família fechada, mão limpa, 3 bots difíceis, sinais interceptáveis',
+      'Mineiro, 1-3-6-9-12, mão de 10, mão de 11, família fechada, mão limpa, 3 bots difíceis, sem sinais',
     );
     await user.selectOptions(screen.getByLabelText('Humanos'), '2');
     expect(resumo).toHaveTextContent('2 bots difíceis');

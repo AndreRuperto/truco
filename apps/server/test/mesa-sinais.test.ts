@@ -28,6 +28,22 @@ describe('sinais', () => {
     expect(t.de('d', 'sinal')).toEqual([{ de: 0, sinal: 'copas', interceptado: true }]);
   });
 
+  test('mesa com sinais desligados: ninguém recebe, quem tentou ouve o porquê, e o estado avisa', () => {
+    const t = criarMesa({ humanosEsperados: 4, sinais: false });
+    for (const id of ['a', 'b', 'c', 'd']) t.mesa.sentar(id, id);
+    t.mesa.sinal('a', 'zap');
+    expect(t.de('b', 'sinal')).toEqual([]);
+    expect(t.de('a', 'erro').at(-1)).toEqual({ mensagem: 'nesta mesa não vale passar sinal' });
+    expect(t.estado('a')!.sinais).toBe(false);
+  });
+
+  test('bots difíceis não sinalizam numa mesa sem sinais', () => {
+    const t = criarMesa({ nivelBot: 'dificil', sinais: false, tempos: { ...TEMPOS, jogadaMs: 50, ritualMs: 50 } });
+    t.mesa.sentar('a', 'Ana');
+    vi.advanceTimersByTime(20_000);
+    expect(t.de('a', 'sinal')).toEqual([]);
+  });
+
   test('sinal inválido é ignorado', () => {
     const t = mesaCheia();
     t.mesa.sinal('a', 'olhar feio');

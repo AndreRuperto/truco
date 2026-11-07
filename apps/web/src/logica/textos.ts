@@ -84,7 +84,7 @@ export function textoInterceptacao(chance: number): string {
 }
 
 /** Linhas curtas com as regras da mesa (sala de espera). */
-export function resumoRegras(r: RegrasMesa, chanceInterceptarSinal: number): string[] {
+export function resumoRegras(r: RegrasMesa, chanceInterceptarSinal: number, sinais = true): string[] {
   return [
     r.variante === 'paulista' ? 'Paulista (com vira)' : 'Mineiro (manilhas fixas)',
     `Pontos ${r.pontuacao.split('-').join(' · ')}`,
@@ -92,6 +92,6 @@ export function resumoRegras(r: RegrasMesa, chanceInterceptarSinal: number): str
     TEXTO_MAO11[r.maoDe11],
     TEXTO_FAMILIA[r.familia],
     ...(r.variante === 'mineiro' && r.maoLimpa === true ? ['Mão limpa (sem 4 a 7, com 2 coringas)'] : []),
-    textoInterceptacao(chanceInterceptarSinal),
+    sinais ? textoInterceptacao(chanceInterceptarSinal) : 'Sem sinais entre parceiros',
   ];
 }

@@ -254,7 +254,7 @@ export function preferenciasValidas(cru: unknown): PreferenciasMesa | null {
   // Humanos direto do que veio (1..4): a mesa privada sobe "só eu" para 4, a preferência não.
   const h = c.humanos;
   const humanos = typeof h === 'number' && Number.isInteger(h) && h >= 1 && h <= 4 ? h : 1;
-  return { variante, ...regras, maoLimpa: regras.maoLimpa === true, humanos, nivelBot: o.nivelBot, chanceInterceptarSinal: o.chanceInterceptarSinal, tempoFamiliaS: o.tempoFamiliaS };
+  return { variante, ...regras, maoLimpa: regras.maoLimpa === true, humanos, nivelBot: o.nivelBot, chanceInterceptarSinal: o.chanceInterceptarSinal, tempoFamiliaS: o.tempoFamiliaS, sinais: o.sinais };
 }
 
 export async function lerPreferencias(db: Banco, id: number): Promise<PreferenciasMesa | null> {
