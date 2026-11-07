@@ -186,7 +186,7 @@ export class Mesa {
   /** Bots fora da vez que já decidiram a família nesta mão (uma decisão por mão: sem novo sorteio a cada mudança). */
   private familiaDecidida = new Set<Cadeira>();
   /** Janela de família da mão atual (ver `Tempos.janelaFamiliaMs`); null = a mão não teve. */
-  private janela: { ate: number; decidiram: Set<Cadeira>; fechada: boolean } | null = null;
+  private janela: { ate: number; decidiram: Set<Cadeira>; fechada: boolean; pausadaEm: number | null } | null = null;
   /** Prazo único de quem ainda não empilhou na cangada (não reinicia a cada um que empilha). */
   private ateEmpilhar: number | null = null;
   /** Fim de partida: humanos que pediram revanche. */
@@ -465,11 +465,20 @@ export class Mesa {
       this.familiaDecidida.clear();
       this.janela =
         this.tempos.janelaFamiliaMs > 0 && janelaDeFamilia(this.estado)
-          ? { ate: this.relogio.agora() + this.tempos.distribuicaoMs + this.tempos.janelaFamiliaMs, decidiram: new Set(), fechada: false }
+          ? { ate: this.relogio.agora() + this.tempos.distribuicaoMs + this.tempos.janelaFamiliaMs, decidiram: new Set(), fechada: false, pausadaEm: null }
           : null;
       this.sinaisDosBots();
     }
-    if (acao.tipo === 'familia' && this.janela && this.ocupantes[acao.cadeira].humano) this.janela.decidiram.add(acao.cadeira);
+    // Pedir família não encerra a participação: o jogador ainda pode pedir outra
+    // dentro do limite de três fechadas da mesa, até escolher "Sem família".
+    // Durante a conferência dos adversários, o relógio da janela fica pausado.
+    if (acao.tipo === 'familia' && this.janela && this.estado.fase === 'conferindoFamilia') {
+      this.janela.pausadaEm ??= this.relogio.agora();
+    }
+    if (acao.tipo === 'conferir' && this.janela && this.janela.pausadaEm !== null) {
+      this.janela.ate += this.relogio.agora() - this.janela.pausadaEm;
+      this.janela.pausadaEm = null;
+    }
     // Quem pediu família trocou as cartas: o sinal que o parceiro tinha não vale mais.
     if (acao.tipo === 'familia') this.dicas[parceiroDe(acao.cadeira)] = null;
     this.atualizar();
