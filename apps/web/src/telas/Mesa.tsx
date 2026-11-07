@@ -10,6 +10,7 @@ import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { Cronometro } from '../componentes/Cronometro';
 import { FamiliasNaMesa } from '../componentes/FamiliasNaMesa';
 import { GuiaOrdem } from '../componentes/GuiaOrdem';
+import { Icone3D, IconeChat, IconeFalas, IconeManual, IconeSair, IconeSinais, IconeSom } from '../componentes/IconesMesa';
 import { ManualMesa } from '../componentes/ManualMesa';
 import { Mao } from '../componentes/Mao';
 import { Mesa3D } from '../componentes/Mesa3D';
@@ -152,6 +153,44 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
 
   return (
     <main className="tela-mesa">
+      {/* Menu da mesa: ícones no canto de cima (o nome de cada um vai no aria-label e no title). */}
+      <nav className="barra-mesa" aria-label="Menu da mesa">
+        <button type="button" className="icone-mesa" aria-label="Sinais" title="Sinais" aria-pressed={painel === 'sinais'} onClick={() => alternar('sinais')}>
+          <IconeSinais />
+        </button>
+        <button type="button" className="icone-mesa" aria-label="Falas" title="Falas" aria-pressed={painel === 'falas'} onClick={() => alternar('falas')}>
+          <IconeFalas />
+        </button>
+        {modo === 'privada' && aoChat && (
+          <button type="button" className="icone-mesa" aria-label="Chat" title="Chat" aria-pressed={painel === 'chat'} onClick={() => alternar('chat')}>
+            <IconeChat />
+          </button>
+        )}
+        <button type="button" className="icone-mesa" aria-label="3D" title={vista3d ? 'Voltar para a mesa 2D' : 'Ver a mesa em 3D'} aria-pressed={vista3d} onClick={trocarVista}>
+          <Icone3D />
+        </button>
+        <button
+          type="button"
+          className="icone-mesa"
+          aria-label="Som"
+          aria-pressed={somLigado}
+          title={somLigado ? 'Desligar o som' : 'Ligar o som'}
+          onClick={() =>
+            setSomLigado((x) => {
+              gravarSomLigado(!x);
+              return !x;
+            })
+          }
+        >
+          <IconeSom ligado={somLigado} />
+        </button>
+        <button type="button" className="icone-mesa botao-ajuda" aria-label="Como jogar" title="Como jogar" onClick={() => setManual(true)}>
+          <IconeManual />
+        </button>
+        <button type="button" className="icone-mesa" aria-label="Sair" title="Sair da mesa" onClick={() => setConfirmarSaida(true)}>
+          <IconeSair />
+        </button>
+      </nav>
       <Placar nos={nos} eles={eles} valor={m ? valorMao(v.regras, m.nivel) : null} pedido={pedido?.replace(/\.$/, '') ?? null} />
       {vista3d ? (
         <div className="mesa-3d" data-testid="mesa-3d">
@@ -302,41 +341,6 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           bate={(b) => botaoBate(b, m)}
           aoBater={acoes.enviarBatida}
         />
-        <nav className="barra-social" aria-label="Sinais e falas">
-          <button type="button" aria-pressed={painel === 'sinais'} onClick={() => alternar('sinais')}>
-            Sinais
-          </button>
-          <button type="button" aria-pressed={painel === 'falas'} onClick={() => alternar('falas')}>
-            Falas
-          </button>
-          {modo === 'privada' && aoChat && (
-            <button type="button" aria-pressed={painel === 'chat'} onClick={() => alternar('chat')}>
-              Chat
-            </button>
-          )}
-          <button type="button" aria-pressed={vista3d} onClick={trocarVista}>
-            3D
-          </button>
-          <button
-            type="button"
-            aria-pressed={somLigado}
-            title={somLigado ? 'Desligar o som' : 'Ligar o som'}
-            onClick={() =>
-              setSomLigado((x) => {
-                gravarSomLigado(!x);
-                return !x;
-              })
-            }
-          >
-            Som
-          </button>
-          <button type="button" className="botao-ajuda" aria-label="Como jogar" title="Como jogar" onClick={() => setManual(true)}>
-            ?
-          </button>
-          <button type="button" onClick={() => setConfirmarSaida(true)}>
-            Sair
-          </button>
-        </nav>
       </div>
       {painel === 'sinais' && (
         <PainelSinais

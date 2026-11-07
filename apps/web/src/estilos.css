@@ -983,7 +983,7 @@ button:disabled {
 /* ---------- mesa ---------- */
 .tela-mesa {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
   gap: var(--e2);
   min-height: 100vh;
   min-height: 100dvh;
@@ -1726,6 +1726,54 @@ body:has(.tela-mesa) {
   width: 90px;
   height: 6px;
   accent-color: var(--grito);
+}
+
+/* Menu da mesa: ícones quadrados no canto de cima, à direita (sinais, falas, chat, 3D, som,
+   manual, sair). Os painéis de sinais/falas/chat abrem logo abaixo deles. */
+.barra-mesa {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  --foco: var(--grito);
+}
+.icone-mesa {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--giz) 18%, transparent);
+  border-radius: var(--raio-botao);
+  background: color-mix(in srgb, var(--lousa) 88%, transparent);
+  color: var(--giz);
+}
+.icone-mesa:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--lousa) 80%, var(--giz));
+}
+.icone-mesa[aria-pressed='true'] {
+  border-color: var(--grito);
+  color: var(--grito);
+}
+.tela-mesa {
+  position: relative;
+}
+.tela-mesa > .painel,
+.tela-mesa > .chat {
+  position: absolute;
+  z-index: 50;
+  top: 60px;
+  right: var(--e2);
+  bottom: auto;
+  left: auto;
+  width: min(420px, calc(100vw - 2 * var(--e2)));
+  margin: 0;
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--sombra) 50%, transparent);
+}
+@media (max-width: 420px) {
+  .barra-mesa {
+    gap: 4px;
+  }
 }
 
 /* Tampo de madeira */
