@@ -1,5 +1,5 @@
 import type { PerfilApi } from '@truco/api';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { ErroApi } from '../src/rede/api';
@@ -36,7 +36,7 @@ describe('TelaPerfil', () => {
     expect(within(bloco).getByTestId('google-status')).toHaveTextContent('Não conectado');
     // Sem Google ligado no servidor, não há botão de conectar.
     expect(within(bloco).queryByText(/Conecte sua conta Google/)).toBeNull();
-    expect(screen.getByLabelText('Apelido')).toHaveFocus();
+    await waitFor(() => expect(screen.getByLabelText('Apelido')).toHaveFocus());
   });
 
   test('com Google ligado no servidor e conta sem Google, oferece conectar; já conectado, não', async () => {
