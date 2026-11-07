@@ -66,9 +66,19 @@ export function TelaSalas({ api, aoEntrar, aoJogarComBots, aoCriarMesa, aoRanque
           <h2 id="mesa-vazia-titulo">Ninguém sentou ainda</h2>
           <p>As mesas esperando gente aparecem aqui assim que alguém abre uma. Abra a sua e chame os amigos, ou comece contra os bots.</p>
           <div className="mesa-vazia-acoes">
-            <a className="botao-principal botao-link" href="#/">
-              Abrir uma mesa
-            </a>
+            {aoCriarMesa && aoRanqueada ? (
+              <button
+                type="button"
+                className="botao-principal"
+                onClick={() => document.getElementById('titulo-abrir-mesa')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })}
+              >
+                Abrir uma mesa
+              </button>
+            ) : (
+              <a className="botao-principal botao-link" href="#/">
+                Abrir uma mesa
+              </a>
+            )}
             {aoJogarComBots && (
               <button type="button" onClick={aoJogarComBots}>
                 Jogar com bots agora
