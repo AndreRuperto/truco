@@ -113,6 +113,16 @@ async function conectarCom(
 const MESA_INDISPONIVEL = /not found|locked|full|expired|not available/i;
 const traduzirEntrada = (e: unknown) => (MESA_INDISPONIVEL.test(mensagem(e)) ? 'Mesa não encontrada ou já começou.' : null);
 
+/** Mesa casual pública nova: aparece em Salas para os outros entrarem.
+ * Diferente de joinOrCreate, nunca coloca o anfitrião numa mesa já existente. */
+export const criarMesaAberta = (loja: Loja, opcoes: OpcoesEntrada, cliente?: ClienteSala) =>
+  conectarCom(
+    loja,
+    (c) => c.create('mesa', { ...opcoes, modo: opcoes.nivelBot === 'dificil' ? 'desafio' : 'classica' }),
+    cliente,
+    'Não foi possível abrir a mesa',
+  );
+
 /** Mesa privada nova: não aparece na lista nem no joinOrCreate; o `roomId` é o convite. */
 export const criarMesaPrivada = (loja: Loja, opcoes: OpcoesEntrada, cliente?: ClienteSala) =>
   conectarCom(loja, (c) => c.create('mesa', { ...opcoes, modo: 'privada' }), cliente, 'Não foi possível criar a mesa');
