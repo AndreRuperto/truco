@@ -1,0 +1,119 @@
+/*
+ * Mesa de partida oval: o mesmo feltro e a borda de madeira vistos nos cards.
+ * Só aplica à mesa intacta. Ao quebrar, permanece a mesa de plástico original,
+ * incluindo animações, marcas, hitboxes e controles.
+ *
+ * A grade do tampo continua retangular e transparente para os assentos,
+ * cartas, monte, drag-and-drop e animações não precisarem ser reposicionados.
+ * A superfície real é desenhada atrás com pseudo-elementos sem pointer events.
+ */
+.tela-mesa .mesa-ambiente > .tampo.tampo-feltro {
+  --feltro-mesa: #184d37;
+  position: relative;
+  isolation: isolate;
+  border-radius: 50% / 47%;
+  background: none;
+  box-shadow: none;
+}
+
+/* Borda maciça — a madeira aparece por fora de toda a oval. */
+.tela-mesa .mesa-ambiente > .tampo.tampo-feltro::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 -10px;
+  border-radius: 50% / 47%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 56% at 50% 0%, rgba(217, 165, 88, .18), transparent 72%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 7px),
+    linear-gradient(90deg, #4a2c1b 0%, #91603a 23%, #5a3621 58%, #3d2519 100%);
+  box-shadow:
+    inset 0 0 0 3px #2d1b13,
+    inset 0 0 0 7px rgba(208, 151, 87, .62),
+    inset 0 0 0 12px rgba(25, 16, 11, .92),
+    0 11px 0 -3px #342016,
+    0 24px 38px rgba(5, 10, 7, .55);
+}
+
+/* Feltro verde com textura e filete ornamental no aro. */
+.tela-mesa .mesa-ambiente > .tampo.tampo-feltro::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 2.4% 2.1% 1.5%;
+  border-radius: 50% / 47%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 72% 54% at 47% 38%, rgba(138, 186, 128, .14), transparent 83%),
+    radial-gradient(ellipse 80% 80% at 70% 96%, rgba(2, 19, 12, .3), transparent 85%),
+    repeating-linear-gradient(45deg, rgba(235, 255, 218, .025) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-45deg, rgba(1, 12, 6, .035) 0 1px, transparent 1px 4px),
+    var(--feltro-mesa);
+  box-shadow:
+    inset 0 0 0 2px rgba(175, 148, 86, .83),
+    inset 0 0 0 9px rgba(2, 22, 14, .58),
+    inset 0 0 0 10px rgba(209, 197, 129, .13),
+    inset 0 0 46px rgba(2, 13, 8, .7);
+}
+
+/* As marcas das batidas ficam sobre o feltro e atrás das cartas, sem ultrapassar a madeira. */
+.tampo.tampo-feltro > .rachaduras {
+  clip-path: ellipse(47% 47% at 50% 50%);
+}
+.tampo.tampo-feltro > .quebra {
+  border-radius: 50% / 47%;
+}
+.tampo.tampo-feltro .assento-nome {
+  background: rgba(40, 28, 19, .93);
+  box-shadow: inset 0 0 0 1px rgba(245, 219, 172, .22), 0 3px 8px rgba(3, 17, 10, .25);
+}
+.tampo.tampo-feltro .assento.da-vez .assento-nome {
+  background: var(--grito);
+}
+
+/* Os pés continuam por baixo do novo aro curvo. */
+.mesa-ambiente:has(> .tampo-feltro) .pe-esq { left: 22%; }
+.mesa-ambiente:has(> .tampo-feltro) .pe-dir { right: 22%; }
+
+/*
+ * A antiga versão 2.5D pintava o retângulo em perspectiva nos mesmos pseudo-elementos.
+ * Estas regras prevalecem também no desktop alto; personagens, parede e cadeiras
+ * continuam nas suas posições e não cobrem o tabuleiro.
+ */
+@media (min-width: 900px) and (min-height: 820px) {
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro {
+    background: none;
+    box-shadow: none;
+  }
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro::before {
+    inset: -7% .3% -14px;
+    height: auto;
+    transform: perspective(1200px) rotateX(10deg);
+    transform-origin: 50% 76%;
+  }
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro::after {
+    inset: -4.5% 2.4% 1.5%;
+    transform: perspective(1200px) rotateX(10deg);
+    transform-origin: 50% 76%;
+  }
+}
+
+/* Tela pequena: a oval continua preenchendo o espaço das cartas sem cortar a mão. */
+@media (max-width: 520px) {
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro::before {
+    inset: 0 -1% -7px;
+    box-shadow:
+      inset 0 0 0 2px #2d1b13,
+      inset 0 0 0 5px rgba(208, 151, 87, .65),
+      inset 0 0 0 9px rgba(25, 16, 11, .9),
+      0 8px 15px rgba(5, 10, 7, .45);
+  }
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro::after {
+    inset: 2.2% 1.1% 1.4%;
+    box-shadow:
+      inset 0 0 0 1px rgba(175, 148, 86, .75),
+      inset 0 0 0 6px rgba(2, 22, 14, .48),
+      inset 0 0 30px rgba(2, 13, 8, .55);
+  }
+}
