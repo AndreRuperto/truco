@@ -208,6 +208,7 @@ export class MesaRoom extends Room {
     this.onMessage('sinal', (client, payload) => this.mesa.sinal(client.sessionId, payload));
     this.onMessage('fala', (client, payload) => this.mesa.fala(client.sessionId, payload));
     this.onMessage('semFamilia', (client) => this.mesa.semFamilia(client.sessionId));
+    this.onMessage('revanche', (client) => this.mesa.revanche(client.sessionId));
     this.onMessage('batida', (client, payload) => this.mesa.batida(client.sessionId, (payload as { forca?: unknown } | null)?.forca));
     this.onMessage('chat', (client, payload) => this.mesa.chat(client.sessionId, payload));
     // Ranqueada começa sozinha quando todos os reservados sentam; ninguém completa com bots.

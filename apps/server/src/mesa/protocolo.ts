@@ -99,6 +99,11 @@ export interface MsgEstado {
    * humanos decidirem (pedir ou "sem família"). `decidiram`: humanos que já decidiram.
    */
   janelaFamilia?: { ate: number; decidiram: Cadeira[] } | null;
+  /**
+   * Fim de partida fora da ranqueada: quem quer revanche na mesma mesa (mesma turma, mesmas
+   * regras). Com todos os humanos conectados nela, começa outra partida. null = não há.
+   */
+  revanche?: { votos: Cadeira[]; faltam: Cadeira[] } | null;
   minhasAcoes: AcaoJogador[];
   /** Tampo ("bater na mesa"): rachaduras e se já quebrou e virou plástico. Sempre enviado pelo servidor. */
   mesaFisica?: MesaFisica;

@@ -171,6 +171,27 @@ describe('TelaMesa', () => {
     expect(acoes.sair).toHaveBeenCalledTimes(1);
   });
 
+  test('fim de partida com revanche: pede na mesma mesa, mostra quantos querem e espera os outros', async () => {
+    const user = userEvent.setup();
+    const acoes = { ...acoesFalsas(), enviarRevanche: vi.fn() };
+    const aoJogarDeNovo = vi.fn();
+    const base = msgEstado(distribuida(PAULISTA));
+    const fimDe = (votos: (0 | 1 | 2 | 3)[], faltam: (0 | 1 | 2 | 3)[]) => ({
+      ...base,
+      minhasAcoes: [],
+      revanche: { votos, faltam },
+      visao: { ...base.visao!, fase: 'fimPartida' as const, mao: null, vencedor: 0 as const, placar: [12, 4] as [number, number] },
+    });
+    const { rerender } = render(<TelaMesa snap={snap(fimDe([2], [0]))} acoes={acoes} aoJogarDeNovo={aoJogarDeNovo} />);
+    const fim = screen.getByTestId('fim-partida');
+    expect(fim).toHaveTextContent('1 de 2 querem revanche');
+    await user.click(within(fim).getByRole('button', { name: 'Revanche com a mesma turma' }));
+    expect(acoes.enviarRevanche).toHaveBeenCalledTimes(1);
+    expect(aoJogarDeNovo).not.toHaveBeenCalled();
+    rerender(<TelaMesa snap={snap(fimDe([2, 0], []))} acoes={acoes} aoJogarDeNovo={aoJogarDeNovo} />);
+    expect(within(fim).getByRole('button', { name: 'Esperando os outros…' })).toBeDisabled();
+  });
+
   test('fim de partida sem "jogar de novo" disponível: o botão principal volta ao início', async () => {
     const user = userEvent.setup();
     const acoes = acoesFalsas();

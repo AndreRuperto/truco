@@ -56,7 +56,7 @@ function gravarVista3D(ligada: boolean): void {
 interface Props {
   /** Precisa ter `msg.visao` (a App só mostra a mesa depois que a partida começa). */
   snap: EstadoLoja;
-  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida' | 'enviarSemFamilia'>>;
+  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida' | 'enviarSemFamilia' | 'enviarRevanche'>>;
   aoChat?: (texto: string) => void;
   /** Começa outra partida com as mesmas opções (a App decide como). Sem ele, o fim só volta ao início. */
   aoJogarDeNovo?: () => void;
@@ -327,7 +327,24 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
       )}
       {manual && <ManualMesa aoFechar={fecharManual} variante={variante} />}
       {resumoMao && <FimDeMao titulo={resumoMao.titulo} detalhe={resumoMao.detalhe} />}
-      {fim && <FimDePartida titulo={fim.titulo} placar={fim.placar} venceu={fim.venceu} aoJogarDeNovo={aoJogarDeNovo} aoVoltar={() => void acoes.sair()} />}
+      {fim && (
+        <FimDePartida
+          titulo={fim.titulo}
+          placar={fim.placar}
+          venceu={fim.venceu}
+          aoJogarDeNovo={aoJogarDeNovo}
+          aoVoltar={() => void acoes.sair()}
+          revanche={
+            msg.revanche && acoes.enviarRevanche
+              ? {
+                  aoPedir: acoes.enviarRevanche,
+                  jaPedi: msg.revanche.votos.includes(minha),
+                  quantos: [msg.revanche.votos.length, msg.revanche.votos.length + msg.revanche.faltam.length],
+                }
+              : null
+          }
+        />
+      )}
     </main>
   );
 }

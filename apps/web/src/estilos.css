@@ -1345,6 +1345,12 @@ body:has(.tela-mesa) {
   align-self: center;
 }
 
+.revanche-placar {
+  margin: calc(var(--e1) * -1) 0 0;
+  font-size: var(--t-1);
+  opacity: 0.85;
+}
+
 /* Tampo de madeira */
 .tampo {
   position: relative;

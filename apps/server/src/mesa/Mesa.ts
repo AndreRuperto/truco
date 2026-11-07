@@ -185,6 +185,8 @@ export class Mesa {
   private janela: { ate: number; decidiram: Set<Cadeira>; fechada: boolean } | null = null;
   /** Prazo único de quem ainda não empilhou na cangada (não reinicia a cada um que empilha). */
   private ateEmpilhar: number | null = null;
+  /** Fim de partida: humanos que pediram revanche. */
+  private votosRevanche = new Set<Cadeira>();
   /** Última mensagem de chat por cadeira (limite próprio, separado de sinais/falas). */
   private readonly ultimoChat: number[] = [-Infinity, -Infinity, -Infinity, -Infinity];
   /** Tampo da mesa ("bater na mesa"): rachaduras, dano e se já virou plástico. */
@@ -267,6 +269,41 @@ export class Mesa {
     this.versao++;
     this.o.aoIniciar?.();
     this.atualizar();
+  }
+
+  /**
+   * Revanche na mesma mesa (fora da ranqueada): cada humano conectado pede; com todos,
+   * começa outra partida com a mesma turma e as mesmas regras (quem caiu vira bot).
+   */
+  revanche(id: string): void {
+    const c = this.cadeiraDe(id);
+    if (c === null || !this.podeRevanche()) return;
+    this.votosRevanche.add(c);
+    if (this.faltamRevanche().length > 0) {
+      this.enviarEstados();
+      return;
+    }
+    this.votosRevanche.clear();
+    for (const k of CADEIRAS) if (this.ocupantes[k].humano && !this.ocupantes[k].conectado) this.virarBot(k);
+    this.terminou = false;
+    this.janela = null;
+    this.ateEmpilhar = null;
+    this.dicas = [null, null, null, null];
+    this.familiaDecidida.clear();
+    this.pedidoBatida = null;
+    this.fisica = mesaFisicaInicial();
+    this.estado = novaPartida(this.o.regras, Math.floor(this.rand() * 4) as Cadeira);
+    this.versao++;
+    this.o.aoIniciar?.();
+    this.atualizar(true);
+  }
+
+  private podeRevanche(): boolean {
+    return this.o.modo !== 'ranqueada' && this.estado?.fase === 'fimPartida';
+  }
+
+  private faltamRevanche(): Cadeira[] {
+    return CADEIRAS.filter((k) => this.humanoAtivo(k) && !this.votosRevanche.has(k));
   }
 
   desconectar(id: string): void {
@@ -687,6 +724,7 @@ export class Mesa {
       visao: s ? visaoDoJogador(s, c) : null,
       prazo: this.prazo,
       janelaFamilia: this.janelaAberta() ? { ate: this.janela!.ate, decidiram: [...this.janela!.decidiram] } : null,
+      revanche: this.podeRevanche() ? { votos: [...this.votosRevanche], faltam: this.faltamRevanche() } : null,
       minhasAcoes: s ? acoesValidas(s, c).filter((a) => a.tipo !== 'jogar' || !this.janelaAberta()) : [],
       mesaFisica: this.fisica,
     };

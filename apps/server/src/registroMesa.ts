@@ -63,6 +63,11 @@ export class RegistroMesa {
   iniciou(): void {
     const s = this.s;
     if (!s || this.desligando) return;
+    // Revanche na mesma sala: contadores do zero; a partida anterior já foi gravada.
+    for (const c of CADEIRAS) this.contadores[c] = contadoresZerados();
+    this.encadear(async () => {
+      this.partidaId = null;
+    });
     this.encadear(async () => {
       if (![...this.humanos.values()].some((j) => j.usuarioId !== null)) return;
       const assentos: AssentoRegistro[] = CADEIRAS.map((c) => {

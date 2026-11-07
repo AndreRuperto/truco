@@ -55,6 +55,27 @@ describe('RegistroMesa', () => {
     ]);
   });
 
+  test('revanche na mesma sala: a segunda partida é outra linha, com contadores do zero', async () => {
+    const s = servicosDeTeste(b.db, { agora: () => T0 });
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const r = new RegistroMesa(s, { variante: 'paulista', modo: 'privada', formato: null });
+    r.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+    r.iniciou();
+    r.acao({ tipo: 'truco', cadeira: 0 }, true);
+    r.terminou(fimDe(0, [12, 3]));
+    r.iniciou();
+    r.terminou(fimDe(1, [4, 12]));
+    await r.ocioso();
+    const ps = await b.db.select().from(partidas).orderBy(asc(partidas.id));
+    expect(ps).toHaveLength(2);
+    const minhas = await b.db.select().from(participacoes).orderBy(asc(participacoes.partidaId));
+    const daAna = minhas.filter((p) => p.usuarioId === ana.id);
+    expect(daAna.map((p) => [p.venceu, p.trucosPedidos])).toEqual([
+      [true, 1],
+      [false, 0],
+    ]);
+  });
+
   test('só convidados: nada é gravado', async () => {
     const r = new RegistroMesa(servicosDeTeste(b.db), { variante: 'mineiro', modo: 'classica', formato: null });
     r.sentou({ cadeira: 0, usuarioId: null, nome: 'Convidado' });
