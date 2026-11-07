@@ -15,6 +15,14 @@
 .tela-mesa[data-visualizacao='cadeiras'] .cadeira {
   display: block;
 }
+/* Em celulares, como no layout antigo, deixam-se visíveis só as cadeiras de cima e de baixo. */
+@media (max-width: 600px) {
+  .tela-mesa[data-visualizacao='cadeiras'] .cadeira-esquerda,
+  .tela-mesa[data-visualizacao='cadeiras'] .cadeira-direita {
+    display: none;
+  }
+}
+
 /* A mesa clássica recupera o tampo de madeira plano e as cadeiras desenhadas. */
 .tela-mesa[data-visualizacao='cadeiras'] .mesa-ambiente > .tampo:not(.tampo-feltro) {
   isolation: auto;
