@@ -299,7 +299,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
           variante={variante}
           extra={
             <>
-              {!podeTreinarEmbaralhamento && <Monte qtd={v.qtdMonte} dono={donoDoMonte(v)} minha={minha} />}
+              <Monte qtd={v.qtdMonte} dono={donoDoMonte(v)} minha={minha} />
               {linhaEtapa}
             </>
           }
