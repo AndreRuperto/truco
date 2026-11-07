@@ -25,7 +25,8 @@ describe('Tampo', () => {
       </Tampo>,
     );
     const tampo = screen.getByTestId('tampo');
-    expect(tampo).toHaveClass('tampo');
+    expect(tampo).toHaveClass('tampo', 'tampo-feltro');
+    expect(tampo).toHaveAttribute('data-superficie', 'feltro');
     expect(tampo).not.toHaveClass('tampo-plastico');
     expect(tampo).toHaveTextContent('cartas');
     expect(tampo.querySelectorAll('.rachadura')).toHaveLength(0);
@@ -33,7 +34,7 @@ describe('Tampo', () => {
 
   test('sem mesaFisica (servidor antigo) é a madeira de sempre', () => {
     render(<Tampo minha={0}>x</Tampo>);
-    expect(screen.getByTestId('tampo')).toHaveClass('tampo');
+    expect(screen.getByTestId('tampo')).toHaveClass('tampo', 'tampo-feltro');
   });
 
   test('desenha cada rachadura sob as cartas, na posição relativa de quem olha', () => {
@@ -63,6 +64,8 @@ describe('Tampo', () => {
       </Tampo>,
     );
     expect(screen.getByTestId('tampo')).toHaveClass('tampo-plastico');
+    expect(screen.getByTestId('tampo')).not.toHaveClass('tampo-feltro');
+    expect(screen.getByTestId('tampo')).toHaveAttribute('data-superficie', 'plastico');
     expect(container.querySelectorAll('.marca')).toHaveLength(1);
     expect(container.querySelectorAll('.rachadura:not(.marca)')).toHaveLength(0);
   });
