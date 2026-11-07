@@ -72,7 +72,7 @@ export function TelaRanking({ api, variante }: { api: Pick<Api, 'ranking'>; vari
               <tr>
                 <th scope="col">#</th>
                 <th scope="col">Jogador</th>
-                <th scope="col">Patente</th>
+                <th scope="col" className="col-patente">Patente</th>
                 <th scope="col">Pontos</th>
                 <th scope="col">Elo</th>
               </tr>
@@ -83,8 +83,11 @@ export function TelaRanking({ api, variante }: { api: Pick<Api, 'ranking'>; vari
                   <td>{l.posicao}</td>
                   <td>
                     <a href={hrefDe({ tela: 'perfil', id: l.usuarioId })}>{l.apelido}</a>
+                    <span className="ranking-patente-celular" aria-hidden="true">
+                      {l.patente}
+                    </span>
                   </td>
-                  <td>{l.patente}</td>
+                  <td className="col-patente">{l.patente}</td>
                   <td>{l.pontos}</td>
                   <td>{l.elo}</td>
                 </tr>

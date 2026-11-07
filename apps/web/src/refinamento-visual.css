@@ -488,3 +488,130 @@ button:active:not(:disabled), a.botao-link:active {
   .historico-item:hover, .mesa-lista-item:hover,
   .botao-principal:hover:not(:disabled) { transform: none; }
 }
+
+/*
+ * Lousa em tudo que é "da conta": Ranking e Perfil deixam o papel creme e ficam iguais ao
+ * Histórico e ao Admin (cartões de lousa, giz por cima). O creme fica para cartas e formulários claros.
+ */
+:root {
+  --lousa-linha: color-mix(in srgb, var(--giz) 14%, transparent);
+  --verde-giz: #7fd3a0;
+}
+
+/* abas de fichário: a ativa é da mesma lousa do painel */
+.abas a {
+  border-color: var(--lousa-linha);
+  background: var(--lousa-noite);
+  color: var(--giz-suave);
+}
+.abas a[aria-current='page'] {
+  border-color: var(--lousa-linha);
+  background: var(--lousa);
+  color: var(--giz);
+  box-shadow: inset 0 3px 0 var(--grito);
+  --foco: var(--grito);
+}
+.painel-abas,
+.pagina-ranking .painel-abas {
+  border: 1px solid var(--lousa-linha);
+  background: var(--lousa);
+  color: var(--giz);
+  --foco: var(--grito);
+}
+.painel-abas .erro-form {
+  color: var(--erro-texto);
+}
+.painel-abas .vazio p {
+  color: var(--giz-suave);
+}
+
+/* tabela do ranking */
+.ranking-lista-titulo {
+  color: var(--giz);
+}
+.tabela-ranking {
+  background: transparent;
+  color: var(--giz);
+}
+.tabela-ranking th {
+  background: var(--lousa-noite);
+  color: var(--giz-suave);
+}
+.tabela-ranking td {
+  border-top-color: var(--lousa-linha);
+}
+.tabela-ranking a {
+  color: var(--giz);
+  --foco: var(--grito);
+}
+.tabela-ranking tbody tr:hover {
+  background: color-mix(in srgb, var(--giz) 6%, transparent);
+}
+.tabela-ranking tbody tr:nth-child(-n + 3) td:first-child {
+  color: var(--grito);
+}
+.tabela-ranking td:nth-child(n + 4),
+.tabela-ranking th:nth-child(n + 4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ranking-patente-celular {
+  display: none;
+}
+/* No celular a tabela cabe sem rolar de lado: a patente desce para baixo do nome. */
+@media (max-width: 539px) {
+  .painel-abas .tabela-ranking {
+    min-width: 0;
+  }
+  .tabela-ranking .col-patente {
+    display: none;
+  }
+  .ranking-patente-celular {
+    display: block;
+    color: var(--giz-suave);
+    font-size: var(--t-1);
+  }
+  .tabela-ranking td a {
+    padding-bottom: 0;
+  }
+}
+
+/* perfil: números na lousa, em grade de 3 (2 no celular), sem coluna sobrando */
+.cartao-variante {
+  border-color: var(--lousa-linha);
+  background: var(--lousa);
+  color: var(--giz);
+}
+.cartao-variante h2 {
+  background: var(--lousa-noite);
+}
+.estatisticas {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 539px) {
+  .estatisticas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.estatisticas > div {
+  border-top-color: var(--lousa-linha);
+  background: transparent;
+}
+.estatisticas dt {
+  color: var(--giz-suave);
+}
+.estatisticas dd {
+  color: var(--giz);
+}
+
+/* O título das páginas fica sempre numa placa de lousa (`.tela-conta h1`): giz em qualquer tema. */
+.pagina-abertura h1 {
+  color: var(--giz);
+}
+@media (prefers-color-scheme: light) {
+  /* amarelo sobre o azulejo claro não se lê (≈1,8:1); madeira escura dá ≈9:1 */
+  .pagina-selo,
+  .lobby-selo {
+    color: var(--madeira-funda);
+  }
+}

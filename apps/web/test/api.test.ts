@@ -53,6 +53,13 @@ describe('cliente da API', () => {
       'POST /api/auth/sair',
     ]);
   });
+  test('erro sem mensagem do servidor: frase de gente com o código', async () => {
+    const f = fetchFalso([new Response('', { status: 502 }), new Response('', { status: 404 })]);
+    const api = criarApi(f as unknown as typeof fetch);
+    await expect(api.ranking('paulista')).rejects.toMatchObject({ status: 502, message: 'o servidor está com problema agora (erro 502); tente de novo em instantes' });
+    await expect(api.ranking('paulista')).rejects.toMatchObject({ status: 404, message: 'algo deu errado (erro 404)' });
+  });
+
   test('falha de rede vira ErroApi(0) com mensagem amigável', async () => {
     const f = vi.fn(async () => Promise.reject(new TypeError('Failed to fetch')));
     const e = await criarApi(f as unknown as typeof fetch).eu().catch((x: unknown) => x);

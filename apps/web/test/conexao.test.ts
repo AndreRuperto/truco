@@ -171,6 +171,13 @@ describe('mesa privada e reserva', () => {
     expect(loja.getSnapshot().erro?.mensagem).toBe('Não foi possível entrar na mesa: timeout');
   });
 
+  test('erro de rede do navegador vira uma frase de gente', async () => {
+    const c = { ...clienteFalso(new SalaFalsa()), joinById: vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))) };
+    const loja = novaLoja();
+    await entrarPorCodigo(loja, 'abcd', 'Bia', c);
+    expect(loja.getSnapshot().erro?.mensagem).toBe('Não foi possível entrar na mesa: o servidor não respondeu. Confira a internet e tente de novo');
+  });
+
   test('reserva com a loja ainda numa mesa: larga a anterior e consome a reserva', async () => {
     const antiga = new SalaFalsa();
     const nova = new SalaFalsa();

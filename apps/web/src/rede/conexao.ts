@@ -50,6 +50,10 @@ function clientePadrao(): Promise<ClienteSala> {
 
 const mensagem = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
+/** Erros de rede do navegador/SDK ("Failed to fetch", "Load failed"...) viram uma frase que quem joga entende. */
+const SEM_REDE = /failed to fetch|load failed|networkerror|network error|econnrefused|websocket/i;
+const motivo = (e: unknown) => (SEM_REDE.test(mensagem(e)) ? 'o servidor não respondeu. Confira a internet e tente de novo' : mensagem(e));
+
 /** Ignorada se a loja não está no lobby (clique duplo não cria duas salas). */
 export async function entrarNaMesa(loja: Loja, opcoes: OpcoesEntrada, cliente?: ClienteLike): Promise<void> {
   if (loja.getSnapshot().status !== 'fora') return;
@@ -58,7 +62,7 @@ export async function entrarNaMesa(loja: Loja, opcoes: OpcoesEntrada, cliente?: 
     const c = cliente ?? (await clientePadrao());
     loja.conectar((await c.joinOrCreate('mesa', opcoes)) as SalaLike);
   } catch (e) {
-    loja.falhouConexao(`Não foi possível entrar na mesa: ${mensagem(e)}`);
+    loja.falhouConexao(`Não foi possível entrar na mesa: ${motivo(e)}`);
   }
 }
 
@@ -105,7 +109,7 @@ async function conectarCom(
     const c = cliente ?? (await clientePadrao());
     loja.conectar((await abrir(c)) as SalaLike);
   } catch (e) {
-    loja.falhouConexao(traduzir(e) ?? `${falha}: ${mensagem(e)}`);
+    loja.falhouConexao(traduzir(e) ?? `${falha}: ${motivo(e)}`);
   }
 }
 

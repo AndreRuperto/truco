@@ -43,7 +43,8 @@ export function criarApi(f: typeof fetch = (...a) => fetch(...a), base = '', aoN
     const dados = (await r.json().catch(() => null)) as { erro?: string } | null;
     if (!r.ok) {
       if (r.status === 401 && autenticada) aoNaoAutorizado?.();
-      throw new ErroApi(r.status, dados?.erro ?? `erro ${r.status}`);
+      // Sem mensagem do servidor (proxy caiu, servidor reiniciando): uma frase de gente, com o código para suporte.
+      throw new ErroApi(r.status, dados?.erro ?? (r.status >= 500 ? `o servidor está com problema agora (erro ${r.status}); tente de novo em instantes` : `algo deu errado (erro ${r.status})`));
     }
     if (dados === null) throw new ErroApi(r.status, 'resposta inválida do servidor');
     return dados as T;
