@@ -73,6 +73,7 @@ Sem `DATABASE_URL` o servidor usa PGlite em disco dentro do container — os dad
 | `GOOGLE_CLIENT_ID` | para login Google | client ID (passo 6). Sem ela, o botão do Google não aparece. |
 | `TRUCO_ORIGENS` | raro | outras origens aceitas no CORS, separadas por vírgula |
 | `TRUCO_K_ELO` | não | K do Elo (inteiro de 1 a 100; padrão 32) |
+| `ADMIN_EMAILS` | para ter admin | e-mails de quem vê o painel `#/admin`, separados por vírgula (ex. `andrerupertodev@gmail.com`). Sem ela, ninguém é admin. |
 | `RAILWAY_DEPLOYMENT_DRAINING_SECONDS` | recomendada | `15` — tempo de desligamento gracioso (ver abaixo) |
 
 **Desligamento gracioso.** A cada redeploy o Railway manda `SIGTERM` ao deployment antigo e, passado o

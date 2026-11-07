@@ -4,7 +4,7 @@ import { FilaRoom } from './FilaRoom';
 import { configurarApp } from './http/app';
 import { instalarCors } from './http/cors';
 import { MesaRoom } from './MesaRoom';
-import { listarSalasAbertas } from './salas';
+import { listarMesasAdmin, listarSalasAbertas } from './salas';
 import type { Servicos } from './servicos';
 
 export interface ExtrasServidor {
@@ -28,6 +28,6 @@ export function criarServidor(servicos: Servicos, extras: ExtrasServidor = {}) {
     },
     // Rotas HTTP no mesmo servidor: o roteador do Colyseus atende /matchmake e /__healthcheck,
     // o resto cai neste Express.
-    express: (app) => configurarApp(app, servicos, { listarSalas: listarSalasAbertas, pastaWeb: extras.pastaWeb ?? null }),
+    express: (app) => configurarApp(app, servicos, { listarSalas: listarSalasAbertas, listarMesas: listarMesasAdmin, pastaWeb: extras.pastaWeb ?? null }),
   });
 }

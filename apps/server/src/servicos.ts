@@ -16,6 +16,8 @@ export interface Servicos {
   confiarProxy?: boolean;
   /** Origens extras aceitas no CORS em produção. */
   origens: string[];
+  /** E-mails (minúsculos) de quem é admin (`ADMIN_EMAILS`). */
+  admins?: readonly string[];
   kElo: number;
   bloqueioAbandonoMs: number;
   agora: () => Date;
@@ -32,6 +34,7 @@ export interface ConfigAmbiente {
   emailTeste: boolean;
   kElo: number;
   origens: string[];
+  admins: string[];
   confiarProxy: boolean;
   avisos: string[];
 }
@@ -75,6 +78,11 @@ export function configDoAmbiente(env: Env, padroes: { pastaPglite: string }): Co
     .map((s) => s.trim())
     .filter(Boolean);
 
+  const admins = (env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
   return {
     producao,
     databaseUrl,
@@ -85,6 +93,7 @@ export function configDoAmbiente(env: Env, padroes: { pastaPglite: string }): Co
     emailTeste,
     kElo,
     origens,
+    admins,
     confiarProxy,
     avisos,
   };
@@ -113,6 +122,7 @@ export async function servicosDoAmbiente(
       producao: config.producao,
       confiarProxy: config.confiarProxy,
       origens: config.origens,
+      admins: config.admins,
       kElo: config.kElo,
       bloqueioAbandonoMs: BLOQUEIO_ABANDONO_MS,
       agora: () => new Date(),

@@ -1,5 +1,17 @@
 import type { Variante } from '@truco/engine';
-import type { ConfigApi, ItemHistorico, LinhaRanking, PerfilApi, PreferenciasMesa, SalaAberta, UsuarioApi } from '@truco/api';
+import type {
+  ConfigApi,
+  ItemHistorico,
+  LinhaRanking,
+  MesaAdmin,
+  PartidaAdmin,
+  PerfilApi,
+  PreferenciasMesa,
+  ResumoAdmin,
+  SalaAberta,
+  UsuarioAdmin,
+  UsuarioApi,
+} from '@truco/api';
 
 export class ErroApi extends Error {
   constructor(
@@ -53,6 +65,16 @@ export function criarApi(f: typeof fetch = (...a) => fetch(...a), base = '', aoN
     preferencias: () => pedir<{ preferencias: PreferenciasMesa | null }>('GET', '/api/preferencias', undefined, true),
     salvarPreferencias: (preferencias: PreferenciasMesa) =>
       pedir<{ preferencias: PreferenciasMesa }>('PUT', '/api/preferencias', { preferencias }, true),
+    admin: {
+      resumo: () => pedir<ResumoAdmin>('GET', '/api/admin/resumo', undefined, true),
+      usuarios: (busca = '') =>
+        pedir<{ usuarios: UsuarioAdmin[] }>('GET', `/api/admin/usuarios${busca.trim() ? `?busca=${encodeURIComponent(busca.trim())}` : ''}`, undefined, true),
+      trocarApelido: (id: number, apelido: string) => pedir<{ usuario: UsuarioApi }>('PATCH', `/api/admin/usuarios/${id}`, { apelido }, true),
+      banir: (id: number) => pedir<void>('POST', `/api/admin/usuarios/${id}/banir`, {}, true),
+      desbanir: (id: number) => pedir<void>('POST', `/api/admin/usuarios/${id}/desbanir`, {}, true),
+      mesas: () => pedir<{ mesas: MesaAdmin[] }>('GET', '/api/admin/mesas', undefined, true),
+      partidas: () => pedir<{ partidas: PartidaAdmin[] }>('GET', '/api/admin/partidas', undefined, true),
+    },
   };
 }
 

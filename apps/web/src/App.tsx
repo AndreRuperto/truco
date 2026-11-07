@@ -18,6 +18,7 @@ import { TelaPerfil } from './telas/Perfil';
 import { TelaRanking } from './telas/Ranking';
 import { SalaEspera } from './telas/SalaEspera';
 import { TelaSalas } from './telas/Salas';
+import { TelaAdmin } from './telas/Admin';
 import { TelaComoJogar } from './telas/ComoJogar';
 
 /** Tela que exige login: espera a sessão; convidado (ou sessão expirada) recebe o link para entrar. */
@@ -189,6 +190,9 @@ export function App() {
         break;
       case 'manual':
         conteudo = <TelaComoJogar />;
+        break;
+      case 'admin':
+        conteudo = ses.usuario ? <TelaAdmin aba={rota.aba} api={api} /> : <PedirLogin titulo="Admin" pronta={ses.pronta} />;
         break;
       case 'fila':
         conteudo =

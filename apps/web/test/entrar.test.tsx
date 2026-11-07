@@ -165,6 +165,18 @@ describe('Cabecalho', () => {
     await user.click(conta);
     await user.click(screen.getByRole('button', { name: 'Sair da conta' }));
     expect(aoSair).toHaveBeenCalled();
+    expect(screen.queryByRole('link', { name: 'Admin' })).toBeNull();
+  });
+
+  test('só admin vê o item Admin no menu da conta', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<Cabecalho pronta usuario={{ ...USUARIO, admin: false }} aoSair={vi.fn()} />);
+    await user.click(screen.getByTestId('usuario-logado'));
+    expect(screen.queryByRole('link', { name: 'Admin' })).toBeNull();
+    rerender(<Cabecalho pronta usuario={{ ...USUARIO, admin: true }} aoSair={vi.fn()} atual="admin" />);
+    const link = screen.getByRole('link', { name: 'Admin' });
+    expect(link).toHaveAttribute('href', '#/admin');
+    expect(link).toHaveAttribute('aria-current', 'page');
   });
 
   test('antes de a sessão ficar pronta não mostra Entrar nem a conta (sem piscar)', () => {

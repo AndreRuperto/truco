@@ -288,8 +288,14 @@ export async function usuarioDaSessao(db: Banco, token: string | null | undefine
     .select(COLUNAS)
     .from(sessoes)
     .innerJoin(usuarios, eq(sessoes.usuarioId, usuarios.id))
-    .where(and(eq(sessoes.tokenHash, hashToken(token)), gt(sessoes.expiraEm, agora)));
+    .where(and(eq(sessoes.tokenHash, hashToken(token)), gt(sessoes.expiraEm, agora), isNull(usuarios.banidoEm)));
   return u ?? null;
+}
+
+/** Conta suspensa por um admin (ver `banirUsuario`). */
+export async function contaBanida(db: Banco, id: number): Promise<boolean> {
+  const [x] = await db.select({ b: usuarios.banidoEm }).from(usuarios).where(eq(usuarios.id, id)).limit(1);
+  return !!x?.b;
 }
 
 export async function encerrarSessao(db: Banco, token: string): Promise<void> {

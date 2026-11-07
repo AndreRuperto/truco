@@ -15,6 +15,7 @@ describe('configDoAmbiente', () => {
       emailTeste: false,
       kElo: 32,
       origens: [],
+      admins: [],
       confiarProxy: false,
       avisos: [],
     });
@@ -50,6 +51,10 @@ describe('configDoAmbiente', () => {
       origens: ['https://truco.app', 'https://www.truco.app'],
       avisos: [],
     });
+  });
+
+  test('ADMIN_EMAILS: lista separada por vírgula, minúscula, sem vazios', () => {
+    expect(configDoAmbiente({ ADMIN_EMAILS: ' Ana@X.com, ,bia@y.com ' }, PADROES).admins).toEqual(['ana@x.com', 'bia@y.com']);
   });
 
   test('TRUCO_URL_PUBLICA vence o domínio do Railway e perde a barra final', () => {

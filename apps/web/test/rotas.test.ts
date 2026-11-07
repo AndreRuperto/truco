@@ -19,11 +19,14 @@ describe('rotas por hash', () => {
     expect(lerRota('#/privada/<script>')).toEqual({ tela: 'inicio' });
     expect(lerRota('#/fila')).toEqual({ tela: 'fila' });
     expect(lerRota('#/como-jogar')).toEqual({ tela: 'manual' });
+    expect(lerRota('#/admin')).toEqual({ tela: 'admin', aba: 'resumo' });
+    expect(lerRota('#/admin/usuarios')).toEqual({ tela: 'admin', aba: 'usuarios' });
+    expect(lerRota('#/admin/xyz')).toEqual({ tela: 'admin', aba: 'resumo' });
     expect(lerRota('#/nada')).toEqual({ tela: 'inicio' });
   });
 
   test('hrefDe é o inverso de lerRota', () => {
-    for (const h of ['#/', '#/entrar', '#/entrar?token=t1', '#/perfil', '#/perfil?editar', '#/perfil/3', '#/historico', '#/ranking/mineiro', '#/salas', '#/privada/abcd', '#/fila', '#/como-jogar']) {
+    for (const h of ['#/', '#/entrar', '#/entrar?token=t1', '#/perfil', '#/perfil?editar', '#/perfil/3', '#/historico', '#/ranking/mineiro', '#/salas', '#/privada/abcd', '#/fila', '#/como-jogar', '#/admin', '#/admin/mesas']) {
       expect(hrefDe(lerRota(h))).toBe(h);
     }
   });

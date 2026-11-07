@@ -11,6 +11,8 @@ export interface UsuarioApi {
   google: boolean;
   /** Foto de perfil: `pronto:<id>` (um dos `AVATARES_PRONTOS`), uma imagem `data:` pequena, ou null. */
   avatar?: string | null;
+  /** Está em `ADMIN_EMAILS`: o menu mostra "Admin". Só um atalho de tela; o servidor confere de novo. */
+  admin?: boolean;
 }
 
 /** Avatares desenhados que o site oferece (os desenhos ficam no web). */
@@ -114,4 +116,69 @@ export interface MsgStatusFila {
 export interface MsgPareado {
   /** `ISeatReservation` do Colyseus, para `client.consumeSeatReservation`. */
   reserva: unknown;
+}
+
+// ---------- painel de admin ----------
+
+export interface DiaAdmin {
+  /** AAAA-MM-DD (UTC). */
+  dia: string;
+  usuarios: number;
+  partidas: number;
+}
+
+export interface ResumoAdmin {
+  usuarios: number;
+  banidos: number;
+  partidas: number;
+  /** Salas abertas agora no Colyseus (qualquer modo). */
+  mesasAtivas: number;
+  /** Últimos 14 dias, do mais antigo ao de hoje (dias sem nada vêm com zero). */
+  porDia: DiaAdmin[];
+}
+
+export interface UsuarioAdmin {
+  id: number;
+  apelido: string;
+  email: string | null;
+  google: boolean;
+  avatar: string | null;
+  criadoEm: string;
+  banidoEm: string | null;
+  admin: boolean;
+  partidas: number;
+}
+
+export interface MesaAdmin {
+  id: string;
+  modo: ModoMesa | null;
+  variante: Variante | null;
+  ocupados: number;
+  lugares: number;
+  privada: boolean;
+  /** Já começou (ou encheu): ninguém novo entra pela lista. */
+  trancada: boolean;
+  dono: string | null;
+  criadaEm: string | null;
+}
+
+export interface JogadorPartidaAdmin {
+  nome: string;
+  usuarioId: number | null;
+  humano: boolean;
+  dupla: number;
+  abandonou: boolean;
+}
+
+export interface PartidaAdmin {
+  id: number;
+  variante: Variante;
+  modo: ModoMesa;
+  ranqueada: boolean;
+  placar: [number, number];
+  vencedora: number | null;
+  abandonada: boolean;
+  iniciadaEm: string;
+  terminadaEm: string | null;
+  jogadores: JogadorPartidaAdmin[];
 }

@@ -9,7 +9,11 @@ export type Rota =
   | { tela: 'salas' }
   | { tela: 'privada'; codigo: string }
   | { tela: 'fila' }
-  | { tela: 'manual' };
+  | { tela: 'manual' }
+  | { tela: 'admin'; aba: AbaAdmin };
+
+export const ABAS_ADMIN = ['resumo', 'usuarios', 'mesas', 'partidas'] as const;
+export type AbaAdmin = (typeof ABAS_ADMIN)[number];
 
 export function lerRota(hash: string): Rota {
   const [caminho, busca = ''] = hash.replace(/^#/, '').split('?');
@@ -35,6 +39,8 @@ export function lerRota(hash: string): Rota {
       return { tela: 'fila' };
     case 'como-jogar':
       return { tela: 'manual' };
+    case 'admin':
+      return { tela: 'admin', aba: (ABAS_ADMIN as readonly string[]).includes(partes[1]) ? (partes[1] as AbaAdmin) : 'resumo' };
     default:
       return { tela: 'inicio' };
   }
@@ -60,6 +66,8 @@ export function hrefDe(r: Rota): string {
       return '#/fila';
     case 'manual':
       return '#/como-jogar';
+    case 'admin':
+      return r.aba === 'resumo' ? '#/admin' : `#/admin/${r.aba}`;
   }
 }
 

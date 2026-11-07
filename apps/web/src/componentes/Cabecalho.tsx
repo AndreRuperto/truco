@@ -87,6 +87,13 @@ function MenuConta({ usuario, aoSair, atual }: { usuario: UsuarioApi; aoSair: ()
               Histórico
             </a>
           </li>
+          {usuario.admin && (
+            <li>
+              <a href="#/admin" aria-current={atual('admin')} onClick={fechar}>
+                Admin
+              </a>
+            </li>
+          )}
           <li>
             <button
               type="button"

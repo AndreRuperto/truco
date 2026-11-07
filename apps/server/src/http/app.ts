@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { SalaAberta } from '../api/tipos';
+import type { MesaAdmin, SalaAberta, UsuarioApi } from '../api/tipos';
 import { emailDoLink, extrairLink } from '../auth/emails';
 import { chaveDeIp, LimiteTaxa } from '../auth/limite';
 import { VARIANTES } from '../banco/schema';
@@ -11,6 +11,7 @@ import { bearer, COOKIE_SESSAO, cookieApagado, cookieSessao, lerCookie } from '.
 import {
   conectarGoogle,
   consumirLinkMagico,
+  contaBanida,
   criarLinkMagico,
   criarSessao,
   DURACAO_SESSAO_MS,
@@ -27,12 +28,15 @@ import {
   usuarioDaSessao,
   usuarioPorId,
 } from '../repo/usuarios';
+import { banirUsuario, desbanirUsuario, listarUsuariosAdmin, partidasRecentesAdmin, resumoAdmin } from '../repo/admin';
 import { historico, perfil, ranking } from '../repo/partidas';
 import type { Servicos } from '../servicos';
 
 export interface ExtrasApp {
   /** Mesas casuais abertas (o servidor passa `listarSalasAbertas`). */
   listarSalas?: () => Promise<SalaAberta[]>;
+  /** Todas as mesas vivas, para o painel de admin (o servidor passa `listarMesasAdmin`). */
+  listarMesas?: () => Promise<MesaAdmin[]>;
   /** Pasta do build do web; ausente/null = não serve estáticos (dev usa o Vite). */
   pastaWeb?: string | null;
   limiteLinkIp?: LimiteTaxa;
@@ -63,10 +67,15 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     }
     return null;
   };
+  const admins = s.admins ?? [];
+  const ehAdmin = (u: Usuario) => !!u.email && admins.includes(u.email);
+  /** O que vai para o navegador: o usuário mais o atalho `admin` do menu. */
+  const paraApi = (u: Usuario | null): UsuarioApi | null => (u ? { ...u, admin: ehAdmin(u) } : null);
   const entrar = async (res: Response, u: Usuario) => {
+    if (await contaBanida(s.banco, u.id)) return void res.status(403).json({ erro: 'conta suspensa' });
     const token = await criarSessao(s.banco, u.id, s.agora());
     res.setHeader('Set-Cookie', cookieSessao(token, { seguro: s.producao, maxAgeS: Math.floor(DURACAO_SESSAO_MS / 1000) }));
-    res.json({ usuario: u });
+    res.json({ usuario: paraApi(u) });
   };
 
   // Railway (e qualquer proxy na frente) manda X-Forwarded-For/Proto: `req.ip` e `req.protocol`
@@ -95,7 +104,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (!u) return void res.status(401).json({ erro: 'entre na sua conta' });
     const novo = await trocarAvatar(s.banco, u.id, req.body?.avatar);
     if (!novo) return void res.status(400).json({ erro: 'imagem inválida: use JPG, PNG ou WebP' });
-    res.json({ usuario: novo });
+    res.json({ usuario: paraApi(novo) });
   });
   api.use(express.json({ limit: '16kb' }));
 
@@ -104,7 +113,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   });
 
   api.get('/eu', async (req, res) => {
-    res.json({ usuario: await usuarioDe(req) });
+    res.json({ usuario: paraApi(await usuarioDe(req)) });
   });
 
   api.patch('/eu', async (req, res) => {
@@ -113,7 +122,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     const r = await trocarApelido(s.banco, u.id, req.body?.apelido);
     if (r === 'invalido') return void res.status(400).json({ erro: 'o apelido precisa ter de 3 a 20 caracteres' });
     if (r === 'em-uso') return void res.status(409).json({ erro: 'esse apelido já tem dono' });
-    res.json({ usuario: await usuarioPorId(s.banco, u.id) });
+    res.json({ usuario: paraApi(await usuarioPorId(s.banco, u.id)) });
   });
 
   api.get('/preferencias', async (req, res) => {
@@ -189,7 +198,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
       return void res.status(401).json({ erro: 'não foi possível validar o login do Google' });
     }
     try {
-      res.json({ usuario: await conectarGoogle(s.banco, u.id, g.sub) });
+      res.json({ usuario: paraApi(await conectarGoogle(s.banco, u.id, g.sub)) });
     } catch (e) {
       if (e instanceof ErroGoogleOutraConta)
         return void res.status(409).json({ erro: 'esse Google já está ligado a outra conta (ou a sua já tem outro Google)' });
@@ -232,6 +241,70 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   api.get('/salas', async (_req, res) => {
     res.json({ salas: x.listarSalas ? await x.listarSalas() : [] });
   });
+
+  // ---------- painel de admin: o porteiro vale para tudo em /api/admin ----------
+  const admin = express.Router();
+  admin.use(async (req, res, next) => {
+    const u = await usuarioDe(req);
+    if (!u) return void res.status(401).json({ erro: 'entre na sua conta' });
+    if (!ehAdmin(u)) return void res.status(403).json({ erro: 'só para admin' });
+    res.locals.admin = u;
+    next();
+  });
+  const idDe = (req: Request): number | null => {
+    const id = Number(req.params.id);
+    return Number.isInteger(id) && id > 0 ? id : null;
+  };
+
+  admin.get('/resumo', async (_req, res) => {
+    const r = await resumoAdmin(s.banco, s.agora());
+    const mesasAtivas = x.listarMesas ? (await x.listarMesas()).length : 0;
+    res.json({ ...r, mesasAtivas });
+  });
+
+  admin.get('/usuarios', async (req, res) => {
+    const busca = typeof req.query.busca === 'string' ? req.query.busca : '';
+    res.json({ usuarios: await listarUsuariosAdmin(s.banco, { busca, admins }) });
+  });
+
+  admin.patch('/usuarios/:id', async (req, res) => {
+    const id = idDe(req);
+    if (!id) return void res.status(400).json({ erro: 'id inválido' });
+    if (!(await usuarioPorId(s.banco, id))) return void res.status(404).json({ erro: 'usuário não encontrado' });
+    const r = await trocarApelido(s.banco, id, req.body?.apelido);
+    if (r === 'invalido') return void res.status(400).json({ erro: 'o apelido precisa ter de 3 a 20 caracteres' });
+    if (r === 'em-uso') return void res.status(409).json({ erro: 'esse apelido já tem dono' });
+    res.json({ usuario: paraApi(await usuarioPorId(s.banco, id)) });
+  });
+
+  admin.post('/usuarios/:id/banir', async (req, res) => {
+    const id = idDe(req);
+    if (!id) return void res.status(400).json({ erro: 'id inválido' });
+    const alvo = await usuarioPorId(s.banco, id);
+    if (!alvo) return void res.status(404).json({ erro: 'usuário não encontrado' });
+    if (ehAdmin(alvo)) return void res.status(400).json({ erro: 'admin não pode ser banido' });
+    if (!(await banirUsuario(s.banco, id, s.agora()))) return void res.status(409).json({ erro: 'já está banido' });
+    console.log(`[admin] ${(res.locals.admin as Usuario).apelido} baniu #${id} (${alvo.apelido})`);
+    res.status(204).end();
+  });
+
+  admin.post('/usuarios/:id/desbanir', async (req, res) => {
+    const id = idDe(req);
+    if (!id) return void res.status(400).json({ erro: 'id inválido' });
+    if (!(await usuarioPorId(s.banco, id))) return void res.status(404).json({ erro: 'usuário não encontrado' });
+    if (!(await desbanirUsuario(s.banco, id))) return void res.status(409).json({ erro: 'não está banido' });
+    console.log(`[admin] ${(res.locals.admin as Usuario).apelido} desbaniu #${id}`);
+    res.status(204).end();
+  });
+
+  admin.get('/mesas', async (_req, res) => {
+    res.json({ mesas: x.listarMesas ? await x.listarMesas() : [] });
+  });
+
+  admin.get('/partidas', async (_req, res) => {
+    res.json({ partidas: await partidasRecentesAdmin(s.banco) });
+  });
+  api.use('/admin', admin);
 
   api.get('/teste/emails', (_req, res) => {
     if (!s.caixaTeste) return void res.status(404).json({ erro: 'não encontrado' });

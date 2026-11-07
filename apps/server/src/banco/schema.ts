@@ -20,6 +20,8 @@ export const usuarios = pgTable(
     /** Ver `UsuarioApi.avatar`. */
     avatar: text('avatar'),
     preferencias: jsonb('preferencias').$type<PreferenciasMesa>(),
+    /** Conta suspensa por um admin: sessões não valem e o login é recusado. null = normal. */
+    banidoEm: quando('banido_em'),
     criadoEm: quando('criado_em').notNull().defaultNow(),
   },
   // "Ana" e "ana" são o mesmo apelido.
