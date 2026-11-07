@@ -18,15 +18,16 @@ const madeira = (rachaduras: Rachadura[] = []): MesaFisica => ({ tipo: 'madeira'
 afterEach(() => vi.useRealTimers());
 
 describe('Tampo', () => {
-  test('renderiza os filhos no tampo de madeira, sem rachaduras', () => {
+  test('visitantes começam na madeira clássica, sem rachaduras', () => {
     render(
       <Tampo fisica={madeira()} minha={0}>
         <span>cartas</span>
       </Tampo>,
     );
     const tampo = screen.getByTestId('tampo');
-    expect(tampo).toHaveClass('tampo', 'tampo-feltro');
-    expect(tampo).toHaveAttribute('data-superficie', 'feltro');
+    expect(tampo).toHaveClass('tampo');
+    expect(tampo).not.toHaveClass('tampo-feltro');
+    expect(tampo).toHaveAttribute('data-superficie', 'madeira');
     expect(tampo).not.toHaveClass('tampo-plastico');
     expect(tampo).toHaveTextContent('cartas');
     expect(tampo.querySelectorAll('.rachadura')).toHaveLength(0);
@@ -34,7 +35,21 @@ describe('Tampo', () => {
 
   test('sem mesaFisica (servidor antigo) é a madeira de sempre', () => {
     render(<Tampo minha={0}>x</Tampo>);
-    expect(screen.getByTestId('tampo')).toHaveClass('tampo', 'tampo-feltro');
+    expect(screen.getByTestId('tampo')).toHaveClass('tampo');
+    expect(screen.getByTestId('tampo')).toHaveAttribute('data-superficie', 'madeira');
+  });
+
+  test('feltro é opcional; plástico pode ser escolhido e a quebra física prevalece', () => {
+    const { rerender } = render(<Tampo minha={0} fisica={madeira()} aparencia="feltro">x</Tampo>);
+    expect(screen.getByTestId('tampo')).toHaveClass('tampo-feltro');
+    expect(screen.getByTestId('tampo')).toHaveAttribute('data-superficie', 'feltro');
+
+    rerender(<Tampo minha={0} fisica={madeira()} aparencia="plastico">x</Tampo>);
+    expect(screen.getByTestId('tampo')).toHaveClass('tampo-plastico');
+    expect(screen.getByTestId('tampo')).toHaveAttribute('data-superficie', 'plastico');
+
+    rerender(<Tampo minha={0} fisica={{ tipo: 'plastico', rachaduras: [], dano: 0 }} aparencia="madeira">x</Tampo>);
+    expect(screen.getByTestId('tampo')).toHaveAttribute('data-superficie', 'plastico');
   });
 
   test('desenha cada rachadura sob as cartas, na posição relativa de quem olha', () => {
