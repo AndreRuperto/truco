@@ -93,7 +93,7 @@ describe('giro 3D no lobby', () => {
     };
     try {
       const { container } = render(<div><FundoCartas /><button type="button">Jogar</button></div>);
-      fireEvent.dblClick(window, { clientX: 100, clientY: 100 });
+      fireEvent.dblClick(container.querySelector('.fundo-cartas')!, { clientX: 100, clientY: 100 });
       expect(animar).toHaveBeenCalledTimes(1);
       fireEvent.dblClick(container.querySelector('button')!, { clientX: 100, clientY: 100 });
       expect(animar).toHaveBeenCalledTimes(1);
