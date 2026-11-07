@@ -11,13 +11,17 @@ describe('mesa oval no cenário 3D', () => {
       discoZapada: new THREE.Texture(),
     } as unknown as Texturas;
     const mesas = criarMesas(tx);
-    const camadas = mesas.madeira.children.filter((obj): obj is THREE.Mesh => obj instanceof THREE.Mesh);
+    const madeira = mesas.madeira.children.filter((obj): obj is THREE.Mesh => obj instanceof THREE.Mesh);
+    expect(madeira.length).toBeGreaterThan(1);
+    expect(madeira.some((m) => m.geometry.type === 'BoxGeometry')).toBe(true);
+    const camadas = mesas.feltro.children.filter((obj): obj is THREE.Mesh => obj instanceof THREE.Mesh);
     expect(camadas).toHaveLength(4);
     expect(camadas.every((m) => m.geometry.type === 'CylinderGeometry')).toBe(true);
     const feltro = camadas.at(-1)!;
     expect(feltro.scale.x).toBeCloseTo(0.558);
     expect(feltro.scale.z).toBeCloseTo(0.429);
     expect(feltro.position.y).toBeLessThanOrEqual(TOPO);
+    expect(mesas.feltro.visible).toBe(false);
     expect(mesas.plastico.visible).toBe(false);
     expect(mesas.plastico.children.some(
       (obj) => obj instanceof THREE.Mesh && obj.geometry.type === 'BoxGeometry',
