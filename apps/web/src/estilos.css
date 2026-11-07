@@ -2316,6 +2316,26 @@ body:has(.tela-mesa) {
 .carta-botao:hover:not(:disabled) {
   background: none;
 }
+/* Segurar e arrastar para jogar: sem rolar a página por cima das cartas jogáveis. */
+.carta-botao.jogavel {
+  touch-action: none;
+  cursor: grab;
+}
+.carta-botao.arrastando {
+  position: relative;
+  z-index: 30;
+  cursor: grabbing;
+  transition: none;
+}
+.carta-botao.arrastando .carta {
+  box-shadow: 0 14px 26px color-mix(in srgb, var(--sombra) 55%, transparent);
+}
+/* Passou da linha: soltar joga (aro amarelo e um pouco maior). */
+.carta-botao.vai-jogar .carta {
+  outline: 3px solid var(--grito);
+  outline-offset: 2px;
+  scale: 1.06;
+}
 .carta-botao:first-child:not(:only-child) {
   transform: rotate(-6deg) translateY(4px);
 }
