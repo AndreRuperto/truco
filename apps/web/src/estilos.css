@@ -670,6 +670,276 @@ button:disabled {
   font-size: var(--t3);
   font-weight: 800;
 }
+/* Sala de espera: a mesa vista de cima, cada um na sua cadeira; ao lado, convite e regras. */
+.sala-espera {
+  max-width: 960px;
+  display: grid;
+  gap: var(--e4);
+}
+.sala-espera .sala-topo h1 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font-family: var(--fonte-giz);
+  font-weight: 400;
+  font-size: var(--t4);
+  line-height: 1;
+}
+.sala-situacao {
+  margin: var(--e1) 0 0;
+  color: var(--texto-suave);
+}
+.sala-mesa {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: var(--e2) 0;
+}
+.sala-lugares {
+  --tampo: clamp(120px, 34vw, 190px);
+  display: grid;
+  grid-template-areas:
+    '. cima .'
+    'esquerda mesa direita'
+    '. baixo .';
+  grid-template-columns: 1fr var(--tampo) 1fr;
+  gap: var(--e2) var(--e1);
+  align-items: center;
+  width: 100%;
+  max-width: 460px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* A foto encosta na borda da mesa (cadeira puxada); os rótulos ficam do lado de fora. */
+.lugar-espera.pos-cima {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  margin-bottom: calc(var(--e2) * -1 - 14px);
+  z-index: 1;
+}
+.lugar-espera.pos-baixo {
+  margin-top: calc(var(--e2) * -1 - 14px);
+  z-index: 1;
+}
+.sala-tampo {
+  grid-area: mesa;
+  display: grid;
+  place-items: center;
+  width: var(--tampo);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--tampo-fundo, var(--madeira));
+  box-shadow:
+    inset 0 0 0 7px var(--madeira-funda),
+    inset 0 0 24px color-mix(in srgb, var(--sombra) 35%, transparent),
+    0 12px 28px color-mix(in srgb, var(--sombra) 45%, transparent);
+}
+.sala-baralho {
+  width: 38px;
+  aspect-ratio: 5 / 7;
+  border-radius: 5px;
+  background:
+    repeating-linear-gradient(45deg, var(--verso-linha) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(-45deg, var(--verso-linha) 0 2px, transparent 2px 7px),
+    var(--verso);
+  box-shadow: 2px 2px 0 var(--papel), 4px 4px 0 var(--verso), 5px 5px 0 var(--papel);
+  rotate: -10deg;
+}
+.lugar-espera {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+  min-width: 0;
+}
+.lugar-espera.pos-cima {
+  grid-area: cima;
+}
+.lugar-espera.pos-baixo {
+  grid-area: baixo;
+}
+.lugar-espera.pos-esquerda {
+  grid-area: esquerda;
+  align-self: center;
+}
+.lugar-espera.pos-direita {
+  grid-area: direita;
+  align-self: center;
+}
+.lugar-espera .avatar {
+  box-shadow: 0 0 0 3px var(--fundo), 0 0 0 6px var(--lugar-cor);
+}
+.lugar-espera.nossa {
+  --lugar-cor: var(--nos);
+}
+.lugar-espera.deles {
+  --lugar-cor: var(--eles);
+}
+.cadeira-vaga {
+  width: 56px;
+  height: 56px;
+  border: 3px dashed color-mix(in srgb, var(--texto-suave) 70%, transparent);
+  border-radius: 50%;
+}
+.lugar-nome {
+  max-width: 100%;
+  margin-top: var(--e1);
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.lugar-espera.vago .lugar-nome {
+  color: var(--texto-suave);
+  font-weight: 600;
+}
+.lugar-estado {
+  color: var(--texto-suave);
+  font-size: var(--t-1);
+}
+.lugar-dupla {
+  padding: 1px var(--e2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lugar-cor) 22%, transparent);
+  color: var(--texto);
+  font-size: var(--t-1);
+  font-weight: 600;
+}
+.sala-lado {
+  display: grid;
+  gap: var(--e3);
+  align-content: start;
+}
+.sala-espera .convite,
+.sala-regras {
+  display: grid;
+  gap: var(--e2);
+  margin: 0;
+  padding: var(--e4);
+  border: 3px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  --foco: var(--grito);
+}
+.sala-espera .convite h2,
+.sala-regras h2 {
+  margin: 0;
+  font-family: var(--fonte-giz);
+  font-weight: 400;
+  font-size: var(--t2);
+  color: var(--grito);
+}
+.convite-dica {
+  margin: 0;
+  color: var(--giz-suave);
+}
+.convite-linha {
+  display: flex;
+  gap: var(--e2);
+}
+.convite-linha input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--e3);
+  border: 2px solid #3e4d45;
+  border-radius: var(--raio-carta);
+  background: var(--lousa-noite);
+  color: var(--giz);
+}
+.convite-whats {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--e4);
+  border-radius: var(--raio-botao);
+  background: #1f7a4a;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+.convite-whats:hover {
+  background: #23894f;
+}
+.sala-regras ul {
+  display: grid;
+  gap: var(--e1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sala-regras li {
+  padding-left: 1.1em;
+  text-indent: -1.1em;
+}
+.sala-regras li::before {
+  content: '— ';
+  color: var(--giz-suave);
+}
+.sala-espera .chat {
+  margin: 0;
+  --form-campo: var(--lousa-noite);
+  --form-borda: #3e4d45;
+  --form-tinta: var(--giz);
+}
+.sala-espera .chat input::placeholder,
+.convite-linha input::placeholder {
+  color: var(--giz-suave);
+}
+.sala-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e3);
+}
+.sala-acoes .botao-principal {
+  flex: 1 1 220px;
+}
+.sala-acoes p {
+  flex: 1 1 220px;
+  margin: 0;
+  color: var(--texto-suave);
+}
+.sala-sair {
+  min-width: 96px;
+}
+@media (min-width: 860px) {
+  .sala-lugares {
+    --tampo: 220px;
+    max-width: 540px;
+  }
+  .sala-lugares .avatar,
+  .sala-lugares .cadeira-vaga {
+    width: 72px !important;
+    height: 72px !important;
+  }
+  .sala-espera {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+    grid-template-areas:
+      'topo topo'
+      'mesa lado'
+      'acoes lado';
+    column-gap: var(--e6);
+    align-items: start;
+  }
+  .sala-topo {
+    grid-area: topo;
+  }
+  .sala-mesa {
+    grid-area: mesa;
+  }
+  .sala-lado {
+    grid-area: lado;
+  }
+  .sala-acoes {
+    grid-area: acoes;
+  }
+}
 .lista-cadeiras {
   display: grid;
   margin: 0 0 var(--e4);
@@ -2868,13 +3138,19 @@ body:has(.tela-mesa) {
   gap: var(--e2);
   margin-bottom: var(--e4);
 }
+/* Só para leitor de tela. !important: regras de componente (ex.: `.convite label { width: 100% }`)
+   não podem esticar o elemento escondido e empurrar a página para o lado. */
 .visualmente-oculto,
 .so-leitor {
-  position: absolute;
-  width: 1px;
-  height: 1px;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
   overflow: hidden;
   clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 .chat {

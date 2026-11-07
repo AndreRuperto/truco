@@ -33,7 +33,15 @@ export function Chat({ mensagens, aoEnviar }: Props) {
         <label htmlFor="chat-texto" className="visualmente-oculto">
           Mensagem
         </label>
-        <input id="chat-texto" type="text" autoComplete="off" maxLength={MAX_CHAT} value={texto} onChange={(e) => setTexto(e.target.value)} />
+        <input
+          id="chat-texto"
+          type="text"
+          autoComplete="off"
+          maxLength={MAX_CHAT}
+          placeholder="Mande um recado pra mesa"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+        />
         <button type="submit">Enviar</button>
       </form>
     </section>

@@ -56,7 +56,7 @@ describe('fotos na sala de espera', () => {
       { tipo: 'vazia', nome: null, conectado: false },
     ];
     const { container } = render(<SalaEspera msg={msgEstado(null, 0, { cadeiras, humanosEsperados: 4, modo: 'privada' })} aoIniciar={() => {}} aoSair={() => {}} />);
-    const linhas = container.querySelectorAll('.lista-cadeiras li');
+    const linhas = container.querySelectorAll('.sala-lugares li');
     expect(linhas[0].querySelector('.avatar-pronto svg')).not.toBeNull();
     expect(linhas[1].querySelector('.avatar')).toBeNull();
     expect(linhas[2].querySelector('.avatar')).toHaveTextContent('Z');
