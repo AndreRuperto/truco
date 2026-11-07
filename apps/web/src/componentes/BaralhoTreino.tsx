@@ -1,7 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 
 /**
- * Passatempo inteiramente local da sala privada.
+ * Passatempo inteiramente local da sala privada ou durante o ritual da partida.
  * Não usa nem embaralha o monte real da partida, não envia ações ao servidor.
  */
 export type TruqueBaralho = 'cascata' | 'corte' | 'leque' | 'mola';
@@ -104,14 +104,14 @@ export function MonteBaralhoTreino({ treino }: { treino: TreinoBaralho }) {
 }
 
 /** Os comandos ficam abaixo da mesa, sem ocupar o espaço das cadeiras. */
-export function ComandosBaralhoTreino({ treino }: { treino: TreinoBaralho }) {
+export function ComandosBaralhoTreino({ treino, contexto = 'espera' }: { treino: TreinoBaralho; contexto?: 'espera' | 'partida' }) {
   return (
-    <section className="sala-truques" aria-labelledby="titulo-truques">
+    <section className="sala-truques" aria-label={contexto === 'partida' ? 'Floreios enquanto embaralha' : 'Brinque com o baralho'}>
       <div className="sala-truques-topo">
-        <h2 id="titulo-truques">Brinque com o baralho</h2>
+        <h2>{contexto === 'partida' ? 'Seu baralho, seus floreios' : 'Brinque com o baralho'}</h2>
         <span>Só de treino</span>
       </div>
-      <p>Enquanto a turma não chega, faça uns floreios. Isso não mexe nas cartas da partida.</p>
+      <p>{contexto === 'partida' ? 'Experimente os quatro movimentos. Eles são visuais: para avançar, use a ação de embaralhar da partida.' : 'Enquanto a turma não chega, faça uns floreios. Isso não mexe nas cartas da partida.'}</p>
       <div className="sala-truques-botoes" role="group" aria-label="Truques de embaralhamento">
         {MOVIMENTOS.map((truque) => (
           <button
