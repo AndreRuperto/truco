@@ -1,5 +1,6 @@
 import type { MsgChat, MsgEstado } from '@truco/protocolo';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useAvisoNaAba } from '../logica/avisoAba';
 import { Avatar } from '../componentes/Avatar';
 import { Chat } from '../componentes/Chat';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
@@ -26,6 +27,23 @@ export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = win
   const sentados = msg.cadeiras.filter((c) => c.tipo === 'humano').length;
   const faltam = Math.max(0, msg.humanosEsperados - sentados);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
+  // Quem esperava em outra aba fica sabendo que alguém chegou (o título pisca até voltar).
+  const nomesHumanos = msg.cadeiras.filter((c, i) => c.tipo === 'humano' && i !== msg.minhaCadeira).map((c) => c.nome ?? 'Alguém');
+  const vistos = useRef(nomesHumanos.length);
+  const [chegou, setChegou] = useState<string | null>(null);
+  useEffect(() => {
+    if (nomesHumanos.length > vistos.current) setChegou(nomesHumanos.at(-1)!);
+    vistos.current = nomesHumanos.length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nomesHumanos.length]);
+  useEffect(() => {
+    const voltou = () => {
+      if (!document.hidden) setChegou(null);
+    };
+    document.addEventListener('visibilitychange', voltou);
+    return () => document.removeEventListener('visibilitychange', voltou);
+  }, []);
+  useAvisoNaAba(chegou !== null, `${chegou ?? ''} entrou na mesa · Truco`);
   return (
     <main className="sala-espera">
       <h1>Sala de espera</h1>

@@ -29,6 +29,7 @@ import { prazoEhMeu } from '../logica/prazo';
 import { donoDoMonte, mostrarResumoMao, textoEtapa } from '../logica/ritual';
 import { type SinalRecebido, temCoringa, textoSinalRecebido } from '../logica/sinais';
 import { placarRelativo, resumoFimMao, resumoFimPartida, textoPedidoPendente, valorMao } from '../logica/textos';
+import { useAvisoNaAba } from '../logica/avisoAba';
 import { useAgora } from '../rede/hooks';
 import { gravarSomLigado, lerSomLigado, useSonsDaMesa } from '../som/useSons';
 import type { EstadoLoja, Loja } from '../rede/loja';
@@ -69,6 +70,8 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
   const fecharManual = useCallback(() => setManual(false), []);
   const [somLigado, setSomLigado] = useState(lerSomLigado);
   useSonsDaMesa(snap, somLigado, agora);
+  // Em outra aba/app: o título pisca e o celular vibra quando é a minha vez de agir.
+  useAvisoNaAba(prazoEhMeu(snap.msg!), 'Sua vez! · Truco', somLigado);
   const [vista3d, setVista3d] = useState(lerVista3D);
   const [aviso3d, setAviso3d] = useState<string | null>(null);
   const trocarVista = () => {
