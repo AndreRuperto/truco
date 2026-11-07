@@ -32,6 +32,33 @@ function ateConferir() {
 }
 
 describe('família na Mesa', () => {
+  test('humano pode pedir três fechadas na mesma mão e o prazo pausa durante a conferência', () => {
+    const semPedidos = (estado: EstadoPartida, cadeira: Cadeira): AcaoJogador | null => {
+      const a = botFacil(estado, cadeira);
+      return a?.tipo === 'familia' ? null : a;
+    };
+    // O tempo de conferir é maior que o da janela, para testar a pausa.
+    const t = criarMesa({
+      regras: MINEIRO,
+      decidirBot: semPedidos,
+      tempos: { ...TEMPOS, distribuicaoMs: 0, janelaFamiliaMs: 30, botMs: 110 },
+    });
+    t.mesa.sentar('a', 'Ana');
+    avancarAte(() => !!t.estado('a')?.janelaFamilia, 1);
+    for (let n = 1; n <= 3; n++) {
+      t.mesa.acao('a', { tipo: 'familia' });
+      expect(t.estado('a')!.visao!.fase).toBe('conferindoFamilia');
+      avancarAte(() => t.estado('a')?.visao?.fase === 'jogando', 1, 1000);
+      expect(t.estado('a')!.janelaFamilia).not.toBeNull();
+      expect(t.estado('a')!.visao!.mao!.familias.filter((f) => f.tipo === 'fechada')).toHaveLength(n);
+      expect(t.estado('a')!.minhasAcoes.some((a) => a.tipo === 'familia')).toBe(true);
+    }
+    // A quarta só pode ser aberta (e somente com uma família real).
+    expect(t.estado('a')!.visao!.mao!.familias).toHaveLength(3);
+    t.mesa.semFamilia('a');
+    expect(t.estado('a')!.janelaFamilia).toBeNull();
+  });
+
   test('bot pede na janela; a dupla humana tem conferirMs e confere', () => {
     const t = ateConferir();
     const e = t.estado('a')!;
