@@ -35,7 +35,11 @@ export function TelaSalas({ api, aoEntrar, aoJogarComBots }: Props) {
   }, []);
   return (
     <main className="tela-conta tela-salas">
-      <h1>Mesas abertas</h1>
+      <header className="pagina-abertura">
+        <span className="pagina-selo">O bar está aberto</span>
+        <h1>Mesas abertas</h1>
+        <p>Encontre uma mesa, veja os lugares ocupados e chegue para jogar.</p>
+      </header>
       <p className="salas-situacao">
         {/* Sem região viva: o texto muda a cada segundo e não deve ser lido em voz alta toda hora. */}
         <span>{carregando && !dados ? 'Procurando mesas…' : atualizadoEm ? textoAtualizado(agora - atualizadoEm) : ''}</span>
@@ -66,16 +70,22 @@ export function TelaSalas({ api, aoEntrar, aoJogarComBots }: Props) {
         </section>
       )}
       {dados && dados.salas.length > 0 && (
-        <ul className="lista-dados">
+        <ul className="lista-dados lista-mesas">
           {dados.salas.map((s) => (
-            <li key={s.id}>
-              <span>
-                {NOME_MODO[s.modo]} · {NOME_VARIANTE[s.variante]}
+            <li key={s.id} className="mesa-lista-item">
+              <span className="sala-mini-mesa" aria-hidden="true">
+                <span className="sala-mini-tampo">
+                  {Array.from({ length: Math.min(4, Math.max(0, s.humanos)) }, (_, i) => (
+                    <span key={i} className={`sala-mini-assento${i < s.ocupados ? ' ocupado' : ''}`} />
+                  ))}
+                  <span className="sala-mini-baralho">♠</span>
+                </span>
               </span>
-              <span>
-                {s.ocupados}/{s.humanos} humanos
+              <span className="sala-ficha">
+                <strong>{NOME_MODO[s.modo]} · {NOME_VARIANTE[s.variante]}</strong>
+                <small>Por {s.dono ?? 'jogador convidado'}</small>
+                <span className="sala-ocupacao">{s.ocupados}/{s.humanos} humanos</span>
               </span>
-              <span>{s.dono ?? '—'}</span>
               <button type="button" aria-label={`Entrar na mesa de ${s.dono ?? 'alguém'}`} onClick={() => aoEntrar(s.id)}>
                 Entrar
               </button>
