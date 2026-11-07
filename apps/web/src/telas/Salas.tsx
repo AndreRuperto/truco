@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { VitrineMesas } from '../componentes/VitrineMesas';
+import type { AcessoMesaVitrine, TipoMesaVitrine } from '../logica/lobby';
 import { NOME_MODO, NOME_VARIANTE } from '../logica/conta';
 import type { Api } from '../rede/api';
 import { useAgora, useCarregar } from '../rede/hooks';
@@ -8,6 +10,10 @@ interface Props {
   aoEntrar: (id: string) => void;
   /** Começa já uma mesa com as regras salvas, contra 3 bots. */
   aoJogarComBots?: () => void;
+  /** Cria uma nova mesa casual, pública ou por convite. */
+  aoCriarMesa?: (tipo: TipoMesaVitrine, acesso: AcessoMesaVitrine) => void;
+  /** A ranqueada precisa passar pela fila Elo. */
+  aoRanqueada?: () => void;
 }
 
 const INTERVALO_MS = 12_000;
@@ -20,7 +26,7 @@ export function textoAtualizado(ms: number): string {
   return `atualizado há ${Math.floor(s / 60)} min`;
 }
 
-export function TelaSalas({ api, aoEntrar, aoJogarComBots }: Props) {
+export function TelaSalas({ api, aoEntrar, aoJogarComBots, aoCriarMesa, aoRanqueada }: Props) {
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.salas(), []);
   const agora = useAgora(1_000);
   const [atualizadoEm, setAtualizadoEm] = useState<number | null>(null);
@@ -34,12 +40,14 @@ export function TelaSalas({ api, aoEntrar, aoJogarComBots }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <main className="tela-conta tela-salas">
-      <header className="pagina-abertura">
-        <span className="pagina-selo">O bar está aberto</span>
-        <h1>Mesas abertas</h1>
-        <p>Encontre uma mesa, veja os lugares ocupados e chegue para jogar.</p>
-      </header>
+    <main className={`tela-conta tela-salas${aoCriarMesa && aoRanqueada ? ' salas-com-vitrine' : ''}`}>
+      {aoCriarMesa && aoRanqueada && <VitrineMesas aoCriar={aoCriarMesa} aoRanqueada={aoRanqueada} />}
+      <section className="salas-listagem" aria-labelledby="titulo-mesas-abertas">
+        <header className="pagina-abertura">
+          <span className="pagina-selo">O bar está aberto</span>
+          {aoCriarMesa && aoRanqueada ? <h2 id="titulo-mesas-abertas">Mesas abertas</h2> : <h1 id="titulo-mesas-abertas">Mesas abertas</h1>}
+          <p>Encontre uma mesa, veja os lugares ocupados e chegue para jogar.</p>
+        </header>
       <p className="salas-situacao">
         {/* Sem região viva: o texto muda a cada segundo e não deve ser lido em voz alta toda hora. */}
         <span>{carregando && !dados ? 'Procurando mesas…' : atualizadoEm ? textoAtualizado(agora - atualizadoEm) : ''}</span>
@@ -58,9 +66,19 @@ export function TelaSalas({ api, aoEntrar, aoJogarComBots }: Props) {
           <h2 id="mesa-vazia-titulo">Ninguém sentou ainda</h2>
           <p>As mesas esperando gente aparecem aqui assim que alguém abre uma. Abra a sua e chame os amigos, ou comece contra os bots.</p>
           <div className="mesa-vazia-acoes">
-            <a className="botao-principal botao-link" href="#/">
-              Abrir uma mesa
-            </a>
+            {aoCriarMesa && aoRanqueada ? (
+              <button
+                type="button"
+                className="botao-principal"
+                onClick={() => document.getElementById('titulo-abrir-mesa')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })}
+              >
+                Abrir uma mesa
+              </button>
+            ) : (
+              <a className="botao-principal botao-link" href="#/">
+                Abrir uma mesa
+              </a>
+            )}
             {aoJogarComBots && (
               <button type="button" onClick={aoJogarComBots}>
                 Jogar com bots agora
@@ -93,6 +111,7 @@ export function TelaSalas({ api, aoEntrar, aoJogarComBots }: Props) {
           ))}
         </ul>
       )}
+      </section>
     </main>
   );
 }

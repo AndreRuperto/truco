@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { formPadrao, opcoesDeEntrada } from '../src/logica/lobby';
 import {
   CHAVE_TOKEN,
+  criarMesaAberta,
   criarMesaPrivada,
   entrarComReserva,
   entrarNaMesa,
@@ -113,6 +114,21 @@ describe('mesa privada e reserva', () => {
     create: vi.fn(async () => sala),
     joinById: vi.fn(async () => sala),
     consumeSeatReservation: vi.fn(async () => sala),
+  });
+
+  test('criarMesaAberta cria sempre uma sala nova e pública, sem joinOrCreate', async () => {
+    const c = clienteFalso(new SalaFalsa());
+    const loja = novaLoja();
+    await criarMesaAberta(loja, { ...opcoes, nivelBot: 'facil', modo: 'classica' }, c);
+    expect(c.create).toHaveBeenCalledWith('mesa', expect.objectContaining({ modo: 'classica', nivelBot: 'facil' }));
+    expect(c.joinOrCreate).not.toHaveBeenCalled();
+    expect(loja.getSnapshot()).toMatchObject({ status: 'na-mesa', salaId: 'r1' });
+  });
+
+  test('criarMesaAberta respeita bots difíceis, mas não cria uma mesa privada', async () => {
+    const c = clienteFalso(new SalaFalsa());
+    await criarMesaAberta(novaLoja(), { ...opcoes, modo: 'desafio', nivelBot: 'dificil' }, c);
+    expect(c.create).toHaveBeenCalledWith('mesa', expect.objectContaining({ modo: 'desafio', nivelBot: 'dificil' }));
   });
 
   test('criarMesaPrivada usa create com modo privada', async () => {

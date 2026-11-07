@@ -3,8 +3,8 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Cabecalho } from './componentes/Cabecalho';
 import { FundoCartas } from './componentes/FundoCartas';
 import { Toast } from './componentes/Toast';
-import { formInicial, gravarAvatarLocal, lerApelido, lerAvatarLocal, lerPreferenciasLocais, type OpcoesEntrada, opcoesDeEntrada } from './logica/lobby';
-import { criarMesaPrivada, entrarNaMesa, entrarPorCodigo, tentarReconectar } from './rede/conexao';
+import { formInicial, gravarAvatarLocal, lerApelido, lerAvatarLocal, lerPreferenciasLocais, type OpcoesEntrada, opcoesDeEntrada, opcoesDeVitrine } from './logica/lobby';
+import { criarMesaAberta, criarMesaPrivada, entrarNaMesa, entrarPorCodigo, tentarReconectar } from './rede/conexao';
 import { useFila, useLoja, useSessao } from './rede/hooks';
 import { api, loja, lojaFila, sessao } from './rede/instancia';
 import { navegar, useRota } from './rede/rota';
@@ -38,7 +38,7 @@ function PedirLogin({ titulo, pronta }: { titulo: string; pronta: boolean }) {
 }
 
 /** Como o jogador entrou na última mesa, para "Jogar de novo" repetir (vale até recarregar a página). */
-let ultimaEntrada: { tipo: 'mesa' | 'privada'; opcoes: OpcoesEntrada } | null = null;
+let ultimaEntrada: { tipo: 'mesa' | 'aberta' | 'privada'; opcoes: OpcoesEntrada } | null = null;
 
 function jogarDeNovo(): void {
   const modo = loja.getSnapshot().msg?.modo;
@@ -49,6 +49,7 @@ function jogarDeNovo(): void {
     navegar({ tela: 'fila' });
     void lojaFila.reentrar();
   } else if (entrada?.tipo === 'privada') void criarMesaPrivada(loja, entrada.opcoes);
+  else if (entrada?.tipo === 'aberta') void criarMesaAberta(loja, entrada.opcoes);
   else if (entrada) void entrarNaMesa(loja, entrada.opcoes);
 }
 
@@ -169,6 +170,13 @@ export function App() {
               ultimaEntrada = { tipo: 'mesa', opcoes: o };
               void entrarNaMesa(loja, o);
             }}
+            aoCriarMesa={(tipo, acesso) => {
+              const o = comFoto(opcoesDeVitrine(tipo, acesso, nomePadrao(), prefsConta ?? lerPreferenciasLocais()));
+              ultimaEntrada = { tipo: acesso === 'privada' ? 'privada' : 'aberta', opcoes: o };
+              if (acesso === 'privada') void criarMesaPrivada(loja, o);
+              else void criarMesaAberta(loja, o);
+            }}
+            aoRanqueada={() => navegar(ses.usuario ? { tela: 'fila' } : { tela: 'entrar', token: null })}
           />
         );
         break;
