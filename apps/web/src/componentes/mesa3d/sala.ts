@@ -188,12 +188,13 @@ export function criarLuzes(mapaSombra: number): THREE.Group {
 
 export interface Mesas {
   madeira: THREE.Group;
+  feltro: THREE.Group;
   plastico: THREE.Group;
   matPlastico: THREE.MeshStandardMaterial;
   matMadeiraEsc: THREE.MeshStandardMaterial;
 }
 
-/** As duas mesas no mesmo lugar; a cena liga uma ou outra. */
+/** Três acabamentos no mesmo lugar; o cliente liga um deles. */
 export function criarMesas(tx: Texturas): Mesas {
   const matMadeira = new THREE.MeshStandardMaterial({ map: tx.madeira, roughness: 0.65 });
   const matMadeiraEsc = mat(COR.madeiraFunda, { roughness: 0.7 });
@@ -201,7 +202,29 @@ export function criarMesas(tx: Texturas): Mesas {
   const matPlastico = new THREE.MeshStandardMaterial({ color: '#d9a51c', roughness: 0.55 });
   const matPlasticoEsc = new THREE.MeshStandardMaterial({ color: COR.plasticoBorda, roughness: 0.5 });
   const madeira = new THREE.Group();
+  const feltro = new THREE.Group();
   const plastico = new THREE.Group();
+
+  // Mesa clássica do boteco (também a aparência inicial de visitantes).
+  const tampoOriginal = malha(new THREE.BoxGeometry(MEIA * 2, 0.045, MEIA * 2), matMadeira);
+  tampoOriginal.position.y = TOPO - 0.0225;
+  madeira.add(tampoOriginal);
+  const saias: Array<[number, number, number, number]> = [
+    [MEIA * 1.8, 0.03, 0, MEIA - 0.06], [MEIA * 1.8, 0.03, 0, -MEIA + 0.06],
+    [0.03, MEIA * 1.8, MEIA - 0.06, 0], [0.03, MEIA * 1.8, -MEIA + 0.06, 0],
+  ];
+  for (const [w, d, x, z] of saias) {
+    const s = malha(new THREE.BoxGeometry(w, 0.08, d), matMadeiraEsc);
+    s.position.set(x, TOPO - 0.085, z);
+    madeira.add(s);
+  }
+  const geoPerna = new THREE.BoxGeometry(0.06, TOPO - 0.045, 0.06);
+  for (const x of [-MEIA + 0.05, MEIA - 0.05])
+    for (const z of [-MEIA + 0.05, MEIA - 0.05]) {
+      const p = malha(geoPerna, matMadeiraEsc);
+      p.position.set(x, (TOPO - 0.045) / 2, z);
+      madeira.add(p);
+    }
 
   // Mesmo desenho oval da vitrine do clube: madeira aparente na borda,
   // filete dourado e feltro verde. O centro continua em TOPO para não alterar
@@ -217,7 +240,7 @@ export function criarMesas(tx: Texturas): Mesas {
     const m = malha(new THREE.CylinderGeometry(1, 1, altura, 80), material);
     m.scale.set(raioX, 1, raioZ);
     m.position.y = y;
-    madeira.add(m);
+    feltro.add(m);
     return m;
   };
   elipse(0.595, 0.466, 0.07, TOPO - 0.041, matMadeiraEsc);
@@ -251,8 +274,9 @@ export function criarMesas(tx: Texturas): Mesas {
       p.rotation.set(z * 0.06, 0, -x * 0.06);
       plastico.add(p);
     }
+  feltro.visible = false;
   plastico.visible = false;
-  return { madeira, plastico, matPlastico, matMadeiraEsc };
+  return { madeira, feltro, plastico, matPlastico, matMadeiraEsc };
 }
 
 /** Cadeira simples; as peças entram em `pecas` para trocar o material (madeira ↔ plástico). */
