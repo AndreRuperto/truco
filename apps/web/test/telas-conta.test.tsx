@@ -134,6 +134,13 @@ describe('TelaHistorico', () => {
     expect(itens[0]).toHaveTextContent('Vitória');
     expect(itens[0]).toHaveTextContent('+16');
     expect(itens[1]).toHaveTextContent('Derrota');
+    expect(screen.getByRole('button', { name: 'Todas' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(screen.getByRole('button', { name: 'Vitórias' }));
+    expect(screen.getByRole('button', { name: 'Vitórias' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByRole('listitem')).toHaveTextContent('Vitória');
+    await userEvent.click(screen.getByRole('button', { name: 'Derrotas' }));
+    expect(screen.getByRole('listitem')).toHaveTextContent('Derrota');
   });
 
   test('vazio', async () => {
@@ -152,6 +159,7 @@ describe('TelaRanking', () => {
     expect(link).toHaveAttribute('href', '#/perfil/7');
     expect(screen.getByRole('row', { name: /ana/ })).toHaveTextContent('Prata');
     expect(screen.getByRole('table', { name: 'Ranking Mineiro' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Pódio dos melhores jogadores' })).toHaveTextContent('1016 Elo');
     for (const th of screen.getAllByRole('columnheader')) expect(th).toHaveAttribute('scope', 'col');
   });
 
@@ -159,5 +167,25 @@ describe('TelaRanking', () => {
     render(<TelaRanking variante="paulista" api={{ ranking: vi.fn(async () => ({ linhas: [] })) }} />);
     expect(await screen.findByRole('region', { name: 'O ranking Paulista ainda está em branco' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Jogar ranqueada' })).toHaveAttribute('href', '#/fila');
+  });
+});
+
+describe('Refinamento do pódio', () => {
+  test('destaca os três primeiros sem alterar a classificação completa', async () => {
+    const linhas = [1, 2, 3, 4].map((posicao) => ({
+      posicao, usuarioId: posicao, apelido: `Jogador ${posicao}`,
+      pontos: 400 - posicao, elo: 1200 - posicao, patente: 'Prata', partidas: 6,
+    }));
+    render(<TelaRanking variante="paulista" api={{ ranking: vi.fn(async () => ({ linhas })) }} />);
+    const podio = await screen.findByRole('region', { name: 'Pódio dos melhores jogadores' });
+    const destaques = within(podio).getAllByRole('listitem');
+    expect(destaques).toHaveLength(3);
+    expect(destaques.map((item) => item.textContent)).toEqual([
+      expect.stringContaining('Jogador 2'),
+      expect.stringContaining('Jogador 1'),
+      expect.stringContaining('Jogador 3'),
+    ]);
+    expect(screen.getAllByRole('row')).toHaveLength(5);
+    expect(within(podio).queryByText('Jogador 4')).toBeNull();
   });
 });
