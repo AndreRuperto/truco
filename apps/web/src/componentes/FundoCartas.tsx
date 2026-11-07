@@ -87,6 +87,38 @@ export function FundoCartas({ discreto = false }: { discreto?: boolean }) {
     };
   }, [discreto]);
 
+  // Como o fundo é decorativo e não recebe pointer-events, detectamos o duplo clique
+  // na janela e verificamos se ele ocorreu sobre uma carta, sem bloquear o formulário.
+  useEffect(() => {
+    const raiz = camada.current;
+    if (!raiz || discreto || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+    const aoDuploClique = (e: MouseEvent) => {
+      if (!(e.target instanceof Element)) return;
+      if (e.target.closest('form, button, a, input, select, textarea, summary, label, [role="button"]')) return;
+
+      // Quando se sobrepõem, vence a carta visualmente mais próxima.
+      const soltas = [...raiz.querySelectorAll<HTMLElement>('[data-solta]')]
+        .sort((a, b) => Number(b.dataset.d) - Number(a.dataset.d));
+      const escolhida = soltas.find((el) => {
+        const r = el.getBoundingClientRect();
+        return e.clientX >= r.left && e.clientX <= r.right &&
+          e.clientY >= r.top && e.clientY <= r.bottom;
+      });
+      const giratoria = escolhida?.querySelector<HTMLElement>('.carta-solta-gira');
+      if (!giratoria) return;
+
+      // Reinicia o movimento a cada duplo clique, inclusive durante outro giro.
+      giratoria.getAnimations().forEach((a) => a.cancel());
+      giratoria.animate(
+        [{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(360deg)' }],
+        { duration: 850, easing: 'cubic-bezier(0.22, 0.8, 0.2, 1)' },
+      );
+    };
+    window.addEventListener('dblclick', aoDuploClique);
+    return () => window.removeEventListener('dblclick', aoDuploClique);
+  }, [discreto]);
+
   return (
     <div className={discreto ? 'fundo-cartas discreto' : 'fundo-cartas'} ref={camada} aria-hidden="true" data-testid="fundo-cartas">
       {cartas.map((c, i) => (
@@ -109,7 +141,10 @@ export function FundoCartas({ discreto = false }: { discreto?: boolean }) {
         >
           <span className="carta-solta-mexe">
             <span className="carta-solta-flutua">
-              <CartaVisual carta={carta(c.id)} variante="mineiro" vira={null} />
+              <span className="carta-solta-gira">
+                <CartaVisual carta={carta(c.id)} variante="mineiro" vira={null} />
+                <CartaVisual carta={null} variante="mineiro" vira={null} />
+              </span>
             </span>
           </span>
         </span>

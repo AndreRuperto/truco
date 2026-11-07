@@ -1,5 +1,5 @@
-import { render } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import { fireEvent, render } from '@testing-library/react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { FundoCartas } from '../src/componentes/FundoCartas';
 import { aproximar, CARTAS_SOLTAS, mexidaDaCarta, PARADA, parada } from '../src/logica/fundoCartas';
 
@@ -58,6 +58,50 @@ describe('FundoCartas', () => {
     for (const el of soltas) {
       const x = Number.parseFloat(el.style.left);
       expect(x < 20 || x > 80).toBe(true);
+    }
+  });
+});
+
+describe('giro 3D no lobby', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  test('renderiza frente e verso em cada carta', () => {
+    const { container } = render(<FundoCartas />);
+    const giratorias = container.querySelectorAll('.carta-solta-gira');
+    expect(giratorias).toHaveLength(CARTAS_SOLTAS.length);
+    giratorias.forEach((el) => {
+      expect(el.querySelectorAll('.carta')).toHaveLength(2);
+      expect(el.querySelector('.carta.verso')).toBeInTheDocument();
+    });
+  });
+
+  test('duplo clique sobre uma carta aciona o giro, mas não sobre controles', () => {
+    const matchMediaOriginal = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as typeof window.matchMedia;
+    const animar = vi.fn().mockReturnValue({ cancel: vi.fn() });
+    const animacoes = vi.fn().mockReturnValue([]);
+    const animateOriginal = Element.prototype.animate;
+    const getAnimationsOriginal = Element.prototype.getAnimations;
+    Element.prototype.animate = animar;
+    Element.prototype.getAnimations = animacoes;
+    const rectOriginal = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () {
+      if ((this as Element).hasAttribute('data-solta')) {
+        return { x: 0, y: 0, left: 0, top: 0, right: 200, bottom: 200, width: 200, height: 200, toJSON: () => ({}) };
+      }
+      return rectOriginal.call(this);
+    };
+    try {
+      const { container } = render(<div><FundoCartas /><button type="button">Jogar</button></div>);
+      fireEvent.dblClick(container.querySelector('.fundo-cartas')!, { clientX: 100, clientY: 100 });
+      expect(animar).toHaveBeenCalledTimes(1);
+      fireEvent.dblClick(container.querySelector('button')!, { clientX: 100, clientY: 100 });
+      expect(animar).toHaveBeenCalledTimes(1);
+    } finally {
+      window.matchMedia = matchMediaOriginal;
+      Element.prototype.animate = animateOriginal;
+      Element.prototype.getAnimations = getAnimationsOriginal;
+      Element.prototype.getBoundingClientRect = rectOriginal;
     }
   });
 });
