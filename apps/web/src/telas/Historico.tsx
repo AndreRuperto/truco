@@ -1,4 +1,5 @@
 import type { ItemHistorico } from '@truco/api';
+import { useState } from 'react';
 import { NOME_MODO, NOME_VARIANTE, textoDelta, textoResultado } from '../logica/conta';
 import type { Api } from '../rede/api';
 import { useCarregar } from '../rede/hooks';
@@ -20,9 +21,15 @@ export function TelaHistorico({ api }: { api: Pick<Api, 'historico'> }) {
   const partidas = dados?.partidas ?? [];
   const vitorias = partidas.filter((p) => p.venceu === true && !p.abandonou).length;
   const derrotas = partidas.filter((p) => tomDe(p) === 'derrota').length;
+  const [filtro, setFiltro] = useState<'todas' | 'vitoria' | 'derrota'>('todas');
+  const filtradas = partidas.filter((p) => filtro === 'todas' || tomDe(p) === filtro);
   return (
     <main className="tela-conta tela-historico">
-      <h1>Histórico</h1>
+      <header className="pagina-abertura">
+        <span className="pagina-selo">Sua trajetória</span>
+        <h1>Histórico</h1>
+        <p>Relembre as partidas, os placares e como seu Elo mudou.</p>
+      </header>
       {carregando && !dados && <p role="status">Carregando…</p>}
       {erro && (
         <p className="erro-form" role="alert">
@@ -51,8 +58,20 @@ export function TelaHistorico({ api }: { api: Pick<Api, 'historico'> }) {
               <strong>{derrotas}</strong> {derrotas === 1 ? 'derrota' : 'derrotas'}
             </span>
           </p>
+          <div className="historico-filtros" role="group" aria-label="Filtrar resultados">
+            {([
+              ['todas', 'Todas'],
+              ['vitoria', 'Vitórias'],
+              ['derrota', 'Derrotas'],
+            ] as const).map(([valor, rotulo]) => (
+              <button key={valor} type="button" aria-pressed={filtro === valor} onClick={() => setFiltro(valor)}>
+                {rotulo}
+              </button>
+            ))}
+          </div>
+          {filtradas.length === 0 && <p className="historico-sem-filtro">Nenhuma partida neste filtro.</p>}
           <ul className="historico-lista">
-            {partidas.map((p) => {
+            {filtradas.map((p) => {
               const tom = tomDe(p);
               const delta = textoDelta(p.deltaElo);
               return (

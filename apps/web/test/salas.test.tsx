@@ -17,6 +17,8 @@ describe('TelaSalas', () => {
     expect(item).toHaveTextContent('Desafio · Mineiro');
     expect(item).toHaveTextContent('1/2 humanos');
     expect(item).toHaveTextContent('Ana');
+    expect(item.querySelectorAll('.sala-mini-assento')).toHaveLength(2);
+    expect(item.querySelectorAll('.sala-mini-assento.ocupado')).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Entrar na mesa de Ana' }));
     expect(aoEntrar).toHaveBeenCalledWith('abc123');
     await user.click(screen.getByRole('button', { name: 'Atualizar' }));
