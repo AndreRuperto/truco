@@ -51,7 +51,8 @@ export const FALAS = {
   'pode-dar': { baloes: ['Pode dar.'], ditos: ['Pode dar.'] },
   vamos: { baloes: ['Vamos!'], ditos: ['Vamo jogar!'] },
   boa: { baloes: ['Boa!'], ditos: ['Boa, parceiro!', 'Isso!'] },
-  vixe: { baloes: ['Vixe!'], ditos: ['Vixe!', 'Vixe Maria!'] },
+  // Escrito como se fala: "Vixe" o modelo lia como em inglês; o "sh" puxa o x brasileiro.
+  vixe: { baloes: ['Vixe!'], ditos: ['Vishi!', 'Vishi, Maria!'] },
   bora: { baloes: ['Bora!'], ditos: ['Bora!', 'Bora, bora!'] },
 } as const satisfies Record<string, Fala>;
 
