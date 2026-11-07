@@ -24,7 +24,7 @@ interface Props {
 export function TelaPerfil({ api, id, editar = false, usuario = null, googleClientId = null, aoTrocarApelido }: Props) {
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.perfil(id ?? undefined), [id]);
   return (
-    <main className="tela-conta">
+    <main className="tela-conta pagina-perfil">
       {carregando && !dados && <p role="status">Carregando…</p>}
       {erro && (
         <p className="erro-form" role="alert">
@@ -33,10 +33,14 @@ export function TelaPerfil({ api, id, editar = false, usuario = null, googleClie
       )}
       {dados && (
         <>
-          <h1 className="perfil-titulo">
-            <Avatar apelido={dados.usuario.apelido} avatar={dados.usuario.avatar} tamanho={56} />
-            {dados.usuario.apelido}
-          </h1>
+          <header className="perfil-apresentacao">
+            <span className="pagina-selo">Carteirinha da mesa</span>
+            <h1 className="perfil-titulo">
+              <Avatar apelido={dados.usuario.apelido} avatar={dados.usuario.avatar} tamanho={56} />
+              {dados.usuario.apelido}
+            </h1>
+            <p>Patentes, números e conquistas de quem senta à mesa.</p>
+          </header>
           {id === null && (
             <EditarPerfil
               apelido={dados.usuario.apelido}
@@ -63,8 +67,9 @@ export function TelaPerfil({ api, id, editar = false, usuario = null, googleClie
 function CartaoVariante({ variante, r }: { variante: Variante; r: RatingVariante }) {
   return (
     <section className="cartao-variante" aria-label={NOME_VARIANTE[variante]}>
-      <h2>{NOME_VARIANTE[variante]}</h2>
+      <h2><span className="variante-emblema" aria-hidden="true">{variante === 'paulista' ? '♠' : '♣'}</span>{NOME_VARIANTE[variante]}</h2>
       <p className="patente">
+        <span className="patente-emblema" aria-hidden="true">★</span>
         <span className="patente-faixa">{r.patente}</span>{' '}
         <span className="patente-pontos">
           <strong data-testid={`pontos-${variante}`}>{r.pontos}</strong> pontos
