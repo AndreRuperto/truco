@@ -1,7 +1,5 @@
 import { useState } from 'react';
-
-export type TipoMesaVitrine = 'classica' | 'desafio';
-export type AcessoMesaVitrine = 'publica' | 'privada';
+import type { AcessoMesaVitrine, TipoMesaVitrine } from '../logica/lobby';
 
 interface Props {
   aoCriar: (tipo: TipoMesaVitrine, acesso: AcessoMesaVitrine) => void;
