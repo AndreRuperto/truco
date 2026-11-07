@@ -4,6 +4,7 @@ import type { Formato, ItemHistorico, LinhaRanking, PerfilApi, RatingVariante } 
 import type { Banco } from '../banco/banco';
 import { bloqueiosFila, participacoes, partidas, ratings, usuarios, VARIANTES } from '../banco/schema';
 import type { ModoMesa } from '../mesa/protocolo';
+import { conquistasDe } from '../ranking/conquistas';
 import { ELO_INICIAL, novosPontos, patenteDe, proximaPatente } from '../ranking/elo';
 import { type Contadores, contadoresZerados, percentual } from '../ranking/estatisticas';
 import { deltaAbandono, deltasDoFim, type JogadorRanqueado } from '../ranking/resultado';
@@ -240,7 +241,22 @@ export async function perfil(db: Banco, usuarioId: number): Promise<PerfilApi | 
       corridas: e?.corridas ?? 0,
     };
   }
-  return { usuario: u, variantes };
+  const [t] = await db
+    .select({
+      jogos: sql<number>`(count(*))::int`,
+      vitorias: sql<number>`(count(*) filter (where ${participacoes.venceu}))::int`,
+      trucosPedidos: sql<number>`(coalesce(sum(${participacoes.trucosPedidos}), 0))::int`,
+      trucosAceitos: sql<number>`(coalesce(sum(${participacoes.trucosAceitos}), 0))::int`,
+      ranqueadas: sql<number>`(count(*) filter (where ${partidas.ranqueada}))::int`,
+      variantes: sql<number>`(count(distinct ${partidas.variante}))::int`,
+      privadas: sql<number>`(count(*) filter (where ${partidas.modo} = 'privada'))::int`,
+      lavadas: sql<number>`(count(*) filter (where ${participacoes.venceu} and ((${participacoes.dupla} = 0 and ${partidas.placar1} = 0) or (${participacoes.dupla} = 1 and ${partidas.placar0} = 0))))::int`,
+    })
+    .from(participacoes)
+    .innerJoin(partidas, eq(participacoes.partidaId, partidas.id))
+    .where(and(eq(participacoes.usuarioId, usuarioId), isNotNull(partidas.terminadaEm), eq(partidas.abandonada, false)));
+  const pontos = Math.max(0, ...rs.map((r) => r.pontos));
+  return { usuario: u, variantes, conquistas: conquistasDe({ ...t, pontos }) };
 }
 
 export async function historico(db: Banco, usuarioId: number, limite = 20): Promise<ItemHistorico[]> {

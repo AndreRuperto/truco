@@ -1382,6 +1382,82 @@ body:has(.tela-mesa) {
   color: var(--giz-suave);
 }
 
+/* Conquistas do perfil: medalhas de giz na lousa. */
+.conquistas {
+  margin: var(--e5) 0 0;
+  padding: var(--e4);
+  border: 3px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+}
+.conquistas h2 {
+  margin: 0 0 var(--e3);
+  font-size: var(--t1);
+}
+.conquistas h2 small {
+  margin-left: var(--e2);
+  color: var(--giz-suave);
+  font-weight: 600;
+  font-size: var(--t-1);
+}
+.conquistas ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--e2) var(--e3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.conquista {
+  display: flex;
+  gap: var(--e2);
+  align-items: flex-start;
+  opacity: 0.62;
+}
+.conquista.feita {
+  opacity: 1;
+}
+.medalha {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--giz-suave);
+  border-radius: 50%;
+  color: var(--giz-suave);
+  font-size: 18px;
+  line-height: 1;
+}
+.conquista.feita .medalha {
+  border-color: var(--grito);
+  background: color-mix(in srgb, var(--grito) 18%, transparent);
+  color: var(--grito);
+}
+.conquista-texto {
+  display: grid;
+  gap: 2px;
+  font-size: var(--t-1);
+}
+.conquista-texto strong {
+  font-size: var(--t0);
+}
+.conquista-texto > span {
+  color: var(--giz-suave);
+}
+.conquista-progresso {
+  display: flex;
+  align-items: center;
+  gap: var(--e1);
+  font-variant-numeric: tabular-nums;
+}
+.conquista-progresso progress {
+  width: 90px;
+  height: 6px;
+  accent-color: var(--grito);
+}
+
 /* Tampo de madeira */
 .tampo {
   position: relative;

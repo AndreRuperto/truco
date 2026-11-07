@@ -91,6 +91,9 @@ describe('partida ranqueada', () => {
       corridas: 1,
     });
     expect(pa?.variantes.mineiro.jogos).toBe(0);
+    const feitas = (pa?.conquistas ?? []).filter((c) => c.alcancada).map((c) => c.id);
+    expect(feitas).toEqual(['primeira-vitoria', 'estreia']);
+    expect(pa?.conquistas?.find((c) => c.id === 'frequentador')?.progresso).toEqual({ atual: 1, meta: 10 });
 
     expect((await ranking(b.db, 'paulista')).map((l) => [l.posicao, l.apelido, l.pontos, l.patente])).toEqual([
       [1, 'ana', 16, 'Bronze'],

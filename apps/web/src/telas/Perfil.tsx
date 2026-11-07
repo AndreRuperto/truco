@@ -1,4 +1,4 @@
-import type { RatingVariante, UsuarioApi } from '@truco/api';
+import type { Conquista, RatingVariante, UsuarioApi } from '@truco/api';
 import type { Variante } from '@truco/engine';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { AVATARES_PRONTOS } from '@truco/api';
@@ -53,6 +53,7 @@ export function TelaPerfil({ api, id, editar = false, usuario = null, googleClie
           {(['paulista', 'mineiro'] as const).map((v) => (
             <CartaoVariante key={v} variante={v} r={dados.variantes[v]} />
           ))}
+          {dados.conquistas && dados.conquistas.length > 0 && <Conquistas lista={dados.conquistas} />}
         </>
       )}
     </main>
@@ -269,3 +270,37 @@ function FormApelido({ atual, api, aoSalvar }: { atual: string; api: Pick<Api, '
     </form>
   );
 }
+
+/** Medalhas: as já conquistadas primeiro; as outras mostram quanto falta. */
+function Conquistas({ lista }: { lista: Conquista[] }) {
+  const feitas = lista.filter((c) => c.alcancada).length;
+  const ordem = [...lista].sort((a, b) => Number(b.alcancada) - Number(a.alcancada));
+  return (
+    <section className="conquistas" aria-labelledby="titulo-conquistas">
+      <h2 id="titulo-conquistas">
+        Conquistas <small>{feitas} de {lista.length}</small>
+      </h2>
+      <ul>
+        {ordem.map((c) => (
+          <li key={c.id} className={c.alcancada ? 'conquista feita' : 'conquista'}>
+            <span className="medalha" aria-hidden="true">
+              {c.alcancada ? '★' : '☆'}
+            </span>
+            <span className="conquista-texto">
+              <strong>{c.nome}</strong>
+              <span>{c.descricao}</span>
+              {!c.alcancada && c.progresso && (
+                <span className="conquista-progresso">
+                  <progress max={c.progresso.meta} value={c.progresso.atual} aria-label={`${c.nome}: ${c.progresso.atual} de ${c.progresso.meta}`} />
+                  {c.progresso.atual}/{c.progresso.meta}
+                </span>
+              )}
+            </span>
+            <span className="so-leitor">{c.alcancada ? 'conquistada' : 'ainda não'}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+

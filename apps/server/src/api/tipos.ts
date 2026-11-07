@@ -54,6 +54,17 @@ export interface RatingVariante {
 export interface PerfilApi {
   usuario: { id: number; apelido: string; avatar?: string | null };
   variantes: Record<Variante, RatingVariante>;
+  /** Conquistas (só de quem tem conta; saem das partidas gravadas). */
+  conquistas?: Conquista[];
+}
+
+export interface Conquista {
+  id: string;
+  nome: string;
+  descricao: string;
+  alcancada: boolean;
+  /** Para as que contam algo (ex.: 7 de 10 partidas); null nas de uma vez só. */
+  progresso: { atual: number; meta: number } | null;
 }
 
 export interface ItemHistorico {

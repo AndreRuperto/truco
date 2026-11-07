@@ -68,6 +68,20 @@ describe('TelaPerfil', () => {
     expect(trocarAvatar).toHaveBeenLastCalledWith(null);
   });
 
+  test('conquistas: as feitas primeiro, contagem e progresso das que faltam', async () => {
+    const conquistas = [
+      { id: 'frequentador', nome: 'Freguês da casa', descricao: 'Termine 10 partidas.', alcancada: false, progresso: { atual: 7, meta: 10 } },
+      { id: 'primeira-vitoria', nome: 'Primeira vitória', descricao: 'Ganhe uma partida.', alcancada: true, progresso: null },
+    ];
+    render(<TelaPerfil id={null} api={{ perfil: vi.fn(async () => ({ ...PERFIL, conquistas })), trocarApelido: vi.fn() }} />);
+    const secao = await screen.findByRole('region', { name: /Conquistas/ });
+    expect(secao).toHaveTextContent('1 de 2');
+    const itens = within(secao).getAllByRole('listitem');
+    expect(itens[0]).toHaveTextContent('Primeira vitória');
+    expect(itens[0]).toHaveTextContent('conquistada');
+    expect(within(itens[1]).getByRole('progressbar', { name: 'Freguês da casa: 7 de 10' })).toBeInTheDocument();
+  });
+
   test('mostra patente, pontos, Elo e estatísticas por variante', async () => {
     render(<TelaPerfil id={null} api={{ perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn() }} />);
     expect(await screen.findByRole('heading', { name: 'ana' })).toBeInTheDocument();
