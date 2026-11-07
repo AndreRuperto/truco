@@ -2,6 +2,7 @@ import type { Cadeira } from '@truco/engine';
 import type { MesaFisica, MsgBatida } from '@truco/protocolo';
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { posicaoRelativa } from '../logica/posicoes';
+import { superficieAtual, type AparenciaMesa } from '../logica/aparenciaMesa';
 import { movimentoReduzido } from './animacaoMesa';
 import { cx } from './cx';
 import { EstampaZapada } from './EstampaZapada';
@@ -20,6 +21,8 @@ type Batida = MsgBatida & { id: number; em: number };
 interface Props {
   /** Ausente (servidor antigo) = madeira inteira. */
   fisica?: MesaFisica;
+  /** Aparência local do jogador; não muda a mesa física dos outros. */
+  aparencia?: AparenciaMesa;
   minha: Cadeira;
   batida?: Batida | null;
   /** Quem senta em volta (desenhados na tela larga, em 2.5D). */
@@ -34,8 +37,8 @@ export interface JogadorDesenhado {
   gritando: boolean;
 }
 
-/** Tampo oval de feltro com aro de madeira (e rachaduras); ao quebrar, vem a mesa amarela de bar. */
-export function Tampo({ fisica, minha, batida, jogadores = [], children }: Props) {
+/** O tampo usa a preferência visual local; a quebra real sempre força o plástico de bar. */
+export function Tampo({ fisica, aparencia = 'madeira', minha, batida, jogadores = [], children }: Props) {
   const [ativa, setAtiva] = useState<Batida | null>(null);
   const id = batida?.id;
 
@@ -47,14 +50,14 @@ export function Tampo({ fisica, minha, batida, jogadores = [], children }: Props
     // só reage a uma batida nova (o id muda a cada uma)
   }, [id]);
 
-  const tipo = fisica?.tipo ?? 'madeira';
+  const tipo = superficieAtual(aparencia, fisica?.tipo === 'plastico');
   const quebrando = !!ativa?.quebrou;
   const estilo = ativa ? ({ '--forca': ativa.forca.toFixed(2) } as CSSProperties) : undefined;
 
   return (
     <div className={cx('mesa-ambiente', tipo === 'plastico' && 'ambiente-plastico')}>
       <Mobilia jogadores={jogadores} />
-    <div data-testid="tampo" className={cx('tampo', tipo === 'madeira' && 'tampo-feltro', tipo === 'plastico' && 'tampo-plastico', ativa && 'tremendo')} data-superficie={tipo === 'madeira' ? 'feltro' : 'plastico'} style={estilo}>
+    <div data-testid="tampo" className={cx('tampo', tipo === 'feltro' && 'tampo-feltro', tipo === 'plastico' && 'tampo-plastico', ativa && 'tremendo')} data-superficie={tipo} style={estilo}>
       {tipo === 'plastico' && <EstampaZapada />}
       <Rachaduras rachaduras={fisica?.rachaduras ?? []} tipo={tipo} minha={minha} novaId={ativa?.rachadura?.id ?? null} />
       {children}
