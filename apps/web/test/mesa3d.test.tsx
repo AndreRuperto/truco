@@ -77,6 +77,21 @@ describe('vista 3D na mesa', () => {
     expect(screen.getByTestId('mesa-3d')).toBeInTheDocument();
   });
 
+  test('troca madeira por feltro e plástico também na cena 3D sem alterar a jogada', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<TelaMesa snap={snap()} acoes={acoes()} temConta={true} />);
+    expect(screen.getByTestId('tampo')).toHaveAttribute('data-superficie', 'madeira');
+    await user.click(screen.getByRole('button', { name: 'Personalizar mesa' }));
+    await user.click(screen.getByRole('button', { name: /Feltro de clube/ }));
+    expect(screen.getByTestId('tampo')).toHaveAttribute('data-superficie', 'feltro');
+    await user.click(screen.getByRole('button', { name: '3D' }));
+    await act(async () => { await vi.dynamicImportSettled(); });
+    expect(atualizacoes.at(-1)?.aparenciaMesa).toBe('feltro');
+    await user.click(screen.getByRole('button', { name: /Plástico de bar/ }));
+    expect(atualizacoes.at(-1)?.aparenciaMesa).toBe('plastico');
+    unmount();
+  });
+
   test('as cartas jogadas vão em texto para o leitor de tela', async () => {
     localStorage.setItem(CHAVE_VISTA_3D, '1');
     const s = jogar(distribuida(PAULISTA), [[0, 0]]);
