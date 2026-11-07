@@ -4,6 +4,7 @@ import './estilos.css';
 import './refinamento-visual.css';
 import './vitrine-mesas.css';
 import './mesa-partida-feltro.css';
+import './visualizacao-mesa.css';
 
 // Sem <StrictMode>: o efeito de reconexão do App não deve rodar duas vezes em dev.
 createRoot(document.getElementById('raiz')!).render(<App />);
