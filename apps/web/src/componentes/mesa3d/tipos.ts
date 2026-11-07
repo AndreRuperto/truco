@@ -1,4 +1,5 @@
 import type { Carta } from '@truco/engine';
+import type { AparenciaMesa } from '../../logica/aparenciaMesa';
 import type { Posicao } from '../../logica/posicoes';
 
 /**
@@ -46,6 +47,8 @@ export interface Estado3D {
   monte: { qtd: number; pos: Posicao } | null;
   /** Mesa de plástico amarelo (depois de quebrar a de madeira). */
   plastico: boolean;
+  /** Preferência local; em mesas antigas o padrão é madeira. */
+  aparenciaMesa?: AparenciaMesa;
   /** Mineiro com mão limpa usa coringa ('C'); a face do coringa precisa existir. */
   variante: 'paulista' | 'mineiro';
 }
