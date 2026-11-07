@@ -205,6 +205,31 @@ export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
   };
 }
 
+
+/** Configuração rápida dos cards de criação na página de salas. */
+export type TipoMesaVitrine = 'classica' | 'desafio';
+export type AcessoMesaVitrine = 'publica' | 'privada';
+
+/**
+ * As mesas criadas pelo clube começam aguardando 4 humanos: assim o anfitrião
+ * pode convidar gente ou iniciar com bots pela sala de espera. Usa as regras
+ * salvas do jogador, mas força o nível de bots anunciado pelo card.
+ */
+export function opcoesDeVitrine(
+  tipo: TipoMesaVitrine,
+  acesso: AcessoMesaVitrine,
+  nome: string,
+  preferidas: Partial<PreferenciasMesa> | null,
+): OpcoesEntrada {
+  const f = formInicial(nome, preferidas);
+  return opcoesDeEntrada({
+    ...f,
+    humanos: 4,
+    nivelBot: tipo === 'desafio' ? 'dificil' : 'facil',
+    privada: acesso === 'privada',
+  });
+}
+
 export function lerApelido(): string {
   try {
     return localStorage.getItem(CHAVE_APELIDO) ?? '';
