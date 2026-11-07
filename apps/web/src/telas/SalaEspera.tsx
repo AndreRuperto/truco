@@ -2,6 +2,7 @@ import type { MsgChat, MsgEstado } from '@truco/protocolo';
 import { useEffect, useRef, useState } from 'react';
 import { useAvisoNaAba } from '../logica/avisoAba';
 import { Avatar } from '../componentes/Avatar';
+import { ComandosBaralhoTreino, MonteBaralhoTreino, useBaralhoTreino } from '../componentes/BaralhoTreino';
 import { Chat } from '../componentes/Chat';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { posicaoRelativa } from '../logica/posicoes';
@@ -28,6 +29,7 @@ export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = win
   const sentados = msg.cadeiras.filter((c) => c.tipo === 'humano').length;
   const faltam = Math.max(0, msg.humanosEsperados - sentados);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
+  const baralhoTreino = useBaralhoTreino();
   // Quem esperava em outra aba fica sabendo que alguém chegou (o título pisca até voltar).
   const nomesHumanos = msg.cadeiras.filter((c, i) => c.tipo === 'humano' && i !== msg.minhaCadeira).map((c) => c.nome ?? 'Alguém');
   const vistos = useRef(nomesHumanos.length);
@@ -70,10 +72,11 @@ export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = win
               </li>
             );
           })}
-          <li className="sala-tampo" aria-hidden="true">
-            <span className="sala-baralho" />
+          <li className="sala-tampo" aria-hidden={modo !== 'privada'}>
+            {modo === 'privada' ? <MonteBaralhoTreino treino={baralhoTreino} /> : <span className="sala-baralho" />}
           </li>
         </ul>
+        {modo === 'privada' && <ComandosBaralhoTreino treino={baralhoTreino} />}
       </section>
 
       <div className="sala-lado">

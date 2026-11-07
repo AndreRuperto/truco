@@ -4826,3 +4826,192 @@ body:has(.tela-mesa) {
     animation: none;
   }
 }
+
+
+/* ---------- sala privada: treino de embaralhamento, sem mexer no jogo ---------- */
+.baralho-treino-monte {
+  position: relative;
+  display: block;
+  width: clamp(74px, calc(var(--tampo) * 0.6), 134px);
+  height: clamp(76px, calc(var(--tampo) * 0.66), 146px);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.baralho-treino-monte:focus-visible {
+  outline: 3px solid var(--grito);
+  outline-offset: 4px;
+}
+.baralho-treino-monte:hover .baralho-treino-pilha:not([class*='movimento-']) {
+  filter: brightness(1.13) drop-shadow(0 9px 5px color-mix(in srgb, var(--sombra) 30%, transparent));
+}
+.baralho-treino-pilha {
+  position: absolute;
+  inset: 0;
+  display: block;
+  perspective: 480px;
+  pointer-events: none;
+}
+.baralho-treino-carta {
+  --largura-treino: clamp(40px, calc(var(--tampo) * 0.28), 62px);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: var(--largura-treino);
+  aspect-ratio: 5 / 7;
+  margin-left: calc(var(--largura-treino) / -2);
+  margin-top: calc(var(--largura-treino) * -0.7);
+  z-index: var(--indice);
+  border: 2px solid var(--papel);
+  border-radius: clamp(3px, calc(var(--largura-treino) * .1), 6px);
+  background:
+    linear-gradient(var(--verso-linha), var(--verso-linha)) center / 76% 79% no-repeat,
+    repeating-linear-gradient(45deg, var(--verso-linha) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(-45deg, var(--verso-linha) 0 2px, transparent 2px 7px),
+    var(--verso);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--sombra) 40%, transparent);
+  backface-visibility: hidden;
+  transform: translate(var(--base-x), var(--base-y)) rotate(-7deg);
+  transform-origin: 50% 80%;
+  will-change: transform;
+}
+.baralho-treino-carta::after {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  border: 1px solid var(--papel);
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(45deg, var(--verso-linha) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(-45deg, var(--verso-linha) 0 1px, transparent 1px 5px),
+    var(--verso);
+}
+.baralho-treino-pilha.movimento-cascata .baralho-treino-carta {
+  animation: sala-cascata 1410ms cubic-bezier(.23,.7,.28,1) both;
+  animation-delay: calc(var(--indice) * 14ms);
+}
+.baralho-treino-pilha.movimento-corte .baralho-treino-carta {
+  animation: sala-corte-triplo 1200ms ease-in-out both;
+  animation-delay: calc(var(--indice) * 12ms);
+}
+.baralho-treino-pilha.movimento-leque .baralho-treino-carta {
+  animation: sala-leque 1600ms cubic-bezier(.25,.8,.35,1) both;
+  animation-delay: calc(var(--indice) * 10ms);
+}
+.baralho-treino-pilha.movimento-mola .baralho-treino-carta {
+  animation: sala-mola 1450ms cubic-bezier(.26,.69,.3,1) both;
+  animation-delay: calc(var(--indice) * 12ms);
+}
+@keyframes sala-cascata {
+  0%, 8% { transform: translate(var(--base-x),var(--base-y)) rotate(-7deg); }
+  28%, 42% { transform: translate(var(--lado-x),calc(var(--base-y) - 6px)) rotate(var(--lado-giro)); }
+  63% { transform: translate(calc(var(--lado-x) * .18),var(--entrela-y)) rotate(0deg); }
+  80% { transform: translate(0,var(--arco-y)) rotate(0deg) scaleY(.84); }
+  100% { transform: translate(var(--base-x),var(--base-y)) rotate(-7deg); }
+}
+@keyframes sala-corte-triplo {
+  0%, 8% { transform: translate(var(--base-x),var(--base-y)) rotate(-7deg); }
+  31% { transform: translate(var(--corte-x),-12px) rotate(var(--corte-giro)); }
+  58% { transform: translate(var(--corte-destino),-23px) rotate(0deg); }
+  82% { transform: translate(0,-8px) rotate(5deg); }
+  100% { transform: translate(var(--base-x),var(--base-y)) rotate(-7deg); }
+}
+@keyframes sala-leque {
+  0%, 12% { transform: translate(var(--base-x),var(--base-y)) rotate(-7deg); }
+  38%, 70% { transform: translate(var(--leque-x),var(--leque-y)) rotate(var(--leque-giro)); }
+  100% { transform: translate(var(--base-x),var(--base-y)) rotate(-7deg); }
+}
+@keyframes sala-mola {
+  0%, 8% { transform: translate(var(--base-x),var(--base-y)) rotate(-7deg); }
+  27% { transform: translate(-50px, 10px) rotate(-25deg); }
+  49% { transform: translate(var(--mola-x),var(--mola-y)) rotate(20deg); }
+  73% { transform: translate(49px, -5px) rotate(25deg); }
+  100% { transform: translate(var(--base-x),var(--base-y)) rotate(-7deg); }
+}
+
+.sala-truques {
+  display: grid;
+  gap: var(--e2);
+  width: min(100%, 530px);
+  margin-top: var(--e3);
+  padding: var(--e4);
+  border: 2px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+}
+.sala-truques-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2);
+}
+.sala-truques h2 {
+  margin: 0;
+  color: var(--grito);
+  font: 400 var(--t2)/1.1 var(--fonte-giz);
+}
+.sala-truques-topo span {
+  color: var(--giz-suave);
+  font-size: var(--t-1);
+}
+.sala-truques > p {
+  margin: 0;
+  color: var(--giz-suave);
+  font-size: .89rem;
+}
+.sala-truques-botoes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: var(--e2);
+}
+.sala-truques-botoes button {
+  min-height: 44px;
+  padding: var(--e2);
+  border: 1px solid color-mix(in srgb, var(--madeira) 75%, var(--lousa-borda));
+  border-radius: var(--raio-botao);
+  background: var(--madeira-funda);
+  color: var(--papel);
+  font-family: var(--fonte-ui);
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur), background var(--dur);
+}
+.sala-truques-botoes button:hover {
+  background: var(--madeira);
+  transform: translateY(-2px);
+}
+.sala-truques-botoes button:active {
+  transform: translateY(1px);
+}
+.sala-truques-botoes button:focus-visible {
+  outline: 3px solid var(--grito);
+  outline-offset: 2px;
+}
+.sala-truques .sala-truques-retorno {
+  min-height: 1.3em;
+  font-size: var(--t-1);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 520px) {
+  .sala-truques-botoes {
+    grid-template-columns: repeat(4, minmax(0,1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .baralho-treino-pilha .baralho-treino-carta {
+    animation: none !important;
+    will-change: auto;
+  }
+  .sala-truques-botoes button {
+    transition: none;
+  }
+}
