@@ -51,7 +51,8 @@ describe('família na Mesa', () => {
       avancarAte(() => t.estado('a')?.visao?.fase === 'jogando', 1, 1000);
       expect(t.estado('a')!.janelaFamilia).not.toBeNull();
       expect(t.estado('a')!.visao!.mao!.familias.filter((f) => f.tipo === 'fechada')).toHaveLength(n);
-      expect(t.estado('a')!.minhasAcoes.some((a) => a.tipo === 'familia')).toBe(true);
+      // Após 3 fechadas, a próxima só pode ser aberta e exige cartas de família reais.
+      expect(t.estado('a')!.minhasAcoes.some((a) => a.tipo === 'familia')).toBe(n < 3);
     }
     // A quarta só pode ser aberta (e somente com uma família real).
     expect(t.estado('a')!.visao!.mao!.familias).toHaveLength(3);
