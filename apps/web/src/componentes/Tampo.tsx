@@ -34,7 +34,7 @@ export interface JogadorDesenhado {
   gritando: boolean;
 }
 
-/** O tampo da mesa: madeira (com rachaduras) ou, depois de quebrada, plástico amarelo de bar. */
+/** Tampo oval de feltro com aro de madeira (e rachaduras); ao quebrar, vem a mesa amarela de bar. */
 export function Tampo({ fisica, minha, batida, jogadores = [], children }: Props) {
   const [ativa, setAtiva] = useState<Batida | null>(null);
   const id = batida?.id;
@@ -54,7 +54,7 @@ export function Tampo({ fisica, minha, batida, jogadores = [], children }: Props
   return (
     <div className={cx('mesa-ambiente', tipo === 'plastico' && 'ambiente-plastico')}>
       <Mobilia jogadores={jogadores} />
-    <div data-testid="tampo" className={cx('tampo', tipo === 'plastico' && 'tampo-plastico', ativa && 'tremendo')} style={estilo}>
+    <div data-testid="tampo" className={cx('tampo', tipo === 'madeira' && 'tampo-feltro', tipo === 'plastico' && 'tampo-plastico', ativa && 'tremendo')} data-superficie={tipo === 'madeira' ? 'feltro' : 'plastico'} style={estilo}>
       {tipo === 'plastico' && <EstampaZapada />}
       <Rachaduras rachaduras={fisica?.rachaduras ?? []} tipo={tipo} minha={minha} novaId={ativa?.rachadura?.id ?? null} />
       {children}
