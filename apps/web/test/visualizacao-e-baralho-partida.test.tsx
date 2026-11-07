@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { TelaMesa, CHAVE_VISTA_3D } from '../src/telas/Mesa';
