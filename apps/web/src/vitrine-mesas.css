@@ -1,0 +1,330 @@
+/* Vitrine de abertura de mesas — mantém a paleta madeira, giz e feltro do Truco. */
+.tela-conta.tela-salas.salas-com-vitrine {
+  box-sizing: border-box;
+  width: min(100%, 1420px);
+  max-width: 1420px;
+  padding-inline: clamp(16px, 3vw, 44px);
+  margin-inline: auto;
+}
+.vitrine-mesas {
+  margin-bottom: clamp(32px, 5vw, 64px);
+}
+.vitrine-mesas-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 14px 40px;
+  margin-bottom: 24px;
+}
+.vitrine-mesas-selo {
+  color: var(--grito);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+.vitrine-mesas-intro h1 {
+  margin: 4px 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--texto);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+.vitrine-mesas-intro p {
+  max-width: 420px;
+  margin: 0 0 3px;
+  color: var(--texto-suave);
+  line-height: 1.65;
+}
+.vitrine-mesas-acesso {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+.vitrine-mesas-acesso legend {
+  float: left;
+  padding: 8px 0 0;
+  color: var(--texto-suave);
+  font-size: .86rem;
+  font-weight: 700;
+}
+.vitrine-mesas-acesso-opcoes {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.vitrine-mesas-acesso label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--grito) 16%, var(--lousa-borda));
+  border-radius: 100px;
+  background: color-mix(in srgb, var(--lousa) 70%, transparent);
+  color: var(--texto);
+  font-size: .86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .18s, background .18s;
+}
+.vitrine-mesas-acesso label:has(input:checked) {
+  border-color: var(--grito);
+  background: color-mix(in srgb, var(--grito) 13%, var(--lousa));
+  color: var(--grito);
+}
+.vitrine-mesas-acesso input {
+  accent-color: var(--grito);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+.vitrine-mesas-acesso label:focus-within {
+  outline: 2px solid var(--grito);
+  outline-offset: 3px;
+}
+.vitrine-mesas-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 22px);
+}
+.vitrine-mesa-card {
+  --mesa-feltro: #15422d;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--giz) 14%, transparent);
+  border-radius: 16px;
+  background: linear-gradient(155deg, #142820, #0b1914 85%);
+  color: var(--giz);
+  box-shadow: 0 13px 31px color-mix(in srgb, var(--sombra) 30%, transparent);
+  transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+.vitrine-mesa-card.card-desafio { --mesa-feltro: #354323; }
+.vitrine-mesa-card.card-ranqueada { --mesa-feltro: #0e3c3b; }
+@media (hover: hover) {
+  .vitrine-mesa-card:hover {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--grito) 46%, transparent);
+    box-shadow: 0 18px 38px color-mix(in srgb, var(--sombra) 42%, transparent);
+  }
+}
+.vitrine-mesa-imagem {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: clamp(168px, 16vw, 230px);
+  padding: 14px 18px 6px;
+}
+.vitrine-mesa-elo {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 4px 12px;
+  border: 1px solid #377f91;
+  border-radius: 100px;
+  color: #8fdef4;
+  font-size: .74rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+.vitrine-mesa-ilustrada {
+  position: relative;
+  width: min(100%, 354px);
+  height: min(100%, 185px);
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 10px 14px rgba(0,0,0,.28));
+}
+.vitrine-mesa-oval {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 88%;
+  height: 79%;
+  border: 7px solid #422919;
+  border-radius: 50%;
+  background:
+    repeating-linear-gradient(39deg, transparent 0 2px, rgba(255,255,255,.019) 2px 3px),
+    repeating-linear-gradient(-39deg, transparent 0 3px, rgba(0,0,0,.035) 3px 4px),
+    radial-gradient(ellipse at 45% 40%, color-mix(in srgb, var(--mesa-feltro) 88%, #679a7b), var(--mesa-feltro) 80%);
+  box-shadow:
+    inset 0 0 0 2px #b08b53,
+    inset 0 0 0 9px #151c15,
+    inset 0 0 0 10px rgba(202,176,100,.32),
+    inset 0 0 34px rgba(0,0,0,.43),
+    0 2px 0 1px #100d0a;
+}
+.vitrine-mesa-oval::after {
+  content: '';
+  position: absolute;
+  inset: 15% 10%;
+  border: 1px solid rgba(205,223,183,.12);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.vitrine-mesa-marca {
+  margin-top: -6px;
+  color: rgba(231,218,163,.095);
+  font: bold clamp(.95rem, 1.6vw, 1.5rem) Georgia, serif;
+  letter-spacing: .24em;
+}
+.vitrine-mesa-cartas {
+  position: absolute;
+  bottom: 15%;
+  left: 50%;
+  display: flex;
+  align-items: end;
+  transform: translateX(-50%);
+}
+.vitrine-mesa-cartas span {
+  display: block;
+  width: clamp(15px, 1.6vw, 22px);
+  aspect-ratio: 5 / 7;
+  border: 1px solid #ac9977;
+  border-radius: 2px;
+  background: #faf4e5;
+  box-shadow: 0 3px 3px rgba(0,0,0,.35);
+}
+.vitrine-mesa-cartas span:first-child { transform: rotate(-21deg) translateX(6px); }
+.vitrine-mesa-cartas span:nth-child(2) { transform: rotate(-5deg) translateX(2px) translateY(-3px); }
+.vitrine-mesa-cartas span:last-child { transform: rotate(14deg) translateX(-4px); }
+.vitrine-mesa-assento {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: 50%;
+  background: #87bfd4;
+  box-shadow: 0 2px 4px rgba(0,0,0,.25);
+}
+.vitrine-mesa-assento.assento-cima { top: 0; left: 50%; translate: -50% 0; }
+.vitrine-mesa-assento.assento-baixo { bottom: 0; left: 50%; translate: -50% 0; }
+.vitrine-mesa-assento.assento-esquerda { left: 0; top: 50%; translate: 0 -50%; background: #d889a1; }
+.vitrine-mesa-assento.assento-direita { right: 0; top: 50%; translate: 0 -50%; background: #d889a1; }
+.vitrine-mesa-conteudo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 14px;
+  padding: clamp(16px, 1.6vw, 24px);
+}
+.vitrine-mesa-conteudo h2 {
+  margin: 0;
+  color: var(--giz);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.25rem, 1.6vw, 1.8rem);
+  line-height: 1.15;
+  letter-spacing: -.025em;
+}
+.vitrine-mesa-conteudo > p {
+  flex: 1;
+  min-height: 3.5em;
+  margin: 0;
+  color: #b3c4be;
+  line-height: 1.5;
+  font-size: .92rem;
+}
+.vitrine-mesa-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.vitrine-mesa-tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 10px;
+  border: 1px solid #344a3d;
+  border-radius: 50px;
+  color: #acbeb6;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .03em;
+}
+.vitrine-mesa-tags span:first-child { color: #eac65f; border-color: #5b5924; }
+.card-ranqueada .vitrine-mesa-tags span:first-child {
+  color: #84d5f1;
+  border-color: #315f66;
+}
+.vitrine-mesa-botao {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 4px;
+  padding: 10px 14px;
+  border: 1px solid #36473e;
+  border-radius: 9px;
+  background: rgba(255,255,255,.04);
+  color: #f0f0e5;
+  font: 800 1rem var(--fonte-ui);
+  cursor: pointer;
+  transition: background .18s, border-color .18s, transform .18s;
+}
+.vitrine-mesa-botao:hover {
+  border-color: #aa8550;
+  background: color-mix(in srgb, var(--madeira) 40%, #182821);
+  transform: translateY(-1px);
+}
+.vitrine-mesa-botao:focus-visible {
+  outline: 3px solid var(--grito);
+  outline-offset: 2px;
+}
+.vitrine-mesa-botao span { font-size: 1.4rem; font-weight: 400; }
+.vitrine-mesas-nota {
+  margin: 12px 2px 0;
+  color: var(--texto-suave);
+  font-size: .8rem;
+  line-height: 1.5;
+}
+.salas-com-vitrine .salas-listagem {
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
+  padding-top: clamp(12px, 3vw, 28px);
+  border-top: 1px solid var(--ui-contorno);
+}
+.salas-com-vitrine .salas-listagem .pagina-abertura h2 {
+  margin: 6px 0;
+  color: var(--texto);
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  letter-spacing: -.04em;
+}
+@media (max-width: 880px) {
+  .vitrine-mesas-intro { align-items: start; flex-direction: column; }
+  .vitrine-mesas-grade { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .vitrine-mesa-card.card-ranqueada { grid-column: 1 / -1; }
+  .vitrine-mesa-imagem { height: 190px; }
+  .vitrine-mesa-ilustrada { height: 170px; }
+}
+@media (max-width: 580px) {
+  .vitrine-mesas-intro { gap: 8px; }
+  .vitrine-mesas-acesso { align-items: stretch; }
+  .vitrine-mesas-acesso legend { width: 100%; float: none; }
+  .vitrine-mesas-acesso-opcoes { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .vitrine-mesas-acesso label { justify-content: center; padding: 8px; font-size: .75rem; }
+  .vitrine-mesas-grade { grid-template-columns: 1fr; }
+  .vitrine-mesa-card.card-ranqueada { grid-column: auto; }
+  .vitrine-mesa-imagem { height: 190px; }
+  .vitrine-mesa-conteudo > p { min-height: 0; }
+  .vitrine-mesa-conteudo { gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vitrine-mesa-card,
+  .vitrine-mesa-botao,
+  .vitrine-mesas-acesso label { transition: none; }
+  .vitrine-mesa-card:hover,
+  .vitrine-mesa-botao:hover { transform: none; }
+}
