@@ -117,3 +117,155 @@
       inset 0 0 30px rgba(2, 13, 8, .55);
   }
 }
+
+/* Painel de personalização individual, acessível pelo ♣ do menu da partida. */
+.personalizar-mesa {
+  position: absolute;
+  z-index: 55;
+  top: 58px;
+  right: var(--e2);
+  width: min(455px, calc(100vw - 2 * var(--e2)));
+  max-height: min(80dvh, 670px);
+  overflow-y: auto;
+  padding: clamp(14px, 2vw, 22px);
+  border: 2px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--madeira) 15%, transparent), transparent 70%),
+    var(--lousa);
+  color: var(--giz);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, .55);
+}
+.personalizar-mesa-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.personalizar-mesa-selo {
+  color: var(--grito);
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+.personalizar-mesa-cabecalho h2 {
+  margin: 5px 0 0;
+  color: var(--giz);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.25rem, 3vw, 1.65rem);
+}
+.personalizar-mesa-fechar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--lousa-borda);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--giz);
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+.personalizar-mesa-explica,
+.personalizar-mesa-rodape {
+  color: var(--giz-suave);
+  font-size: .83rem;
+  line-height: 1.55;
+}
+.personalizar-mesa-opcoes {
+  display: grid;
+  gap: 9px;
+}
+.personalizar-mesa-opcao {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 90px;
+  width: 100%;
+  padding: 9px;
+  border: 2px solid color-mix(in srgb, var(--giz) 17%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lousa-noite) 65%, var(--lousa));
+  color: var(--giz);
+  text-align: left;
+  cursor: pointer;
+  transition: background .18s, border-color .18s;
+}
+.personalizar-mesa-opcao:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--giz) 7%, var(--lousa));
+}
+.personalizar-mesa-opcao[aria-pressed='true'] {
+  border-color: var(--grito);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--grito) 42%, transparent);
+}
+.personalizar-mesa-opcao:focus-visible,
+.personalizar-mesa-fechar:focus-visible {
+  outline: 3px solid var(--grito);
+  outline-offset: 2px;
+}
+.personalizar-mesa-opcao:disabled {
+  cursor: not-allowed;
+  opacity: .63;
+}
+.personalizar-mesa-descricao {
+  display: grid;
+  gap: 3px;
+}
+.personalizar-mesa-descricao strong { font-size: .96rem; }
+.personalizar-mesa-descricao small { color: var(--giz-suave); line-height: 1.3; }
+.personalizar-mesa-descricao em {
+  justify-self: start;
+  font-style: normal;
+  color: var(--grito);
+  font-size: .64rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+.amostra-mesa {
+  display: grid;
+  place-items: center;
+  width: 85px;
+  height: 65px;
+  border: 5px solid #684027;
+  background: #996039;
+  border-radius: 12px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, .35), inset 0 0 10px rgba(0, 0, 0, .2);
+}
+.amostra-mesa > span {
+  width: 16px;
+  height: 23px;
+  border: 2px solid #f1ead5;
+  border-radius: 3px;
+  background: #b8202a;
+  transform: rotate(-12deg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .5);
+}
+.amostra-feltro {
+  border-radius: 50% / 45%;
+  border-color: #5a3423;
+  background: radial-gradient(ellipse at 40% 25%, #2f7550, #11452e 78%);
+  box-shadow: inset 0 0 0 3px #a89154, 0 5px 10px rgba(0,0,0,.35);
+}
+.amostra-plastico {
+  border: 5px solid #c99712;
+  border-radius: 16px;
+  background: #f4c430;
+}
+.personalizar-mesa .personalizar-mesa-rodape { margin-bottom: 0; }
+@media (max-width: 480px) {
+  .personalizar-mesa {
+    top: 54px;
+    left: var(--e2);
+    right: var(--e2);
+    width: auto;
+  }
+  .personalizar-mesa-opcao { grid-template-columns: 75px minmax(0,1fr); gap: 9px; }
+  .amostra-mesa { width: 71px; height: 59px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .personalizar-mesa-opcao { transition: none; }
+}
