@@ -109,11 +109,18 @@ export function useRodadaNaMesa(mao: VisaoMao | null, ultimaMao: VisaoResultadoM
     completa.jogadas.length === 4 &&
     (mao?.cangada != null || !mao);
   const chaveCangada = ehCangada ? completa.jogadas.map((j) => j.chave).join(',') : null;
-  const [revelacao, setRevelacao] = useState<{ chave: string; abertas: number; terminou: boolean } | null>(null);
+  // Guarda a rodada na lateral até terminar de revelar, mesmo se um bot já
+  // tiver iniciado a rodada seguinte. O timer não é cancelado por novos estados.
+  const timersRevelacao = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [revelacao, setRevelacao] = useState<{
+    chave: string; jogadas: Exibicao['jogadas']; abertas: number; terminou: boolean;
+  } | null>(null);
   useEffect(() => {
     if (!chaveCangada) return;
+    timersRevelacao.current.forEach(clearTimeout);
     const reduzido = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    setRevelacao({ chave: chaveCangada, abertas: reduzido ? 4 : 0, terminou: false });
+    const jogadas = completa.jogadas;
+    setRevelacao({ chave: chaveCangada, jogadas, abertas: reduzido ? 4 : 0, terminou: false });
     const temporizadores = reduzido
       ? []
       : [1, 2, 3, 4].map((n) => setTimeout(() => {
@@ -122,12 +129,16 @@ export function useRodadaNaMesa(mao: VisaoMao | null, ultimaMao: VisaoResultadoM
     temporizadores.push(setTimeout(() => {
       setRevelacao((r) => r?.chave === chaveCangada ? { ...r, terminou: true } : r);
     }, MOSTRA_RODADA_MS));
-    return () => temporizadores.forEach(clearTimeout);
+    timersRevelacao.current = temporizadores;
+    // O gatilho é a rodada concluída; preservar seu snapshot até o efeito acabar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chaveCangada]);
-  const abriu = revelacao?.chave === chaveCangada ? revelacao.abertas : 0;
-  const terminou = revelacao?.chave === chaveCangada && revelacao.terminou;
+  useEffect(() => () => timersRevelacao.current.forEach(clearTimeout), []);
+  const nova = !!chaveCangada && revelacao?.chave !== chaveCangada;
   const cangadaLateral: DadosCangadaLateral | null =
-    chaveCangada && !terminou ? { jogadas: completa.jogadas, abertas: abriu } : null;
+    nova ? { jogadas: completa.jogadas, abertas: 0 }
+    : revelacao && !revelacao.terminou ? { jogadas: revelacao.jogadas, abertas: revelacao.abertas }
+    : null;
   const limpou = chaveRodada !== null && limpa === chaveRodada;
   const exibicao = (limpou || chaveCangada) ? { ...completa, jogadas: [] } : completa;
   // Rodadas já recolhidas: todas as encerradas, menos a que ainda está no meio.
