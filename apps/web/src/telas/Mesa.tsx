@@ -1,4 +1,4 @@
-import { type Cadeira, ehFaseRitual, parceiroDe, quemDeveAgir } from '@truco/engine';
+import { type Cadeira, ehFaseRitual, fechadasUsadas, LIMITE_FAMILIAS_FECHADAS, parceiroDe, quemDeveAgir } from '@truco/engine';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CartaVisual } from '../componentes/CartaVisual';
 import { useAnimacaoRitual } from '../componentes/animacaoMesa';
@@ -9,6 +9,7 @@ import { Chat } from '../componentes/Chat';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { Cronometro } from '../componentes/Cronometro';
 import { FamiliasNaMesa } from '../componentes/FamiliasNaMesa';
+import { RevelacaoCangada } from '../componentes/RevelacaoCangada';
 import { GuiaOrdem } from '../componentes/GuiaOrdem';
 import { Icone3D, IconeChat, IconeFalas, IconeManual, IconeSair, IconeSinais, IconeSom } from '../componentes/IconesMesa';
 import { ManualMesa } from '../componentes/ManualMesa';
@@ -215,6 +216,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           <div className="mesa-3d-hud">
             {linhaEtapa}
             <FamiliasNaMesa visao={v} nome={nome} />
+            <RevelacaoCangada dados={rodada.cangadaLateral} variante={variante} vira={vira} minha={minha} />
             <GuiaOrdem regras={v.regras} vira={vira} mao={m?.minhaMao ?? []} />
             {m?.maoParceiro && (
               <div className="mesa-3d-parceiro" aria-label={`Mão de ${nome(parceiroDe(minha))}`}>
@@ -333,6 +335,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
           <JanelaFamilia
             restam={Math.max(0, Math.ceil((msg.janelaFamilia.ate - agora) / 1000))}
             decidi={msg.janelaFamilia.decidiram.includes(minha)}
+            fechadas={m ? fechadasUsadas(m) : 0}
             aoPassar={acoes.enviarSemFamilia}
           />
         )}
@@ -398,12 +401,13 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo }: Props) {
  * Hora de pedir família, logo depois de dar: ninguém joga carta ainda (nem quem começa).
  * "Família!" fica na barra de ações; aqui o "Sem família" adianta o jogo quando todos decidem.
  */
-function JanelaFamilia({ restam, decidi, aoPassar }: { restam: number; decidi: boolean; aoPassar?: () => void }) {
+function JanelaFamilia({ restam, decidi, fechadas, aoPassar }: { restam: number; decidi: boolean; fechadas: number; aoPassar?: () => void }) {
   return (
     <div className="janela-familia" role="group" aria-label="Hora de pedir família">
       <span className="janela-familia-texto">
         {decidi ? 'Esperando os outros' : 'Tem família?'} <strong>{restam}s</strong>
       </span>
+      <small className="familia-limite">Fechadas usadas: {fechadas}/{LIMITE_FAMILIAS_FECHADAS}</small>
       {!decidi && aoPassar && (
         <button type="button" onClick={aoPassar}>
           Sem família

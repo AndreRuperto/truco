@@ -186,7 +186,7 @@ export class Mesa {
   /** Bots fora da vez que já decidiram a família nesta mão (uma decisão por mão: sem novo sorteio a cada mudança). */
   private familiaDecidida = new Set<Cadeira>();
   /** Janela de família da mão atual (ver `Tempos.janelaFamiliaMs`); null = a mão não teve. */
-  private janela: { ate: number; decidiram: Set<Cadeira>; fechada: boolean } | null = null;
+  private janela: { ate: number; decidiram: Set<Cadeira>; fechada: boolean; pausadaEm: number | null } | null = null;
   /** Prazo único de quem ainda não empilhou na cangada (não reinicia a cada um que empilha). */
   private ateEmpilhar: number | null = null;
   /** Fim de partida: humanos que pediram revanche. */
@@ -434,6 +434,10 @@ export class Mesa {
       if (idHumano) this.erro(idHumano, 'espere: ainda é a hora de pedir família');
       return false;
     }
+    if (pedida.tipo === 'familia' && idHumano && this.janela && !this.janelaAberta()) {
+      this.erro(idHumano, 'a janela de família já terminou');
+      return false;
+    }
     const fechaEtapa = !ehFaseRitual(antes.fase) && quemDeveAgir(antes).includes(pedida.cadeira);
     const acao = completarSorte(semSorte(pedida), antes, this.rand);
     try {
@@ -465,11 +469,20 @@ export class Mesa {
       this.familiaDecidida.clear();
       this.janela =
         this.tempos.janelaFamiliaMs > 0 && janelaDeFamilia(this.estado)
-          ? { ate: this.relogio.agora() + this.tempos.distribuicaoMs + this.tempos.janelaFamiliaMs, decidiram: new Set(), fechada: false }
+          ? { ate: this.relogio.agora() + this.tempos.distribuicaoMs + this.tempos.janelaFamiliaMs, decidiram: new Set(), fechada: false, pausadaEm: null }
           : null;
       this.sinaisDosBots();
     }
-    if (acao.tipo === 'familia' && this.janela && this.ocupantes[acao.cadeira].humano) this.janela.decidiram.add(acao.cadeira);
+    // Pedir família não encerra a participação: o jogador ainda pode pedir outra
+    // dentro do limite de três fechadas da mesa, até escolher "Sem família".
+    // Durante a conferência dos adversários, o relógio da janela fica pausado.
+    if (acao.tipo === 'familia' && this.janela && this.estado.fase === 'conferindoFamilia') {
+      this.janela.pausadaEm ??= this.relogio.agora();
+    }
+    if (acao.tipo === 'conferir' && this.janela && this.janela.pausadaEm !== null) {
+      this.janela.ate += this.relogio.agora() - this.janela.pausadaEm;
+      this.janela.pausadaEm = null;
+    }
     // Quem pediu família trocou as cartas: o sinal que o parceiro tinha não vale mais.
     if (acao.tipo === 'familia') this.dicas[parceiroDe(acao.cadeira)] = null;
     this.atualizar();
@@ -735,7 +748,10 @@ export class Mesa {
       prazo: this.prazo,
       janelaFamilia: this.janelaAberta() ? { ate: this.janela!.ate, decidiram: [...this.janela!.decidiram] } : null,
       revanche: this.podeRevanche() ? { votos: [...this.votosRevanche], faltam: this.faltamRevanche() } : null,
-      minhasAcoes: s ? acoesValidas(s, c).filter((a) => a.tipo !== 'jogar' || !this.janelaAberta()) : [],
+      minhasAcoes: s ? acoesValidas(s, c).filter((a) =>
+        (a.tipo !== 'jogar' || !this.janelaAberta()) &&
+        (a.tipo !== 'familia' || !this.janela || this.janelaAberta())
+      ) : [],
       mesaFisica: this.fisica,
     };
     this.o.enviar(this.ocupantes[c].id!, 'estado', msg);

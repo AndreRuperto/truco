@@ -1,4 +1,5 @@
-import type { Cadeira, Visao } from '@truco/engine';
+import type { Cadeira, FamiliaVisivel, Visao } from '@truco/engine';
+import { useEffect, useRef, useState } from 'react';
 import { posicaoRelativa } from '../logica/posicoes';
 import { textoFamilia } from '../logica/ritual';
 import { CartaVisual } from './CartaVisual';
@@ -41,15 +42,54 @@ export function FamiliasNaMesa({ visao, nome }: Props) {
             data-conferida={f.conferida ? 'sim' : undefined}
             data-testid={f.conferida ? 'familia-conferida' : 'familia'}
           >
-            <div className="familia-cartas">
-              {(f.cartas ?? [null, null, null]).map((c, k) => (
-                <CartaVisual key={k} carta={c} variante={variante} vira={vira} tamanho="pequena" />
-              ))}
-            </div>
+            <CartasDaFamilia familia={f} minha={visao.cadeira} variante={variante} vira={vira} />
             <figcaption>{textoFamilia(f, visao, nome)}</figcaption>
           </figure>
         );
       })}
+    </div>
+  );
+}
+
+/** Conferida agora: para os adversários, vira a 1ª, a 2ª e a 3ª, sem revelar tudo instantaneamente. */
+function CartasDaFamilia({
+  familia,
+  minha,
+  variante,
+  vira,
+}: {
+  familia: FamiliaVisivel;
+  minha: Cadeira;
+  variante: Visao['regras']['variante'];
+  vira: import('@truco/engine').Carta | null;
+}) {
+  const jaConferida = useRef(familia.conferida !== null);
+  const [abertas, setAbertas] = useState(familia.conferida ? 3 : 0);
+  useEffect(() => {
+    if (!familia.conferida) {
+      jaConferida.current = false;
+      setAbertas(0);
+      return;
+    }
+    // Ao abrir a tela durante uma conferência já encerrada, não repetir a animação.
+    if (jaConferida.current) return;
+    jaConferida.current = true;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setAbertas(3);
+      return;
+    }
+    const timers = [1, 2, 3].map((n) => setTimeout(() => setAbertas(n), n * 320));
+    return () => timers.forEach(clearTimeout);
+  }, [familia.conferida?.por]);
+
+  const esconderAteVirar = familia.tipo === 'fechada' && familia.conferida !== null && familia.cadeira !== minha;
+  return (
+    <div className="familia-cartas" data-abertas={esconderAteVirar ? abertas : familia.cartas ? 3 : 0}>
+      {(familia.cartas ?? [null, null, null]).map((c, k) => (
+        <span key={k} className={esconderAteVirar && k < abertas ? 'familia-carta-revelada' : undefined}>
+          <CartaVisual carta={esconderAteVirar && k >= abertas ? null : c} variante={variante} vira={vira} tamanho="pequena" />
+        </span>
+      ))}
     </div>
   );
 }
