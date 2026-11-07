@@ -19,7 +19,17 @@ export const VOZES = [
  * (`InfoCadeira.voz`) quando a CONTA logada é a dona (ver `apps/server/src/mesa/vozes.ts`).
  */
 export const VOZES_PESSOAIS = {
-  andre: { nome: 'André Ruperto', id: 'ChFE4wGBF3kV520SLSvN' },
+  andre: {
+    nome: 'André Ruperto',
+    id: 'ChFE4wGBF3kV520SLSvN',
+    /**
+     * Gravadas pelo próprio André (não pela voz clonada): o script de geração nunca as refaz.
+     * truco-0 "Truco!", truco-1 "Truco, marreco!", aceito-0 "Quero ver você descer!",
+     * aceito-1 "Cai dentro então, irmão!", corro-1 "Vixe, tô fora dessa aí!",
+     * vixe-0 "Rapaz, esse negócio tá feio mesmo!".
+     */
+    gravadas: ['truco-0', 'truco-1', 'aceito-0', 'aceito-1', 'corro-1', 'vixe-0'],
+  },
 } as const;
 export type VozPessoal = keyof typeof VOZES_PESSOAIS;
 export const ehVozPessoal = (x: unknown): x is VozPessoal => typeof x === 'string' && Object.hasOwn(VOZES_PESSOAIS, x);

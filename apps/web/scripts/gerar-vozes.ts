@@ -29,12 +29,13 @@ const GRITOS = new Set<IdFala>(['truco', 'seis', 'nove', 'doze']);
 let gerados = 0;
 let pulados = 0;
 let caracteres = 0;
-const todas: [string | number, { nome: string; id: string }][] = [...VOZES.entries(), ...Object.entries(VOZES_PESSOAIS)];
+const todas: [string | number, { nome: string; id: string; gravadas?: readonly string[] }][] = [...VOZES.entries(), ...Object.entries(VOZES_PESSOAIS)];
 for (const [tipo, voz] of todas) {
   for (const [id, fala] of Object.entries(FALAS) as [IdFala, { ditos: readonly string[] }][]) {
     for (const [n, texto] of fala.ditos.entries()) {
       const arquivo = join(saida, `${tipo}-${id}-${n}.mp3`);
-      if (existsSync(arquivo)) {
+      // Gravação feita à mão: nunca regera por cima, nem se o arquivo sumir.
+      if (existsSync(arquivo) || voz.gravadas?.includes(`${id}-${n}`)) {
         pulados++;
         continue;
       }
