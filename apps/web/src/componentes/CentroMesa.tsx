@@ -6,6 +6,7 @@ import { posicaoRelativa } from '../logica/posicoes';
 import { marcadoresRodadas } from '../logica/textos';
 import { useAnimacaoJogadas } from './animacaoMesa';
 import { CartaVisual } from './CartaVisual';
+import { type DadosCangadaLateral, RevelacaoCangada } from './RevelacaoCangada';
 import { cx } from './cx';
 
 const SIGLA = { nos: 'N', eles: 'E', empate: '=' } as const;
@@ -30,7 +31,7 @@ interface Props {
 export function CentroMesa({ mao, ultimaMao, minha, variante, extra }: Props) {
   const centro = useRef<HTMLDivElement>(null);
   const camada = useRef<HTMLDivElement>(null);
-  const { exibicao, naPilha } = useRodadaNaMesa(mao, ultimaMao);
+  const { exibicao, naPilha, cangadaLateral } = useRodadaNaMesa(mao, ultimaMao);
   useAnimacaoJogadas(exibicao, minha, centro, camada);
   const fonte = mao ?? ultimaMao;
   // A camada de animação fica fora do centro (irmã, no tampo): mãos e cópias não contam como jogadas.
@@ -71,6 +72,7 @@ export function CentroMesa({ mao, ultimaMao, minha, variante, extra }: Props) {
             ))}
           </div>
         )}
+        <RevelacaoCangada dados={cangadaLateral} variante={variante} vira={vira} minha={minha} />
         {exibicao.jogadas.map(({ chave, jogada: j }) => (
           <div key={chave} data-chave={chave} className={cx('jogada', `pos-${posicaoRelativa(minha, j.cadeira)}`)}>
             <CartaVisual carta={j.coberta ? null : j.carta} variante={variante} vira={vira} esmaecida={anterior} />
@@ -87,7 +89,7 @@ export function CentroMesa({ mao, ultimaMao, minha, variante, extra }: Props) {
  * por `MOSTRA_RODADA_MS` (para ver quem levou); depois o meio fica limpo e ela conta na pilha.
  * Serve ao centro 2D e à vista 3D.
  */
-export function useRodadaNaMesa(mao: VisaoMao | null, ultimaMao: VisaoResultadoMao | null): { exibicao: Exibicao; naPilha: number } {
+export function useRodadaNaMesa(mao: VisaoMao | null, ultimaMao: VisaoResultadoMao | null): { exibicao: Exibicao; naPilha: number; cangadaLateral: DadosCangadaLateral | null } {
   const completa = exibicaoMesa(mao, ultimaMao);
   const chaveRodada = mao && completa.anterior && completa.jogadas.length > 0 ? completa.jogadas.map((j) => j.chave).join(',') : null;
   const [limpa, setLimpa] = useState<string | null>(null);
@@ -96,10 +98,40 @@ export function useRodadaNaMesa(mao: VisaoMao | null, ultimaMao: VisaoResultadoM
     const t = setTimeout(() => setLimpa(chaveRodada), MOSTRA_RODADA_MS);
     return () => clearTimeout(t);
   }, [chaveRodada]);
+  // Na cangada, o motor fecha a rodada inteira. Só a apresentação é escalonada:
+  // a lateral abre uma carta a cada 250 ms, escondendo as 4 do centro durante o efeito.
+  // Mesmo após a mão acabar, as quatro podem ser vistas na lateral antes de sumirem.
+  const fonte = mao ?? ultimaMao;
+  const ehCangada =
+    fonte?.rodadas[0] === 'empate' &&
+    fonte.rodadasJogadas.length >= 2 &&
+    completa.anterior &&
+    completa.jogadas.length === 4 &&
+    (mao?.cangada != null || !mao);
+  const chaveCangada = ehCangada ? completa.jogadas.map((j) => j.chave).join(',') : null;
+  const [revelacao, setRevelacao] = useState<{ chave: string; abertas: number; terminou: boolean } | null>(null);
+  useEffect(() => {
+    if (!chaveCangada) return;
+    const reduzido = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    setRevelacao({ chave: chaveCangada, abertas: reduzido ? 4 : 0, terminou: false });
+    const temporizadores = reduzido
+      ? []
+      : [1, 2, 3, 4].map((n) => setTimeout(() => {
+          setRevelacao((r) => r?.chave === chaveCangada ? { ...r, abertas: n } : r);
+        }, n * 250));
+    temporizadores.push(setTimeout(() => {
+      setRevelacao((r) => r?.chave === chaveCangada ? { ...r, terminou: true } : r);
+    }, MOSTRA_RODADA_MS));
+    return () => temporizadores.forEach(clearTimeout);
+  }, [chaveCangada]);
+  const abriu = revelacao?.chave === chaveCangada ? revelacao.abertas : 0;
+  const terminou = revelacao?.chave === chaveCangada && revelacao.terminou;
+  const cangadaLateral: DadosCangadaLateral | null =
+    chaveCangada && !terminou ? { jogadas: completa.jogadas, abertas: abriu } : null;
   const limpou = chaveRodada !== null && limpa === chaveRodada;
-  const exibicao = limpou ? { ...completa, jogadas: [] } : completa;
+  const exibicao = (limpou || chaveCangada) ? { ...completa, jogadas: [] } : completa;
   // Rodadas já recolhidas: todas as encerradas, menos a que ainda está no meio.
   const naPilha = mao ? mao.rodadasJogadas.length - (completa.anterior && !limpou && completa.jogadas.length > 0 ? 1 : 0) : 0;
-  return { exibicao, naPilha };
+  return { exibicao, naPilha, cangadaLateral };
 }
 
