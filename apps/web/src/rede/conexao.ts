@@ -66,7 +66,7 @@ export async function entrarNaMesa(loja: Loja, opcoes: OpcoesEntrada, cliente?: 
   }
 }
 
-let emAndamento: Promise<boolean> | null = null;
+const reconexoesEmAndamento = new WeakMap<Loja, Promise<boolean>>();
 
 /**
  * Depois de recarregar a página: se há token, volta para a mesma cadeira (o servidor a
@@ -76,10 +76,11 @@ let emAndamento: Promise<boolean> | null = null;
  * de novo com o token da sala atual falharia e apagaria o token, mandando ao lobby.
  */
 export function tentarReconectar(loja: Loja, cliente?: ClienteLike): Promise<boolean> {
-  if (emAndamento) return emAndamento;
+  const existente = reconexoesEmAndamento.get(loja);
+  if (existente) return existente;
   const token = lerToken();
   if (!token || loja.getSnapshot().status !== 'fora') return Promise.resolve(false);
-  emAndamento = (async () => {
+  const tentativa = (async () => {
     loja.marcarConectando();
     try {
       const c = cliente ?? (await clientePadrao());
@@ -89,11 +90,13 @@ export function tentarReconectar(loja: Loja, cliente?: ClienteLike): Promise<boo
       gravarToken(null);
       loja.falhouConexao();
       return false;
-    } finally {
-      emAndamento = null;
     }
   })();
-  return emAndamento;
+  reconexoesEmAndamento.set(loja, tentativa);
+  void tentativa.finally(() => {
+    if (reconexoesEmAndamento.get(loja) === tentativa) reconexoesEmAndamento.delete(loja);
+  });
+  return tentativa;
 }
 
 async function conectarCom(
