@@ -44,7 +44,6 @@ export function TelaSalas({ api, aoEntrar, aoJogarComBots, aoCriarMesa, aoRanque
       {aoCriarMesa && aoRanqueada && <VitrineMesas aoCriar={aoCriarMesa} aoRanqueada={aoRanqueada} />}
       <section className="salas-listagem" aria-labelledby="titulo-mesas-abertas">
         <header className="pagina-abertura">
-          <span className="pagina-selo">O bar está aberto</span>
           {aoCriarMesa && aoRanqueada ? <h2 id="titulo-mesas-abertas">Mesas abertas</h2> : <h1 id="titulo-mesas-abertas">Mesas abertas</h1>}
           <p>Encontre uma mesa, veja os lugares ocupados e chegue para jogar.</p>
         </header>

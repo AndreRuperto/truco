@@ -33,7 +33,6 @@ export function SeletorAparenciaMesa({ valor, temConta, aoEscolher, aoFechar }: 
     <aside className="personalizar-mesa" id="personalizar-mesa" aria-labelledby="titulo-aparencia">
       <header className="personalizar-mesa-cabecalho">
         <div>
-          <span className="personalizar-mesa-selo">Seu lugar, seu estilo</span>
           <h2 id="titulo-aparencia">Aparência da mesa</h2>
         </div>
         <button type="button" className="personalizar-mesa-fechar" onClick={aoFechar} aria-label="Fechar personalização">×</button>

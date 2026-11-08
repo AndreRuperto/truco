@@ -35,7 +35,6 @@ export function TelaPerfil({ api, id, editar = false, usuario = null, googleClie
       {dados && (
         <>
           <header className="perfil-apresentacao">
-            <span className="pagina-selo">Carteirinha da mesa</span>
             <h1 className="perfil-titulo">
               <Avatar apelido={dados.usuario.apelido} avatar={dados.usuario.avatar} tamanho={56} />
               {dados.usuario.apelido}

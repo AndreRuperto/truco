@@ -26,7 +26,6 @@ export function TelaHistorico({ api }: { api: Pick<Api, 'historico'> }) {
   return (
     <main className="tela-conta tela-historico">
       <header className="pagina-abertura">
-        <span className="pagina-selo">Sua trajetória</span>
         <h1>Histórico</h1>
         <p>Relembre as partidas, os placares e como seu Elo mudou.</p>
       </header>

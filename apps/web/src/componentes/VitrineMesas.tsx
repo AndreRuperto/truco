@@ -61,7 +61,6 @@ export function VitrineMesas({ aoCriar, aoRanqueada }: Props) {
     <section className="vitrine-mesas" aria-labelledby="titulo-abrir-mesa">
       <div className="vitrine-mesas-intro">
         <div>
-          <span className="vitrine-mesas-selo">AS SALAS DO CLUBE</span>
           <h1 id="titulo-abrir-mesa">Abra uma mesa</h1>
         </div>
         <p>Você será o anfitrião: convide pelo código da sala ou deixe a mesa aberta para o clube.</p>
@@ -114,7 +113,7 @@ export function VitrineMesas({ aoCriar, aoRanqueada }: Props) {
                   onClick={aoRanqueada}
                   aria-label="Ir para fila ranqueada"
                 >
-                  Entrar na fila <span aria-hidden="true">→</span>
+                  Entrar na fila
                 </button>
               ) : (
                 <button
@@ -123,7 +122,7 @@ export function VitrineMesas({ aoCriar, aoRanqueada }: Props) {
                   aria-label={`Abrir ${mesa.titulo}`}
                   onClick={() => aoCriar(mesa.id, acesso)}
                 >
-                  Abrir mesa <span aria-hidden="true">→</span>
+                  Abrir mesa
                 </button>
               )}
             </div>

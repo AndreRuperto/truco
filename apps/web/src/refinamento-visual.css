@@ -59,14 +59,6 @@ button:active:not(:disabled), a.botao-link:active {
 .pagina-abertura {
   margin-bottom: clamp(20px, 3vw, 30px);
 }
-.pagina-selo, .lobby-selo {
-  display: inline-block;
-  color: var(--grito);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.17em;
-  text-transform: uppercase;
-}
 .pagina-abertura h1 {
   margin: 6px 0 6px;
   color: var(--texto);
@@ -101,11 +93,6 @@ button:active:not(:disabled), a.botao-link:active {
   background: radial-gradient(ellipse at 50% 38%,
     color-mix(in srgb, var(--madeira) 17%, transparent),
     transparent 66%);
-}
-.lobby-selo {
-  align-self: center;
-  margin-bottom: 14px;
-  text-shadow: 0 2px 6px var(--fundo);
 }
 .letreiro {
   position: relative;
@@ -607,11 +594,4 @@ button:active:not(:disabled), a.botao-link:active {
 /* O título das páginas fica sempre numa placa de lousa (`.tela-conta h1`): giz em qualquer tema. */
 .pagina-abertura h1 {
   color: var(--giz);
-}
-@media (prefers-color-scheme: light) {
-  /* amarelo sobre o azulejo claro não se lê (≈1,8:1); madeira escura dá ≈9:1 */
-  .pagina-selo,
-  .lobby-selo {
-    color: var(--madeira-funda);
-  }
 }

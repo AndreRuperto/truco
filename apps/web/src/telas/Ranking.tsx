@@ -9,7 +9,6 @@ export function TelaRanking({ api, variante }: { api: Pick<Api, 'ranking'>; vari
   return (
     <main className="tela-conta pagina-larga pagina-ranking">
       <header className="pagina-abertura">
-        <span className="pagina-selo">A disputa continua</span>
         <h1>Ranking</h1>
         <p>Quem domina a mesa? Confira os destaques e acompanhe a classificação completa.</p>
       </header>

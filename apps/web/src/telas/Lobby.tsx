@@ -75,7 +75,6 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
   return (
     <main className="lobby">
       <FundoCartas />
-      <span className="lobby-selo" aria-hidden="true">♠ &nbsp; A MESA TÁ POSTA &nbsp; ♦</span>
       <h1 className="letreiro">Truco</h1>
       <p className="letreiro-sub">Senta, que a mesa tá posta.</p>
       <form className="formulario" onSubmit={enviar}>

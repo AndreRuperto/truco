@@ -142,13 +142,6 @@
   justify-content: space-between;
   gap: 10px;
 }
-.personalizar-mesa-selo {
-  color: var(--grito);
-  font-size: .72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .12em;
-}
 .personalizar-mesa-cabecalho h2 {
   margin: 5px 0 0;
   color: var(--giz);

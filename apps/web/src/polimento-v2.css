@@ -40,7 +40,6 @@
 .tela-conta :where(.formulario, .mesa-vazia, .painel-abas, .cartao-variante, .editar-perfil, .historico-item) {
   box-shadow: var(--pol-sombra);
 }
-.tela-conta .pagina-selo { letter-spacing: .15em; }
 .tela-conta :where(.lista-mesas .mesa-lista-item, .historico-item, .cartao-variante) {
   transition: border-color var(--pol-suave), transform var(--pol-suave), box-shadow var(--pol-suave);
 }
