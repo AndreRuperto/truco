@@ -17,6 +17,18 @@ const PERFIL: PerfilApi = {
 };
 
 describe('TelaPerfil', () => {
+  test('a escolha de tema aparece no próprio perfil e não no de outro jogador', async () => {
+    const api = { perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn() };
+    const { unmount } = render(<TelaPerfil id={null} api={api} />);
+    const grupo = await screen.findByRole('group', { name: 'Tema do site' });
+    expect(within(grupo).getAllByRole('button')).toHaveLength(3);
+    unmount();
+
+    render(<TelaPerfil id={2} api={api} />);
+    await screen.findByRole('heading', { name: 'ana' });
+    expect(screen.queryByRole('group', { name: 'Tema do site' })).toBeNull();
+  });
+
   test('editar perfil: e-mail e Google; conectar liga a conta e atualiza o usuário', async () => {
     const usuario = { id: 1, apelido: 'ana', email: 'ana@x.com', google: false };
     const conectarGoogle = vi.fn(async () => ({ usuario: { ...usuario, google: true } }));
