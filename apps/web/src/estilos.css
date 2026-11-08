@@ -280,7 +280,7 @@ button:disabled {
 /*
  * Seleção: seta própria (chevron em CSS) em todo navegador; onde há select customizável
  * (Chrome/Edge 135+) a lista aberta também ganha o visual da casa: mesmo fundo do
- * formulário, opções de 44 px, a marcada com faixa amarela e um ✓. O resto fica nativo.
+ * formulário, opções de 44 px e a escolhida com contorno completo e ✓. O resto fica nativo.
  */
 .campo select {
   appearance: none;
@@ -322,14 +322,14 @@ button:disabled {
   }
   .campo select:open,
   .campo select:open:hover {
-    border-color: var(--grito);
+    border-color: var(--form-acento, var(--grito));
   }
   .campo select::picker(select) {
     position-area: block-end span-inline-end;
     position-try: most-block-size flip-block;
     margin-block: var(--e1);
     padding: var(--e1);
-    border: 2px solid var(--form-borda, var(--papel-borda));
+    border: 2px solid var(--form-acento, var(--grito));
     border-radius: var(--raio-botao);
     background: var(--form-campo, var(--branco));
     color: var(--form-tinta, var(--tinta));
@@ -341,7 +341,7 @@ button:disabled {
     gap: var(--e2);
     min-height: 44px;
     padding: 0 var(--e3);
-    border-left: 4px solid transparent;
+    border: 2px solid transparent;
     border-radius: var(--raio-carta);
     cursor: pointer;
   }
@@ -350,7 +350,7 @@ button:disabled {
     margin-left: auto;
     content: '✓';
     font-weight: 800;
-    color: var(--grito);
+    color: var(--form-acento, var(--grito));
   }
   .campo select option:hover,
   .campo select option:focus-visible {
@@ -358,25 +358,17 @@ button:disabled {
     outline: none;
   }
   .campo select option:checked {
-    border-left-color: var(--grito);
+    border-color: var(--form-acento, var(--grito));
+    background: color-mix(in srgb, var(--form-acento, var(--grito)) 9%, var(--form-campo, var(--branco)));
     font-weight: 800;
   }
-}
-@media (prefers-color-scheme: light) {
-  @supports (appearance: base-select) {
-    /* Amarelo some no papel: no claro o ✓ e a faixa vão para a madeira (contraste 9.6). */
-    .campo select option::checkmark {
-      color: var(--madeira-funda);
-    }
-    .campo select option:checked {
-      border-left-color: var(--madeira);
-    }
-    .campo select:open,
-    .campo select:open:hover {
-      border-color: var(--tinta);
-    }
+  .campo select option:checked:hover,
+  .campo select option:checked:focus-visible {
+    background: color-mix(in srgb, var(--form-acento, var(--grito)) 14%, var(--form-campo, var(--branco)));
   }
 }
+/* O --form-acento já alterna entre o amarelo (escuro) e a madeira (claro).
+   Assim check, botão aberto, borda do picker e opção marcada ficam coerentes. */
 .campo select:hover,
 .campo input:hover {
   border-color: var(--form-tinta-suave, var(--tinta-suave));
