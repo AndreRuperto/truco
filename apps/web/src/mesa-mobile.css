@@ -1,0 +1,241 @@
+
+/* Convite de instalação do PWA sem encobrir a entrada nem tomar espaço da partida. */
+.instalar-truco {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 490px);
+  margin: 14px auto 0;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--grito) 30%, var(--lousa-borda));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--lousa) 96%, transparent);
+  color: var(--giz);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--sombra) 25%, transparent);
+}
+.instalar-truco-icone {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--grito);
+  border-radius: 9px;
+  color: var(--grito);
+  font-size: 1.5rem;
+}
+.instalar-truco-texto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.instalar-truco-texto strong { font-size: .88rem; }
+.instalar-truco-texto small { color: var(--giz-suave); line-height: 1.35; }
+.instalar-truco-botao {
+  min-height: 42px;
+  padding: 8px 13px;
+  border: 1px solid var(--grito);
+  border-radius: 9px;
+  background: var(--grito);
+  color: var(--tinta);
+  font-size: .9rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.instalar-truco-botao:focus-visible {
+  outline: 3px solid var(--giz);
+  outline-offset: 2px;
+}
+.instalar-truco-guia {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--giz) 7%, var(--lousa-noite));
+  color: var(--giz);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+@media (max-width: 390px) {
+  .instalar-truco { gap: 7px; padding: 10px; }
+  .instalar-truco-texto small { font-size: .73rem; }
+  .instalar-truco-botao { padding: 8px 10px; }
+}
+
+/*
+ * Layout mobile do Truco (site e PWA).
+ * O tampo deixa de crescer com o comprimento da tela. Reserva espaço para
+ * mão, cronômetro, pedidos de família e ações sem comprimir as cartas.
+ */
+@media (max-width: 700px) and (orientation: portrait) {
+  .tela-mesa {
+    --altura-mesa-mobile: clamp(232px, 37dvh, 310px);
+    --carta-c: clamp(32px, 10vw, 44px);
+    --carta-p: clamp(19px, 5.4vw, 25px);
+    --carta-l: clamp(62px, 19.5vw, 82px);
+    --marcador: 14px;
+    width: 100%;
+    max-width: 100vw;
+    min-height: 100dvh;
+    grid-template-rows: auto auto var(--altura-mesa-mobile) auto auto auto;
+    align-content: start;
+    gap: 4px;
+    padding: 4px 5px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  /* O menu continua acessível em celulares estreitos, sem estourar a largura. */
+  .tela-mesa .barra-mesa {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+    gap: 4px;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .tela-mesa .barra-mesa::-webkit-scrollbar { display: none; }
+  .tela-mesa .icone-mesa {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+  }
+
+  .tela-mesa > .placar {
+    min-height: 48px;
+    padding: 3px 8px;
+    border-width: 3px;
+    border-radius: 11px;
+    gap: 4px;
+  }
+  .tela-mesa .placar-num { font-size: clamp(1.5rem, 7vw, 2rem); }
+  .tela-mesa .placar-nome { padding-bottom: 2px; font-size: .8rem; }
+  .tela-mesa .tentos { min-height: 10px; }
+  .tela-mesa .tento { width: 18px; height: 13px; }
+  .tela-mesa .placar-valor, .tela-mesa .placar-pedido { font-size: .9rem; }
+
+  /* A arena tem altura própria: o conteúdo não força um tampo quilométrico. */
+  .tela-mesa > .mesa-ambiente,
+  .tela-mesa > .mesa-3d {
+    min-height: 0;
+    height: var(--altura-mesa-mobile);
+  }
+  .tela-mesa .mesa-ambiente > .tampo {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 4px;
+    gap: 0;
+    grid-template-columns: minmax(38px, .85fr) minmax(0, 3.8fr) minmax(38px, .85fr);
+    grid-template-rows: minmax(34px, auto) minmax(0, 1fr) minmax(30px, auto);
+    border-radius: 19px;
+  }
+  .tela-mesa .tampo > .assento {
+    padding: 1px;
+    gap: 1px;
+  }
+  .tela-mesa .assento-nome {
+    padding: 2px 4px;
+    font-size: .68rem;
+    line-height: 1.1;
+  }
+  .tela-mesa .assento-cartas .carta + .carta {
+    margin-left: calc(var(--carta-p) * -.35);
+  }
+  .tela-mesa .assento .etiqueta { font-size: .68rem; }
+
+  .tela-mesa .centro {
+    --cruz-h: calc(var(--carta-c) * 1.34);
+    min-width: 0;
+    width: 100%;
+    align-self: center;
+    grid-template-rows: repeat(3, var(--cruz-h));
+    gap: 2px 3px;
+    place-content: center;
+  }
+  .tela-mesa .etapa {
+    max-width: 100%;
+    margin: 0;
+    font-size: .76rem;
+    text-align: center;
+  }
+  .tela-mesa .vira-rotulo { margin-top: -6px; font-size: .78rem; }
+  .tela-mesa .marcador { border-width: 1px; }
+  .tela-mesa .mesa-3d-hud .etapa { font-size: .8rem; }
+
+  .tela-mesa > .cronometro {
+    height: 15px;
+    margin: 0 7px;
+  }
+  .tela-mesa .minha-mao {
+    min-height: 0;
+    gap: 2px;
+  }
+  .tela-mesa .minha-mao .cartas {
+    max-width: 100%;
+    gap: clamp(3px, 1.8vw, 8px);
+    padding-top: 2px;
+  }
+  .tela-mesa .minha-mao .dica-pilha { margin: 0; font-size: 1rem; }
+
+  .tela-mesa .rodape-mesa {
+    display: grid;
+    justify-items: stretch;
+    gap: 5px;
+    min-width: 0;
+  }
+  .tela-mesa .janela-familia {
+    width: 100%;
+    gap: 3px 8px;
+    padding: 5px 7px;
+    border-radius: 10px;
+  }
+  .tela-mesa .janela-familia-texto { font-size: 1rem; }
+  .tela-mesa .janela-familia .familia-limite { font-size: .72rem; }
+  .tela-mesa .janela-familia button {
+    min-height: 40px;
+    padding: 5px 14px;
+    font-size: .92rem;
+  }
+  .tela-mesa .barra-acoes {
+    width: 100%;
+    min-width: 0;
+    gap: 4px;
+  }
+  .tela-mesa .barra-acoes .acao {
+    min-height: 46px;
+    max-width: 100%;
+    padding: 7px 12px;
+    font-size: clamp(.95rem, 3.9vw, 1.15rem);
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+  .tela-mesa .barra-acoes .acao.grito { font-size: 1.2rem; }
+
+  /* Famílias conferidas e sobreposições não aumentam a altura da arena. */
+  .tela-mesa .familias { max-width: 100%; }
+  .tela-mesa .familia-cartas .carta { max-width: 100%; }
+
+  /* O modo superior com cadeiras e os cosméticos também respeitam a nova altura. */
+  .tela-mesa[data-visualizacao='cadeiras'] .mesa-ambiente { margin-top: 0; }
+  .tela-mesa .mesa-ambiente > .tampo.tampo-feltro { border-radius: 50% / 43%; }
+}
+
+/* Em telas muito baixas, preservar a mão e ações no lugar do tampo vazio. */
+@media (max-width: 700px) and (orientation: portrait) and (max-height: 650px) {
+  .tela-mesa {
+    --altura-mesa-mobile: 225px;
+    --carta-c: 30px;
+    --carta-l: 58px;
+    --carta-p: 18px;
+  }
+}
+
+/* Landscape no celular: não obrigar a altura da mesa a ocupar a tela inteira. */
+@media (max-width: 950px) and (orientation: landscape) and (max-height: 520px) {
+  .tela-mesa {
+    grid-template-rows: auto auto minmax(230px, 1fr) auto auto auto;
+    align-content: start;
+  }
+  .tela-mesa .barra-mesa { flex-wrap: wrap; }
+}
