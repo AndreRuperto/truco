@@ -113,6 +113,25 @@ describe('loja', () => {
     expect(tokens.at(-1)).toBe('r1:t2');
   });
 
+  test('não envia ações durante queda; retoma após sincronização', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    sala.emit('drop', 1006);
+    const antes = sala.enviados.length;
+    loja.enviarAcao({ tipo: 'truco', cadeira: 0 });
+    loja.enviarSinal('zap');
+    loja.enviarFala('boa');
+    loja.enviarChat('oi');
+    loja.enviarRevanche();
+    loja.enviarBatida(1);
+    loja.iniciar();
+    expect(sala.enviados).toHaveLength(antes);
+    sala.emit('reconnect');
+    expect(sala.enviados.at(-1)).toEqual(['sincronizar', undefined]);
+    loja.enviarAcao({ tipo: 'truco', cadeira: 0 });
+    expect(sala.enviados.at(-1)).toEqual(['acao', { tipo: 'truco', cadeira: 0 }]);
+  });
+
   test('saída consentida do servidor (4000): lobby sem toast e esquece o token', () => {
     const { loja, sala, tokens } = montar();
     loja.conectar(sala);
