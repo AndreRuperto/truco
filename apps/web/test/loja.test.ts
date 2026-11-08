@@ -99,6 +99,24 @@ describe('loja', () => {
     expect(loja.getSnapshot().erro).toBeNull();
   });
 
+  test('queda descarta estado e animações obsoletos até nova sincronização', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    sala.receber('estado', msgEstado(distribuida(PAULISTA)));
+    sala.receber('acao', { cadeira: 3, tipo: 'embaralhar' });
+    sala.receber('batida', { de: 0, forca: 1 });
+    expect(loja.getSnapshot().msg).not.toBeNull();
+    expect(loja.getSnapshot().movimentos).toHaveLength(1);
+    sala.emit('drop', 1006);
+    expect(loja.getSnapshot()).toMatchObject({
+      status: 'reconectando', msg: null, movimentos: [], batida: null,
+    });
+    sala.emit('reconnect');
+    expect(loja.getSnapshot().msg).toBeNull();
+    sala.receber('estado', msgEstado(distribuida(PAULISTA)));
+    expect(loja.getSnapshot().msg).not.toBeNull();
+  });
+
   test('queda e reconexão automática do SDK', async () => {
     const { loja, sala, tokens } = montar();
     loja.conectar(sala);
