@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
+import { temaManual } from './tema-css';
 
 const caminho = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
@@ -8,6 +9,8 @@ const alvoApi = process.env.TRUCO_PROXY_API ?? 'http://localhost:2567';
 
 export default defineConfig({
   plugins: [react()],
+  // Tema escolhido no cabeçalho vale por cima do tema do aparelho (ver tema-css.ts).
+  css: { postcss: { plugins: [temaManual()] } },
   resolve: {
     // Sem workspace:* (exFAT não tem symlinks): os pacotes locais entram por alias.
     // Lista em ordem: o caminho mais específico vem antes (o alias casa por prefixo).

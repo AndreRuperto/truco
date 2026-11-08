@@ -26,6 +26,13 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Caveat+Brush&display=swap"
     />
     <title>Truco</title>
+    <!-- Tema escolhido (ver src/logica/tema.ts): aplica antes de pintar, para não piscar no tema do aparelho. -->
+    <script>
+      try {
+        var t = localStorage.getItem('truco:tema');
+        if (t === 'claro' || t === 'escuro') document.documentElement.dataset.tema = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="raiz"></div>
