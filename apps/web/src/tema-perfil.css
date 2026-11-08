@@ -45,6 +45,19 @@
     width: 30px;
     height: 30px;
   }
+  /* A conta é o separador entre as abas e as ações, sem espaço entre avatar e ajuda. */
+  .cabecalho .menu-conta {
+    margin-left: auto;
+  }
+  .cabecalho .menu-conta + .cabecalho-ajuda {
+    margin-left: 0;
+  }
+  /* O botão de ajuda continua acessível por teclado. */
+  .cabecalho .cabecalho-ajuda:focus-visible,
+  .cabecalho .menu-conta-botao:focus-visible {
+    outline: 3px solid var(--grito);
+    outline-offset: 2px;
+  }
 }
 @media (max-width: 355px) {
   .cabecalho > a:not(.cabecalho-ajuda) {
