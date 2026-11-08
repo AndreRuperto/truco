@@ -2779,8 +2779,9 @@ body:has(.tela-mesa) {
  * As cartas encolhem com a altura (74 px de largura só a partir de ~800 px de altura),
  * e a largura que sobra vira coluna: "Jogar coberta" ao lado das cartas e os botões da vez
  * à direita da mão, em vez de uma linha a mais embaixo.
+ * Celular deitado (até 520 px de altura) fica com a regra própria em mesa-mobile.css.
  */
-@media (min-width: 768px) and (max-height: 819px) {
+@media (min-width: 768px) and (min-height: 521px) and (max-height: 819px) {
   :root {
     --carta-c: clamp(52px, (100vh - 370px) / 6.2, 74px);
     --carta-l: calc(var(--carta-c) * 1.3);
