@@ -3565,30 +3565,7 @@ body:has(.tela-mesa) {
   font-family: var(--fonte-giz);
   font-size: var(--t1);
 }
-.menu-conta ~ .cabecalho-ajuda,
-.cabecalho-tema ~ .cabecalho-ajuda {
-  margin-left: 0;
-}
-/* Tema (automático / claro / escuro): mesmo círculo do "?", logo antes dele. */
-.cabecalho .cabecalho-tema {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  margin-left: auto;
-  padding: 0;
-  border: 2px solid color-mix(in srgb, var(--giz) 45%, transparent);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--giz);
-  cursor: pointer;
-}
-.cabecalho .cabecalho-tema:hover {
-  background: color-mix(in srgb, var(--giz) 9%, transparent);
-}
-.menu-conta ~ .cabecalho-tema {
+.menu-conta ~ .cabecalho-ajuda {
   margin-left: 0;
 }
 .cabecalho a.cabecalho-ajuda[aria-current='page'] {

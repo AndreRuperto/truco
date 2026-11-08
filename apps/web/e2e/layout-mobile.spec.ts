@@ -1,3 +1,23 @@
+test('navegação da página inicial mantém ajuda e abas em uma linha no celular', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto('/');
+
+  const menu = page.getByRole('navigation', { name: 'Navegação' });
+  await expect(menu).toBeVisible();
+  const ajuda = menu.getByRole('link', { name: 'Como jogar' });
+  await expect(ajuda).toBeVisible();
+  await expect(menu.locator('.cabecalho-tema')).toHaveCount(0);
+
+  const alinhamento = await menu.evaluate((nav) => {
+    const elementos = Array.from(nav.children) as HTMLElement[];
+    const topo = elementos.map((el) => el.getBoundingClientRect().top);
+    return { diferenca: Math.max(...topo) - Math.min(...topo), altura: nav.getBoundingClientRect().height };
+  });
+  expect(alinhamento.diferenca).toBeLessThan(6);
+  expect(alinhamento.altura).toBeLessThan(65);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+});
+
 import { expect, test } from '@playwright/test';
 
 test('mesa no celular não estica e continua dentro da largura', async ({ page }) => {

@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { AVATARES_PRONTOS } from '@truco/api';
 import { Avatar, DesenhoAvatar, NOME_AVATAR, reduzirFoto } from '../componentes/Avatar';
 import { BotaoGoogle } from '../componentes/BotaoGoogle';
+import { PreferenciasTema } from '../componentes/PreferenciasTema';
 import { NOME_VARIANTE } from '../logica/conta';
 import type { Api } from '../rede/api';
 import { useCarregar } from '../rede/hooks';
@@ -142,6 +143,7 @@ function EditarPerfil({
       <h2 id="titulo-editar-perfil">Editar perfil</h2>
       {usuario && api.trocarAvatar && <EscolherAvatar usuario={usuario} trocar={api.trocarAvatar} aoSalvar={aoSalvar} />}
       <FormApelido atual={apelido} api={api} aoSalvar={aoSalvar} />
+      <PreferenciasTema />
       {usuario && (
         <dl className="dados-conta">
           <div>
