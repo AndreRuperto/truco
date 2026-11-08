@@ -9,6 +9,17 @@ test('ritual completo e família fechada conferida', async ({ page }) => {
   await page.getByLabel('Família', { exact: true }).selectOption('fechada');
   await page.getByLabel('Humanos').selectOption('1');
   await page.getByLabel('Bots').selectOption('facil');
+  // Com os tempos acelerados do E2E, o ritual dos bots (embaralhar, cortar, dar) pode acabar
+  // antes de a mesa aparecer para o laço abaixo. Um observador na página registra qualquer
+  // texto que a linha de etapa mostre, em vez de depender de olhar no instante certo.
+  await page.evaluate(() => {
+    const w = window as unknown as { __viuEtapa?: boolean };
+    w.__viuEtapa = false;
+    const olhar = () => {
+      if ((document.querySelector('[data-testid="etapa"]')?.textContent ?? '').trim() !== '') w.__viuEtapa = true;
+    };
+    new MutationObserver(olhar).observe(document.body, { subtree: true, childList: true, characterData: true });
+  });
   await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
 
   const monte = page.getByTestId('monte');
@@ -19,15 +30,12 @@ test('ritual completo e família fechada conferida', async ({ page }) => {
   const aceitar = page.getByRole('button', { name: 'Aceitar', exact: true });
   const jogarMao = page.getByRole('button', { name: 'Jogar a mão', exact: true });
   const carta = page.getByTestId('minha-mao').locator('button.carta-botao:enabled').first();
-  const etapa = page.getByTestId('etapa');
   const conferida = page.getByTestId('familia-conferida').first();
   const limite = Date.now() + 150_000;
   let pedidos = 0;
-  let viuEtapa = false;
   while (!(await conferida.isVisible())) {
     if (Date.now() > limite) throw new Error(`nenhuma família conferida (${pedidos} pedidos)`);
     try {
-      viuEtapa ||= ((await etapa.textContent({ timeout: 1_000 })) ?? '').trim() !== '';
       // Na janela, pede (a 2ª da mesma mão os bots conferem); senão, ritual > truco > mão de 10 > carta.
       if (await pedir.isVisible()) {
         await pedir.click({ timeout: 1_000 });
@@ -43,7 +51,7 @@ test('ritual completo e família fechada conferida', async ({ page }) => {
     }
   }
 
-  expect(viuEtapa).toBe(true);
+  expect(await page.evaluate(() => (window as unknown as { __viuEtapa?: boolean }).__viuEtapa)).toBe(true);
   await expect(conferida).toContainText(/conferiu: era (família|blefe)! \+2 pra (nós|eles)/);
   await expect(conferida.locator('.carta:not(.verso)')).toHaveCount(3);
 });
