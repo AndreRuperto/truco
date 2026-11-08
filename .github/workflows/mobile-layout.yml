@@ -5,6 +5,8 @@ on:
     branches: [master]
     paths:
       - 'apps/web/src/mesa-mobile.css'
+      - 'apps/web/src/estilos.css'
+      - 'apps/web/e2e/dropdown-regras.spec.ts'
       - 'apps/web/src/polimento-v2.css'
       - 'apps/web/src/telas/Mesa.tsx'
       - 'apps/web/src/componentes/Placar.tsx'
@@ -28,4 +30,4 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @truco/web exec playwright install chromium --with-deps
-      - run: pnpm --filter @truco/web exec playwright test e2e/layout-mobile.spec.ts --project=celular
+      - run: pnpm --filter @truco/web exec playwright test e2e/layout-mobile.spec.ts e2e/dropdown-regras.spec.ts --project=celular
