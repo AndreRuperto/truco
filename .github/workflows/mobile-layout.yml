@@ -5,6 +5,11 @@ on:
     branches: [master]
     paths:
       - 'apps/web/src/mesa-mobile.css'
+      - 'apps/web/src/polimento-v2.css'
+      - 'apps/web/src/telas/Mesa.tsx'
+      - 'apps/web/src/componentes/Placar.tsx'
+      - 'apps/web/src/componentes/BarraAcoes.tsx'
+      - 'apps/web/src/componentes/Overlays.tsx'
       - 'apps/web/e2e/layout-mobile.spec.ts'
       - '.github/workflows/mobile-layout.yml'
 

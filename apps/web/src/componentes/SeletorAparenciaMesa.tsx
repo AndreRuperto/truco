@@ -41,6 +41,9 @@ export function SeletorAparenciaMesa({ valor, temConta, aoEscolher, aoFechar }: 
       <p className="personalizar-mesa-explica">
         A escolha é só sua: não muda a partida nem a mesa que os outros enxergam.
       </p>
+      <div className="personalizar-mesa-hero" aria-hidden="true">
+        <div className={`personalizar-mesa-preview amostra-${valor}`}><span className="preview-aro"><span className="preview-cartas">♠ ♣ ♦</span></span></div>
+      </div>
       <div className="personalizar-mesa-opcoes" role="group" aria-label="Escolher aparência da mesa">
         {OPCOES.map((o) => {
           const bloqueada = o.id === 'feltro' && !temConta;
@@ -56,7 +59,7 @@ export function SeletorAparenciaMesa({ valor, temConta, aoEscolher, aoFechar }: 
             >
               <span className={`amostra-mesa amostra-${o.id}`} aria-hidden="true"><span /></span>
               <span className="personalizar-mesa-descricao">
-                <strong>{o.titulo}</strong>
+                <strong>{o.titulo}{valor === o.id && <span className="personalizar-selecionada" aria-hidden="true"> ✓</span>}</strong>
                 <small>{o.descricao}</small>
                 <em>{bloqueada ? 'ENTRE NA CONTA PARA EXPERIMENTAR' : o.selo}</em>
               </span>
