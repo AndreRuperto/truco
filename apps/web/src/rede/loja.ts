@@ -155,6 +155,10 @@ export function criarLoja(o: OpcoesLoja = {}) {
     s.send('sincronizar');
   }
 
+  const enviarSeConectado = (tipo: string, payload?: unknown) => {
+    if (estado.status === 'na-mesa') sala?.send(tipo, payload);
+  };
+
   return {
     subscribe(f: () => void): () => void {
       ouvintes.add(f);
@@ -170,15 +174,17 @@ export function criarLoja(o: OpcoesLoja = {}) {
       mudar({ status: 'fora' });
       if (mensagem) erro(mensagem);
     },
-    enviarAcao: (a: AcaoJogador) => sala?.send('acao', a),
-    enviarSinal: (x: Sinal) => sala?.send('sinal', x),
-    enviarFala: (f: Fala) => sala?.send('fala', f),
-    enviarSemFamilia: () => sala?.send('semFamilia'),
-    enviarRevanche: () => sala?.send('revanche'),
-    enviarChat: (texto: string) => sala?.send('chat', texto),
+    // Nunca enfileirar comandos enquanto o socket caiu: o estado do turno pode
+    // ter mudado. Após reconectar, sincronizar primeiro e aguardar nova ação.
+    enviarAcao: (a: AcaoJogador) => enviarSeConectado('acao', a),
+    enviarSinal: (x: Sinal) => enviarSeConectado('sinal', x),
+    enviarFala: (f: Fala) => enviarSeConectado('fala', f),
+    enviarSemFamilia: () => enviarSeConectado('semFamilia'),
+    enviarRevanche: () => enviarSeConectado('revanche'),
+    enviarChat: (texto: string) => enviarSeConectado('chat', texto),
     /** Logo depois do pedido de seis/nove/doze (o servidor só aceita nessa janela). */
-    enviarBatida: (forca: number) => sala?.send('batida', { forca }),
-    iniciar: () => sala?.send('iniciar'),
+    enviarBatida: (forca: number) => enviarSeConectado('batida', { forca }),
+    iniciar: () => enviarSeConectado('iniciar'),
     /**
      * Saída definitiva (o servidor põe um bot no lugar). Larga o estado local antes do
      * `leave`: com o socket meio aberto ele pode demorar, e a UI não deve esperar.
