@@ -227,7 +227,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
         eles={eles}
         valor={m ? valorMao(v.regras, m.nivel) : null}
         pedido={pedido?.replace(/\.$/, '') ?? null}
-        situacao={fim ? 'Partida encerrada' : msg.janelaFamilia ? 'Hora da família' : etapa ?? (daVez(minha) ? 'Sua vez' : 'Aguardando jogada')}
+        situacao={fim ? 'Partida encerrada' : msg.janelaFamilia ? 'Hora da família' : etapa ? 'Preparando a mão' : daVez(minha) ? 'Sua vez' : 'Aguardando jogada'}
       />
       {vista3d ? (
         <div className="mesa-3d" data-testid="mesa-3d">
