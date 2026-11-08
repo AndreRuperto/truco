@@ -74,6 +74,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
   let estado: EstadoLoja = INICIAL;
   let sala: SalaLike | null = null;
   let seq = 0;
+  let aguardandoEstadoAposReconexao = false;
   const ouvintes = new Set<() => void>();
 
   const mudar = (p: Partial<EstadoLoja>) => {
@@ -86,6 +87,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
   /** `esquecerToken` = false numa queda: um F5 ainda recupera a cadeira (o servidor guarda 60 s). */
   const largar = (esquecerToken = true) => {
     sala = null;
+    aguardandoEstadoAposReconexao = false;
     if (esquecerToken) persistir(null);
     mudar({ status: 'fora', msg: null, eventos: [], chat: [], salaId: null, batida: null, movimentos: [] });
   };
@@ -93,11 +95,15 @@ export function criarLoja(o: OpcoesLoja = {}) {
   function conectar(s: SalaLike): void {
     const antiga = sala;
     sala = s;
+    aguardandoEstadoAposReconexao = false;
     // Uma sala antiga ainda aberta seria uma cadeira fantasma: sai dela (o onLeave dela é ignorado).
     if (antiga && antiga !== s) antiga.leave(true).catch(() => {});
     // Todos os handlers ANTES de qualquer envio: mensagem sem handler o SDK descarta.
     s.onMessage('estado', (m: MsgEstado) => {
-      if (sala === s) mudar({ msg: m });
+      if (sala === s) {
+        aguardandoEstadoAposReconexao = false;
+        mudar({ msg: m });
+      }
     });
     s.onMessage('acao', (a: MsgAcao) => {
       if (sala !== s) return;
@@ -121,11 +127,16 @@ export function criarLoja(o: OpcoesLoja = {}) {
       if (sala === s) mudar({ batida: { ...b, id: ++seq, em: agora() } });
     });
     s.onDrop(() => {
-      if (sala === s) mudar({ status: 'reconectando' });
+      if (sala === s) {
+        aguardandoEstadoAposReconexao = true;
+        mudar({ status: 'reconectando' });
+      }
     });
     s.onReconnect(() => {
       if (sala !== s) return;
       mudar({ status: 'na-mesa' });
+      // Comandos só são liberados após receber o estado atualizado do servidor.
+      aguardandoEstadoAposReconexao = true;
       // O servidor guarda a resposta até o ACK do join (que o SDK manda logo depois).
       s.send('sincronizar');
       // O SDK 0.18 só troca `reconnectionToken` no `finally`, depois de chamar onReconnect.
@@ -156,7 +167,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
   }
 
   const enviarSeConectado = (tipo: string, payload?: unknown) => {
-    if (estado.status === 'na-mesa') sala?.send(tipo, payload);
+    if (estado.status === 'na-mesa' && !aguardandoEstadoAposReconexao) sala?.send(tipo, payload);
   };
 
   return {
