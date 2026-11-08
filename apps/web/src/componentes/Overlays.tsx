@@ -32,9 +32,12 @@ export function FimDePartida({ titulo, placar, venceu, aoJogarDeNovo, aoVoltar, 
   const [pediram, total] = revanche?.quantos ?? [0, 0];
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-labelledby="titulo-fim" data-testid="fim-partida">
-      <div className={cx('overlay-caixa', venceu && 'vitoria')}>
+      <div className={cx('overlay-caixa', 'resultado-partida', venceu ? 'vitoria' : 'derrota')}>
+        <div className="resultado-decoracao" aria-hidden="true">{venceu ? '★' : '♠'}</div>
+        <span className="resultado-selo">Fim de partida</span>
         <h2 id="titulo-fim">{titulo}</h2>
-        <p>{placar}</p>
+        <p className="resultado-placar">{placar}</p>
+        <p className="resultado-legenda">{venceu ? 'Vitória da sua dupla. Boa jogada!' : 'Partida encerrada. A próxima mão pode ser sua.'}</p>
         {revanche ? (
           <>
             <button type="button" className="botao-principal" onClick={revanche.aoPedir} disabled={revanche.jaPedi} autoFocus>
