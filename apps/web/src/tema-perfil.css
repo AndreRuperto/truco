@@ -28,6 +28,10 @@
     padding: 0;
     margin-left: auto;
   }
+  /* Mantém o botão de ajuda junto ao avatar no cabeçalho móvel. */
+  .cabecalho .menu-conta + a.cabecalho-ajuda {
+    margin-left: 0;
+  }
   .cabecalho .menu-conta {
     flex: 0 0 auto;
     min-width: 0;
