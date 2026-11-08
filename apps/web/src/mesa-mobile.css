@@ -1,3 +1,67 @@
+
+/* Convite de instalação do PWA sem encobrir a entrada nem tomar espaço da partida. */
+.instalar-truco {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 490px);
+  margin: 14px auto 0;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--grito) 30%, var(--lousa-borda));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--lousa) 96%, transparent);
+  color: var(--giz);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--sombra) 25%, transparent);
+}
+.instalar-truco-icone {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--grito);
+  border-radius: 9px;
+  color: var(--grito);
+  font-size: 1.5rem;
+}
+.instalar-truco-texto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.instalar-truco-texto strong { font-size: .88rem; }
+.instalar-truco-texto small { color: var(--giz-suave); line-height: 1.35; }
+.instalar-truco-botao {
+  min-height: 42px;
+  padding: 8px 13px;
+  border: 1px solid var(--grito);
+  border-radius: 9px;
+  background: var(--grito);
+  color: var(--tinta);
+  font-size: .9rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.instalar-truco-botao:focus-visible {
+  outline: 3px solid var(--giz);
+  outline-offset: 2px;
+}
+.instalar-truco-guia {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--giz) 7%, var(--lousa-noite));
+  color: var(--giz);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+@media (max-width: 390px) {
+  .instalar-truco { gap: 7px; padding: 10px; }
+  .instalar-truco-texto small { font-size: .73rem; }
+  .instalar-truco-botao { padding: 8px 10px; }
+}
+
 /*
  * Layout mobile do Truco (site e PWA).
  * O tampo deixa de crescer com o comprimento da tela. Reserva espaço para
