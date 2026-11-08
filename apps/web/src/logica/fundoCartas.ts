@@ -102,3 +102,33 @@ export function parada(a: Mexida, b: Mexida): boolean {
     Math.abs(a.escala - b.escala) < 0.0005
   );
 }
+
+/*
+ * Distribuição na abertura da tela inicial: as cartas começam num monte virado para baixo
+ * e saem do topo, uma a uma, até o lugar de cada uma. Sempre na primeira visita do dia;
+ * depois, de vez em quando, para continuar sendo surpresa.
+ */
+export const CHAVE_CARTAS_DADAS = 'truco:cartas-dadas-em';
+export const CHANCE_DE_DAR = 0.2;
+/** Pausa com o monte parado, intervalo entre uma carta e a próxima e duração de cada voo (ms). */
+export const DAR_PAUSA = 260;
+export const DAR_PASSO = 45;
+export const DAR_VOO = 620;
+
+/** `hoje` e `ultimoDia` no formato AAAA-MM-DD; `sorteio` em [0, 1). */
+export function vaiDarCartas(hoje: string, ultimoDia: string | null, sorteio: number): boolean {
+  return ultimoDia !== hoje || sorteio < CHANCE_DE_DAR;
+}
+
+/** Atraso de saída de cada carta: a de cima do monte (mais perto, `d` maior) sai primeiro. */
+export function atrasosDaDistribuicao(ds: readonly number[]): number[] {
+  const ordem = ds.map((d, i) => ({ d, i })).sort((a, b) => b.d - a.d || a.i - b.i);
+  const atrasos = new Array<number>(ds.length);
+  ordem.forEach(({ i }, pos) => {
+    atrasos[i] = DAR_PAUSA + pos * DAR_PASSO;
+  });
+  return atrasos;
+}
+
+/** Giro de cada carta no monte: pequeno e fixo, para o monte parecer arrumado à mão. */
+export const giroNoMonte = (i: number): number => ((i * 37) % 13) - 6;

@@ -1,7 +1,18 @@
 import { fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { FundoCartas } from '../src/componentes/FundoCartas';
-import { aproximar, CARTAS_SOLTAS, mexidaDaCarta, PARADA, parada } from '../src/logica/fundoCartas';
+import {
+  aproximar,
+  atrasosDaDistribuicao,
+  CARTAS_SOLTAS,
+  CHAVE_CARTAS_DADAS,
+  DAR_PASSO,
+  DAR_PAUSA,
+  mexidaDaCarta,
+  PARADA,
+  parada,
+  vaiDarCartas,
+} from '../src/logica/fundoCartas';
 
 const janela = { l: 1000, a: 800 };
 
@@ -93,15 +104,75 @@ describe('giro 3D no lobby', () => {
     };
     try {
       const { container } = render(<div><FundoCartas /><button type="button">Jogar</button></div>);
+      // A abertura pode ter distribuído as cartas: conta só o que o duplo clique acrescenta.
+      const antes = animar.mock.calls.length;
       fireEvent.dblClick(container.querySelector('.fundo-cartas')!, { clientX: 100, clientY: 100 });
-      expect(animar).toHaveBeenCalledTimes(1);
+      expect(animar).toHaveBeenCalledTimes(antes + 1);
       fireEvent.dblClick(container.querySelector('button')!, { clientX: 100, clientY: 100 });
-      expect(animar).toHaveBeenCalledTimes(1);
+      expect(animar).toHaveBeenCalledTimes(antes + 1);
     } finally {
       window.matchMedia = matchMediaOriginal;
       Element.prototype.animate = animateOriginal;
       Element.prototype.getAnimations = getAnimationsOriginal;
       Element.prototype.getBoundingClientRect = rectOriginal;
     }
+  });
+});
+
+describe('distribuição na abertura', () => {
+  test('primeira visita do dia sempre; depois, só no sorteio de 1 em 5', () => {
+    expect(vaiDarCartas('2026-11-08', null, 0.99)).toBe(true);
+    expect(vaiDarCartas('2026-11-08', '2026-11-07', 0.99)).toBe(true);
+    expect(vaiDarCartas('2026-11-08', '2026-11-08', 0.99)).toBe(false);
+    expect(vaiDarCartas('2026-11-08', '2026-11-08', 0.1)).toBe(true);
+  });
+
+  test('a carta de cima do monte (mais perto) sai primeiro', () => {
+    expect(atrasosDaDistribuicao([0.2, 1, 0.5])).toEqual([DAR_PAUSA + 2 * DAR_PASSO, DAR_PAUSA, DAR_PAUSA + DAR_PASSO]);
+  });
+
+  function comAnimacao(reduzido: boolean, rodar: (animar: ReturnType<typeof vi.fn>) => void) {
+    const matchMediaOriginal = window.matchMedia;
+    const animateOriginal = Element.prototype.animate;
+    window.matchMedia = vi.fn((q: string) => ({ matches: reduzido && q.includes('reduced-motion') })) as unknown as typeof window.matchMedia;
+    const animar = vi.fn().mockReturnValue({ cancel: vi.fn(), finished: Promise.resolve() });
+    Element.prototype.animate = animar;
+    try {
+      rodar(animar);
+    } finally {
+      window.matchMedia = matchMediaOriginal;
+      Element.prototype.animate = animateOriginal;
+      localStorage.removeItem(CHAVE_CARTAS_DADAS);
+    }
+  }
+
+  test('na primeira visita, cada carta sai do monte e desvira; marca o dia', () => {
+    localStorage.removeItem(CHAVE_CARTAS_DADAS);
+    comAnimacao(false, (animar) => {
+      render(<FundoCartas />);
+      // um voo e um desvirar por carta
+      expect(animar).toHaveBeenCalledTimes(CARTAS_SOLTAS.length * 2);
+      expect(localStorage.getItem(CHAVE_CARTAS_DADAS)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+
+  test('com movimento reduzido, nas telas internas ou já distribuídas hoje: nada se mexe', () => {
+    localStorage.removeItem(CHAVE_CARTAS_DADAS);
+    comAnimacao(true, (animar) => {
+      render(<FundoCartas />);
+      expect(animar).not.toHaveBeenCalled();
+    });
+    comAnimacao(false, (animar) => {
+      render(<FundoCartas discreto />);
+      expect(animar).not.toHaveBeenCalled();
+    });
+    comAnimacao(false, (animar) => {
+      vi.spyOn(Math, 'random').mockReturnValue(0.99);
+      render(<FundoCartas />);
+      const primeira = animar.mock.calls.length;
+      render(<FundoCartas />);
+      expect(animar.mock.calls.length).toBe(primeira);
+      vi.restoreAllMocks();
+    });
   });
 });
