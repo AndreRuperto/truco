@@ -209,8 +209,8 @@
 .tela-mesa .assento.da-vez .assento-nome .avatar {
   filter: drop-shadow(0 2px 5px color-mix(in srgb, var(--grito) 28%, transparent));
 }
-.tela-mesa[data-visualizacao='personagens'] .lugar:has(.assento.da-vez) {
-  filter: brightness(1.09);
+.tela-mesa[data-visualizacao='personagens'] .personagem.pensando {
+  filter: brightness(1.09) drop-shadow(0 4px 4px rgba(0, 0, 0, .12));
 }
 .tela-mesa .assento.caiu .assento-nome {
   border-style: dashed;
@@ -238,7 +238,7 @@
   color: var(--grito);
   font-size: .65rem;
 }
-.tela-mesa .lugar:has(.assento.da-vez) .personagem {
+.tela-mesa[data-visualizacao='personagens'] .personagem.pensando {
   transform-origin: center bottom;
   animation: pol-personagem-vez 2.4s ease-in-out infinite;
 }
@@ -526,7 +526,7 @@
 
 /* Redução de movimento é prioridade: sem pulsos, flutuações ou transições longas. */
 @media (prefers-reduced-motion: reduce) {
-  .tela-mesa .lugar:has(.assento.da-vez) .personagem,
+  .tela-mesa[data-visualizacao='personagens'] .personagem.pensando,
   .tela-mesa .jogada:not([data-anim]) .carta,
   .resultado-decoracao { animation: none !important; }
   .tela-mesa .carta,
