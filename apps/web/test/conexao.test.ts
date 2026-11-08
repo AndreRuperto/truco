@@ -83,6 +83,23 @@ describe('tentarReconectar', () => {
     expect(cliente.reconnect).toHaveBeenCalledTimes(1);
   });
 
+  test('sessões distintas não compartilham uma tentativa pendente', async () => {
+    gravarToken('r1:t1');
+    let liberar!: (sala: SalaFalsa) => void;
+    const pendente = new Promise<SalaFalsa>((resolve) => { liberar = resolve; });
+    const primeiro = { joinOrCreate: vi.fn(), reconnect: vi.fn(() => pendente) };
+    const segundo = { joinOrCreate: vi.fn(), reconnect: vi.fn(async () => new SalaFalsa()) };
+    const lojaA = novaLoja();
+    const lojaB = novaLoja();
+    const a = tentarReconectar(lojaA, primeiro);
+    const b = tentarReconectar(lojaB, segundo);
+    expect(await b).toBe(true);
+    expect(segundo.reconnect).toHaveBeenCalledTimes(1);
+    liberar(new SalaFalsa());
+    expect(await a).toBe(true);
+    expect(primeiro.reconnect).toHaveBeenCalledTimes(1);
+  });
+
   test('com a loja já na mesa (re-render/Fast Refresh) não reconecta nem apaga o token', async () => {
     gravarToken('r1:t1');
     const cliente = { joinOrCreate: vi.fn(), reconnect: vi.fn(async () => new SalaFalsa()) };

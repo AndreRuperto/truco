@@ -86,3 +86,33 @@ test('2 humanos parceiros: sinal chega ao parceiro e quem recarrega volta à mes
     await bia.context().close();
   }
 });
+
+test('dois jogadores recuperam a mesma partida após recargas sucessivas', async ({ browser }) => {
+  const ana = await novaPagina(browser);
+  const bia = await novaPagina(browser);
+  try {
+    await entrar(ana, 'Ana');
+    await expect(ana.getByRole('heading', { name: 'Sala de espera' })).toBeVisible({ timeout: 15_000 });
+    await entrar(bia, 'Bia');
+    await expect(ana.getByTestId('centro')).toBeVisible({ timeout: 15_000 });
+    await expect(bia.getByTestId('centro')).toBeVisible({ timeout: 15_000 });
+
+    // Recargas sequenciais exercitam tokens independentes e a sincronização do servidor.
+    await ana.reload();
+    await expect(ana.getByTestId('centro')).toBeVisible({ timeout: 15_000 });
+    await expect(ana.getByTestId('assento-cima')).toContainText('Bia');
+    await bia.reload();
+    await expect(bia.getByTestId('centro')).toBeVisible({ timeout: 15_000 });
+    await expect(bia.getByTestId('assento-cima')).toContainText('Ana');
+
+    // Uma segunda recarga detecta tokens de reconexão não renovados corretamente.
+    await ana.reload();
+    await expect(ana.getByTestId('centro')).toBeVisible({ timeout: 15_000 });
+    await expect(ana.getByTestId('assento-cima')).toContainText('Bia');
+    await expect(ana.getByRole('heading', { name: 'Truco' })).toHaveCount(0);
+    await expect(bia.getByRole('heading', { name: 'Truco' })).toHaveCount(0);
+  } finally {
+    await ana.context().close();
+    await bia.context().close();
+  }
+});

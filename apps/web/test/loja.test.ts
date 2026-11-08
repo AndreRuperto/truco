@@ -99,6 +99,24 @@ describe('loja', () => {
     expect(loja.getSnapshot().erro).toBeNull();
   });
 
+  test('queda descarta estado e animações obsoletos até nova sincronização', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    sala.receber('estado', msgEstado(distribuida(PAULISTA)));
+    sala.receber('acao', { cadeira: 3, tipo: 'embaralhar' });
+    sala.receber('batida', { de: 0, forca: 1 });
+    expect(loja.getSnapshot().msg).not.toBeNull();
+    expect(loja.getSnapshot().movimentos).toHaveLength(1);
+    sala.emit('drop', 1006);
+    expect(loja.getSnapshot()).toMatchObject({
+      status: 'reconectando', msg: null, movimentos: [], batida: null,
+    });
+    sala.emit('reconnect');
+    expect(loja.getSnapshot().msg).toBeNull();
+    sala.receber('estado', msgEstado(distribuida(PAULISTA)));
+    expect(loja.getSnapshot().msg).not.toBeNull();
+  });
+
   test('queda e reconexão automática do SDK', async () => {
     const { loja, sala, tokens } = montar();
     loja.conectar(sala);
@@ -111,6 +129,29 @@ describe('loja', () => {
     expect(sala.enviados.at(-1)).toEqual(['sincronizar', undefined]);
     await Promise.resolve();
     expect(tokens.at(-1)).toBe('r1:t2');
+  });
+
+  test('não envia ações durante queda; retoma após sincronização', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    sala.emit('drop', 1006);
+    const antes = sala.enviados.length;
+    loja.enviarAcao({ tipo: 'truco', cadeira: 0 });
+    loja.enviarSinal('zap');
+    loja.enviarFala('boa');
+    loja.enviarChat('oi');
+    loja.enviarRevanche();
+    loja.enviarBatida(1);
+    loja.iniciar();
+    expect(sala.enviados).toHaveLength(antes);
+    sala.emit('reconnect');
+    expect(sala.enviados.at(-1)).toEqual(['sincronizar', undefined]);
+    const antesDoEstado = sala.enviados.length;
+    loja.enviarAcao({ tipo: 'truco', cadeira: 0 });
+    expect(sala.enviados).toHaveLength(antesDoEstado);
+    sala.receber('estado', msgEstado(distribuida(PAULISTA)));
+    loja.enviarAcao({ tipo: 'truco', cadeira: 0 });
+    expect(sala.enviados.at(-1)).toEqual(['acao', { tipo: 'truco', cadeira: 0 }]);
   });
 
   test('saída consentida do servidor (4000): lobby sem toast e esquece o token', () => {
