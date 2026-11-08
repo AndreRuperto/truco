@@ -80,7 +80,7 @@
     grid-template-rows: auto auto var(--altura-mesa-mobile) auto auto auto;
     align-content: start;
     gap: 4px;
-    padding: 4px 5px calc(8px + env(safe-area-inset-bottom));
+    padding: calc(4px + env(safe-area-inset-top)) 5px calc(8px + env(safe-area-inset-bottom));
   }
 
   /* O menu continua acessível em celulares estreitos, sem estourar a largura. */
@@ -211,6 +211,19 @@
     overflow-wrap: anywhere;
   }
   .tela-mesa .barra-acoes .acao.grito { font-size: 1.2rem; }
+
+  /* Durante o ritual, o baralho de floreios ocupa só a arena compactada.
+     O botão real de embaralhar continua acessível abaixo dela. */
+  .tela-mesa .baralho-na-partida {
+    top: calc(98px + env(safe-area-inset-top));
+    width: calc(100% - 16px);
+    max-height: var(--altura-mesa-mobile);
+    overflow-y: auto;
+    padding: 3px;
+  }
+  .tela-mesa .baralho-na-partida-monte { min-height: 52px; }
+  .tela-mesa .baralho-na-partida .baralho-treino-monte { height: 65px; }
+  .tela-mesa .baralho-na-partida .sala-truques { gap: 3px; padding-block: 3px; }
 
   /* Famílias conferidas e sobreposições não aumentam a altura da arena. */
   .tela-mesa .familias { max-width: 100%; }
