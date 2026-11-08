@@ -40,7 +40,7 @@ export function BarraAcoes({ botoes, pedido, aoEscolher, bate, aoBater }: Props)
             {b.rotulo}
           </BotaoBatida>
         ) : (
-          <button key={b.chave} type="button" className={cx('acao', `tom-${b.tom}`, ESTILO[b.chave])} onClick={() => aoEscolher(b.acao)}>
+          <button key={b.chave} type="button" className={cx('acao', `tom-${b.tom}`, ESTILO[b.chave], b.chave === principal && 'acao-destaque')} onClick={() => aoEscolher(b.acao)}>
             {b.rotulo}
           </button>
         ),
