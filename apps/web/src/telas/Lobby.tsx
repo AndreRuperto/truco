@@ -1,4 +1,5 @@
 import { SeletorAvatar } from '../componentes/SeletorAvatar';
+import { InstalarTruco } from '../componentes/InstalarTruco';
 import type { PreferenciasMesa } from '@truco/api';
 import type { Pontuacao, RegrasMesa, Variante } from '@truco/engine';
 import { type NivelBot, TEMPOS_FAMILIA_S } from '@truco/protocolo';
@@ -220,6 +221,7 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
           </p>
         </details>
       </form>
+      <InstalarTruco />
       <p className="lobby-dica-cartas">Duplo clique nas cartas do fundo para fazê-las girar.</p>
     </main>
   );

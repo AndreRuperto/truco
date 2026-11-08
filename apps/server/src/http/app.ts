@@ -324,7 +324,9 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
         index: false,
         maxAge: '7d',
         setHeaders: (res, caminho) => {
-          if (caminho.endsWith('index.html')) res.setHeader('Cache-Control', 'no-cache');
+          if (caminho.endsWith('index.html') || caminho.endsWith('sw.js') || caminho.endsWith('manifest.webmanifest')) {
+            res.setHeader('Cache-Control', 'no-cache');
+          }
         },
       }),
     );

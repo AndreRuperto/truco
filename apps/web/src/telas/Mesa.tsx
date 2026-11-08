@@ -1,6 +1,7 @@
 import { type Cadeira, ehFaseRitual, fechadasUsadas, LIMITE_FAMILIAS_FECHADAS, parceiroDe, quemDeveAgir } from '@truco/engine';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CartaVisual } from '../componentes/CartaVisual';
+import { BaralhoNaPartida } from '../componentes/BaralhoNaPartida';
 import { SeletorAparenciaMesa } from '../componentes/SeletorAparenciaMesa';
 import { useAnimacaoRitual } from '../componentes/animacaoMesa';
 import { Assento, GRITOS } from '../componentes/Assento';
@@ -36,28 +37,12 @@ import { placarRelativo, resumoFimMao, resumoFimPartida, textoPedidoPendente, va
 import { useAvisoNaAba } from '../logica/avisoAba';
 import { dicaAgora, gravarDicas, type IdDica, lerDicas } from '../logica/dicas';
 import { useAgora } from '../rede/hooks';
+import { gravarVisualizacaoMesa, lerVisualizacaoMesa, type VisualizacaoMesa } from '../logica/visualizacaoMesa';
+export { CHAVE_VISTA_3D } from '../logica/visualizacaoMesa';
 import { gravarSomLigado, lerSomLigado, useSonsDaMesa } from '../som/useSons';
 import type { EstadoLoja, Loja } from '../rede/loja';
 
 const DURACAO_SINAL_MS = 4_000;
-/** Escolha da vista (2D ou 3D), lembrada no aparelho. */
-export const CHAVE_VISTA_3D = 'truco:vista3d';
-
-function lerVista3D(): boolean {
-  try {
-    return localStorage.getItem(CHAVE_VISTA_3D) === '1';
-  } catch {
-    return false;
-  }
-}
-function gravarVista3D(ligada: boolean): void {
-  try {
-    localStorage.setItem(CHAVE_VISTA_3D, ligada ? '1' : '0');
-  } catch {
-    // modo privado: segue sem lembrar
-  }
-}
-
 interface Props {
   /** Precisa ter `msg.visao` (a App só mostra a mesa depois que a partida começa). */
   snap: EstadoLoja;
@@ -79,7 +64,10 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
   useSonsDaMesa(snap, somLigado, agora);
   // Em outra aba/app: o título pisca e o celular vibra quando é a minha vez de agir.
   useAvisoNaAba(prazoEhMeu(snap.msg!), 'Sua vez! · Truco', somLigado);
-  const [vista3d, setVista3d] = useState(lerVista3D);
+  const [visualizacao, setVisualizacao] = useState<VisualizacaoMesa>(lerVisualizacaoMesa);
+  const ultima2D = useRef<'personagens' | 'cadeiras'>(visualizacao === 'cadeiras' ? 'cadeiras' : 'personagens');
+  const [menuVistas, setMenuVistas] = useState(false);
+  const vista3d = visualizacao === '3d';
   const [aparenciaSalva, setAparenciaSalva] = useState<AparenciaMesa>(lerAparenciaMesa);
   const [personalizando, setPersonalizando] = useState(false);
   const aparencia = aparenciaPermitida(aparenciaSalva, temConta);
@@ -89,16 +77,18 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
     salvarAparenciaMesa(escolhida);
   };
   const [aviso3d, setAviso3d] = useState<string | null>(null);
-  const trocarVista = () => {
+  const escolherVisualizacao = (nova: VisualizacaoMesa) => {
+    if (nova !== '3d') ultima2D.current = nova;
+    setVisualizacao(nova);
+    gravarVisualizacaoMesa(nova);
     setAviso3d(null);
-    setVista3d((x) => {
-      gravarVista3D(!x);
-      return !x;
-    });
+    setMenuVistas(false);
   };
+  const trocarVista = () => escolherVisualizacao(vista3d ? ultima2D.current : '3d');
   const falhar3d = useCallback((motivo: string) => {
     console.warn('[vista 3D]', motivo);
-    setVista3d(false);
+    setVisualizacao(ultima2D.current);
+    gravarVisualizacaoMesa(ultima2D.current);
     setAviso3d('Não deu para abrir a vista 3D neste aparelho. Voltamos para a mesa normal.');
   }, []);
   const msg = snap.msg!;
@@ -134,6 +124,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
   // No ritual a última rodada só fica no centro enquanto o resumo está na tela (depois as cartas já voltaram ao monte).
   const ultimaVisivel = emRitual && !resumoMao ? null : v.ultimaMao;
   const etapa = textoEtapa(v, nome);
+  const podeTreinarEmbaralhamento = v.fase === 'embaralhando' && v.ritual?.embaralhador === minha;
   // Sem etapa do ritual: a linha do meio diz de quem é a vez e, se é de humano, quanto tempo falta.
   // Na vista 3D a cena já marca a vez (anel e segundos): a linha fica só para o ritual.
   const vezTexto = etapa || msg.janelaFamilia || vista3d ? null : textoVez(v, agentes, minha, nome, msg.prazo, agora);
@@ -165,7 +156,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
   );
 
   return (
-    <main className="tela-mesa">
+    <main className="tela-mesa" data-visualizacao={visualizacao}>
       {/* Menu da mesa: ícones no canto de cima (o nome de cada um vai no aria-label e no title). */}
       <nav className="barra-mesa" aria-label="Menu da mesa">
         {msg.sinais !== false && (
@@ -183,6 +174,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
         )}
         <button type="button" className="icone-mesa" aria-label="Personalizar mesa" title="Escolher madeira, feltro ou plástico" aria-expanded={personalizando} aria-controls="personalizar-mesa" onClick={() => setPersonalizando((v) => !v)}>
           <span aria-hidden="true">♣</span>
+        </button>
+        <button type="button" className="icone-mesa" aria-label="Visual da mesa" aria-expanded={menuVistas} aria-controls="menu-visualizacao-mesa" title="Personagens, cadeiras ou 3D" onClick={() => setMenuVistas((v) => !v)}>
+          <span aria-hidden="true">▦</span>
         </button>
         <button type="button" className="icone-mesa" aria-label="3D" title={vista3d ? 'Voltar para a mesa 2D' : 'Ver a mesa em 3D'} aria-pressed={vista3d} onClick={trocarVista}>
           <Icone3D />
@@ -209,6 +203,17 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
           <IconeSair />
         </button>
       </nav>
+      {menuVistas && (
+        <div className="menu-visualizacao-mesa" id="menu-visualizacao-mesa" role="group" aria-label="Selecionar visualização da mesa">
+          {([
+            ['personagens', 'Personagens'],
+            ['cadeiras', 'Cadeiras (vista de cima)'],
+            ['3d', '3D'],
+          ] as const).map(([id, rotulo]) => (
+            <button type="button" key={id} aria-pressed={visualizacao === id} onClick={() => escolherVisualizacao(id)}>{rotulo}</button>
+          ))}
+        </div>
+      )}
       {personalizando && (
         <SeletorAparenciaMesa
           valor={aparencia}
@@ -314,6 +319,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
         <div ref={camadaRitual} className="camada-voo" aria-hidden="true" />
       </Tampo>
       )}
+      {podeTreinarEmbaralhamento && <BaralhoNaPartida key={minha} />}
       {aviso3d && (
         <p className="aviso-3d" role="alert">
           {aviso3d}
