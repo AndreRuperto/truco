@@ -5,6 +5,8 @@ interface Props {
   valor: number | null;
   /** Pedido pendente curto ("Pediram Seis!"), ou null. */
   pedido?: string | null;
+  /** Fase/vez resumida, sem alterar cronômetro ou o estado da partida. */
+  situacao?: string;
 }
 
 /** Riscos de giz levemente tortos (4 em pé; o 5º corta os quatro). */
@@ -29,7 +31,7 @@ function Tentos({ pontos }: { pontos: number }) {
 }
 
 /** Lousa do placar: tentos riscados a giz de cada lado e o valor da mão no meio. */
-export function Placar({ nos, eles, valor, pedido = null }: Props) {
+export function Placar({ nos, eles, valor, pedido = null, situacao }: Props) {
   const rotulo = `Placar: Nós ${nos}, Eles ${eles}` + (valor !== null ? `, mão vale ${valor}` : '') + (pedido ? `, ${pedido}` : '');
   return (
     <header className="placar" role="group" aria-label={rotulo}>
@@ -45,6 +47,7 @@ export function Placar({ nos, eles, valor, pedido = null }: Props) {
           </span>
         )}
         {pedido && <span className="placar-pedido">{pedido}</span>}
+        {situacao && <span className="placar-situacao"><span aria-hidden="true" className="placar-status-ponto" />{situacao}</span>}
       </span>
       <span className="placar-lado eles">
         <strong className="placar-num">{eles}</strong>
