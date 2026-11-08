@@ -285,13 +285,7 @@
     radial-gradient(ellipse at 65% 82%, rgba(0, 14, 6, .34), transparent 72%),
     var(--feltro-mesa, #184d37);
 }
-.tela-mesa .mesa-ambiente > .tampo:not(.tampo-feltro):not(.tampo-plastico) {
-  background-image:
-    linear-gradient(90deg, rgba(35, 17, 5, .13) 0%, transparent 11%, transparent 87%, rgba(35, 17, 5, .12) 100%),
-    radial-gradient(ellipse at 45% 10%, rgba(255, 222, 165, .08), transparent 68%),
-    repeating-linear-gradient(0deg, transparent 0 10px, rgba(57, 26, 9, .043) 11px 12px),
-    var(--madeira-textura, none);
-}
+/* A madeira original mantém sua textura e efeitos 2.5D já existentes. */
 .tela-mesa .mesa-ambiente > .tampo.tampo-plastico {
   box-shadow: 0 10px 26px color-mix(in srgb, var(--sombra) 26%, transparent);
 }
