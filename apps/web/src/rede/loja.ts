@@ -129,7 +129,9 @@ export function criarLoja(o: OpcoesLoja = {}) {
     s.onDrop(() => {
       if (sala === s) {
         aguardandoEstadoAposReconexao = true;
-        mudar({ status: 'reconectando' });
+        // A mão pode avançar enquanto o jogador está offline: não exibir
+        // cartas, turno ou animações que já não correspondem ao servidor.
+        mudar({ status: 'reconectando', msg: null, movimentos: [], batida: null });
       }
     });
     s.onReconnect(() => {
