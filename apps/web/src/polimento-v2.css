@@ -1,0 +1,549 @@
+/*
+ * Truco — polimento visual v2
+ * Camada final, independente das regras. Não move hitboxes das cartas jogáveis.
+ * Direção de arte: lousa, feltro, madeira, papel e giz de um boteco brasileiro.
+ * Arquivo carregado por último para consolidar acabamento mobile e desktop.
+ */
+:root {
+  --pol-borda: color-mix(in srgb, var(--giz) 16%, transparent);
+  --pol-foco: color-mix(in srgb, var(--grito) 82%, var(--giz));
+  --pol-sombra: 0 14px 35px color-mix(in srgb, var(--sombra) 33%, transparent);
+  --pol-sombra-forte: 0 20px 46px color-mix(in srgb, var(--sombra) 50%, transparent);
+  --pol-raio: 16px;
+  --pol-rapido: 160ms;
+  --pol-suave: 260ms;
+}
+
+/* Fundamentos: áreas de toque e foco consistentes. */
+:where(.tela-mesa, .tela-conta, .lobby, .sala-espera) :where(button, a):focus-visible {
+  outline: 3px solid var(--pol-foco);
+  outline-offset: 3px;
+}
+:where(.tela-mesa, .tela-conta, .lobby, .sala-espera) button:disabled {
+  cursor: not-allowed;
+}
+:where(.tela-mesa, .tela-conta, .lobby, .sala-espera) button {
+  -webkit-tap-highlight-color: transparent;
+}
+:where(.tela-mesa, .tela-conta, .lobby, .sala-espera) :where(.botao-principal, .botao-secundario, .vitrine-mesa-botao) {
+  transition: transform var(--pol-rapido) ease, filter var(--pol-rapido) ease,
+    box-shadow var(--pol-suave) ease, border-color var(--pol-rapido) ease;
+}
+
+/* Superfícies: mesmo acabamento em salas, ranking, histórico, conta e lobby. */
+.tela-conta .pagina-abertura h1,
+.tela-conta .pagina-abertura h2 {
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+.tela-conta .pagina-abertura p { line-height: 1.65; }
+.tela-conta :where(.formulario, .mesa-vazia, .painel-abas, .cartao-variante, .editar-perfil, .historico-item) {
+  box-shadow: var(--pol-sombra);
+}
+.tela-conta .pagina-selo { letter-spacing: .15em; }
+.tela-conta :where(.lista-mesas .mesa-lista-item, .historico-item, .cartao-variante) {
+  transition: border-color var(--pol-suave), transform var(--pol-suave), box-shadow var(--pol-suave);
+}
+@media (hover: hover) {
+  .tela-conta :where(.lista-mesas .mesa-lista-item, .historico-item, .cartao-variante):hover {
+    box-shadow: var(--pol-sombra-forte);
+    transform: translateY(-3px);
+  }
+}
+.tela-conta :where(.vazio, .mesa-vazia, .historico-vazio) {
+  border-radius: var(--pol-raio);
+}
+.lobby .letreiro {
+  text-wrap: balance;
+}
+.lobby .formulario {
+  border: 1px solid var(--pol-borda);
+  box-shadow: var(--pol-sombra-forte);
+}
+.lobby .lobby-principal .botao-principal {
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+
+/* Salas e espera: leitura rápida de vagas, regras e convite. */
+.sala-espera .sala-mesa {
+  border-radius: var(--pol-raio);
+}
+.sala-espera :where(.sala-regras, .convite, .sala-truques) {
+  box-shadow: var(--pol-sombra);
+}
+.sala-espera .lugar-espera.vago .cadeira-vaga {
+  outline: 2px dashed color-mix(in srgb, var(--grito) 27%, transparent);
+  outline-offset: 4px;
+}
+.sala-espera .lugar-espera:not(.vago) .avatar {
+  box-shadow: 0 0 0 2px var(--lousa), 0 0 0 4px color-mix(in srgb, var(--giz) 19%, transparent);
+}
+.sala-espera .lugar-espera.nossa:not(.vago) .avatar {
+  box-shadow: 0 0 0 2px var(--lousa), 0 0 0 5px var(--nos);
+}
+.sala-espera .convite-linha :where(input, button) { min-height: 44px; }
+.vitrine-mesas-grade .vitrine-mesa-card {
+  box-shadow: 0 16px 33px color-mix(in srgb, var(--sombra) 33%, transparent);
+}
+.vitrine-mesa-imagem .vitrine-mesa-oval {
+  transition: transform var(--pol-suave) ease, filter var(--pol-suave) ease;
+}
+@media (hover: hover) {
+  .vitrine-mesa-card:hover .vitrine-mesa-oval {
+    transform: perspective(700px) rotateX(7deg) scale(1.025);
+    filter: brightness(1.07);
+  }
+}
+.salas-com-vitrine .salas-listagem {
+  scroll-margin-top: 12px;
+}
+
+/* Ranking: separar pódio e classificação com um ar de campeonato. */
+.podio-secao {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 14px 14px 0 0;
+}
+.podio-secao::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 0, rgba(239, 184, 71, .1), transparent 62%);
+}
+.podio-item.posicao-1 .podio-medalha {
+  filter: drop-shadow(0 2px 8px rgba(244, 198, 94, .19));
+}
+.podio-ranking > li { transition: transform var(--pol-suave); }
+@media (hover: hover) {
+  .podio-ranking > li:hover { transform: translateY(-4px); }
+}
+.tabela-ranking th { letter-spacing: .04em; }
+.tabela-ranking tbody tr:nth-child(odd) {
+  background: color-mix(in srgb, var(--madeira) 3%, var(--papel));
+}
+.tabela-ranking tbody tr:focus-within {
+  outline: 2px solid var(--grito);
+  outline-offset: -2px;
+}
+
+/* Perfil: carteirinha com sensação de acabamento físico. */
+.perfil-apresentacao {
+  background:
+    radial-gradient(ellipse at 10% 0%, color-mix(in srgb, var(--grito) 12%, transparent), transparent 70%),
+    repeating-linear-gradient(125deg, transparent 0 15px, color-mix(in srgb, var(--giz) 2%, transparent) 15px 16px),
+    var(--lousa);
+}
+.perfil-apresentacao .avatar { filter: drop-shadow(0 4px 9px color-mix(in srgb, var(--sombra) 25%, transparent)); }
+.patente-emblema { box-shadow: 0 5px 14px color-mix(in srgb, var(--sombra) 22%, transparent); }
+.conquista.feita .medalha {
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--grito) 22%, transparent));
+}
+.conquistas progress { accent-color: var(--grito); }
+.historico-resumo strong { font-variant-numeric: tabular-nums; }
+.historico-item {
+  position: relative;
+  overflow: hidden;
+}
+.historico-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: var(--tom, var(--madeira));
+  opacity: .62;
+}
+.historico-placar span { font-variant-numeric: tabular-nums; }
+
+/* Placar da partida: situação discreta, legível e integrada. */
+.tela-mesa > .placar {
+  position: relative;
+  isolation: isolate;
+  backdrop-filter: blur(4px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--giz) 9%, transparent),
+    0 10px 26px color-mix(in srgb, var(--sombra) 30%, transparent);
+}
+.tela-mesa .placar-centro { gap: 3px; }
+.tela-mesa .placar-situacao {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  max-width: min(100%, 250px);
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--giz) 13%, transparent);
+  border-radius: 99px;
+  color: var(--giz-suave);
+  background: color-mix(in srgb, var(--lousa-noite) 60%, transparent);
+  font: 700 .73rem/1.2 var(--fonte-ui);
+  letter-spacing: .015em;
+  text-align: center;
+  text-wrap: balance;
+}
+.tela-mesa .placar-status-ponto {
+  flex: 0 0 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--grito);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--grito) 14%, transparent);
+}
+.tela-mesa .placar-pedido {
+  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--sombra) 26%, transparent));
+}
+
+/* Visibilidade da vez, conexão e pedidos. Sem depender somente de cor. */
+.tela-mesa .assento {
+  position: relative;
+}
+.tela-mesa .assento.da-vez .assento-nome {
+  outline: 2px solid var(--grito);
+  outline-offset: 2px;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--grito) 16%, transparent);
+}
+.tela-mesa .assento.da-vez .assento-nome .avatar {
+  filter: drop-shadow(0 2px 5px color-mix(in srgb, var(--grito) 28%, transparent));
+}
+.tela-mesa[data-visualizacao='personagens'] .lugar:has(.assento.da-vez) {
+  filter: brightness(1.09);
+}
+.tela-mesa .assento.caiu .assento-nome {
+  border-style: dashed;
+  opacity: .8;
+}
+.tela-mesa .balao {
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--sombra) 35%, transparent);
+}
+.tela-mesa .balao.grito {
+  text-shadow: 0 2px 8px color-mix(in srgb, var(--sombra) 38%, transparent);
+}
+.tela-mesa .balao.grito::before {
+  content: '✦';
+  position: absolute;
+  left: -15px;
+  top: -6px;
+  color: var(--grito);
+  font-size: .75rem;
+}
+.tela-mesa .balao.grito::after {
+  content: '✦';
+  position: absolute;
+  right: -15px;
+  bottom: -6px;
+  color: var(--grito);
+  font-size: .65rem;
+}
+.tela-mesa .lugar:has(.assento.da-vez) .personagem {
+  transform-origin: center bottom;
+  animation: pol-personagem-vez 2.4s ease-in-out infinite;
+}
+@keyframes pol-personagem-vez {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Cartas: feedback físico delicado sem interferir com drag & drop. */
+.tela-mesa .carta {
+  transition: box-shadow var(--pol-rapido) ease, filter var(--pol-rapido) ease;
+}
+.tela-mesa .jogada:not([data-anim]) .carta {
+  animation: pol-carta-na-mesa 270ms cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes pol-carta-na-mesa {
+  from { filter: brightness(1.08) drop-shadow(0 9px 8px color-mix(in srgb, var(--sombra) 38%, transparent)); }
+  to { filter: brightness(1) drop-shadow(0 1px 1px color-mix(in srgb, var(--sombra) 18%, transparent)); }
+}
+.tela-mesa .carta-botao.jogavel:not(.arrastando) .carta {
+  backface-visibility: hidden;
+}
+@media (hover: hover) {
+  .tela-mesa .carta-botao.jogavel:hover:not(.arrastando) .carta {
+    box-shadow: 0 14px 22px color-mix(in srgb, var(--sombra) 42%, transparent);
+    filter: brightness(1.03);
+  }
+}
+.tela-mesa .carta-botao.vai-jogar .carta {
+  outline: 3px solid var(--grito);
+  outline-offset: 2px;
+  box-shadow: 0 16px 30px color-mix(in srgb, var(--sombra) 50%, transparent);
+}
+.tela-mesa .carta-botao:focus-visible {
+  outline: 3px solid var(--grito);
+}
+.tela-mesa .carta-botao:disabled .carta { filter: saturate(.94); }
+
+/* Mesa/feltro: profundidade sem modificar colisão, dimensões ou quadriculado. */
+.tela-mesa .mesa-ambiente > .tampo.tampo-feltro::after {
+  background:
+    radial-gradient(ellipse at 36% 22%, rgba(180, 210, 150, .19), transparent 54%),
+    repeating-linear-gradient(45deg, rgba(232, 246, 205, .017) 0 1px, transparent 1px 5px),
+    radial-gradient(ellipse at 65% 82%, rgba(0, 14, 6, .34), transparent 72%),
+    var(--feltro-mesa, #184d37);
+}
+.tela-mesa .mesa-ambiente > .tampo:not(.tampo-feltro):not(.tampo-plastico) {
+  background-image:
+    linear-gradient(90deg, rgba(35, 17, 5, .13) 0%, transparent 11%, transparent 87%, rgba(35, 17, 5, .12) 100%),
+    radial-gradient(ellipse at 45% 10%, rgba(255, 222, 165, .08), transparent 68%),
+    repeating-linear-gradient(0deg, transparent 0 10px, rgba(57, 26, 9, .043) 11px 12px),
+    var(--madeira-textura, none);
+}
+.tela-mesa .mesa-ambiente > .tampo.tampo-plastico {
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--sombra) 26%, transparent);
+}
+
+/* Ações: a única opção disponível recebe hierarquia, as demais continuam equivalentes. */
+.tela-mesa .barra-acoes .acao {
+  position: relative;
+  isolation: isolate;
+  min-height: 48px;
+  border-radius: 11px;
+  line-height: 1.15;
+  transition: transform var(--pol-rapido), box-shadow var(--pol-rapido), filter var(--pol-rapido);
+}
+.tela-mesa .barra-acoes .acao-destaque {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--giz) 15%, transparent),
+    0 5px 15px color-mix(in srgb, var(--sombra) 34%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--grito) 38%, transparent);
+  outline-offset: 1px;
+}
+@media (hover: hover) {
+  .tela-mesa .barra-acoes .acao:not(:disabled):hover {
+    transform: translateY(-2px);
+    filter: brightness(1.06);
+  }
+}
+.tela-mesa .barra-acoes .acao:not(:disabled):active {
+  transform: translateY(1px);
+}
+.tela-mesa .janela-familia {
+  border: 1px solid color-mix(in srgb, var(--grito) 35%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--sombra) 25%, transparent);
+}
+
+/* Personalização: showroom de mesas com prévia em tamanho maior. */
+.personalizar-mesa { box-shadow: var(--pol-sombra-forte); }
+.personalizar-mesa-hero {
+  display: grid;
+  place-items: center;
+  min-height: 146px;
+  margin: 8px 0 14px;
+  overflow: hidden;
+  border: 1px solid var(--pol-borda);
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse at center, rgba(68, 92, 63, .4), transparent 68%),
+    linear-gradient(155deg, #0f1b17, #15241e);
+}
+.personalizar-mesa-preview {
+  --preview-pano: #87562e;
+  display: grid;
+  place-items: center;
+  width: min(260px, 82%);
+  aspect-ratio: 2.35 / 1;
+  border-radius: 14px;
+  border: 8px solid #5d3921;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 8px, rgba(51, 24, 7, .07) 9px),
+    radial-gradient(ellipse at 40% 29%, rgba(255, 236, 180, .14), transparent),
+    var(--preview-pano);
+  box-shadow: inset 0 0 0 2px rgba(231, 188, 107, .46), 0 13px 18px rgba(0, 0, 0, .4);
+  transform: perspective(600px) rotateX(9deg);
+  transition: border-radius var(--pol-suave), background-color var(--pol-suave);
+}
+.personalizar-mesa-preview.amostra-feltro {
+  --preview-pano: #1d6342;
+  border-radius: 50% / 46%;
+}
+.personalizar-mesa-preview.amostra-plastico {
+  --preview-pano: #f4c430;
+  border-color: #c38c10;
+  border-radius: 18px;
+}
+.personalizar-mesa-preview .preview-aro {
+  display: grid;
+  place-items: center;
+  width: 80%;
+  height: 72%;
+  border: 1px solid rgba(245, 237, 177, .16);
+  border-radius: inherit;
+}
+.personalizar-mesa-preview .preview-cartas {
+  color: #f8f1df;
+  font-weight: 800;
+  letter-spacing: .25em;
+  text-shadow: 0 2px 4px #1d160f;
+  transform: rotate(-8deg);
+}
+.personalizar-mesa-opcao[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px var(--grito), 0 3px 12px color-mix(in srgb, var(--grito) 12%, transparent);
+}
+.personalizar-mesa-opcao:disabled { opacity: .68; }
+.personalizar-selecionada { color: var(--grito); }
+
+/* Fim de mão e resultado: apresentação de campeonato, sem números inventados. */
+.overlay .overlay-caixa.resultado-partida {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: min(96vw, 480px);
+  padding: clamp(20px, 5vw, 36px);
+  border-radius: 20px;
+  box-shadow: var(--pol-sombra-forte);
+}
+.overlay .resultado-partida::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% -20%, color-mix(in srgb, var(--grito) 18%, transparent), transparent 68%),
+    repeating-linear-gradient(150deg, transparent 0 16px, color-mix(in srgb, var(--giz) 2%, transparent) 16px 17px);
+}
+.resultado-decoracao {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 12px;
+  border: 2px solid var(--grito);
+  border-radius: 50%;
+  color: var(--grito);
+  background: color-mix(in srgb, var(--grito) 10%, var(--lousa));
+  box-shadow: 0 8px 25px color-mix(in srgb, var(--sombra) 28%, transparent);
+  font-size: 2.3rem;
+  animation: pol-resultado-medalha 500ms cubic-bezier(.2,.8,.2,1) both;
+}
+.resultado-partida.derrota .resultado-decoracao {
+  color: var(--giz-suave);
+  border-color: var(--pol-borda);
+}
+.resultado-selo {
+  display: block;
+  color: var(--grito);
+  font-size: .73rem;
+  font-weight: 900;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+.resultado-partida h2 { margin: 7px 0; text-wrap: balance; }
+.resultado-partida .resultado-placar {
+  display: inline-block;
+  margin: 4px 0 7px;
+  padding: 7px 15px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--lousa-noite) 72%, transparent);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.05rem, 3.5vw, 1.3rem);
+  font-weight: 900;
+}
+.resultado-partida .resultado-legenda {
+  max-width: 30ch;
+  margin: 4px auto 22px;
+  color: var(--giz-suave);
+  line-height: 1.5;
+}
+@keyframes pol-resultado-medalha {
+  from { transform: translateY(14px) scale(.82); opacity: .35; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Layout mobile: uma área para ler a mesa, uma para tomar decisões. */
+@media (max-width: 700px) and (orientation: portrait) {
+  .tela-mesa {
+    --altura-mesa-mobile: clamp(224px, 34dvh, 286px);
+    gap: 3px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+  .tela-mesa > .mesa-ambiente,
+  .tela-mesa > .mesa-3d { height: var(--altura-mesa-mobile); }
+  .tela-mesa .placar-centro { gap: 1px; }
+  .tela-mesa .placar-situacao {
+    max-width: 128px;
+    padding: 2px 5px;
+    gap: 4px;
+    font-size: .66rem;
+  }
+  .tela-mesa .placar-status-ponto { flex-basis: 5px; height: 5px; }
+  .tela-mesa > .placar { min-height: 50px; }
+  .tela-mesa .minha-mao { position: relative; z-index: 4; }
+  .tela-mesa .minha-mao .cartas {
+    gap: clamp(3px, 2vw, 9px);
+  }
+  .tela-mesa .carta-botao.jogavel:active:not(.arrastando) {
+    transform: translateY(-7px);
+  }
+  .tela-mesa > .cronometro {
+    height: 14px;
+    border-radius: 99px;
+  }
+  .tela-mesa .rodape-mesa {
+    position: sticky;
+    z-index: 25;
+    bottom: env(safe-area-inset-bottom);
+    align-self: end;
+    padding: 7px 6px;
+    border: 1px solid color-mix(in srgb, var(--giz) 15%, transparent);
+    border-radius: 13px;
+    background: color-mix(in srgb, var(--lousa-noite) 96%, transparent);
+    box-shadow: 0 -8px 24px color-mix(in srgb, var(--sombra) 29%, transparent);
+  }
+  .tela-mesa .barra-acoes .acao {
+    min-height: 48px;
+    font-size: clamp(.96rem, 3.8vw, 1.14rem);
+  }
+  .tela-mesa .janela-familia {
+    box-shadow: none;
+    border-radius: 9px;
+  }
+  .tela-mesa .barra-mesa {
+    scroll-snap-type: x proximity;
+  }
+  .tela-mesa .barra-mesa .icone-mesa {
+    scroll-snap-align: start;
+    flex: 0 0 41px;
+    min-width: 41px;
+    min-height: 41px;
+  }
+  .tela-mesa .menu-visualizacao-mesa { right: 8px; }
+  .tela-mesa .baralho-na-partida {
+    max-height: min(245px, var(--altura-mesa-mobile));
+  }
+  .tela-mesa .dica-mesa {
+    top: calc(66px + env(safe-area-inset-top));
+  }
+  .personalizar-mesa-hero { min-height: 110px; }
+  .personalizar-mesa-preview { width: min(200px, 75%); }
+}
+@media (max-width: 380px) and (orientation: portrait) {
+  .tela-mesa { --altura-mesa-mobile: clamp(214px, 33dvh, 250px); }
+  .tela-mesa .placar-situacao { max-width: 110px; font-size: .62rem; }
+  .tela-mesa .assento-nome { max-width: 100%; overflow-wrap: anywhere; }
+  .tela-mesa .barra-acoes .acao { min-height: 46px; }
+}
+@media (max-width: 700px) and (orientation: landscape) {
+  .tela-mesa .placar-situacao { font-size: .65rem; }
+}
+
+/* Redução de movimento é prioridade: sem pulsos, flutuações ou transições longas. */
+@media (prefers-reduced-motion: reduce) {
+  .tela-mesa .lugar:has(.assento.da-vez) .personagem,
+  .tela-mesa .jogada:not([data-anim]) .carta,
+  .resultado-decoracao { animation: none !important; }
+  .tela-mesa .carta,
+  .tela-mesa .barra-acoes .acao,
+  .vitrine-mesa-imagem .vitrine-mesa-oval,
+  .personalizar-mesa-preview,
+  .tela-conta :where(.lista-mesas .mesa-lista-item, .historico-item, .cartao-variante) {
+    transition: none !important;
+  }
+  .podio-ranking > li:hover,
+  .vitrine-mesa-card:hover .vitrine-mesa-oval {
+    transform: none !important;
+  }
+}
