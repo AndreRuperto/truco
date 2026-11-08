@@ -128,6 +128,10 @@ describe('loja', () => {
     expect(sala.enviados).toHaveLength(antes);
     sala.emit('reconnect');
     expect(sala.enviados.at(-1)).toEqual(['sincronizar', undefined]);
+    const antesDoEstado = sala.enviados.length;
+    loja.enviarAcao({ tipo: 'truco', cadeira: 0 });
+    expect(sala.enviados).toHaveLength(antesDoEstado);
+    sala.receber('estado', msgEstado(distribuida(PAULISTA)));
     loja.enviarAcao({ tipo: 'truco', cadeira: 0 });
     expect(sala.enviados.at(-1)).toEqual(['acao', { tipo: 'truco', cadeira: 0 }]);
   });
