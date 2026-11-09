@@ -56,7 +56,7 @@ describe('família na Mesa', () => {
       } else {
         // A terceira fechada esgota o limite; sem família real, não há decisão pendente.
         expect(t.estado('a')!.janelaFamilia).toBeNull();
-        expect(t.estado('a')!.prazo?.cadeiras).not.toContain(0);
+        expect(t.estado('a')!.prazo?.cadeiras ?? []).not.toContain(0);
       }
       expect(t.estado('a')!.minhasAcoes.some((a) => a.tipo === 'familia')).toBe(n < 3);
     }
