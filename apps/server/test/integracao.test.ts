@@ -212,6 +212,29 @@ describe('MesaRoom', () => {
     expect(mb.estado.at(-1).minhaCadeira).toBe(2);
   });
 
+  test('quatro humanos ocupam cadeiras distintas, recebem visões privadas e iniciam juntos', async () => {
+    const sala = await colyseus.createRoom('mesa', { variante: 'paulista', humanos: 4 });
+    const nomes = ['Ana', 'Bia', 'Cid', 'Duda'];
+    const clientes = [];
+    const mensagens = [];
+    for (const nome of nomes) {
+      const cliente = await colyseus.connectTo(sala, { nome });
+      clientes.push(cliente);
+      mensagens.push(coletor(cliente));
+    }
+    await esperar(() => mensagens.every((m) => m.estado?.some((e) => e.visao?.mao)), 10_000);
+    const estados = mensagens.map((m) => m.estado.at(-1));
+    expect(new Set(estados.map((e) => e.minhaCadeira)).size).toBe(4);
+    expect(estados.every((e) => e.cadeiras.filter((c: any) => c.tipo === 'humano').length === 4)).toBe(true);
+    for (const estado of estados) {
+      expect(estado.visao.cadeira).toBe(estado.minhaCadeira);
+      expect(estado.visao.mao.minhaMao).toHaveLength(3);
+      expect(estado.visao.mao.maoParceiro).toBeNull();
+      expect(JSON.stringify(estado)).not.toContain('"maos"');
+    }
+    expect(clientes.every((cliente) => cliente.roomId === sala.roomId)).toBe(true);
+  });
+
   test('matchmaking separa por variante, humanos e nível do bot', async () => {
     const a = await colyseus.sdk.joinOrCreate('mesa', { variante: 'mineiro', humanos: 2, nivelBot: 'facil', nome: 'Ana' });
     coletor(a);
