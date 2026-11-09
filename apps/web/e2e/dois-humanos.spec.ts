@@ -213,7 +213,7 @@ test('quatro humanos completam partida até o placar final', async ({ browser })
     for (const page of paginas) {
       await expect(page.getByText('Partida encerrada', { exact: true })).toBeVisible({ timeout: 10_000 });
       const rotulo = await page.getByRole('group', { name: /^Placar: Nós / }).getAttribute('aria-label');
-      const match = rotulo?.match(/^Placar: Nós (\\d+), Eles (\\d+)/);
+      const match = rotulo?.match(/^Placar: Nós (\d+), Eles (\d+)/);
       expect(match, `placar final inválido: ${rotulo}`).not.toBeNull();
       placares.push({ nos: Number(match![1]), eles: Number(match![2]) });
     }
