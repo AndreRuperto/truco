@@ -160,8 +160,14 @@ export function criarLoja(o: OpcoesLoja = {}) {
       }
       const consentida = code === SAIDA_CONSENTIDA;
       const terminou = estado.msg?.visao?.fase === 'fimPartida';
-      largar(consentida || terminou);
-      if (!consentida) erro('Conexão com a mesa perdida');
+      if (!consentida && !terminou) {
+        // Uma aba móvel pode perder o WebSocket quando fica em segundo plano.
+        // Não descarte a mesa nem a cadeira: o token ainda permite voltar.
+        aguardandoEstadoAposReconexao = true;
+        mudar({ status: 'reconectando', msg: null, movimentos: [], batida: null });
+        return;
+      }
+      largar(true);
     });
     persistir(s.reconnectionToken);
     mudar({ status: 'na-mesa', msg: null, eventos: [], chat: [], salaId: s.roomId, batida: null, movimentos: [] });
@@ -212,6 +218,8 @@ export function criarLoja(o: OpcoesLoja = {}) {
         // já estamos fora; o servidor trata a queda como saída depois de 60 s
       }
     },
+    /** Desiste da recuperação e permite voltar ao lobby manualmente. */
+    desistirReconexao: () => largar(true),
     limparErro: (id: number) => {
       if (estado.erro?.id === id) mudar({ erro: null });
     },
