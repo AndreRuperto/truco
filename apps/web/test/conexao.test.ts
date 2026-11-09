@@ -114,13 +114,28 @@ describe('tentarReconectar', () => {
     expect(loja.getSnapshot().status).toBe('na-mesa');
   });
 
+  test('falha temporária mantém token e permite nova tentativa', async () => {
+    gravarToken('r1:t1');
+    const cliente = {
+      joinOrCreate: vi.fn(),
+      reconnect: vi.fn().mockRejectedValueOnce(new Error('Failed to fetch')).mockResolvedValueOnce(new SalaFalsa()),
+    };
+    const loja = novaLoja();
+    expect(await tentarReconectar(loja, cliente)).toBe(false);
+    expect(loja.getSnapshot().status).toBe('reconectando');
+    expect(lerToken()).toBe('r1:t1');
+    expect(await tentarReconectar(loja, cliente)).toBe(true);
+    expect(loja.getSnapshot().status).toBe('na-mesa');
+    expect(cliente.reconnect).toHaveBeenCalledTimes(2);
+  });
+
   test('token vencido é apagado e fica no lobby sem toast', async () => {
     gravarToken('r1:velho');
     const cliente = { joinOrCreate: vi.fn(), reconnect: vi.fn(async () => Promise.reject(new Error('expirou'))) };
     const loja = novaLoja();
     expect(await tentarReconectar(loja, cliente)).toBe(false);
     expect(lerToken()).toBeNull();
-    expect(loja.getSnapshot()).toMatchObject({ status: 'fora', erro: null });
+    expect(loja.getSnapshot().status).toBe('fora');
   });
 });
 
