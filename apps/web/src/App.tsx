@@ -4,7 +4,7 @@ import { Cabecalho } from './componentes/Cabecalho';
 import { FundoCartas } from './componentes/FundoCartas';
 import { Toast } from './componentes/Toast';
 import { formInicial, gravarAvatarLocal, lerApelido, lerAvatarLocal, lerPreferenciasLocais, type OpcoesEntrada, opcoesDeEntrada, opcoesDeVitrine } from './logica/lobby';
-import { criarMesaAberta, criarMesaPrivada, entrarNaMesa, entrarPorCodigo, tentarReconectar } from './rede/conexao';
+import { criarMesaAberta, criarMesaPrivada, entrarNaMesa, entrarPorCodigo, lerToken, tentarReconectar } from './rede/conexao';
 import { useFila, useLoja, useSessao } from './rede/hooks';
 import { api, loja, lojaFila, sessao } from './rede/instancia';
 import { navegar, useRota } from './rede/rota';
@@ -100,6 +100,26 @@ export function App() {
     void sessao.carregar();
   }, []);
 
+  useEffect(() => {
+    if (snap.status !== 'reconectando') return;
+    const tentar = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine && lerToken()) {
+        void tentarReconectar(loja);
+      }
+    };
+    // O Android pode congelar timers em segundo plano; visibilitychange
+    // garante uma tentativa imediata quando o jogador retorna à aba.
+    document.addEventListener('visibilitychange', tentar);
+    window.addEventListener('online', tentar);
+    const intervalo = window.setInterval(tentar, 5000);
+    tentar();
+    return () => {
+      document.removeEventListener('visibilitychange', tentar);
+      window.removeEventListener('online', tentar);
+      window.clearInterval(intervalo);
+    };
+  }, [snap.status]);
+
   const aoEntrar = useCallback((u: UsuarioApi) => {
     sessao.definirUsuario(u);
     // substitui #/entrar: "voltar" depois de entrar não reabre a tela de login
@@ -108,6 +128,14 @@ export function App() {
 
   let tela;
   if (snap.status === 'conectando') tela = <p className="aviso-centro">Conectando…</p>;
+  else if (snap.status === 'reconectando') tela = (
+    <main className="aviso-centro" role="status">
+      <p>Recuperando sua mesa e sua cadeira…</p>
+      <p>Ao voltar para esta aba, a conexão será tentada automaticamente.</p>
+      <button type="button" onClick={() => void tentarReconectar(loja)}>Tentar novamente</button>
+      <button type="button" onClick={() => loja.desistirReconexao()}>Voltar ao início</button>
+    </main>
+  );
   else if (snap.status !== 'fora') {
     if (!snap.msg) tela = <p className="aviso-centro">Entrando na mesa…</p>;
     else if (!snap.msg.visao)
