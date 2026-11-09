@@ -51,7 +51,13 @@ describe('família na Mesa', () => {
       avancarAte(() => t.estado('a')?.visao?.fase === 'jogando', 1, 1000);
       expect(t.estado('a')!.visao!.mao!.familias.filter((f) => f.tipo === 'fechada')).toHaveLength(n);
       // Após três fechadas, quem não tem família verdadeira é dispensado automaticamente.
-      if (n < 3) expect(t.estado('a')!.janelaFamilia).not.toBeNull();
+      if (n < 3) {
+        expect(t.estado('a')!.janelaFamilia).not.toBeNull();
+      } else {
+        // A terceira fechada esgota o limite; sem família real, não há decisão pendente.
+        expect(t.estado('a')!.janelaFamilia).toBeNull();
+        expect(t.estado('a')!.prazo?.cadeiras).not.toContain(0);
+      }
       expect(t.estado('a')!.minhasAcoes.some((a) => a.tipo === 'familia')).toBe(n < 3);
     }
     // A quarta só pode ser aberta (e somente com uma família real).
