@@ -254,7 +254,10 @@ export class MesaRoom extends Room {
     // código de saída não é consentido (cai aqui), mas não há para onde reconectar.
     if (this.cancelada || this.mesa.cadeiraDe(client.sessionId) === null) return;
     this.mesa.desconectar(client.sessionId);
-    this.allowReconnection(client, 60).catch(() => {});
+    // Navegadores móveis suspendem abas em segundo plano por vários minutos.
+    // Preserve a cadeira durante esse intervalo em vez de tratar a troca de app
+    // (por exemplo, compartilhar o convite) como abandono imediato.
+    this.allowReconnection(client, 300).catch(() => {});
   }
 
   onReconnect(client: Client) {
