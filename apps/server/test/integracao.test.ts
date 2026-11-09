@@ -125,6 +125,24 @@ describe('MesaRoom', () => {
     await expect(colyseus.connectTo(sala, { nome: 'Bia' })).rejects.toThrow();
   });
 
+  test('saída definitiva durante a partida substitui o humano por bot e mantém a mesa ativa', async () => {
+    const sala = await colyseus.createRoom('mesa', { variante: 'paulista', humanos: 2 });
+    const ana = await colyseus.connectTo(sala, { nome: 'Ana' });
+    const mensagensAna = coletor(ana);
+    const bia = await colyseus.connectTo(sala, { nome: 'Bia' });
+    const mensagensBia = coletor(bia);
+    await esperar(() => !!mensagensAna.estado?.some((m) => m.visao) && !!mensagensBia.estado?.some((m) => m.visao), 10_000);
+    const cadeiraBia = mensagensBia.estado.at(-1).minhaCadeira;
+    await bia.leave(true);
+    await esperar(() => mensagensAna.estado?.some((m) => m.cadeiras?.[cadeiraBia]?.tipo === 'bot'), 10_000);
+    expect(mensagensAna.estado.at(-1).cadeiras[cadeiraBia].tipo).toBe('bot');
+    expect(matchMaker.getRoomById(sala.roomId)).toBeDefined();
+    const antes = mensagensAna.estado.length;
+    ana.send('sincronizar');
+    await esperar(() => mensagensAna.estado.length > antes);
+    expect(mensagensAna.estado.at(-1).cadeiras[cadeiraBia].tipo).toBe('bot');
+  });
+
   test('sincronizar reenvia o estado', async () => {
     const sala = await colyseus.createRoom('mesa', { humanos: 2 });
     const a = await colyseus.connectTo(sala, { nome: 'Ana' });
