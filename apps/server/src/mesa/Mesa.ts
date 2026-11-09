@@ -9,6 +9,9 @@ import {
   type Carta,
   completarSorte,
   ehAcaoJogador,
+  ehFamilia,
+  fechadasUsadas,
+  LIMITE_FAMILIAS_FECHADAS,
   ehFaseRitual,
   embaralhar,
   ErroJogada,
@@ -497,6 +500,16 @@ export class Mesa {
    */
   private atualizar(forcar = false): void {
     const s = this.estado;
+    // Após três fechadas, quem não tem uma família verdadeira só poderia
+    // passar. O servidor registra a decisão automaticamente, sem esperar o timer.
+    if (s?.mao && this.janela && !this.janela.fechada &&
+        janelaDeFamilia(s) && fechadasUsadas(s.mao) >= LIMITE_FAMILIAS_FECHADAS) {
+      for (const c of CADEIRAS) {
+        if (this.humanoAtivo(c) && !this.janela.decidiram.has(c) &&
+            !ehFamilia(s.mao.maos[c])) this.janela.decidiram.add(c);
+      }
+      if (!this.janelaAberta()) this.janela.fechada = true;
+    }
     const chave = s ? this.chaveDoTurno(s) : null;
     if (!forcar && chave !== null && chave === this.chaveTurno) {
       this.enviarEstados();
