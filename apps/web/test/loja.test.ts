@@ -194,6 +194,28 @@ describe('loja', () => {
     expect(nova.enviados.at(-1)).toEqual(['iniciar', undefined]);
   });
 
+  test('mensagens atrasadas da sala anterior não sobrescrevem a partida atual', () => {
+    const { loja, sala: antiga, tokens } = montar();
+    loja.conectar(antiga);
+    const nova = new SalaFalsa();
+    nova.roomId = 'r2';
+    nova.reconnectionToken = 'r2:t1';
+    loja.conectar(nova);
+    const atual = msgEstado(distribuida(PAULISTA));
+    nova.receber('estado', atual);
+    antiga.receber('estado', msgEstado(distribuida(PAULISTA)));
+    antiga.receber('acao', { cadeira: 1, tipo: 'embaralhar' });
+    antiga.receber('erro', { mensagem: 'erro antigo' });
+    antiga.emit('drop', 1006);
+    antiga.emit('reconnect');
+    antiga.emit('leave', 1006);
+    expect(loja.getSnapshot()).toMatchObject({
+      status: 'na-mesa', salaId: 'r2', msg: atual, erro: null, movimentos: [],
+    });
+    expect(tokens.at(-1)).toBe('r2:t1');
+    expect(nova.enviados).toEqual([['sincronizar', undefined]]);
+  });
+
   test('envia ações, sinais, falas e iniciar', () => {
     const { loja, sala } = montar();
     loja.conectar(sala);
