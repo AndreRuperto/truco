@@ -76,6 +76,10 @@
     --marcador: 14px;
     width: 100%;
     max-width: 100vw;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    /* Sombras e cadeiras deslocadas não podem alargar o documento. */
+    overflow-x: clip;
     min-height: 100dvh;
     grid-template-rows: auto auto minmax(0, var(--altura-mesa-mobile)) auto auto auto;
     align-content: start;
