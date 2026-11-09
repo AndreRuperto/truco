@@ -34,7 +34,10 @@ test('mesa no celular não estica e continua dentro da largura', async ({ page }
 
   const dimensoes = await arena.boundingBox();
   expect(dimensoes).not.toBeNull();
-  expect(dimensoes!.height).toBeLessThanOrEqual(290);
+  // A arena ocupa parte expressiva do eixo Y (mesa-mobile.css: 57dvh em telas altas).
+  // A antiga regra <= 290px contradizia o CSS responsivo e reprovava melhorias corretas.
+  expect(dimensoes!.height / 740).toBeGreaterThanOrEqual(0.48);
+  expect(dimensoes!.height / 740).toBeLessThanOrEqual(0.68);
   expect(dimensoes!.width).toBeLessThanOrEqual(360);
 
   const extravasa = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
