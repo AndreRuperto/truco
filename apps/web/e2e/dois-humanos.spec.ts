@@ -217,11 +217,14 @@ test('quatro humanos completam partida até o placar final', async ({ browser })
       expect(match, `placar final inválido: ${rotulo}`).not.toBeNull();
       placares.push({ nos: Number(match![1]), eles: Number(match![2]) });
     }
-    // Ana/Cid (0/2) são uma dupla; Bia/Duda (1/3), a outra.
-    expect(placares[0]).toEqual(placares[2]);
-    expect(placares[1]).toEqual(placares[3]);
-    expect(placares[0].nos).toBe(placares[1].eles);
-    expect(placares[0].eles).toBe(placares[1].nos);
+    // O matchmaking pode atribuir qualquer cadeira a cada nome. Compare as
+    // perspectivas efetivas, não a ordem em que os navegadores entraram.
+    const [referencia] = placares;
+    const mesmaDupla = placares.filter((p) => p.nos === referencia.nos && p.eles === referencia.eles);
+    const outraDupla = placares.filter((p) => p.nos === referencia.eles && p.eles === referencia.nos);
+    expect(mesmaDupla).toHaveLength(2);
+    expect(outraDupla).toHaveLength(2);
+    expect(referencia.nos).not.toBe(referencia.eles);
     // A partida só encerra quando uma das duplas atinge a meta.
     expect(Math.max(placares[0].nos, placares[0].eles)).toBeGreaterThanOrEqual(12);
     expect(Math.min(placares[0].nos, placares[0].eles)).toBeLessThan(12);
