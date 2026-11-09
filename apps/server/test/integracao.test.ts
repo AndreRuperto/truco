@@ -216,7 +216,7 @@ describe('MesaRoom', () => {
     const sala = await colyseus.createRoom('mesa', { variante: 'paulista', humanos: 4 });
     const nomes = ['Ana', 'Bia', 'Cid', 'Duda'];
     const clientes = [];
-    const mensagens = [];
+    const mensagens: ReturnType<typeof coletor>[] = [];
     for (const nome of nomes) {
       const cliente = await colyseus.connectTo(sala, { nome });
       clientes.push(cliente);
