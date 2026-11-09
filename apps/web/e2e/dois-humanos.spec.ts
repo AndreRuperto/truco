@@ -152,3 +152,65 @@ test('quatro humanos: recarga temporária preserva cadeira e mantém os outros c
     await Promise.all(paginas.map((page) => page.context().close()));
   }
 });
+
+test('quatro humanos completam partida até o placar final', async ({ browser }) => {
+  test.setTimeout(300_000);
+  const nomes = ['Ana', 'Bia', 'Cid', 'Duda'];
+  const paginas = await Promise.all(nomes.map(() => novaPagina(browser)));
+  try {
+    for (let i = 0; i < paginas.length; i++) {
+      const page = paginas[i];
+      await page.goto('/');
+      await page.getByText('Regras da mesa', { exact: true }).click();
+      await page.getByLabel('Apelido').fill(nomes[i]);
+      await page.getByLabel('Variante').selectOption('paulista');
+      await page.getByLabel('Humanos').selectOption('4');
+      await page.getByLabel('Bots').selectOption('facil');
+      await page.getByLabel('Adversários podem interceptar sinais').selectOption({ label: 'Nunca' });
+      await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+    }
+    for (const page of paginas) {
+      await expect(page.getByTestId('centro')).toBeVisible({ timeout: 20_000 });
+    }
+
+    const encerrada = () => paginas[0].getByText('Partida encerrada', { exact: true });
+    const limite = Date.now() + 240_000;
+    let acoes = 0;
+    while (!(await encerrada().isVisible())) {
+      if (Date.now() > limite) {
+        throw new Error(`partida não terminou em 240 s; ações realizadas: ${acoes}`);
+      }
+      for (const page of paginas) {
+        if (await encerrada().isVisible()) break;
+        if (await agirNoRitual(page)) {
+          acoes++;
+          continue;
+        }
+        const aceitar = page.getByRole('button', { name: 'Aceitar', exact: true });
+        const jogarMao = page.getByRole('button', { name: 'Jogar a mão', exact: true });
+        const carta = page.getByTestId('minha-mao').locator('button.carta-botao:enabled').first();
+        try {
+          if (await aceitar.isVisible()) {
+            await aceitar.click({ timeout: 800 });
+            acoes++;
+          } else if (await jogarMao.isVisible()) {
+            await jogarMao.click({ timeout: 800 });
+            acoes++;
+          } else if (await carta.isVisible()) {
+            await carta.click({ timeout: 800 });
+            acoes++;
+          }
+        } catch {
+          // Outra ação chegou ao servidor enquanto a interface atualizava.
+        }
+      }
+      await paginas[0].waitForTimeout(80);
+    }
+    expect(acoes).toBeGreaterThan(20);
+    for (const page of paginas) {
+      await expect(page.getByText('Partida encerrada', { exact: true })).toBeVisible({ timeout: 10_000 });
+    }
+  } finally {
+    await Promise.all(paginas.map((page) => page.context().close()));
+  }
+});
