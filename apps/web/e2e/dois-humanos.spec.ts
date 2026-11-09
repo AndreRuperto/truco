@@ -116,3 +116,39 @@ test('dois jogadores recuperam a mesma partida após recargas sucessivas', async
     await bia.context().close();
   }
 });
+
+test('quatro humanos: recarga temporária preserva cadeira e mantém os outros conectados', async ({ browser }) => {
+  const paginas = await Promise.all(['Ana', 'Bia', 'Cid', 'Duda'].map(() => novaPagina(browser)));
+  try {
+    for (let i = 0; i < paginas.length; i++) {
+      const page = paginas[i];
+      await page.goto('/');
+      await page.getByText('Regras da mesa', { exact: true }).click();
+      await page.getByLabel('Apelido').fill(['Ana', 'Bia', 'Cid', 'Duda'][i]);
+      await page.getByLabel('Variante').selectOption('paulista');
+      await page.getByLabel('Humanos').selectOption('4');
+      await page.getByLabel('Bots').selectOption('facil');
+      await page.getByLabel('Adversários podem interceptar sinais').selectOption({ label: 'Nunca' });
+      await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+    }
+    for (const page of paginas) {
+      await expect(page.getByTestId('centro')).toBeVisible({ timeout: 20_000 });
+    }
+    const [ana, bia, cid, duda] = paginas;
+    // Cadeiras 0 e 2 são parceiras, assim como 1 e 3.
+    await expect(ana.getByTestId('assento-cima')).toContainText('Cid');
+    await expect(bia.getByTestId('assento-cima')).toContainText('Duda');
+
+    // A recarga interrompe a conexão sem pedir abandono definitivo.
+    await bia.reload();
+    await expect(bia.getByTestId('centro')).toBeVisible({ timeout: 20_000 });
+    await expect(bia.getByTestId('assento-cima')).toContainText('Duda');
+    for (const page of [ana, cid, duda]) {
+      await expect(page.getByTestId('centro')).toBeVisible();
+    }
+    await expect(ana.getByTestId('assento-cima')).toContainText('Cid');
+    await expect(duda.getByTestId('assento-cima')).toContainText('Bia');
+  } finally {
+    await Promise.all(paginas.map((page) => page.context().close()));
+  }
+});
