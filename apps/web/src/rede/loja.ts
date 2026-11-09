@@ -188,6 +188,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
     getSnapshot: (): EstadoLoja => estado,
     conectar,
     marcarConectando: () => mudar({ status: 'conectando' }),
+    marcarReconectando: () => mudar({ status: 'reconectando', msg: null }),
     /** Volta ao lobby; com mensagem, mostra o toast. */
     falhouConexao: (mensagem?: string) => {
       mudar({ status: 'fora' });
