@@ -207,9 +207,24 @@ test('quatro humanos completam partida até o placar final', async ({ browser })
       await paginas[0].waitForTimeout(80);
     }
     expect(acoes).toBeGreaterThan(20);
+    // O placar é relativo à dupla do jogador. Parceiros veem os mesmos
+    // números; adversários veem os números invertidos.
+    const placares: { nos: number; eles: number }[] = [];
     for (const page of paginas) {
       await expect(page.getByText('Partida encerrada', { exact: true })).toBeVisible({ timeout: 10_000 });
+      const rotulo = await page.getByRole('group', { name: /^Placar: Nós / }).getAttribute('aria-label');
+      const match = rotulo?.match(/^Placar: Nós (\\d+), Eles (\\d+)/);
+      expect(match, `placar final inválido: ${rotulo}`).not.toBeNull();
+      placares.push({ nos: Number(match![1]), eles: Number(match![2]) });
     }
+    // Ana/Cid (0/2) são uma dupla; Bia/Duda (1/3), a outra.
+    expect(placares[0]).toEqual(placares[2]);
+    expect(placares[1]).toEqual(placares[3]);
+    expect(placares[0].nos).toBe(placares[1].eles);
+    expect(placares[0].eles).toBe(placares[1].nos);
+    // A partida só encerra quando uma das duplas atinge a meta.
+    expect(Math.max(placares[0].nos, placares[0].eles)).toBeGreaterThanOrEqual(12);
+    expect(Math.min(placares[0].nos, placares[0].eles)).toBeLessThan(12);
   } finally {
     await Promise.all(paginas.map((page) => page.context().close()));
   }
