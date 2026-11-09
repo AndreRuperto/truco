@@ -52,6 +52,20 @@ describe('TelaMesa', () => {
     expect(within(faixa).queryByRole('button')).toBeNull();
   });
 
+  test('após três famílias fechadas, não oferece Sem família sem cartas de família real', () => {
+    const s = distribuida(MINEIRO);
+    const msg = msgEstado(s, 0, { janelaFamilia: { ate: Date.now() + 20_000, decidiram: [] }, minhasAcoes: [] });
+    const mao = msg.visao!.mao!;
+    mao.familias = Array.from({ length: 3 }, () => ({ cadeira: 1, tipo: 'fechada' as const, cartas: null, conferida: null }));
+    mao.minhaMao = [{ valor: '4', naipe: 'ouros' }, { valor: '5', naipe: 'copas' }, { valor: '6', naipe: 'espadas' }];
+    const { rerender } = render(<TelaMesa snap={snap(msg)} acoes={{ ...acoesFalsas(), enviarSemFamilia: vi.fn() }} />);
+    const faixa = screen.getByRole('group', { name: 'Hora de pedir família' });
+    expect(within(faixa).queryByRole('button', { name: 'Sem família' })).toBeNull();
+    mao.minhaMao = [{ valor: 'Q', naipe: 'ouros' }, { valor: 'J', naipe: 'copas' }, { valor: 'K', naipe: 'espadas' }];
+    rerender(<TelaMesa snap={snap({ ...msg })} acoes={{ ...acoesFalsas(), enviarSemFamilia: vi.fn() }} />);
+    expect(within(faixa).getByRole('button', { name: 'Sem família' })).toBeInTheDocument();
+  });
+
   test('assentos: nomes nas posições certas e balão de quem trucou', () => {
     const balao: Evento = { id: 1, em: Date.now(), tipo: 'acao', de: 1, texto: 'TRUCO!' };
     render(<TelaMesa snap={snap(msgEstado(distribuida(PAULISTA)), [balao])} acoes={acoesFalsas()} />);
