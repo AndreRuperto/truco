@@ -1,4 +1,4 @@
-import { type Cadeira, ehFaseRitual, fechadasUsadas, LIMITE_FAMILIAS_FECHADAS, parceiroDe, quemDeveAgir } from '@truco/engine';
+import { type Cadeira, ehFamilia, ehFaseRitual, fechadasUsadas, LIMITE_FAMILIAS_FECHADAS, parceiroDe, quemDeveAgir } from '@truco/engine';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CartaVisual } from '../componentes/CartaVisual';
 import { BaralhoNaPartida } from '../componentes/BaralhoNaPartida';
@@ -372,6 +372,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
             restam={Math.max(0, Math.ceil((msg.janelaFamilia.ate - agora) / 1000))}
             decidi={msg.janelaFamilia.decidiram.includes(minha)}
             fechadas={m ? fechadasUsadas(m) : 0}
+            podePedir={!!m && (fechadasUsadas(m) < LIMITE_FAMILIAS_FECHADAS || m.minhaMao.every((c) => c !== null) && ehFamilia(m.minhaMao as Exclude<typeof m.minhaMao[number], null>[]))}
             aoPassar={acoes.enviarSemFamilia}
           />
         )}
@@ -437,14 +438,14 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
  * Hora de pedir família, logo depois de dar: ninguém joga carta ainda (nem quem começa).
  * "Família!" fica na barra de ações; aqui o "Sem família" adianta o jogo quando todos decidem.
  */
-function JanelaFamilia({ restam, decidi, fechadas, aoPassar }: { restam: number; decidi: boolean; fechadas: number; aoPassar?: () => void }) {
+function JanelaFamilia({ restam, decidi, fechadas, podePedir, aoPassar }: { restam: number; decidi: boolean; fechadas: number; podePedir: boolean; aoPassar?: () => void }) {
   return (
     <div className="janela-familia" role="group" aria-label="Hora de pedir família">
       <span className="janela-familia-texto">
-        {decidi ? 'Esperando os outros' : 'Tem família?'} <strong>{restam}s</strong>
+        {decidi || !podePedir ? 'Esperando os outros' : 'Tem família?'} <strong>{restam}s</strong>
       </span>
       <small className="familia-limite">Fechadas usadas: {fechadas}/{LIMITE_FAMILIAS_FECHADAS}</small>
-      {!decidi && aoPassar && (
+      {!decidi && podePedir && aoPassar && (
         <button type="button" onClick={aoPassar}>
           Sem família
         </button>
