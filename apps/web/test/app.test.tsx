@@ -45,7 +45,7 @@ describe('App: telas conforme o status da loja', () => {
     expect(screen.getByText('Conexão caiu — reconectando…')).toHaveAttribute('role', 'status');
     // A mão pode ter andado enquanto estava offline: nada da mesa antiga fica na tela.
     expect(screen.queryByTestId('minha-mao')).toBeNull();
-    expect(screen.getByText('Entrando na mesa…')).toBeInTheDocument();
+    expect(screen.getByText('Recuperando sua mesa e sua cadeira…')).toBeInTheDocument();
 
     act(() => sala.emit('reconnect'));
     expect(screen.queryByText(/reconectando/)).toBeNull();
@@ -57,14 +57,16 @@ describe('App: telas conforme o status da loja', () => {
     expect(screen.getByRole('heading', { name: 'Truco' })).toBeInTheDocument();
   });
 
-  test('conexão perdida volta ao lobby com o toast', () => {
+  test('conexão perdida mantém a recuperação e permite desistir', () => {
     render(<App />);
     const sala = new SalaFalsa();
     act(() => loja.conectar(sala));
     act(() => sala.receber('estado', msgEstado(distribuida(PAULISTA))));
     act(() => sala.emit('leave', 1006));
+    expect(screen.getByText('Recuperando sua mesa e sua cadeira…')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument();
+    act(() => loja.desistirReconexao());
     expect(screen.getByRole('heading', { name: 'Truco' })).toBeInTheDocument();
-    expect(screen.getByText('Conexão com a mesa perdida')).toBeInTheDocument();
   });
 });
 
