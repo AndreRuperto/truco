@@ -235,6 +235,46 @@ describe('MesaRoom', () => {
     expect(clientes.every((cliente) => cliente.roomId === sala.roomId)).toBe(true);
   });
 
+  test('mesa de quatro humanos continua quando um sai e é substituído por bot', async () => {
+    const sala = await colyseus.createRoom('mesa', { variante: 'paulista', humanos: 4 });
+    const ana = await colyseus.connectTo(sala, { nome: 'Ana' });
+    const mensagensAna = coletor(ana);
+    const bia = await colyseus.connectTo(sala, { nome: 'Bia' });
+    const mensagensBia = coletor(bia);
+    const cid = await colyseus.connectTo(sala, { nome: 'Cid' });
+    const mensagensCid = coletor(cid);
+    const duda = await colyseus.connectTo(sala, { nome: 'Duda' });
+    const mensagensDuda = coletor(duda);
+
+    const mensagens = [mensagensAna, mensagensBia, mensagensCid, mensagensDuda];
+    await esperar(() => mensagens.every((m) => m.estado?.some((e) => e.visao?.mao)), 10_000);
+    const cadeiraBia = mensagensBia.estado.at(-1).minhaCadeira;
+    await bia.leave(true);
+
+    await esperar(() =>
+      [mensagensAna, mensagensCid, mensagensDuda].every((m) =>
+        m.estado?.some((e) => e.cadeiras?.[cadeiraBia]?.tipo === 'bot')
+      ), 10_000);
+
+    for (const m of [mensagensAna, mensagensCid, mensagensDuda]) {
+      const e = m.estado.at(-1);
+      expect(e.cadeiras[cadeiraBia].tipo).toBe('bot');
+      expect(e.cadeiras.filter((c: any) => c.tipo === 'humano')).toHaveLength(3);
+      expect(e.visao).not.toBeNull();
+    }
+    expect(matchMaker.getRoomById(sala.roomId)).toBeDefined();
+
+    // A sala ainda responde a pedidos de sincronização dos três sobreviventes.
+    for (const [cliente, m] of [
+      [ana, mensagensAna], [cid, mensagensCid], [duda, mensagensDuda],
+    ] as const) {
+      const antes = m.estado.length;
+      cliente.send('sincronizar');
+      await esperar(() => m.estado.length > antes);
+      expect(m.estado.at(-1).cadeiras[cadeiraBia].tipo).toBe('bot');
+    }
+  });
+
   test('matchmaking separa por variante, humanos e nível do bot', async () => {
     const a = await colyseus.sdk.joinOrCreate('mesa', { variante: 'mineiro', humanos: 2, nivelBot: 'facil', nome: 'Ana' });
     coletor(a);
