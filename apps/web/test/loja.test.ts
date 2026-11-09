@@ -162,11 +162,11 @@ describe('loja', () => {
     expect(tokens.at(-1)).toBeNull();
   });
 
-  test('queda definitiva (ex.: SDK desiste por minUptime): toast e guarda o token para o F5', () => {
+  test('queda involuntária preserva a cadeira e mantém recuperação automática', () => {
     const { loja, sala, tokens } = montar();
     loja.conectar(sala);
     sala.emit('leave', 1006);
-    expect(loja.getSnapshot()).toMatchObject({ status: 'fora', erro: { mensagem: 'Conexão com a mesa perdida' } });
+    expect(loja.getSnapshot()).toMatchObject({ status: 'reconectando', msg: null, erro: null });
     expect(tokens.at(-1)).toBe('r1:t1');
   });
 
