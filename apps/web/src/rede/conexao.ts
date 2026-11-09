@@ -79,16 +79,22 @@ export function tentarReconectar(loja: Loja, cliente?: ClienteLike): Promise<boo
   const existente = reconexoesEmAndamento.get(loja);
   if (existente) return existente;
   const token = lerToken();
-  if (!token || loja.getSnapshot().status !== 'fora') return Promise.resolve(false);
+  if (!token || !['fora', 'reconectando'].includes(loja.getSnapshot().status)) return Promise.resolve(false);
   const tentativa = (async () => {
     loja.marcarConectando();
     try {
       const c = cliente ?? (await clientePadrao());
       loja.conectar((await c.reconnect(token)) as SalaLike);
       return true;
-    } catch {
-      gravarToken(null);
-      loja.falhouConexao();
+    } catch (e) {
+      // Uma falha de rede transitória não invalida a cadeira. O servidor pode
+      // continuar guardando a reserva enquanto o celular volta à internet.
+      if (/expired|not found|invalid|already disposed|seat reservation/i.test(mensagem(e))) {
+        gravarToken(null);
+        loja.falhouConexao('A sessão da mesa expirou. Entre novamente para jogar.');
+      } else {
+        loja.marcarReconectando();
+      }
       return false;
     }
   })();
