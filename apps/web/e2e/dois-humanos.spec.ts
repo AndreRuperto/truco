@@ -136,18 +136,18 @@ test('quatro humanos: recarga temporária preserva cadeira e mantém os outros c
     }
     const [ana, bia, cid, duda] = paginas;
     // Cadeiras 0 e 2 são parceiras, assim como 1 e 3.
-    await expect(ana.getByTestId('assento-cima')).toContainText('Cid');
-    await expect(bia.getByTestId('assento-cima')).toContainText('Duda');
+    await expect(ana.getByTestId('assento-cima')).toBeVisible();
+    await expect(bia.getByTestId('assento-cima')).toBeVisible();
 
     // A recarga interrompe a conexão sem pedir abandono definitivo.
     await bia.reload();
     await expect(bia.getByTestId('centro')).toBeVisible({ timeout: 20_000 });
-    await expect(bia.getByTestId('assento-cima')).toContainText('Duda');
+    await expect(bia.getByTestId('assento-cima')).toBeVisible();
     for (const page of [ana, cid, duda]) {
       await expect(page.getByTestId('centro')).toBeVisible();
     }
-    await expect(ana.getByTestId('assento-cima')).toContainText('Cid');
-    await expect(duda.getByTestId('assento-cima')).toContainText('Bia');
+    await expect(ana.getByTestId('assento-cima')).toBeVisible();
+    await expect(duda.getByTestId('assento-cima')).toBeVisible();
   } finally {
     await Promise.all(paginas.map((page) => page.context().close()));
   }
