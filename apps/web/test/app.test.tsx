@@ -9,6 +9,7 @@ import { SalaFalsa } from './sala-falsa';
 
 afterEach(async () => {
   await act(() => loja.sair());
+  act(() => loja.desistirReconexao());
   if (loja.getSnapshot().status !== 'fora') act(() => loja.falhouConexao());
   const erro = loja.getSnapshot().erro;
   if (erro) act(() => loja.limparErro(erro.id));
