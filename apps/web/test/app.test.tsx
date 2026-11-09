@@ -43,10 +43,15 @@ describe('App: telas conforme o status da loja', () => {
 
     act(() => sala.emit('drop', 1006));
     expect(screen.getByText('Conexão caiu — reconectando…')).toHaveAttribute('role', 'status');
-    expect(screen.getByTestId('minha-mao')).toBeInTheDocument();
+    // A mão pode ter andado enquanto estava offline: nada da mesa antiga fica na tela.
+    expect(screen.queryByTestId('minha-mao')).toBeNull();
+    expect(screen.getByText('Entrando na mesa…')).toBeInTheDocument();
 
     act(() => sala.emit('reconnect'));
     expect(screen.queryByText(/reconectando/)).toBeNull();
+    // A mesa volta só com o estado novo do servidor.
+    act(() => sala.receber('estado', msgEstado(distribuida(PAULISTA))));
+    expect(screen.getByTestId('minha-mao')).toBeInTheDocument();
 
     await act(() => loja.sair());
     expect(screen.getByRole('heading', { name: 'Truco' })).toBeInTheDocument();
