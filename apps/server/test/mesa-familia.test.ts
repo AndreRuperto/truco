@@ -182,6 +182,25 @@ describe('família na Mesa', () => {
       expect(t.estado('b')!.janelaFamilia).toBeNull();
     });
 
+    test('Abrir 3 no corte conta para o limite e dispensa quem não tem família', () => {
+      const t = criarMesa({ regras: MINEIRO, decidirBot: semFamilia, tempos: JANELA });
+      t.mesa.sentar('a', 'Ana');
+      avancarAte(() => !!t.estado('a')?.janelaFamilia, 1);
+      const m = t.mesa.partida!.mao!;
+      m.abertasNoCorte = [
+        { valor: 'Q', naipe: 'ouros' }, { valor: 'J', naipe: 'copas' }, { valor: 'K', naipe: 'espadas' },
+      ];
+      m.familias = Array.from({ length: 2 }, () => ({
+        cadeira: 1 as Cadeira, tipo: 'fechada' as const, cartas: [], conferida: null,
+      }));
+      m.maos[0] = [
+        { valor: '4', naipe: 'ouros' }, { valor: '5', naipe: 'copas' }, { valor: '6', naipe: 'espadas' },
+      ];
+      t.mesa.semFamilia('a');
+      expect(t.estado('a')!.janelaFamilia).toBeNull();
+      expect(t.estado('a')!.minhasAcoes.some((a) => a.tipo === 'familia')).toBe(false);
+    });
+
     test('três fechadas e um humano com família verdadeira: mantém sua janela', () => {
       const t = criarMesa({ regras: MINEIRO, decidirBot: semFamilia, tempos: JANELA, humanosEsperados: 2 });
       t.mesa.sentar('a', 'Ana');
