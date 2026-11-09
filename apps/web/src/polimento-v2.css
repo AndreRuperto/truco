@@ -449,7 +449,6 @@
 /* Layout mobile: uma área para ler a mesa, uma para tomar decisões. */
 @media (max-width: 700px) and (orientation: portrait) {
   .tela-mesa {
-    --altura-mesa-mobile: clamp(224px, 34dvh, 286px);
     gap: 3px;
     padding-bottom: calc(14px + env(safe-area-inset-bottom));
   }
@@ -514,7 +513,6 @@
   .personalizar-mesa-preview { width: min(200px, 75%); }
 }
 @media (max-width: 380px) and (orientation: portrait) {
-  .tela-mesa { --altura-mesa-mobile: clamp(214px, 33dvh, 250px); }
   .tela-mesa .placar-situacao { max-width: 110px; font-size: .62rem; }
   .tela-mesa .assento-nome { max-width: 100%; overflow-wrap: anywhere; }
   .tela-mesa .barra-acoes .acao { min-height: 46px; }
