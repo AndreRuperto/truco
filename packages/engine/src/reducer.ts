@@ -294,7 +294,8 @@ function distribuir(s: EstadoPartida, cadeira: Cadeira, modo: ModoDistribuicao):
     rodadasJogadas: [],
     rodadas: [],
     vez: proximaCadeira(s.pe),
-    nivel: 0,
+    // Mão de 11 já começa valendo truco (3 pontos na escada paulista).
+    nivel: tipo === 'mao11' ? 1 : 0,
     ultimoAumento: null,
     trucoPendente: null,
     duplaNoDez: tipo === 'mao10' ? (s.placar[0] === 10 ? 0 : 1) : null,
