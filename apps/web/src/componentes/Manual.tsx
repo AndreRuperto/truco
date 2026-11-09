@@ -463,7 +463,7 @@ function secoesDe(v: Variante): SecaoInfo[] {
           <li>
             <strong>Não se pede truco</strong> e <strong>não se joga coberta</strong>.
           </li>
-          <li>A mão vale o valor inicial (1 ou 2 pontos, conforme a pontuação).</li>
+          <li>A mão já começa valendo o primeiro nível de truco: <strong>3 pontos</strong> na escada 1–3–6–9–12, ou <strong>4 pontos</strong> na escada 2–4–8–10–12. Quem atingir 12 pontos vence a partida.</li>
         </ul>
       </>
     ),
