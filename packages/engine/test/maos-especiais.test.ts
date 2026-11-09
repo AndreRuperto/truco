@@ -37,6 +37,22 @@ describe('mão de 10', () => {
   });
 });
 
+/** Dupla 0 vence duas rodadas paulistas com duas manilhas distintas. */
+const MAOS_FERRO_DUPLA0_VENCE = [
+  ['6p', '6c', '4p'],
+  ['3e', '5e', '7e'],
+  ['Qo', 'Jo', 'Ko'],
+  ['2e', '5c', '7c'],
+];
+
+/** Respeita a cadeira que o motor escolhe após cada rodada. */
+function jogarDuasRodadasNaVez(s: ReturnType<typeof distribuida>) {
+  for (let i = 0; i < 8 && s.fase === 'jogando'; i++) {
+    s = reduce(s, { tipo: 'jogar', cadeira: s.mao!.vez, indice: 0 });
+  }
+  return s;
+}
+
 describe('mão de 11 (ferro)', () => {
   test('qualquer dupla com 11: sem truco e sem coberta', () => {
     let s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p', [11, 3]);
@@ -48,10 +64,10 @@ describe('mão de 11 (ferro)', () => {
   });
 
   test('mão de 11 já vale 3 e vitória de quem tem 10 encerra a partida', () => {
-    let s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p', [10, 11]);
+    let s = distribuida(PAULISTA, MAOS_FERRO_DUPLA0_VENCE, '5p', [10, 11]);
     expect(s.mao!.tipo).toBe('mao11');
     expect(s.mao!.nivel).toBe(1);
-    s = jogarSeq(s, DUAS_RODADAS);
+    s = jogarDuasRodadasNaVez(s);
     expect(s.ultimaMao).toMatchObject({ vencedor: 0, pontos: 3 });
     expect(s.placar).toEqual([13, 11]);
     expect(s.fase).toBe('fimPartida');
@@ -59,8 +75,8 @@ describe('mão de 11 (ferro)', () => {
   });
 
   test('mão de 11 também vale 3 para a dupla que já tem 11', () => {
-    let s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p', [11, 10]);
-    s = jogarSeq(s, DUAS_RODADAS);
+    let s = distribuida(PAULISTA, MAOS_FERRO_DUPLA0_VENCE, '5p', [11, 10]);
+    s = jogarDuasRodadasNaVez(s);
     expect(s.ultimaMao?.pontos).toBe(3);
     expect(s.fase).toBe('fimPartida');
   });
