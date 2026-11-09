@@ -49,14 +49,14 @@ describe('família na Mesa', () => {
       t.mesa.acao('a', { tipo: 'familia' });
       expect(t.estado('a')!.visao!.fase).toBe('conferindoFamilia');
       avancarAte(() => t.estado('a')?.visao?.fase === 'jogando', 1, 1000);
-      expect(t.estado('a')!.janelaFamilia).not.toBeNull();
       expect(t.estado('a')!.visao!.mao!.familias.filter((f) => f.tipo === 'fechada')).toHaveLength(n);
-      // Após 3 fechadas, a próxima só pode ser aberta e exige cartas de família reais.
+      // Após três fechadas, quem não tem família verdadeira é dispensado automaticamente.
+      if (n < 3) expect(t.estado('a')!.janelaFamilia).not.toBeNull();
       expect(t.estado('a')!.minhasAcoes.some((a) => a.tipo === 'familia')).toBe(n < 3);
     }
     // A quarta só pode ser aberta (e somente com uma família real).
     expect(t.estado('a')!.visao!.mao!.familias).toHaveLength(3);
-    t.mesa.semFamilia('a');
+    if (t.estado('a')!.janelaFamilia) t.mesa.semFamilia('a');
     expect(t.estado('a')!.janelaFamilia).toBeNull();
   });
 
@@ -154,6 +154,50 @@ describe('família na Mesa', () => {
       else {
         avancarAte(() => t.de('a', 'acao').slice(n).some((x) => x.tipo === 'jogar'), 1, 2_000);
       }
+    });
+
+    test('três fechadas e nenhum humano com família: janela fecha sem esperar o relógio', () => {
+      const t = criarMesa({ regras: MINEIRO, decidirBot: semFamilia, tempos: JANELA, humanosEsperados: 2 });
+      t.mesa.sentar('a', 'Ana');
+      t.mesa.sentar('b', 'Bia');
+      avancarAte(() => !!t.estado('a')?.janelaFamilia, 1);
+      const m = t.mesa.partida!.mao!;
+      m.familias = Array.from({ length: 3 }, () => ({
+        cadeira: 1 as Cadeira, tipo: 'fechada' as const, cartas: [], conferida: null,
+      }));
+      // A decisão de Ana dispara a reavaliação: Bia não tem família real.
+      for (const c of [0, 2] as Cadeira[]) {
+        m.maos[c] = [
+          { valor: '4', naipe: 'ouros' }, { valor: '5', naipe: 'copas' }, { valor: '6', naipe: 'espadas' },
+        ];
+      }
+      t.mesa.semFamilia('a');
+      expect(t.estado('a')!.janelaFamilia).toBeNull();
+      expect(t.estado('b')!.janelaFamilia).toBeNull();
+    });
+
+    test('três fechadas e um humano com família verdadeira: mantém sua janela', () => {
+      const t = criarMesa({ regras: MINEIRO, decidirBot: semFamilia, tempos: JANELA, humanosEsperados: 2 });
+      t.mesa.sentar('a', 'Ana');
+      t.mesa.sentar('b', 'Bia');
+      avancarAte(() => !!t.estado('a')?.janelaFamilia, 1);
+      const m = t.mesa.partida!.mao!;
+      m.familias = Array.from({ length: 3 }, () => ({
+        cadeira: 1 as Cadeira, tipo: 'fechada' as const, cartas: [], conferida: null,
+      }));
+      m.maos[0] = [
+        { valor: '4', naipe: 'ouros' }, { valor: '5', naipe: 'copas' }, { valor: '6', naipe: 'espadas' },
+      ];
+      m.maos[2] = [
+        { valor: 'Q', naipe: 'ouros' }, { valor: 'J', naipe: 'copas' }, { valor: 'K', naipe: 'espadas' },
+      ];
+      t.mesa.semFamilia('a');
+      expect(t.estado('b')!.janelaFamilia?.decidiram).toContain(0);
+      expect(t.estado('b')!.janelaFamilia?.decidiram).not.toContain(2);
+      expect(t.estado('b')!.prazo?.cadeiras).toEqual([2]);
+      expect(t.estado('b')!.minhasAcoes.some((a) => a.tipo === 'familia')).toBe(true);
+      t.mesa.semFamilia('b');
+      expect(t.estado('a')!.janelaFamilia).toBeNull();
     });
 
     test('com dois humanos, só fecha antes quando os dois decidem', () => {
