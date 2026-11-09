@@ -47,6 +47,24 @@ describe('mão de 11 (ferro)', () => {
     expect(() => reduce(s, { tipo: 'jogar', cadeira: s.mao!.vez, indice: 0, coberta: true })).toThrow(ErroJogada);
   });
 
+  test('mão de 11 já vale 3 e vitória de quem tem 10 encerra a partida', () => {
+    let s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p', [10, 11]);
+    expect(s.mao!.tipo).toBe('mao11');
+    expect(s.mao!.nivel).toBe(1);
+    s = jogarSeq(s, DUAS_RODADAS);
+    expect(s.ultimaMao).toMatchObject({ vencedor: 0, pontos: 3 });
+    expect(s.placar).toEqual([13, 11]);
+    expect(s.fase).toBe('fimPartida');
+    expect(s.vencedor).toBe(0);
+  });
+
+  test('mão de 11 também vale 3 para a dupla que já tem 11', () => {
+    let s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p', [11, 10]);
+    s = jogarSeq(s, DUAS_RODADAS);
+    expect(s.ultimaMao?.pontos).toBe(3);
+    expect(s.fase).toBe('fimPartida');
+  });
+
   test('opção onzeAOnze só ativa no 11 a 11', () => {
     const regras = { ...PAULISTA, maoDe11: 'onzeAOnze' as const };
     expect(distribuida(regras, MAOS_DUPLA0_VENCE, '5p', [11, 3]).mao!.tipo).toBe('normal');
