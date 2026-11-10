@@ -125,3 +125,41 @@ for (const [largura, altura] of alturasMao) {
     expect(geometria.sobraY, 'mesa obriga a rolar a página; ' + geometria.linhas).toBeLessThanOrEqual(1);
   });
 }
+
+/**
+ * P1 (O2) da auditoria do ciclo 1: os balões das cadeiras laterais ("Pode dar.", "Família
+ * fechada") ficavam centralizados num assento estreito e saíam da tela. O overflow-x: clip
+ * escondia o excesso, então o assert de scrollWidth passava mesmo com o texto cortado.
+ */
+for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
+  test('balões das cadeiras cabem na largura - ' + largura + 'x' + altura, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: largura, height: altura });
+    await page.goto('/');
+    await page.getByLabel('Apelido').fill('QA Balao');
+    await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+    await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+
+    // Amostra os balões enquanto o ritual e as primeiras jogadas acontecem.
+    const vistos = new Set<string>();
+    const cortados: string[] = [];
+    const ate = Date.now() + 25_000;
+    while (Date.now() < ate && (vistos.size < 3 || cortados.length === 0)) {
+      await agirNoRitual(page).catch(() => false);
+      const baloes = await page.evaluate(() => Array.from(document.querySelectorAll('.tela-mesa .balao')).map((b) => {
+        const r = b.getBoundingClientRect();
+        return { texto: b.textContent ?? '', esquerda: r.left, direita: r.right };
+      }));
+      for (const b of baloes) {
+        vistos.add(b.texto);
+        if (b.esquerda < -1 || b.direita > largura + 1) {
+          cortados.push(`"${b.texto}" ${Math.round(b.esquerda)}..${Math.round(b.direita)}`);
+        }
+      }
+      if (cortados.length) break;
+      await page.waitForTimeout(150);
+    }
+    expect(vistos.size, 'nenhum balão apareceu para medir').toBeGreaterThan(0);
+    expect(cortados, 'balões fora da viewport').toEqual([]);
+  });
+}

@@ -162,6 +162,28 @@
   }
   .tela-mesa .assento .etiqueta { font-size: .68rem; }
 
+  /* Balões das cadeiras laterais crescem para dentro da mesa, não para fora da tela.
+     O transform (inclusive o dos keyframes de grito) centraliza com translateX(-50%);
+     o `translate` independente devolve esses 50%, e o balão fica preso na borda interna. */
+  .tela-mesa .balao {
+    width: max-content;
+    max-width: min(44vw, 170px);
+    white-space: normal;
+    text-wrap: balance;
+    text-align: center;
+  }
+  .tela-mesa .assento.pos-esquerda .balao {
+    left: 0;
+    translate: 50% 0;
+  }
+  .tela-mesa .assento.pos-direita .balao {
+    left: auto;
+    right: 0;
+    translate: 50% 0;
+  }
+  .tela-mesa .assento.pos-esquerda .balao.grito::before { left: 2px; top: -14px; }
+  .tela-mesa .assento.pos-direita .balao.grito::after { right: 2px; bottom: -14px; }
+
   .tela-mesa .centro {
     --cruz-h: calc(var(--carta-c) * 1.34);
     min-width: 0;
