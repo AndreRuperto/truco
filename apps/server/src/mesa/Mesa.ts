@@ -551,14 +551,14 @@ export class Mesa {
       const agora = this.relogio.agora();
       this.ateEmpilhar ??= agora + this.tempos.jogadaMs;
       const faltam = quemDeveAgir(s);
-      const humanos = faltam.filter((c) => this.humanoAtivo(c));
+      const humanos = faltam.filter((c) => this.humanoNaVez(c));
       if (humanos.length > 0) {
         this.prazo = { cadeiras: humanos, ate: this.ateEmpilhar };
         this.agendar(Math.max(0, this.ateEmpilhar - agora), () => {
           for (const c of humanos) if (this.estado?.fase === 'empilhando' && quemDeveAgir(this.estado).includes(c)) this.agirPor(c);
         });
       }
-      for (const c of faltam) if (!this.humanoAtivo(c)) this.agendar(this.tempos.botMs, () => this.jogarBot(c));
+      for (const c of faltam) if (!this.humanoNaVez(c)) this.agendar(this.tempos.botMs, () => this.jogarBot(c));
       this.enviarEstados();
       return;
     }
@@ -566,10 +566,10 @@ export class Mesa {
     // Os agentes são sempre de uma só dupla (ou uma cadeira, no ritual). Havendo humano ativo
     // entre eles, ninguém decide por ele: espera o prazo; no fim, o parceiro bot (se houver) decide.
     const agentes = quemDeveAgir(s);
-    const humanos = agentes.filter((c) => this.humanoAtivo(c));
+    const humanos = agentes.filter((c) => this.humanoNaVez(c));
     if (humanos.length > 0) {
       const ms = this.prazoMs(s);
-      const substituto = agentes.find((c) => !this.humanoAtivo(c));
+      const substituto = agentes.find((c) => !this.humanoNaVez(c));
       this.prazo = { cadeiras: humanos, ate: this.relogio.agora() + ms };
       this.agendar(ms, () => (substituto !== undefined ? this.jogarBot(substituto) : this.estourouTempo(humanos[0])));
     } else {
@@ -647,8 +647,8 @@ export class Mesa {
    */
   private chaveDoTurno(s: EstadoPartida): string {
     const agentes = quemDeveAgir(s);
-    const marcas = agentes.map((c) => `${c}${this.humanoAtivo(c) ? 'h' : 'b'}`);
-    const marco = agentes.some((c) => this.humanoAtivo(c)) ? `e${this.etapa}` : `v${this.versao}`;
+    const marcas = agentes.map((c) => `${c}${this.humanoNaVez(c) ? 'h' : 'b'}`);
+    const marco = agentes.some((c) => this.humanoNaVez(c)) ? `e${this.etapa}` : `v${this.versao}`;
     const j = this.janelaAberta() ? `|jf${[...this.janela!.decidiram].join('')}` : '';
     return `${marco}|${s.fase}|${marcas.join(',')}${j}`;
   }
@@ -831,6 +831,16 @@ export class Mesa {
   private humanoAtivo(c: Cadeira): boolean {
     const o = this.ocupantes[c];
     return o.humano && o.conectado && o.id !== null;
+  }
+
+  /**
+   * Humano sentado, conectado ou não: na vez dele vale o prazo do humano. Quem caiu (troca de
+   * app, rede) tem o mesmo prazo de quem está parado e, no fim, a mesma ação padrão; antes o bot
+   * jogava por ele no ritmo do bot. A cadeira só vira bot de vez quando a reconexão expira (onLeave).
+   */
+  private humanoNaVez(c: Cadeira): boolean {
+    const o = this.ocupantes[c];
+    return o.humano && o.id !== null;
   }
 
   private humanosSentados(): number {

@@ -203,6 +203,64 @@ button:disabled {
   text-align: center;
   border-bottom: 3px solid var(--lousa-borda);
 }
+/* Queda com a partida na tela: o aviso fica embaixo, sobre a área das ações (desativadas),
+   e a mesa continua visível em cima, esmaecida, com o último estado visto. */
+.faixa-reconexao {
+  inset: auto 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2) var(--e3);
+  padding: var(--e2) var(--e3) calc(var(--e2) + env(safe-area-inset-bottom));
+  border-top: 3px solid var(--lousa-borda);
+  border-bottom: 0;
+  text-align: left;
+}
+.faixa-reconexao p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+.faixa-reconexao p span {
+  color: var(--giz-suave);
+  font-size: .85rem;
+  font-weight: 600;
+}
+.faixa-reconexao-botoes {
+  display: flex;
+  gap: var(--e2);
+}
+.faixa-reconexao button {
+  min-height: 44px;
+}
+.faixa-reconexao .botao-discreto {
+  border-color: transparent;
+  background: transparent;
+  color: var(--giz);
+  text-decoration: underline;
+}
+.tela-mesa[data-desatualizada] {
+  filter: saturate(.55) brightness(.82);
+  transition: filter var(--dur) ease-out;
+}
+/* A dica tem botões (Entendi / Sem dicas): numa mesa caída e inerte ela só confundiria. */
+.tela-mesa[data-desatualizada] .dica-mesa {
+  display: none;
+}
+/* Celular: o aviso ocupa o espaço das ações, sem cobrir a mão. */
+@media (max-width: 700px) {
+  .faixa-reconexao {
+    gap: 4px var(--e2);
+    padding: 6px var(--e2) calc(6px + env(safe-area-inset-bottom));
+  }
+  .faixa-reconexao p strong { font-size: .95rem; }
+  .faixa-reconexao p span { font-size: .78rem; line-height: 1.3; }
+  .faixa-reconexao button { min-height: 40px; padding-block: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tela-mesa[data-desatualizada] { transition: none; }
+}
 
 /*
  * ---------- formulários ----------

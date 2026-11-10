@@ -44,27 +44,48 @@ describe('App: telas conforme o status da loja', () => {
 
     act(() => sala.emit('drop', 1006));
     expect(['conectando', 'reconectando']).toContain(loja.getSnapshot().status);
-    // A mão pode ter andado enquanto estava offline: nada da mesa antiga fica na tela.
-    expect(screen.queryByTestId('minha-mao')).toBeNull();
-    // A recuperação pode passar imediatamente de reconectando para conectando.
-    expect(screen.queryByTestId('minha-mao')).toBeNull();
+    // Ciclo 4: a mesa antiga fica na tela, mas esmaecida e inerte (a mão pode ter andado
+    // enquanto estava offline: nada dela é clicável nem anunciado ao leitor de tela).
+    expect(screen.getByText('Conexão caiu — reconectando…')).toBeInTheDocument();
+    const mesaCaida = document.querySelector('.tela-mesa')!;
+    expect(mesaCaida).toHaveAttribute('data-desatualizada', 'true');
+    expect(mesaCaida).toHaveAttribute('aria-hidden', 'true');
+    expect((mesaCaida as HTMLElement).inert).toBe(true);
+    expect(screen.queryByTestId('minha-mao')).not.toBeNull();
+    // Sem cronômetro: o prazo do estado antigo já não vale.
+    expect(document.querySelector('.cronometro')).toBeNull();
 
     act(() => sala.emit('reconnect'));
     expect(loja.getSnapshot().status).toBe('na-mesa');
-    // A mesa volta só com o estado novo do servidor.
+    // Até o estado novo chegar, continua a mesa antiga, inerte.
+    expect(document.querySelector('.tela-mesa')).toHaveAttribute('data-desatualizada', 'true');
     act(() => sala.receber('estado', msgEstado(distribuida(PAULISTA))));
+    const mesaNova = document.querySelector('.tela-mesa')!;
+    expect(mesaNova).not.toHaveAttribute('data-desatualizada');
+    expect((mesaNova as HTMLElement).inert).toBe(false);
+    expect(screen.queryByText('Conexão caiu — reconectando…')).toBeNull();
     expect(screen.getByTestId('minha-mao')).toBeInTheDocument();
 
     await act(() => loja.sair());
     expect(screen.getByRole('heading', { name: 'Truco' })).toBeInTheDocument();
   });
 
-  test('conexão perdida mantém a recuperação e permite desistir', () => {
+  test('conexão perdida com a mesa na tela: aviso com tentar agora e voltar ao início', () => {
     render(<App />);
     const sala = new SalaFalsa();
     act(() => loja.conectar(sala));
     act(() => sala.receber('estado', msgEstado(distribuida(PAULISTA))));
     act(() => sala.emit('leave', 1006));
+    // O aviso é anunciado (role=status); a mesa por trás está fora da árvore de acessibilidade.
+    expect(screen.getByText('Conexão caiu — reconectando…').closest('[role="status"]')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Tentar agora' })).toBeInTheDocument();
+    act(() => loja.desistirReconexao());
+    expect(screen.getByRole('heading', { name: 'Truco' })).toBeInTheDocument();
+  });
+
+  test('conexão perdida sem mesa para mostrar (ex.: depois do F5): tela de recuperação', () => {
+    render(<App />);
+    act(() => loja.marcarReconectando());
     expect(screen.getByText('Recuperando sua mesa e sua cadeira…')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument();
     act(() => loja.desistirReconexao());

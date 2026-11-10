@@ -117,6 +117,54 @@ describe('loja', () => {
     expect(loja.getSnapshot().msg).not.toBeNull();
   });
 
+  // Ciclo 4: durante a queda a mesa continua na tela (esmaecida, só leitura) com o último
+  // estado do servidor. `msg` segue sendo só a verdade atual; `estadoAnterior` só serve para exibir.
+  test('queda guarda o último estado só para exibir; o estado novo o substitui', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    const visto = msgEstado(distribuida(PAULISTA));
+    sala.receber('estado', visto);
+    expect(loja.getSnapshot().estadoAnterior ?? null).toBeNull();
+    sala.emit('drop', 1006);
+    expect(loja.getSnapshot()).toMatchObject({ status: 'reconectando', msg: null, estadoAnterior: visto });
+    sala.emit('reconnect');
+    expect(loja.getSnapshot()).toMatchObject({ status: 'na-mesa', msg: null, estadoAnterior: visto });
+    const novo = msgEstado(distribuida(PAULISTA));
+    sala.receber('estado', novo);
+    expect(loja.getSnapshot()).toMatchObject({ msg: novo, estadoAnterior: null });
+  });
+
+  test('nova tentativa na mesma sala (F5 não, retry do app) mantém o estado anterior até o novo chegar', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    const visto = msgEstado(distribuida(PAULISTA));
+    sala.receber('estado', visto);
+    sala.emit('leave', 1006);
+    expect(loja.getSnapshot().estadoAnterior).toBe(visto);
+    loja.marcarReconectando();
+    loja.marcarConectando();
+    expect(loja.getSnapshot().estadoAnterior).toBe(visto);
+    const mesmaSala = new SalaFalsa();
+    loja.conectar(mesmaSala);
+    expect(loja.getSnapshot()).toMatchObject({ status: 'na-mesa', msg: null, estadoAnterior: visto });
+  });
+
+  test('outra sala, desistir ou sair descartam o estado anterior', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    sala.receber('estado', msgEstado(distribuida(PAULISTA)));
+    sala.emit('drop', 1006);
+    const outra = new SalaFalsa();
+    outra.roomId = 'r2';
+    loja.conectar(outra);
+    expect(loja.getSnapshot().estadoAnterior ?? null).toBeNull();
+
+    outra.receber('estado', msgEstado(distribuida(PAULISTA)));
+    outra.emit('drop', 1006);
+    loja.desistirReconexao();
+    expect(loja.getSnapshot().estadoAnterior ?? null).toBeNull();
+  });
+
   test('queda e reconexão automática do SDK', async () => {
     const { loja, sala, tokens } = montar();
     loja.conectar(sala);
