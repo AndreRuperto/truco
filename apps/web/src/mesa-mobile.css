@@ -75,7 +75,7 @@
        Valores medidos em e2e/auditoria-mesa.spec.ts; guardados em qa-visual-mesa.spec.ts. */
     --reserva-mesa: calc(
       41px                          /* barra de ícones */
-      + 69px                        /* placar com linha de situação */
+      + 74px                        /* placar com pedido ("Pediram Truco!") e situação */
       + 14px                        /* cronômetro */
       + var(--carta-l) * 1.66       /* mão: altura visual da carta; "Jogar coberta" fica ao lado */
       + 62px                        /* rodapé com uma linha de ações */
@@ -134,6 +134,13 @@
   .tela-mesa .tentos { min-height: 10px; }
   .tela-mesa .tento { width: 18px; height: 13px; }
   .tela-mesa .placar-valor, .tela-mesa .placar-pedido { font-size: .9rem; }
+  /* A situação ("Preparando a mão", "Aguardando jogada") fica numa linha só: em duas,
+     o placar passava dos 74px da --reserva-mesa. Vence o max-width de 110px de
+     polimento-v2.css (≤ 380px), que a fazia quebrar. */
+  .tela-mesa > .placar .placar-situacao {
+    max-width: min(100%, 170px);
+    white-space: nowrap;
+  }
 
   /* A arena tem altura própria: o conteúdo não força um tampo quilométrico. */
   .tela-mesa > .mesa-ambiente,

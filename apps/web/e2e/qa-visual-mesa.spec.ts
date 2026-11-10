@@ -241,3 +241,44 @@ test('rodapé sem ações não desenha barra vazia - 390x844', async ({ page }) 
   expect(caixa.borda, 'rodapé vazio pinta borda').toBe('rgba(0, 0, 0, 0)');
   expect(caixa.sombra, 'rodapé vazio pinta sombra').toBe('none');
 });
+
+/**
+ * Pendência do ciclo 1: em 320px, a situação do placar ("Preparando a mão", "Aguardando
+ * jogada") quebrava em duas linhas e o placar passava da altura reservada na --reserva-mesa (74px,
+ * o pior caso é "Pediram Truco!" + situação).
+ */
+test('situação do placar cabe em uma linha - 320x568', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/');
+  await page.getByLabel('Apelido').fill('QA Placar');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+
+  // Amostra o placar pelas situações do ritual e da primeira vaza.
+  const vistas = new Map<string, { linhas: number; placar: number }>();
+  const ate = Date.now() + 25_000;
+  while (Date.now() < ate) {
+    await agirNoRitual(page).catch(() => false);
+    const m = await page.evaluate(() => {
+      const s = document.querySelector('.placar-situacao');
+      if (!s) return null;
+      const cs = getComputedStyle(s);
+      const linha = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2;
+      const util = s.getBoundingClientRect().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+        - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth);
+      return {
+        texto: s.textContent ?? '',
+        linhas: Math.round(util / linha),
+        placar: document.querySelector('.tela-mesa > .placar')!.getBoundingClientRect().height,
+      };
+    });
+    if (m) vistas.set(m.texto, { linhas: m.linhas, placar: Math.max(Math.round(m.placar), vistas.get(m.texto)?.placar ?? 0) });
+    await page.waitForTimeout(150);
+  }
+  expect(vistas.size).toBeGreaterThan(0);
+  for (const [texto, v] of vistas) {
+    expect(v.linhas, `"${texto}" quebrou em ${v.linhas} linhas`).toBeLessThanOrEqual(1);
+    expect(v.placar, `placar com "${texto}" passou da reserva`).toBeLessThanOrEqual(74);
+  }
+});
