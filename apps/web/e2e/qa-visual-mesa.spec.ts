@@ -135,7 +135,7 @@ for (const [largura, altura] of alturasMao) {
  * escondia o excesso, então o assert de scrollWidth passava mesmo com o texto cortado.
  */
 for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
-  test('balões das cadeiras cabem na largura - ' + largura + 'x' + altura, async ({ page }) => {
+  test('balões das cadeiras cabem na largura e não se encobrem - ' + largura + 'x' + altura, async ({ page }) => {
     test.setTimeout(90_000);
     await page.setViewportSize({ width: largura, height: altura });
     await page.goto('/');
@@ -146,12 +146,12 @@ for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
     // Amostra os balões enquanto o ritual e as primeiras jogadas acontecem.
     const vistos = new Set<string>();
     const cortados: string[] = [];
-    const ate = Date.now() + 25_000;
-    while (Date.now() < ate && (vistos.size < 3 || cortados.length === 0)) {
+    const ate = Date.now() + 35_000;
+    while (Date.now() < ate) {
       await agirNoRitual(page).catch(() => false);
       const baloes = await page.evaluate(() => Array.from(document.querySelectorAll('.tela-mesa .balao')).map((b) => {
         const r = b.getBoundingClientRect();
-        return { texto: b.textContent ?? '', esquerda: r.left, direita: r.right };
+        return { texto: b.textContent ?? '', esquerda: r.left, direita: r.right, topo: r.top, base: r.bottom };
       }));
       for (const b of baloes) {
         vistos.add(b.texto);
@@ -159,11 +159,20 @@ for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
           cortados.push(`"${b.texto}" ${Math.round(b.esquerda)}..${Math.round(b.direita)}`);
         }
       }
+      // Dois balões ao mesmo tempo não podem se encobrir (um tapava o texto do outro em 320px).
+      for (let i = 0; i < baloes.length; i++) {
+        for (let j = i + 1; j < baloes.length; j++) {
+          const a = baloes[i], b = baloes[j];
+          const x = Math.min(a.direita, b.direita) - Math.max(a.esquerda, b.esquerda);
+          const y = Math.min(a.base, b.base) - Math.max(a.topo, b.topo);
+          if (x > 2 && y > 2) cortados.push(`"${a.texto}" sobre "${b.texto}" (${Math.round(x)}x${Math.round(y)})`);
+        }
+      }
       if (cortados.length) break;
       await page.waitForTimeout(150);
     }
     expect(vistos.size, 'nenhum balão apareceu para medir').toBeGreaterThan(0);
-    expect(cortados, 'balões fora da viewport').toEqual([]);
+    expect(cortados, 'balões fora da viewport ou encobertos').toEqual([]);
   });
 }
 
@@ -211,3 +220,74 @@ for (const [largura, altura] of [[320, 568], [360, 740], [430, 932]] as const) {
     }
   });
 }
+
+/**
+ * O6 da auditoria do ciclo 1: sem ações (vez de outro jogador), o rodapé sticky desenhava
+ * uma barra escura vazia de 16px sob a mão. Sem ações, ele não deve ocupar nem pintar nada.
+ */
+test('rodapé sem ações não desenha barra vazia - 390x844', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByLabel('Apelido').fill('QA Rodape');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+
+  const rodape = page.locator('.rodape-mesa');
+  // Espera um momento sem ações nem janela de família (vez de um bot), avançando o ritual.
+  await expect(async () => {
+    await agirNoRitual(page).catch(() => false);
+    expect(await rodape.locator('.acao, .janela-familia').count()).toBe(0);
+  }).toPass({ timeout: 60_000, intervals: [300] });
+
+  const caixa = await rodape.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return { altura: r.height, fundo: cs.backgroundColor, borda: cs.borderTopColor, sombra: cs.boxShadow };
+  });
+  // A caixa pode existir (reserva estável); o que não pode é pintar uma barra vazia.
+  expect(caixa.fundo, 'rodapé vazio pinta fundo').toBe('rgba(0, 0, 0, 0)');
+  expect(caixa.borda, 'rodapé vazio pinta borda').toBe('rgba(0, 0, 0, 0)');
+  expect(caixa.sombra, 'rodapé vazio pinta sombra').toBe('none');
+});
+
+/**
+ * Pendência do ciclo 1: em 320px, a situação do placar ("Preparando a mão", "Aguardando
+ * jogada") quebrava em duas linhas e o placar passava da altura reservada na --reserva-mesa (74px,
+ * o pior caso é "Pediram Truco!" + situação).
+ */
+test('situação do placar cabe em uma linha - 320x568', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/');
+  await page.getByLabel('Apelido').fill('QA Placar');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+
+  // Amostra o placar pelas situações do ritual e da primeira vaza.
+  const vistas = new Map<string, { linhas: number; placar: number }>();
+  const ate = Date.now() + 25_000;
+  while (Date.now() < ate) {
+    await agirNoRitual(page).catch(() => false);
+    const m = await page.evaluate(() => {
+      const s = document.querySelector('.placar-situacao');
+      if (!s) return null;
+      const cs = getComputedStyle(s);
+      const linha = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2;
+      const util = s.getBoundingClientRect().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+        - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth);
+      return {
+        texto: s.textContent ?? '',
+        linhas: Math.round(util / linha),
+        placar: document.querySelector('.tela-mesa > .placar')!.getBoundingClientRect().height,
+      };
+    });
+    if (m) vistas.set(m.texto, { linhas: m.linhas, placar: Math.max(Math.round(m.placar), vistas.get(m.texto)?.placar ?? 0) });
+    await page.waitForTimeout(150);
+  }
+  expect(vistas.size).toBeGreaterThan(0);
+  for (const [texto, v] of vistas) {
+    expect(v.linhas, `"${texto}" quebrou em ${v.linhas} linhas`).toBeLessThanOrEqual(1);
+    expect(v.placar, `placar com "${texto}" passou da reserva`).toBeLessThanOrEqual(74);
+  }
+});

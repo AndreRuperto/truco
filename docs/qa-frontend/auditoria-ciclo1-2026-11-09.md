@@ -39,7 +39,7 @@ Os testes aprovam, mas as capturas mostram problemas que eles não cobrem (ver O
 | O3 | P1 — **corrigido** | Arena grande e vazia: o centro ocupa ~20% da área do tampo de 360 a 768 de largura; cartas jogadas com ~40px em um tampo de 474–655px de altura. | É o risco já previsto no roadmap. Escalar `--carta-c` e `--cruz-h` com a altura da arena (não só com `vw`) e aproximar os assentos do centro. |
 | O4 | P1 — **corrigido** | Dica da partida (`.dica-mesa`) cobre o placar e o topo do tampo; o botão "Ordem" fica coberto em todos os mobiles (detecção por `elementFromPoint`). | Posicionar a dica sem cobrir o placar (ex.: acima do rodapé) ou reduzir a largura dela. Confirmar se o "Ordem" coberto vem só da dica. |
 | O5 | P2 — parcial (rótulo da vez) | Rótulo "Sua vez · 19s" do centro fica embaixo das cartas jogadas (vista cadeiras, 390×844); o nome "Bot Tião" fica atrás do monte ou da carta de cima. | Ajustar `z-index` ou a posição da `.etapa` no centro; aplicar um respiro ao nome do assento de cima. |
-| O6 | P2 | Em 390×844 e acima, aparece uma barra escura de 16px **vazia** quando não há ações, com 37–101px de piso livre abaixo. | Esconder `.barra-acoes` sem botões; redistribuir a sobra para a arena (ou para as cartas). |
+| O6 | P2 — **corrigido** | Em 390×844 e acima, aparece uma barra escura de 16px **vazia** quando não há ações, com 37–101px de piso livre abaixo. | Esconder `.barra-acoes` sem botões; redistribuir a sobra para a arena (ou para as cartas). |
 
 ## Limitações desta rodada
 
@@ -114,3 +114,23 @@ O O3 não tem teste novo próprio. A medição está na auditoria (`TRUCO_AUDITO
 - "quatro humanos completam partida até o placar final": estourou os 5 min. Isolado, passou em 3,3 min (na rodada do P0, em 4,0 min). A partida é aleatória e o limite interno é de 240 s, então a hipótese é teste no limite do tempo, não efeito do CSS. Isso **não foi comprovado**: acompanhar no CI.
 
 Rollback: reverter os commits `2c8d762` (balões), `e9d413c` (dica) e o commit do O3.
+
+## Pendências do ciclo 1 (O6 e achados da rodada P1) — 2026-11-10
+
+Branch `claude/ciclo1-p2` (empilhada sobre `claude/ciclo1-p1`). **CI indisponível:** os minutos de GitHub Actions da conta acabaram neste ciclo de cobrança, então o gate é a verificação local completa (CI = NAO_EXECUTADO).
+
+| Achado | Antes (teste novo falhando) | Mudança | Depois |
+| --- | --- | --- | --- |
+| O6 — barra vazia sob a mão | Rodapé sem ações pintava uma barra escura de 16px | Sem ações nem janela de família, o rodapé mantém a caixa (reservada, sem pulo) e não pinta fundo, borda nem sombra | "rodapé sem ações não desenha barra vazia" |
+| Placar quebrando em 320px | "Preparando a mão" em duas linhas; depois, o placar chegava a 73px com "Pediram Truco! Vale 3" + situação | Situação numa linha só (até 170px); reserva do placar de 69 → 74px (a arena perde 5px) | "situação do placar cabe em uma linha - 320x568" |
+| Balões se encobrindo em 320px | "Família fechada!" cobria 18×38px de "Por baixo!" (1 em 2 execuções) | Balões laterais com no máximo 30vw | Teste de balões agora checa encobrimento: 12/12 |
+
+**Verificação local (gate sem CI):** `pnpm -r typecheck` ✅ · `pnpm --filter @truco/web test` 390/390 ✅ · `pnpm --filter @truco/web build` ✅ · `pnpm test:e2e` 33 aprovados, 9 pulados (auditoria), 0 falhas (inclusive "quatro humanos completam partida", em 3,4 min).
+
+**Decisão registrada:** no O6, a primeira tentativa zerava a altura do rodapé vazio, e isso reprovou os asserts existentes de `.rodape-mesa` visível. Em vez de afrouxar esses asserts, o rodapé mantém a caixa e só deixa de pintá-la.
+
+**Ainda aberto no ciclo 1**
+- O5: nome do assento de cima atrás do monte ou de carta em voo (não reproduzido depois da cruz maior; sem teste).
+- Rodapé com duas linhas (janela de família + ações) é maior que os 62px da reserva. Na janela de família não há mão na tela, mas a combinação não foi medida.
+- 3D, mesas de feltro/plástico, landscape, teclado, zoom 200% e aparelhos reais: NAO_EXECUTADO.
+- Teste "quatro humanos completam partida": no limite do tempo; acompanhar.
