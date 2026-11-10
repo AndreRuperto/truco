@@ -85,7 +85,10 @@ for (const [largura, altura] of alturasMao) {
     const acao = page.locator('.rodape-mesa .acao:visible');
     // Avança o ritual até ser a minha vez de jogar: cartas jogáveis e ação (Truco) no rodapé.
     // Se for a minha vez sem ação no rodapé (ex.: primeira vaza), joga uma carta e segue.
+    const deNovo = page.getByRole('button', { name: 'Jogar de novo' });
     await expect(async () => {
+      // Se a partida acabar antes do estado medido, começa outra (com TRUCO_TEMPOS=rapido ela é curta).
+      if (await deNovo.isVisible()) await deNovo.click({ timeout: 1_000 }).catch(() => {});
       await agirNoRitual(page).catch(() => false);
       const cartas = await jogavel.count();
       let acoes = await acao.count();
@@ -123,5 +126,88 @@ for (const [largura, altura] of alturasMao) {
     });
     expect(geometria.fundoCartas, 'cartas da mão encobertas pelo rodapé fixo; ' + geometria.linhas).toBeLessThanOrEqual(geometria.topoRodape + 1);
     expect(geometria.sobraY, 'mesa obriga a rolar a página; ' + geometria.linhas).toBeLessThanOrEqual(1);
+  });
+}
+
+/**
+ * P1 (O2) da auditoria do ciclo 1: os balões das cadeiras laterais ("Pode dar.", "Família
+ * fechada") ficavam centralizados num assento estreito e saíam da tela. O overflow-x: clip
+ * escondia o excesso, então o assert de scrollWidth passava mesmo com o texto cortado.
+ */
+for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
+  test('balões das cadeiras cabem na largura - ' + largura + 'x' + altura, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: largura, height: altura });
+    await page.goto('/');
+    await page.getByLabel('Apelido').fill('QA Balao');
+    await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+    await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+
+    // Amostra os balões enquanto o ritual e as primeiras jogadas acontecem.
+    const vistos = new Set<string>();
+    const cortados: string[] = [];
+    const ate = Date.now() + 25_000;
+    while (Date.now() < ate && (vistos.size < 3 || cortados.length === 0)) {
+      await agirNoRitual(page).catch(() => false);
+      const baloes = await page.evaluate(() => Array.from(document.querySelectorAll('.tela-mesa .balao')).map((b) => {
+        const r = b.getBoundingClientRect();
+        return { texto: b.textContent ?? '', esquerda: r.left, direita: r.right };
+      }));
+      for (const b of baloes) {
+        vistos.add(b.texto);
+        if (b.esquerda < -1 || b.direita > largura + 1) {
+          cortados.push(`"${b.texto}" ${Math.round(b.esquerda)}..${Math.round(b.direita)}`);
+        }
+      }
+      if (cortados.length) break;
+      await page.waitForTimeout(150);
+    }
+    expect(vistos.size, 'nenhum balão apareceu para medir').toBeGreaterThan(0);
+    expect(cortados, 'balões fora da viewport').toEqual([]);
+  });
+}
+
+/**
+ * P1 (O4) da auditoria do ciclo 1: a dica da partida ficava fixa no topo e cobria o placar
+ * e o botão "Ordem" (que a própria dica manda usar). Ela deve ficar sobre a arena, sem
+ * encobrir placar, "Ordem", mão ou ações.
+ */
+for (const [largura, altura] of [[320, 568], [360, 740], [430, 932]] as const) {
+  test('dica não cobre placar, Ordem, mão nem ações - ' + largura + 'x' + altura, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: largura, height: altura });
+    await page.goto('/');
+    await page.getByLabel('Apelido').fill('QA Dica');
+    await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+    const dica = page.getByRole('complementary', { name: 'Dica' });
+    await expect(dica).toBeVisible({ timeout: 15_000 });
+    await page.waitForTimeout(400);
+
+    // A dica pode trocar de texto ou sumir com o ritual: mede quando há uma na tela.
+    const medir = () => page.evaluate(() => {
+      const caixa = (s: string) => document.querySelector(s)?.getBoundingClientRect() ?? null;
+      const d = caixa('.dica-mesa');
+      if (!d) return null;
+      const alvos: Record<string, DOMRect | null> = {
+        placar: caixa('.tela-mesa > .placar'),
+        ordem: caixa('.guia-ordem > button'),
+        mao: caixa('[data-testid="minha-mao"]'),
+        rodape: caixa('.rodape-mesa'),
+      };
+      return Object.entries(alvos)
+        .filter(([, r]) => r && r.height > 0)
+        .filter(([, r]) => Math.min(d.bottom, r!.bottom) - Math.max(d.top, r!.top) > 1 &&
+          Math.min(d.right, r!.right) - Math.max(d.left, r!.left) > 1)
+        .map(([nome]) => nome);
+    });
+    let colisoes: string[] | null = null;
+    await expect.poll(async () => (colisoes = await medir()) !== null, { timeout: 20_000 }).toBe(true);
+    expect(colisoes, 'dica encobre').toEqual([]);
+    // A dica continua inteira na tela e com os botões alcançáveis.
+    const r = await dica.boundingBox();
+    if (r) {
+      expect(r.y).toBeGreaterThanOrEqual(0);
+      expect(r.y + r.height).toBeLessThanOrEqual(altura);
+    }
   });
 }

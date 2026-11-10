@@ -125,7 +125,7 @@ Para cada ciclo: (1) investigar; (2) registrar causa e solução; (3) implementa
 | Ciclo | Status | Commit(s) | CI | Capturas / observações |
 | --- | --- | --- | --- | --- |
 | Base de responsividade | Validado automaticamente | [6e26711](https://github.com/AndreRuperto/truco/commit/6e26711d56420212a92d97be896f7f29464ca46c), [48a01e1](https://github.com/AndreRuperto/truco/commit/48a01e19ebcb538167f509150fd2670fe4a821f4) | [Aprovado](https://github.com/AndreRuperto/truco/actions/runs/42712854930) | Inspeção visual final ainda pendente |
-| 1 — Mesa | Em andamento — auditoria feita; P0 corrigido localmente (2026-11-10) | — (não commitado) | — | [Auditoria 2026-11-09](../qa-frontend/auditoria-ciclo1-2026-11-09.md): P0 (mão coberta pelo rodapé sticky em 320–430 de largura) corrigido com arena derivada do espaço livre + "Jogar coberta" ao lado das cartas; pendentes 3 P1 e 2 P2 |
+| 1 — Mesa | Em andamento — auditoria feita; P0 corrigido localmente (2026-11-10) | — (não commitado) | — | [Auditoria 2026-11-09](../qa-frontend/auditoria-ciclo1-2026-11-09.md): P0 (mão coberta pelo rodapé sticky em 320–430 de largura) corrigido com arena derivada do espaço livre + "Jogar coberta" ao lado das cartas; P1 O2/O3/O4 corrigidos em `claude/ciclo1-p1` (2026-11-10); pendentes O5 (parcial), O6 e sobreposição de balões em 320px |
 | 2 — Temas | Não iniciado | — | — | — |
 | 3 — Animações | Não iniciado | — | — | — |
 | 4 — Multiplayer/PWA | Não iniciado | — | — | — |
