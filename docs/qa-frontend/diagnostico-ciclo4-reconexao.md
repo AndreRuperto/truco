@@ -69,11 +69,31 @@ Medido nas capturas: em 320×568 e 390×844, a faixa tem 115 px e termina abaixo
 
 **Verificação local:** typecheck ✅ · engine 233/233 · servidor 347/347 · web 394/394 · build ✅ · `pnpm test:e2e` 34 aprovados, 9 pulados e 1 falha intermitente fora do escopo. A falha foi "balões … não se encobrem - 320x568", com 2 balões sobrepostos no início da partida. Depois ela passou 12/12 com `--repeat-each 4`. O branch não altera regra de balão. É a sobreposição residual (P3) quando três bots falam ao mesmo tempo em 320 px, que ocorreu cerca de 1 vez em 30 execuções nesta sessão.
 
+## Sala encerrada e sessão expirada (3º passo, 2026-11-10)
+
+**Defeito (reproduzido):** quando o servidor reinicia (deploy) ou a partida acaba, a sala é descartada e o Colyseus 0.18 responde ao `reconnect` com `MatchMakeError` 522, `room "x" has been disposed.`. O cliente só reconhecia "already disposed": tratava o erro como falha passageira, guardava o token e deixava o jogador **preso para sempre** na recuperação, com o aviso de que a mesa voltaria sozinha.
+
+**Correção:** `fimDaReconexao` (`apps/web/src/rede/conexao.ts`) classifica pelo código do Colyseus, com a mensagem como reserva:
+
+| Erro do `reconnect` | Antes | Agora |
+| --- | --- | --- |
+| 522 / "has been disposed" (servidor reiniciou, partida acabou) | preso em "reconectando", token guardado | volta ao início: "A mesa foi encerrada (o servidor reiniciou ou a partida acabou). Entre de novo para jogar." Token apagado |
+| 524 / "invalid or expired" (cadeira vencida, > 300 s) | "A sessão da mesa expirou…" | igual |
+| Sem resposta (rede ou servidor fora) | continua tentando | igual |
+
+O aviso da queda passou a dizer "Sua cadeira fica guardada por até 5 minutos enquanto a conexão volta.", sem culpar a internet quando quem não responde é o servidor.
+
+**Testes:** `conexao.test.ts` (sala encerrada com e sem código, 524, servidor sem resposta). O E2E "voltar com o token de uma sala encerrada" **falha com o código antigo** (preso na recuperação) e passa em 0,8 s.
+
+**Verificação local:** typecheck ✅ · engine 233/233 · servidor 347/347 · web 398/398 · build ✅ · `pnpm test:e2e` 36 aprovados, 9 pulados (auditorias), 0 falhas.
+
+**Limitação:** o servidor reiniciando *durante* a partida não foi reproduzido de ponta a ponta, porque o Playwright gerencia o servidor. O E2E cobre a volta com o token de uma sala descartada, que é o que o cliente vê depois de um deploy.
+
 ## Próximos passos do ciclo 4
 
 - Aparelho real: trocar de app no Android/iOS com a partida na vez e medir se o socket cai e em quanto tempo volta (o emulado não derruba o socket ao congelar).
 - Comunicação na volta: mostrar o que aconteceu enquanto esteve fora (o prazo correu, ação padrão aplicada) em vez de só pular de estado.
-- Servidor reiniciado ou sala encerrada no meio da partida; cadeira expirada (> 300 s); service worker depois de deploy.
+- Service worker depois de deploy (cache e atualização).
 
 ## Não testado
 
