@@ -229,6 +229,8 @@ export function criarLoja(o: OpcoesLoja = {}) {
         // já estamos fora; o servidor trata a queda como saída depois de 300 s
       }
     },
+    /** Só mostra um aviso (toast), sem mudar o status da conexão. */
+    avisar: (mensagem: string) => erro(mensagem),
     /** Desiste da recuperação e permite voltar ao lobby manualmente. */
     desistirReconexao: () => largar(true),
     limparErro: (id: number) => {

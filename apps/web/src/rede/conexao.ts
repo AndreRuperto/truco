@@ -1,6 +1,7 @@
 import type { Room } from '@colyseus/sdk';
 import type { OpcoesEntrada } from '../logica/lobby';
 import type { Loja, SalaLike } from './loja';
+import { importarComRecarga } from './recarga';
 import { urlServidor } from './url';
 
 export const CHAVE_TOKEN = 'truco:reconexao';
@@ -42,9 +43,19 @@ void _roomEhSala;
 
 let padrao: Promise<ClienteSala> | null = null;
 
-/** Carrega o SDK só quando precisa. O `Room` que ele devolve satisfaz `SalaLike`. */
+/**
+ * Carrega o SDK só quando precisa. O `Room` que ele devolve satisfaz `SalaLike`.
+ * Falhou (sem internet, ou o arquivo sumiu num deploy)? Não guarda a falha: a próxima tentativa
+ * importa de novo. Arquivo sumido com internet recarrega a página (ver recarga.ts).
+ */
 function clientePadrao(): Promise<ClienteSala> {
-  padrao ??= import('@colyseus/sdk').then(({ Client }) => new Client(urlServidor()) as unknown as ClienteSala);
+  padrao ??= importarComRecarga(() => import('@colyseus/sdk')).then(
+    ({ Client }) => new Client(urlServidor()) as unknown as ClienteSala,
+    (e: unknown) => {
+      padrao = null;
+      throw e;
+    },
+  );
   return padrao;
 }
 
