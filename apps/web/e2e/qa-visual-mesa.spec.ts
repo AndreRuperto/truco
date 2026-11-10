@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test';
-import { agirNoRitual } from './apoio';
+import { devices, expect, test } from '@playwright/test';
+import { agirNoRitual, ateMinhaVezComAcao } from './apoio';
 
 /**
  * QA visual do Truco: detectar mesa minúscula, altura rígida incompatível
@@ -290,4 +290,111 @@ test('situação do placar cabe em uma linha - 320x568', async ({ page }) => {
     expect(v.linhas, `"${texto}" quebrou em ${v.linhas} linhas`).toBeLessThanOrEqual(1);
     expect(v.placar, `placar com "${texto}" passou da reserva`).toBeLessThanOrEqual(74);
   }
+});
+
+/**
+ * Fechamento do ciclo 1: em paisagem no celular e no zoom 200% do desktop (1440x900 → 720x450),
+ * a cadeira decorativa da direita passava da tela e criava 57–58px de rolagem horizontal.
+ * No celular deitado o navegador chegava a alargar a viewport (844 → 901px).
+ */
+for (const [nome, largura, altura, toque] of [
+  ['paisagem 844x390', 844, 390, true],
+  ['paisagem 740x360', 740, 360, true],
+  ['zoom 200% 720x450', 720, 450, false],
+] as const) {
+  test('mesa sem rolagem horizontal - ' + nome, async ({ browser }) => {
+    const ctx = await browser.newContext({
+      ...(toque ? devices['Pixel 7'] : devices['Desktop Chrome']),
+      viewport: { width: largura, height: altura },
+      baseURL: test.info().project.use.baseURL,
+    });
+    const page = await ctx.newPage();
+    try {
+      await page.goto('/');
+      await page.getByLabel('Apelido').fill('QA Paisagem');
+      await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+      await expect(page.getByTestId('centro')).toBeVisible({ timeout: 15_000 });
+      await page.waitForTimeout(600);
+      const m = await page.evaluate(() => ({ larguraVisual: innerWidth, scrollW: document.documentElement.scrollWidth }));
+      expect(m.larguraVisual, 'o navegador alargou a viewport').toBeLessThanOrEqual(largura + 1);
+      expect(m.scrollW, 'documento mais largo que a tela').toBeLessThanOrEqual(largura + 1);
+      // Os controles da mesa continuam alcançáveis (por rolagem vertical, se preciso).
+      await expect(page.getByRole('navigation', { name: 'Menu da mesa' })).toBeVisible();
+      await expect(page.locator('.rodape-mesa')).toBeAttached();
+    } finally {
+      await ctx.close();
+    }
+  });
+}
+
+/**
+ * A1 do QA independente do ciclo 1: o "Truco!" (ação única, em destaque) recebia um contorno
+ * decorativo de 1px a 38% que vencia o anel de foco global; pelo teclado, o foco ficava invisível.
+ */
+test('ação em destaque mostra anel de foco pelo teclado - 390x844', async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByLabel('Apelido').fill('QA Foco');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+  await ateMinhaVezComAcao(page);
+
+  // Tab até uma ação do rodapé (ordem real do teclado).
+  let foco: { classe: string; largura: number; estilo: string; alfa: number } | null = null;
+  for (let i = 0; i < 25 && !foco; i++) {
+    await page.keyboard.press('Tab');
+    foco = await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el?.classList.contains('acao')) return null;
+      const cs = getComputedStyle(el);
+      // Alfa da cor do contorno: "rgb(...)" = 1; "rgba(..., a)" ou "color(srgb ... / a)" = a.
+      const m = cs.outlineColor.match(/[,/]\s*([\d.]+)\)$/);
+      return { classe: el.className, largura: parseFloat(cs.outlineWidth), estilo: cs.outlineStyle, alfa: m ? parseFloat(m[1]) : 1 };
+    });
+  }
+  expect(foco, 'Tab não chegou a uma ação do rodapé').not.toBeNull();
+  expect(foco!.estilo, `contorno de foco em ${foco!.classe}`).not.toBe('none');
+  expect(foco!.largura, `largura do anel de foco em ${foco!.classe}`).toBeGreaterThanOrEqual(3);
+  expect(foco!.alfa, `opacidade do anel de foco em ${foco!.classe}`).toBeGreaterThanOrEqual(0.9);
+});
+
+/**
+ * Reteste independente do ciclo 1: o anel de foco das cartas da mão era amarelo (--grito) sobre
+ * o piso bege, com contraste de 1,05 a 1,63:1 (a referência WCAG 1.4.11 para indicador é 3:1).
+ */
+test('anel de foco das cartas contrasta com o piso - 390x844', async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByLabel('Apelido').fill('QA Foco Carta');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+  await ateMinhaVezComAcao(page);
+
+  let contraste: number | null = null;
+  for (let i = 0; i < 25 && contraste === null; i++) {
+    await page.keyboard.press('Tab');
+    contraste = await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el?.classList.contains('carta-botao')) return null;
+      // Converte qualquer cor computada para RGB num canvas e calcula a luminância relativa.
+      const rgb = (cor: string) => {
+        const c = document.createElement('canvas').getContext('2d')!;
+        c.fillStyle = cor;
+        c.fillRect(0, 0, 1, 1);
+        const [r, g, b] = c.getImageData(0, 0, 1, 1).data;
+        return [r, g, b];
+      };
+      const lum = ([r, g, b]: number[]) => {
+        const f = (v: number) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+      };
+      const anel = lum(rgb(getComputedStyle(el).outlineColor));
+      const piso = lum(rgb(getComputedStyle(document.body).backgroundColor));
+      return (Math.max(anel, piso) + 0.05) / (Math.min(anel, piso) + 0.05);
+    });
+  }
+  expect(contraste, 'Tab não chegou a uma carta').not.toBeNull();
+  expect(contraste!, 'contraste do anel de foco da carta contra o piso').toBeGreaterThanOrEqual(3);
 });
