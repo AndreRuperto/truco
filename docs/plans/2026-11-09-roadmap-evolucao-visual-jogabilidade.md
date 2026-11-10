@@ -128,7 +128,7 @@ Para cada ciclo: (1) investigar; (2) registrar causa e solução; (3) implementa
 | 1 — Mesa | Em andamento — auditoria feita; P0 corrigido localmente (2026-11-10) | — (não commitado) | — | [Auditoria 2026-11-09](../qa-frontend/auditoria-ciclo1-2026-11-09.md): P0 (mão coberta pelo rodapé sticky em 320–430 de largura) corrigido com arena derivada do espaço livre + "Jogar coberta" ao lado das cartas; P1 O2/O3/O4 corrigidos em `claude/ciclo1-p1` (2026-11-10); O6, placar em 320px e balões sobrepostos corrigidos em `claude/ciclo1-p2`; CI sem minutos (verificação local como gate); pendentes O5, 3D/feltro/landscape e aparelhos reais |
 | 2 — Temas | Não iniciado | — | — | — |
 | 3 — Animações | Não iniciado | — | — | — |
-| 4 — Multiplayer/PWA | Não iniciado | — | — | — |
+| 4 — Multiplayer/PWA | Em andamento — 1º passo (2026-11-10) | branch `claude/ciclo4-reconexao` | NAO_EXECUTADO (Actions sem minutos); verificação local verde | [Diagnóstico](../qa-frontend/diagnostico-ciclo4-reconexao.md): reconexão funciona; o servidor jogava por quem caía em ~1 s. Agora quem cai tem o prazo normal (decisão do produto). Pendentes: aparelho real, comunicação na volta, tela de reconexão, servidor reiniciado, service worker |
 | 5 — Competitivo | Não iniciado | — | — | — |
 | 6 — Lançamento | Não iniciado | — | — | — |
 

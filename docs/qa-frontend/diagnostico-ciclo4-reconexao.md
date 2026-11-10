@@ -41,6 +41,23 @@ Quanto tempo esperar por um humano desconectado antes de o bot jogar por ele. Op
 2. **Tolerância extra na primeira queda** (ex.: 45 s), depois volta ao ritmo atual.
 3. **Manter como está** (bot imediato), mudando só a comunicação na volta.
 
+## Correção aplicada (opção 1, escolhida pelo dono do produto em 2026-11-10)
+
+`Mesa.humanoNaVez` (humano sentado, conectado ou não) substitui `humanoAtivo` na programação da vez, no empilhar e na chave do turno, que decide se o prazo reinicia. Cair e voltar não reinicia o relógio. Janela de família, revanche e envio de estado continuam com `humanoAtivo`. A cadeira só vira bot permanente quando os 300 s de reconexão vencem (`onLeave`).
+
+Efeito colateral aceito: enquanto um humano está desconectado, cada vez dele espera até o prazo (20 s na jogada, 12 s por etapa do ritual), e os outros jogadores esperam com ele. Isso dura até ele voltar ou até os 300 s vencerem.
+
+**Testes:** o servidor ganhou "desconectado na vez: espera o prazo normal...", "cair e voltar dentro do prazo..." e "o estado mostra aos outros o prazo da cadeira desconectada". Os testes da regra antiga foram reescritos. O E2E `reconexao.spec.ts` (rede fora 8 s na própria vez) **falha com o `Mesa.ts` antigo** e passa 3/3 com o novo.
+
+**Verificação local (CI sem minutos):** typecheck ✅ · engine 233/233 · servidor 347/347 · web 390/390 · build ✅ · `pnpm test:e2e` 34 aprovados, 9 pulados (auditorias), 0 falhas.
+
+## Próximos passos do ciclo 4
+
+- Aparelho real: trocar de app no Android/iOS com a partida na vez e medir se o socket cai e em quanto tempo volta (o emulado não derruba o socket ao congelar).
+- Comunicação na volta: mostrar o que aconteceu enquanto esteve fora (o prazo correu, ação padrão aplicada) em vez de só pular de estado.
+- A tela "Recuperando sua mesa" esconde a mesa inteira mesmo em quedas de 1–2 s: avaliar manter a mesa visível, em modo só leitura, com um aviso.
+- Servidor reiniciado ou sala encerrada no meio da partida; cadeira expirada (> 300 s); service worker depois de deploy.
+
 ## Não testado
 
 Aparelho real (Android/iOS), troca de rede Wi-Fi ↔ 4G, reabertura do PWA, servidor reiniciado no meio da partida, cadeira expirada (> 300 s), service worker depois de deploy.
