@@ -264,7 +264,7 @@ export class MesaRoom extends Room {
     this.mesa.reconectar(client.sessionId);
   }
 
-  /** Saída definitiva (consentida ou fim dos 60 s de reconexão). */
+  /** Saída definitiva (consentida ou fim dos 300 s de reconexão). */
   onLeave(client: Client) {
     const auth = client.auth as UsuarioConexao | undefined;
     if (this.reservados && auth) this.liberarConta(auth.usuarioId);

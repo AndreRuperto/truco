@@ -84,7 +84,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
   const evento = (e: NovoEvento) =>
     mudar({ eventos: [...estado.eventos, { ...e, id: ++seq, em: agora() }].slice(-maxEventos) });
   const erro = (mensagem: string) => mudar({ erro: { id: ++seq, mensagem } });
-  /** `esquecerToken` = false numa queda: um F5 ainda recupera a cadeira (o servidor guarda 60 s). */
+  /** `esquecerToken` = false numa queda: um F5 ainda recupera a cadeira (o servidor guarda 300 s). */
   const largar = (esquecerToken = true) => {
     sala = null;
     aguardandoEstadoAposReconexao = false;
@@ -216,7 +216,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
       try {
         await s.leave(true);
       } catch {
-        // já estamos fora; o servidor trata a queda como saída depois de 60 s
+        // já estamos fora; o servidor trata a queda como saída depois de 300 s
       }
     },
     /** Desiste da recuperação e permite voltar ao lobby manualmente. */
