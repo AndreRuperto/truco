@@ -134,6 +134,26 @@ describe('loja', () => {
     expect(loja.getSnapshot()).toMatchObject({ msg: novo, estadoAnterior: null });
   });
 
+  test('na volta da queda, o estado novo conta o que mudou (uma vez); sem mudança, sem aviso', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    sala.receber('estado', msgEstado(distribuida(PAULISTA, undefined, [2, 4])));
+    sala.emit('drop', 1006);
+    sala.emit('reconnect');
+    sala.receber('estado', msgEstado(distribuida(PAULISTA, undefined, [3, 4])));
+    expect(loja.getSnapshot().erro).toMatchObject({ mensagem: 'Enquanto você esteve fora: Nós 2 → 3, Eles 4 → 4.', tipo: 'aviso' });
+    const id = loja.getSnapshot().erro!.id;
+    // Os estados seguintes (sem queda) não repetem o aviso.
+    sala.receber('estado', msgEstado(distribuida(PAULISTA, undefined, [5, 4])));
+    expect(loja.getSnapshot().erro!.id).toBe(id);
+
+    loja.limparErro(id);
+    sala.emit('drop', 1006);
+    sala.emit('reconnect');
+    sala.receber('estado', msgEstado(distribuida(PAULISTA, undefined, [5, 4])));
+    expect(loja.getSnapshot().erro).toBeNull();
+  });
+
   test('nova tentativa na mesma sala (F5 não, retry do app) mantém o estado anterior até o novo chegar', () => {
     const { loja, sala } = montar();
     loja.conectar(sala);
