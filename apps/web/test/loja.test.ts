@@ -210,6 +210,16 @@ describe('loja', () => {
     expect(tokens.at(-1)).toBeNull();
   });
 
+  test('conta suspensa (4021): vai ao início, avisa e esquece o token, sem tentar reconectar', () => {
+    const { loja, sala, tokens } = montar();
+    loja.conectar(sala);
+    sala.receber('estado', msgEstado(distribuida(PAULISTA)));
+    sala.emit('leave', 4021);
+    expect(loja.getSnapshot()).toMatchObject({ status: 'fora', erro: { mensagem: 'Sua conta foi suspensa.' } });
+    expect(loja.getSnapshot().estadoAnterior ?? null).toBeNull();
+    expect(tokens.at(-1)).toBeNull();
+  });
+
   test('queda involuntária preserva a cadeira e mantém recuperação automática', () => {
     const { loja, sala, tokens } = montar();
     loja.conectar(sala);

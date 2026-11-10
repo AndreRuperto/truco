@@ -41,6 +41,10 @@ export interface ExtrasApp {
   pastaWeb?: string | null;
   limiteLinkIp?: LimiteTaxa;
   limiteLinkEmail?: LimiteTaxa;
+  /** Banimento: derruba a conta das salas em tempo real (o servidor passa MesaRoom/FilaRoom). */
+  derrubarConta?: (usuarioId: number) => void;
+  /** Desbanimento: a conta volta a poder reconectar. */
+  liberarConta?: (usuarioId: number) => void;
 }
 
 /** Cookie e depois Bearer (sem repetir): um cookie vencido não pode esconder um Bearer válido. */
@@ -284,6 +288,8 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (!alvo) return void res.status(404).json({ erro: 'usuário não encontrado' });
     if (ehAdmin(alvo)) return void res.status(400).json({ erro: 'admin não pode ser banido' });
     if (!(await banirUsuario(s.banco, id, s.agora()))) return void res.status(409).json({ erro: 'já está banido' });
+    // As sessões HTTP já foram apagadas; os WebSockets abertos (mesa, fila) também caem.
+    x.derrubarConta?.(id);
     console.log(`[admin] ${(res.locals.admin as Usuario).apelido} baniu #${id} (${alvo.apelido})`);
     res.status(204).end();
   });
@@ -294,6 +300,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (!(await usuarioPorId(s.banco, id))) return void res.status(404).json({ erro: 'usuário não encontrado' });
     if (!(await desbanirUsuario(s.banco, id))) return void res.status(409).json({ erro: 'não está banido' });
     console.log(`[admin] ${(res.locals.admin as Usuario).apelido} desbaniu #${id}`);
+    x.liberarConta?.(id);
     res.status(204).end();
   });
 

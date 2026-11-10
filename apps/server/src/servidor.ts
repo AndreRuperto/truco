@@ -28,6 +28,16 @@ export function criarServidor(servicos: Servicos, extras: ExtrasServidor = {}) {
     },
     // Rotas HTTP no mesmo servidor: o roteador do Colyseus atende /matchmake e /__healthcheck,
     // o resto cai neste Express.
-    express: (app) => configurarApp(app, servicos, { listarSalas: listarSalasAbertas, listarMesas: listarMesasAdmin, pastaWeb: extras.pastaWeb ?? null }),
+    express: (app) =>
+      configurarApp(app, servicos, {
+        listarSalas: listarSalasAbertas,
+        listarMesas: listarMesasAdmin,
+        pastaWeb: extras.pastaWeb ?? null,
+        derrubarConta: (id) => {
+          MesaRoom.derrubarConta(id);
+          FilaRoom.derrubarConta(id);
+        },
+        liberarConta: (id) => MesaRoom.readmitirConta(id),
+      }),
   });
 }

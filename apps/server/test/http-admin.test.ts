@@ -12,15 +12,23 @@ let app: Awaited<ReturnType<typeof subirApp>>;
 
 const AGORA = new Date('2026-11-07T15:00:00Z');
 
+// Segurança (auditoria 2026-11-10): o ban derruba também as conexões em tempo real.
+let derrubadas: number[] = [];
+let liberadas: number[] = [];
+
 beforeAll(async () => {
   b = await bancoDeTeste();
 }, 30_000);
 beforeEach(async () => {
   await b.limpar();
   s = servicosDeTeste(b.db, { admins: ['chefe@x.com'], agora: () => AGORA });
+  derrubadas = [];
+  liberadas = [];
   app = await subirApp(s, {
     limiteLinkIp: new LimiteTaxa(100, 60_000),
     limiteLinkEmail: new LimiteTaxa(100, 60_000),
+    derrubarConta: (id) => void derrubadas.push(id),
+    liberarConta: (id) => void liberadas.push(id),
     listarMesas: async () => [
       { id: 'abc', modo: 'privada', variante: 'mineiro', ocupados: 2, lugares: 4, privada: true, trancada: true, dono: 'chefe', criadaEm: AGORA.toISOString() },
     ],
@@ -104,7 +112,10 @@ describe('painel', () => {
     const id = ana.json.usuario.id;
 
     expect((await app.pedir(`/api/admin/usuarios/${id}/banir`, { corpo: {}, cookie })).status).toBe(204);
+    // Sessões HTTP apagadas não bastam: as salas abertas (WebSocket) também são derrubadas.
+    expect(derrubadas).toEqual([id]);
     expect((await app.pedir(`/api/admin/usuarios/${id}/banir`, { corpo: {}, cookie })).status).toBe(409);
+    expect(derrubadas).toEqual([id]);
     expect((await app.pedir('/api/eu', { cookie: cookieAna })).json.usuario).toBeNull();
     const deNovo = await entrarPorLink('ana@x.com');
     expect(deNovo.status).toBe(403);
@@ -115,6 +126,7 @@ describe('painel', () => {
     expect((await app.pedir('/api/admin/resumo', { cookie })).json.banidos).toBe(1);
 
     expect((await app.pedir(`/api/admin/usuarios/${id}/desbanir`, { corpo: {}, cookie })).status).toBe(204);
+    expect(liberadas).toEqual([id]);
     expect((await app.pedir(`/api/admin/usuarios/${id}/desbanir`, { corpo: {}, cookie })).status).toBe(409);
     expect((await entrarPorLink('ana@x.com')).status).toBe(200);
   });
