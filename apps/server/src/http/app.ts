@@ -31,6 +31,7 @@ import {
 import { banirUsuario, desbanirUsuario, listarUsuariosAdmin, partidasRecentesAdmin, resumoAdmin } from '../repo/admin';
 import { historico, perfil, ranking } from '../repo/partidas';
 import type { Servicos } from '../servicos';
+import { cabecalhosSeguranca, hashesDeScriptsInline } from './cabecalhos';
 
 export interface ExtrasApp {
   /** Mesas casuais abertas (o servidor passa `listarSalasAbertas`). */
@@ -86,6 +87,21 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   // corretos. Sem proxy (dev), confiar nisso deixaria qualquer um forjar o IP do limite de taxa.
   app.set('trust proxy', s.producao || s.confiarProxy ? 1 : false);
   app.disable('x-powered-by');
+  // Antes de qualquer rota: vale para a página, os estáticos e a API.
+  app.use(
+    cabecalhosSeguranca({
+      producao: s.producao,
+      urlPublica: s.urlPublica,
+      hashesScript: () => {
+        if (!x.pastaWeb) return [];
+        try {
+          return hashesDeScriptsInline(readFileSync(join(x.pastaWeb, 'index.html'), 'utf8'));
+        } catch {
+          return [];
+        }
+      },
+    }),
+  );
 
   app.get('/saude', async (_req, res) => {
     await s.banco.execute(sql`select 1`);
