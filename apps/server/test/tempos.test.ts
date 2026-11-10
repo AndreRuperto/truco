@@ -15,3 +15,11 @@ describe('temposDoAmbiente', () => {
     expect(temposDoAmbiente({ TRUCO_TEMPOS: 'lento' })).toEqual({});
   });
 });
+
+// Auditoria de segurança 2026-11-10: por erro de configuração, o modo rápido do E2E encurtaria os
+// prazos de quem joga de verdade (ritual de 3 s). Em produção ele é ignorado.
+describe('temposDoAmbiente em produção', () => {
+  test('TRUCO_TEMPOS=rapido é ignorado com NODE_ENV=production', () => {
+    expect(temposDoAmbiente({ TRUCO_TEMPOS: 'rapido', NODE_ENV: 'production' })).toEqual({});
+  });
+});
