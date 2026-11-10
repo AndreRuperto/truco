@@ -254,3 +254,34 @@ describe('Google', () => {
     expect((await app.pedir('/api/eu/google', { corpo: { credencial: 'credencial-boa' }, cookie: outro })).status).toBe(409);
   });
 });
+
+// Auditoria de segurança 2026-11-10 (ID-04): confirmar link e login com Google não tinham limite;
+// adivinhar token é inviável (256 bits), mas cada pedido custa banco e chamadas ao Google.
+describe('limite por IP no login', () => {
+  test('confirmar link: passa do limite e recebe 429', async () => {
+    const outro = await subirApp(s, { limiteAuthIp: new LimiteTaxa(2, 60_000) });
+    try {
+      const pedir = () => outro.pedir('/api/auth/link/confirmar', { corpo: { token: 'inventado' } });
+      expect((await pedir()).status).toBe(400);
+      expect((await pedir()).status).toBe(400);
+      const r = await pedir();
+      expect(r.status).toBe(429);
+      expect(r.json.erro).toMatch(/muitos pedidos/);
+    } finally {
+      await outro.fechar();
+    }
+  });
+
+  test('login com Google: passa do limite e recebe 429 (antes de chamar o Google)', async () => {
+    let chamadas = 0;
+    const comGoogle = { ...s, google: { clientId: 'cid', verificar: async () => { chamadas++; throw new Error('token ruim'); } } };
+    const outro = await subirApp(comGoogle, { limiteAuthIp: new LimiteTaxa(1, 60_000) });
+    try {
+      expect((await outro.pedir('/api/auth/google', { corpo: { credencial: 'x' } })).status).toBe(401);
+      expect((await outro.pedir('/api/auth/google', { corpo: { credencial: 'x' } })).status).toBe(429);
+      expect(chamadas).toBe(1);
+    } finally {
+      await outro.fechar();
+    }
+  });
+});

@@ -69,7 +69,7 @@ export function configDoAmbiente(env: Env, padroes: { pastaPglite: string }): Co
     emailTeste = false;
     avisos.push('TRUCO_EMAIL_TESTE ignorada em produção');
   }
-  if (producao && !resend && !emailTeste) avisos.push('produção sem RESEND_API_KEY: links mágicos só aparecem no log');
+  if (producao && !resend && !emailTeste) avisos.push('produção sem RESEND_API_KEY: o login por e-mail não funciona (o link não é enviado nem registrado no log)');
 
   const k = Number(env.TRUCO_K_ELO);
   const kElo = Number.isInteger(k) && k >= 1 && k <= 100 ? k : K_PADRAO;
@@ -108,7 +108,7 @@ export async function servicosDoAmbiente(
   const config = configDoAmbiente(env, padroes);
   const conexao = await abrirBanco({ url: config.databaseUrl ?? undefined, pastaPglite: config.pastaPglite ?? undefined });
   const caixa = config.emailTeste ? new CaixaDeTeste() : null;
-  const emails = caixa ?? (config.resend ? emailsResend(config.resend) : emailsConsole());
+  const emails = caixa ?? (config.resend ? emailsResend(config.resend) : emailsConsole(console.log, { omitirLink: config.producao }));
   const google = config.googleClientId ? { clientId: config.googleClientId, verificar: verificadorGoogle(config.googleClientId) } : null;
   return {
     config,

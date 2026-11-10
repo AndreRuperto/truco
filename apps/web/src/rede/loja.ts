@@ -1,5 +1,5 @@
 import type { AcaoJogador } from '@truco/engine';
-import { type Fala, type MsgAcao, type MsgBatida, type MsgChat, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
+import { type Fala, type MsgAcao, type MsgBatida, type MsgChat, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
 import { type Evento, FALA_TEXTO, type NovoEvento, textoDaAcao } from '../logica/eventos';
 
 /**
@@ -155,6 +155,11 @@ export function criarLoja(o: OpcoesLoja = {}) {
     });
     s.onLeave((code) => {
       if (sala !== s) return;
+      if (code === SAIDA_CONTA_SUSPENSA) {
+        largar(true);
+        erro('Sua conta foi suspensa.');
+        return;
+      }
       if (code === SAIDA_PARTIDA_CANCELADA) {
         largar(true);
         if (o.aoCancelarRanqueada) {
