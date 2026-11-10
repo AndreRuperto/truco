@@ -129,6 +129,43 @@ describe('tentarReconectar', () => {
     expect(cliente.reconnect).toHaveBeenCalledTimes(2);
   });
 
+  // Ciclo 4: erros reais do Colyseus 0.18 no `reconnect` (MatchMakeError com `code`).
+  // Sala descartada = servidor reiniciou (deploy) ou a partida acabou: não há para onde voltar.
+  const erroColyseus = (mensagem: string, code?: number) => Object.assign(new Error(mensagem), code === undefined ? {} : { code });
+
+  test.each([
+    ['com código 522', erroColyseus('room "r1" has been disposed.', 522)],
+    ['só pela mensagem', erroColyseus('room "r1" has been disposed.')],
+  ])('sala encerrada (%s): apaga o token, sai da recuperação e explica', async (_, erro) => {
+    gravarToken('r1:t1');
+    const cliente = { joinOrCreate: vi.fn(), reconnect: vi.fn(async () => Promise.reject(erro)) };
+    const loja = novaLoja();
+    loja.marcarReconectando();
+    expect(await tentarReconectar(loja, cliente)).toBe(false);
+    expect(lerToken()).toBeNull();
+    expect(loja.getSnapshot().status).toBe('fora');
+    expect(loja.getSnapshot().erro?.mensagem).toBe('A mesa foi encerrada (o servidor reiniciou ou a partida acabou). Entre de novo para jogar.');
+  });
+
+  test('cadeira expirada (código 524): apaga o token e avisa que a sessão expirou', async () => {
+    gravarToken('r1:t1');
+    const erro = erroColyseus('reconnection token invalid or expired.', 524);
+    const cliente = { joinOrCreate: vi.fn(), reconnect: vi.fn(async () => Promise.reject(erro)) };
+    const loja = novaLoja();
+    expect(await tentarReconectar(loja, cliente)).toBe(false);
+    expect(lerToken()).toBeNull();
+    expect(loja.getSnapshot()).toMatchObject({ status: 'fora', erro: { mensagem: 'A sessão da mesa expirou. Entre novamente para jogar.' } });
+  });
+
+  test('servidor fora do ar (sem resposta): continua tentando e guarda o token', async () => {
+    gravarToken('r1:t1');
+    const cliente = { joinOrCreate: vi.fn(), reconnect: vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))) };
+    const loja = novaLoja();
+    expect(await tentarReconectar(loja, cliente)).toBe(false);
+    expect(lerToken()).toBe('r1:t1');
+    expect(loja.getSnapshot().status).toBe('reconectando');
+  });
+
   test('token vencido é apagado e fica no lobby sem toast', async () => {
     gravarToken('r1:velho');
     const cliente = { joinOrCreate: vi.fn(), reconnect: vi.fn(async () => Promise.reject(new Error('expirou'))) };

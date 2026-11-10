@@ -304,7 +304,7 @@ export function App() {
         <div className="faixa-aviso faixa-reconexao" role="status">
           <p>
             <strong>Conexão caiu — reconectando…</strong>
-            <span>Sua cadeira fica guardada. A mesa volta sozinha quando a internet voltar.</span>
+            <span>Sua cadeira fica guardada por até 5 minutos enquanto a conexão volta.</span>
           </p>
           {snap.status === 'reconectando' && (
             <div className="faixa-reconexao-botoes">

@@ -104,3 +104,18 @@ test('queda de conexão: a mesa não some, fica inerte com o aviso e volta sem p
   expect(sumiu, 'a mesa sumiu da tela durante a queda ou a volta').toEqual([]);
   expect(await mesa.evaluate((el) => (el as HTMLElement).inert)).toBe(false);
 });
+
+/**
+ * Ciclo 4: depois de um deploy (servidor reiniciado) ou do fim da partida, a sala é descartada e o
+ * Colyseus responde `room "x" has been disposed.` ao reconnect. Antes o cliente tratava isso como
+ * falha passageira e ficava para sempre em "Recuperando sua mesa…". Agora volta ao início e explica.
+ */
+test('voltar com o token de uma sala encerrada: sai da recuperação, apaga o token e explica', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => sessionStorage.setItem('truco:reconexao', 'salaQueNaoExiste:tokenVelho'));
+  await page.reload();
+  await expect(page.getByText('A mesa foi encerrada (o servidor reiniciou ou a partida acabou). Entre de novo para jogar.')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('button', { name: 'Jogar agora', exact: true })).toBeVisible();
+  await expect(page.getByText('Recuperando sua mesa e sua cadeira…')).toBeHidden();
+  expect(await page.evaluate(() => sessionStorage.getItem('truco:reconexao'))).toBeNull();
+});
