@@ -195,3 +195,5 @@ Na paisagem, a mão e as ações ficam abaixo da dobra (é preciso rolar de 440 
 - **Não testado:** aparelhos reais (iPhone 12 Pro, Galaxy S25 FE/S21), Safari/Firefox, tema escuro na mesa e zoom real do navegador (o zoom 200% foi emulado por viewport).
 - As duas rodadas de QA foram feitas por subagentes independentes do implementador, mas do mesmo modelo: **não substituem revisão humana**.
 - **Incidente:** o trabalho do fechamento foi perdido junto com o HD externo antes do push e refeito a partir do registro da sessão em 2026-11-10. Por isso a verificação local foi executada de novo sobre o código refeito (ver abaixo).
+
+**Verificação local do fechamento (gate sem CI, sobre o código refeito):** `pnpm -r typecheck` ✅ · `pnpm --filter @truco/web test` 390/390 ✅ · `pnpm --filter @truco/web build` ✅ · `pnpm test:e2e` 38 aprovados, 15 pulados (as auditorias `auditoria-mesa` e `auditoria-modos`, sob demanda), 0 falhas, inclusive "quatro humanos completam partida" (2,4 min). CI: NAO_EXECUTADO (Actions sem minutos).
