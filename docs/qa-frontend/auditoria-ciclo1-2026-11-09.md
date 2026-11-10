@@ -35,10 +35,10 @@ Os testes aprovam, mas as capturas mostram problemas que eles não cobrem (ver O
 | ID | Sev. | Observação (evidência) | Hipótese / correção proposta |
 | --- | --- | --- | --- |
 | O1 | P0 — **corrigido (ver abaixo)** | 320×568: o rodapé de ações (sticky) cobre a metade de baixo das cartas da mão durante "Conferir / Deixar passar" (`320x568-personagens-full.png`). Documento 45px mais alto que a tela. | Em telas baixas, a soma placar + tampo (53dvh, piso de 300px) + mão + rodapé passa de 100dvh. Reduzir o piso do tampo ou reservar a altura do rodapé no cálculo da arena; testar mão × rodapé sem interseção. |
-| O2 | P1 | Balões e nomes laterais são **cortados** nas bordas ("Pode dar.", "Família fecha…", "Bot Zé") em 320–390 (`*-personagens.png`). `overflow-x: clip` esconde, e o assert de `scrollWidth` passa. | Limitar balões e assentos laterais a `max-width` dentro da coluna ou ancorar para dentro da mesa; novo assert: nenhum `.balao`/`.assento-nome` com `left < 0` ou `right > innerWidth`. |
-| O3 | P1 | Arena grande e vazia: o centro ocupa ~20% da área do tampo de 360 a 768 de largura; cartas jogadas com ~40px em um tampo de 474–655px de altura. | É o risco já previsto no roadmap. Escalar `--carta-c` e `--cruz-h` com a altura da arena (não só com `vw`) e aproximar os assentos do centro. |
-| O4 | P1 | Dica da partida (`.dica-mesa`) cobre o placar e o topo do tampo; o botão "Ordem" fica coberto em todos os mobiles (detecção por `elementFromPoint`). | Posicionar a dica sem cobrir o placar (ex.: acima do rodapé) ou reduzir a largura dela. Confirmar se o "Ordem" coberto vem só da dica. |
-| O5 | P2 | Rótulo "Sua vez · 19s" do centro fica embaixo das cartas jogadas (vista cadeiras, 390×844); o nome "Bot Tião" fica atrás do monte ou da carta de cima. | Ajustar `z-index` ou a posição da `.etapa` no centro; aplicar um respiro ao nome do assento de cima. |
+| O2 | P1 — **corrigido** | Balões e nomes laterais são **cortados** nas bordas ("Pode dar.", "Família fecha…", "Bot Zé") em 320–390 (`*-personagens.png`). `overflow-x: clip` esconde, e o assert de `scrollWidth` passa. | Limitar balões e assentos laterais a `max-width` dentro da coluna ou ancorar para dentro da mesa; novo assert: nenhum `.balao`/`.assento-nome` com `left < 0` ou `right > innerWidth`. |
+| O3 | P1 — **corrigido** | Arena grande e vazia: o centro ocupa ~20% da área do tampo de 360 a 768 de largura; cartas jogadas com ~40px em um tampo de 474–655px de altura. | É o risco já previsto no roadmap. Escalar `--carta-c` e `--cruz-h` com a altura da arena (não só com `vw`) e aproximar os assentos do centro. |
+| O4 | P1 — **corrigido** | Dica da partida (`.dica-mesa`) cobre o placar e o topo do tampo; o botão "Ordem" fica coberto em todos os mobiles (detecção por `elementFromPoint`). | Posicionar a dica sem cobrir o placar (ex.: acima do rodapé) ou reduzir a largura dela. Confirmar se o "Ordem" coberto vem só da dica. |
+| O5 | P2 — parcial (rótulo da vez) | Rótulo "Sua vez · 19s" do centro fica embaixo das cartas jogadas (vista cadeiras, 390×844); o nome "Bot Tião" fica atrás do monte ou da carta de cima. | Ajustar `z-index` ou a posição da `.etapa` no centro; aplicar um respiro ao nome do assento de cima. |
 | O6 | P2 | Em 390×844 e acima, aparece uma barra escura de 16px **vazia** quando não há ações, com 37–101px de piso livre abaixo. | Esconder `.barra-acoes` sem botões; redistribuir a sobra para a arena (ou para as cartas). |
 
 ## Limitações desta rodada
@@ -88,3 +88,29 @@ lado, a reserva não mudou, então a altura do tampo é a mesma. A arena encolhe
 linha) passa da reserva de 62px e pode voltar a cobrir parte da mão. Isso não foi reproduzido nesta rodada.
 Os valores em px da reserva acompanham as regras de barra/placar/rodapé: se elas mudarem, o teste novo falha.
 Rollback: reverter `mesa-mobile.css` (arena e bloco `.minha-mao`).
+
+## Correção dos P1 (O2, O3, O4) — 2026-11-10
+
+Branch `claude/ciclo1-p1` (empilhada sobre a correção do P0). Só CSS, em `apps/web/src/mesa-mobile.css`, no bloco retrato ≤ 820px.
+
+| ID | Antes (teste novo falhando) | Mudança | Depois |
+| --- | --- | --- | --- |
+| O2 | "Pode dar." de −10 a 81px (360×740) e passando da borda direita (320×568) | Balão das cadeiras laterais preso na borda interna do assento (`translate: 50% 0` compensa o `translateX(-50%)` dos keyframes de grito); quebra linha com `max-width: min(44vw, 170px)` | "balões das cadeiras cabem na largura": 6/6 |
+| O4 | Dica cobria placar e "Ordem" em 320, 360 e 430 | Dica ancorada na metade de baixo da arena (`bottom` calculado a partir da `--altura-mesa-mobile`), mais compacta | "dica não cobre placar, Ordem, mão nem ações": 9/9 |
+| O3 | Centro ≈ 20% da área do tampo; cartas jogadas com ~36px | `--carta-c: clamp(30px, min(14.5vw, (altura da arena − 110px) / 4,3), 64px)` | Centro/tampo: 0,36 (320), 0,42 (360×640), 0,36 (360×740), 0,32 (390), 0,30 (430); sem colisão assento×centro, sem rolagem |
+
+O O3 não tem teste novo próprio. A medição está na auditoria (`TRUCO_AUDITORIA=1`), e as regressões de geometria são cobertas pelos testes de mão × rodapé, balões e largura.
+
+**Efeito colateral positivo (O5):** com a cruz maior, o rótulo "Sua vez · 20s" deixa de ficar embaixo das cartas jogadas em 360×740.
+
+**Pendências observadas nesta rodada (sem correção)**
+- 320×568: o placar quebra "Preparando a mão" em duas linhas (~78px, acima dos 69px da reserva). A página não rolou na medição, mas sobra pouca folga.
+- 320×568: com três balões ao mesmo tempo (cima, esquerda e direita), eles se sobrepõem entre si. Continuam dentro da tela, mas um encobre o outro.
+- Em 320×568, a dica ocupa boa parte do tampo (é dispensável com "Entendi"/"Sem dicas").
+- O6 (barra de ações vazia de 16px) continua aberto.
+
+**Verificação desta rodada:** typecheck, 390 testes unitários e build aprovados. No `pnpm test:e2e`, 29 passaram, 9 foram pulados (auditoria) e 2 falharam:
+- "rodapé fixo não cobre a mão - 360x740": o driver não chegou ao estado medido porque a partida acabou antes. O teste agora recomeça a partida ("Jogar de novo") e passou 18/18 com `--repeat-each 3`.
+- "quatro humanos completam partida até o placar final": estourou os 5 min. Isolado, passou em 3,3 min (na rodada do P0, em 4,0 min). A partida é aleatória e o limite interno é de 240 s, então a hipótese é teste no limite do tempo, não efeito do CSS. Isso **não foi comprovado**: acompanhar no CI.
+
+Rollback: reverter os commits `2c8d762` (balões), `e9d413c` (dica) e o commit do O3.

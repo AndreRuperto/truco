@@ -85,7 +85,10 @@ for (const [largura, altura] of alturasMao) {
     const acao = page.locator('.rodape-mesa .acao:visible');
     // Avança o ritual até ser a minha vez de jogar: cartas jogáveis e ação (Truco) no rodapé.
     // Se for a minha vez sem ação no rodapé (ex.: primeira vaza), joga uma carta e segue.
+    const deNovo = page.getByRole('button', { name: 'Jogar de novo' });
     await expect(async () => {
+      // Se a partida acabar antes do estado medido, começa outra (com TRUCO_TEMPOS=rapido ela é curta).
+      if (await deNovo.isVisible()) await deNovo.click({ timeout: 1_000 }).catch(() => {});
       await agirNoRitual(page).catch(() => false);
       const cartas = await jogavel.count();
       let acoes = await acao.count();
