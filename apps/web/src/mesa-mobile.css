@@ -257,6 +257,16 @@
     gap: 5px;
     min-width: 0;
   }
+  /* Sem ações nem janela de família (vez de outro jogador), o rodapé não pinta uma
+     barra vazia. A caixa continua (já está na --reserva-mesa e não pula a mesa quando
+     as ações chegam); só fundo, borda e sombra somem. :empty cobre todo navegador;
+     :has cobre o caso só com o texto do pedido para leitor de tela. */
+  .tela-mesa .rodape-mesa:empty,
+  .tela-mesa .rodape-mesa:not(:has(.acao, .janela-familia)) {
+    border-color: transparent;
+    background: none;
+    box-shadow: none;
+  }
   .tela-mesa .janela-familia {
     width: 100%;
     gap: 3px 8px;

@@ -211,3 +211,33 @@ for (const [largura, altura] of [[320, 568], [360, 740], [430, 932]] as const) {
     }
   });
 }
+
+/**
+ * O6 da auditoria do ciclo 1: sem ações (vez de outro jogador), o rodapé sticky desenhava
+ * uma barra escura vazia de 16px sob a mão. Sem ações, ele não deve ocupar nem pintar nada.
+ */
+test('rodapé sem ações não desenha barra vazia - 390x844', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByLabel('Apelido').fill('QA Rodape');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+
+  const rodape = page.locator('.rodape-mesa');
+  // Espera um momento sem ações nem janela de família (vez de um bot), avançando o ritual.
+  await expect(async () => {
+    await agirNoRitual(page).catch(() => false);
+    expect(await rodape.locator('.acao, .janela-familia').count()).toBe(0);
+  }).toPass({ timeout: 60_000, intervals: [300] });
+
+  const caixa = await rodape.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return { altura: r.height, fundo: cs.backgroundColor, borda: cs.borderTopColor, sombra: cs.boxShadow };
+  });
+  // A caixa pode existir (reserva estável); o que não pode é pintar uma barra vazia.
+  expect(caixa.fundo, 'rodapé vazio pinta fundo').toBe('rgba(0, 0, 0, 0)');
+  expect(caixa.borda, 'rodapé vazio pinta borda').toBe('rgba(0, 0, 0, 0)');
+  expect(caixa.sombra, 'rodapé vazio pinta sombra').toBe('none');
+});
