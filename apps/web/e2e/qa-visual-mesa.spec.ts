@@ -163,3 +163,48 @@ for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
     expect(cortados, 'balões fora da viewport').toEqual([]);
   });
 }
+
+/**
+ * P1 (O4) da auditoria do ciclo 1: a dica da partida ficava fixa no topo e cobria o placar
+ * e o botão "Ordem" (que a própria dica manda usar). Ela deve ficar sobre a arena, sem
+ * encobrir placar, "Ordem", mão ou ações.
+ */
+for (const [largura, altura] of [[320, 568], [360, 740], [430, 932]] as const) {
+  test('dica não cobre placar, Ordem, mão nem ações - ' + largura + 'x' + altura, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: largura, height: altura });
+    await page.goto('/');
+    await page.getByLabel('Apelido').fill('QA Dica');
+    await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+    const dica = page.getByRole('complementary', { name: 'Dica' });
+    await expect(dica).toBeVisible({ timeout: 15_000 });
+    await page.waitForTimeout(400);
+
+    // A dica pode trocar de texto ou sumir com o ritual: mede quando há uma na tela.
+    const medir = () => page.evaluate(() => {
+      const caixa = (s: string) => document.querySelector(s)?.getBoundingClientRect() ?? null;
+      const d = caixa('.dica-mesa');
+      if (!d) return null;
+      const alvos: Record<string, DOMRect | null> = {
+        placar: caixa('.tela-mesa > .placar'),
+        ordem: caixa('.guia-ordem > button'),
+        mao: caixa('[data-testid="minha-mao"]'),
+        rodape: caixa('.rodape-mesa'),
+      };
+      return Object.entries(alvos)
+        .filter(([, r]) => r && r.height > 0)
+        .filter(([, r]) => Math.min(d.bottom, r!.bottom) - Math.max(d.top, r!.top) > 1 &&
+          Math.min(d.right, r!.right) - Math.max(d.left, r!.left) > 1)
+        .map(([nome]) => nome);
+    });
+    let colisoes: string[] | null = null;
+    await expect.poll(async () => (colisoes = await medir()) !== null, { timeout: 20_000 }).toBe(true);
+    expect(colisoes, 'dica encobre').toEqual([]);
+    // A dica continua inteira na tela e com os botões alcançáveis.
+    const r = await dica.boundingBox();
+    if (r) {
+      expect(r.y).toBeGreaterThanOrEqual(0);
+      expect(r.y + r.height).toBeLessThanOrEqual(altura);
+    }
+  });
+}

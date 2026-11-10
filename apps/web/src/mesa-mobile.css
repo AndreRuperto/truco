@@ -181,6 +181,21 @@
     right: 0;
     translate: 50% 0;
   }
+  /* Dica da partida: sobre a metade de baixo da arena, nunca no placar, no botão "Ordem"
+     (que a dica cita), na mão ou nas ações. 120px ≈ padding + barra + placar + gaps, os
+     mesmos valores da --reserva-mesa. `main` vence a regra de topo de polimento-v2.css. */
+  main.tela-mesa > .dica-mesa {
+    top: auto;
+    bottom: calc(100dvh - 120px - env(safe-area-inset-top) - var(--altura-mesa-mobile) + 8px);
+    width: calc(100vw - 24px);
+    max-width: 440px;
+    padding: 9px 11px;
+    border-width: 2px;
+    font-size: .88rem;
+  }
+  main.tela-mesa > .dica-mesa p { margin-bottom: 6px; line-height: 1.35; }
+  main.tela-mesa > .dica-mesa .dica-mesa-botoes button { min-height: 40px; padding-block: 6px; }
+
   .tela-mesa .assento.pos-esquerda .balao.grito::before { left: 2px; top: -14px; }
   .tela-mesa .assento.pos-direita .balao.grito::after { right: 2px; bottom: -14px; }
 
