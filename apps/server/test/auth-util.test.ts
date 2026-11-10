@@ -60,6 +60,18 @@ describe('e-mails', () => {
     expect(c.enviados).toHaveLength(1);
   });
 
+  // Auditoria de segurança 2026-11-10 (ID-01): em produção sem Resend, o link (com o token de login)
+  // ia para o log do servidor; quem lesse o log entraria em qualquer conta, inclusive a de admin.
+  test('em produção o console omite o link (o token de login nunca vai para o log)', async () => {
+    const log = vi.fn();
+    await emailsConsole(log, { omitirLink: true }).enviar(emailDoLink('https://truco.app/#/entrar?token=SEGREDO123', 'a@x.com'));
+    const escrito = log.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(escrito).toContain('a@x.com');
+    expect(escrito).not.toContain('SEGREDO123');
+    expect(escrito).not.toContain('token=');
+    expect(escrito).toMatch(/RESEND_API_KEY/);
+  });
+
   test('console imprime o link (dev sem RESEND_API_KEY)', async () => {
     const log = vi.fn();
     await emailsConsole(log).enviar(emailDoLink('http://l/#/entrar?token=1', 'a@x.com'));
