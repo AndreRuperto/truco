@@ -38,16 +38,16 @@
 **Problema:** a arena pode ocupar pouca altura percebida; cartas e assentos não necessariamente escalam com o tampo. Alterações de largura e altura não podem criar rolagem horizontal.
 
 **Tarefas**
-- [ ] Inventariar a estrutura JSX/DOM da mesa, cabeçalho, barra, arena, mão e ações.
-- [ ] Inspecionar `mesa-mobile.css`, `polimento-v2.css`, `visualizacao-mesa.css` e estilos-base; documentar a regra vencedora para altura/largura/overflow.
-- [ ] Medir dimensões reais do tampo, área útil, mão e controles em 320×568, 360×640, 360×740, 390×844 e 430×932.
-- [ ] Validar iPhone 12 Pro (390×844), Galaxy S25 FE (360×780), Galaxy S21 (360×800), tablet 768×1024 e desktop 1440×900.
-- [ ] Ajustar altura por viewport e espaço disponível, considerando safe areas, cabeçalhos, avisos, teclado e barras do navegador.
-- [ ] Escalar cartas, jogadores/cadeiras, placar, monte e centro da mesa de forma proporcional, sem sobreposições.
-- [ ] Garantir que mão, cronômetro e ações sejam visíveis ou alcançáveis por rolagem vertical previsível; evitar controles encobertos por rodapé fixo.
-- [ ] Verificar modos personagens, cadeiras, mesa de madeira, feltro e visualização 3D, quando disponíveis.
-- [ ] Adicionar asserts de bounding boxes, elementos clicáveis, scrollWidth e screenshots por breakpoint/estado.
-- [ ] Corrigir regressões e publicar evidências.
+- [x] Inventariar a estrutura JSX/DOM da mesa, cabeçalho, barra, arena, mão e ações. *(linhas da grade e elementos medidos na auditoria)*
+- [x] Inspecionar `mesa-mobile.css`, `polimento-v2.css`, `visualizacao-mesa.css` e estilos-base; documentar a regra vencedora para altura/largura/overflow. *(regra vencedora registrada por achado na auditoria)*
+- [x] Medir dimensões reais do tampo, área útil, mão e controles em 320×568, 360×640, 360×740, 390×844 e 430×932.
+- [x] Validar iPhone 12 Pro (390×844), Galaxy S25 FE (360×780), Galaxy S21 (360×800), tablet 768×1024 e desktop 1440×900. *(por emulação de viewport no Chromium; aparelhos reais NAO_EXECUTADO)*
+- [x] Ajustar altura por viewport e espaço disponível, considerando safe areas, cabeçalhos, avisos, teclado e barras do navegador. *(`--reserva-mesa` com safe areas e `dvh`; teclado virtual não medido)*
+- [x] Escalar cartas, jogadores/cadeiras, placar, monte e centro da mesa de forma proporcional, sem sobreposições. *(pendente P2/P3: etiqueta de família sob monte/cartas)*
+- [x] Garantir que mão, cronômetro e ações sejam visíveis ou alcançáveis por rolagem vertical previsível; evitar controles encobertos por rodapé fixo.
+- [x] Verificar modos personagens, cadeiras, mesa de madeira, feltro e visualização 3D, quando disponíveis. *(18/18 no QA independente; plástico incluído)*
+- [x] Adicionar asserts de bounding boxes, elementos clicáveis, scrollWidth e screenshots por breakpoint/estado.
+- [x] Corrigir regressões e publicar evidências.
 
 **Aceite:** arena visualmente dominante sem excesso de espaço vazio; todos os controles utilizáveis; nenhuma rolagem horizontal indevida; testes aprovados.
 
@@ -125,7 +125,7 @@ Para cada ciclo: (1) investigar; (2) registrar causa e solução; (3) implementa
 | Ciclo | Status | Commit(s) | CI | Capturas / observações |
 | --- | --- | --- | --- | --- |
 | Base de responsividade | Validado automaticamente | [6e26711](https://github.com/AndreRuperto/truco/commit/6e26711d56420212a92d97be896f7f29464ca46c), [48a01e1](https://github.com/AndreRuperto/truco/commit/48a01e19ebcb538167f509150fd2670fe4a821f4) | [Aprovado](https://github.com/AndreRuperto/truco/actions/runs/42712854930) | Inspeção visual final ainda pendente |
-| 1 — Mesa | Em andamento — auditoria feita; P0 corrigido localmente (2026-11-10) | — (não commitado) | — | [Auditoria 2026-11-09](../qa-frontend/auditoria-ciclo1-2026-11-09.md): P0 (mão coberta pelo rodapé sticky em 320–430 de largura) corrigido com arena derivada do espaço livre + "Jogar coberta" ao lado das cartas; P1 O2/O3/O4 corrigidos em `claude/ciclo1-p1` (2026-11-10); O6, placar em 320px e balões sobrepostos corrigidos em `claude/ciclo1-p2`; CI sem minutos (verificação local como gate); pendentes O5, 3D/feltro/landscape e aparelhos reais |
+| 1 — Mesa | **Concluído (2026-11-10)**, sem P0/P1 abertos | PRs [#14](https://github.com/AndreRuperto/truco/pull/14), [#15](https://github.com/AndreRuperto/truco/pull/15), [#16](https://github.com/AndreRuperto/truco/pull/16)/[#17](https://github.com/AndreRuperto/truco/pull/17) e o PR de fechamento | NAO_EXECUTADO a partir do #15 (Actions sem minutos); verificação local como gate | [Auditoria](../qa-frontend/auditoria-ciclo1-2026-11-09.md): 2 rodadas de QA independente (C1–C8 aprovados). Pendentes P2/P3 para os ciclos 2/3: etiqueta de família, layout de paisagem, dica sobre o centro em 320px, desktop 1440×900 rolando 35px. Aparelhos reais NAO_EXECUTADO |
 | 2 — Temas | Não iniciado | — | — | — |
 | 3 — Animações | Não iniciado | — | — | — |
 | 4 — Multiplayer/PWA | Não iniciado | — | — | — |
