@@ -51,11 +51,28 @@ Efeito colateral aceito: enquanto um humano está desconectado, cada vez dele es
 
 **Verificação local (CI sem minutos):** typecheck ✅ · engine 233/233 · servidor 347/347 · web 390/390 · build ✅ · `pnpm test:e2e` 34 aprovados, 9 pulados (auditorias), 0 falhas.
 
+## Tela de reconexão (2º passo, 2026-11-10)
+
+**Problema (captura "antes"):** uma queda de 1,5 s trocava a mesa inteira por uma página de texto solta ("Recuperando sua mesa e sua cadeira…") e, na volta, passava por "Conectando…". Na sonda, a sequência foi reconectando → conectando → mesa. O jogador perdia o contexto da partida.
+
+**Mudança:** com a partida na tela, a queda mantém a mesa visível com o último estado visto (`estadoAnterior` na loja, só para exibir), esmaecida, inerte (sem clique, foco ou leitor de tela), sem cronômetro e sem dica. O aviso fica embaixo, sobre a área das ações, com "Tentar agora" e "Voltar ao início". Sem estado para mostrar (ex.: depois de um F5), continua a tela de recuperação. `msg` continua sendo a verdade atual, e os comandos ficam bloqueados até chegar o estado novo.
+
+**Critérios medidos no E2E "queda de conexão: a mesa não some…"** (falha com a interface antiga):
+- a mesa nunca some da tela, amostrando a cada 100 ms da queda até a volta;
+- a mesa fica com `inert` e `data-desatualizada`;
+- o aviso fica abaixo do placar e abaixo das cartas da mão;
+- a arena não muda de posição nem de altura (±2 px);
+- a dica fica escondida;
+- na volta, o aviso e o esmaecimento somem.
+
+Medido nas capturas: em 320×568 e 390×844, a faixa tem 115 px e termina abaixo das cartas (cartas até 447 px e 721 px; faixa a partir de 453 px e 729 px). No desktop 1440×900 ela tem 63 px, numa linha só.
+
+**Verificação local:** typecheck ✅ · engine 233/233 · servidor 347/347 · web 394/394 · build ✅ · `pnpm test:e2e` 34 aprovados, 9 pulados e 1 falha intermitente fora do escopo. A falha foi "balões … não se encobrem - 320x568", com 2 balões sobrepostos no início da partida. Depois ela passou 12/12 com `--repeat-each 4`. O branch não altera regra de balão. É a sobreposição residual (P3) quando três bots falam ao mesmo tempo em 320 px, que ocorreu cerca de 1 vez em 30 execuções nesta sessão.
+
 ## Próximos passos do ciclo 4
 
 - Aparelho real: trocar de app no Android/iOS com a partida na vez e medir se o socket cai e em quanto tempo volta (o emulado não derruba o socket ao congelar).
 - Comunicação na volta: mostrar o que aconteceu enquanto esteve fora (o prazo correu, ação padrão aplicada) em vez de só pular de estado.
-- A tela "Recuperando sua mesa" esconde a mesa inteira mesmo em quedas de 1–2 s: avaliar manter a mesa visível, em modo só leitura, com um aviso.
 - Servidor reiniciado ou sala encerrada no meio da partida; cadeira expirada (> 300 s); service worker depois de deploy.
 
 ## Não testado
