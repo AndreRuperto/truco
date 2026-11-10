@@ -30,8 +30,13 @@ export type Status = 'fora' | 'conectando' | 'na-mesa' | 'reconectando';
 
 export interface EstadoLoja {
   status: Status;
-  /** Último `estado` do servidor (null antes do primeiro). */
+  /** Último `estado` do servidor (null antes do primeiro e durante a queda). */
   msg: MsgEstado | null;
+  /**
+   * Durante a queda (e a nova tentativa na mesma sala): o último `estado` visto, SÓ para manter
+   * a mesa na tela, esmaecida e sem comandos. Nunca libera ações; o próximo `estado` o apaga.
+   */
+  estadoAnterior?: MsgEstado | null;
   /**
    * Feed efêmero (balões, sinais), do mais antigo ao mais novo. Não depende da ordem
    * em relação ao `estado`: o `sinal` dos bots pode chegar antes do `estado` da mão nova.
@@ -89,8 +94,10 @@ export function criarLoja(o: OpcoesLoja = {}) {
     sala = null;
     aguardandoEstadoAposReconexao = false;
     if (esquecerToken) persistir(null);
-    mudar({ status: 'fora', msg: null, eventos: [], chat: [], salaId: null, batida: null, movimentos: [] });
+    mudar({ status: 'fora', msg: null, estadoAnterior: null, eventos: [], chat: [], salaId: null, batida: null, movimentos: [] });
   };
+  /** O que continua na tela durante a queda: o estado atual, ou o anterior se já estava caído. */
+  const guardarAnterior = () => estado.msg ?? estado.estadoAnterior ?? null;
 
   function conectar(s: SalaLike): void {
     const antiga = sala;
@@ -102,7 +109,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
     s.onMessage('estado', (m: MsgEstado) => {
       if (sala === s) {
         aguardandoEstadoAposReconexao = false;
-        mudar({ msg: m });
+        mudar({ msg: m, estadoAnterior: null });
       }
     });
     s.onMessage('acao', (a: MsgAcao) => {
@@ -131,7 +138,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
         aguardandoEstadoAposReconexao = true;
         // A mão pode avançar enquanto o jogador está offline: não exibir
         // cartas, turno ou animações que já não correspondem ao servidor.
-        mudar({ status: 'reconectando', msg: null, movimentos: [], batida: null });
+        mudar({ status: 'reconectando', msg: null, estadoAnterior: guardarAnterior(), movimentos: [], batida: null });
       }
     });
     s.onReconnect(() => {
@@ -164,13 +171,16 @@ export function criarLoja(o: OpcoesLoja = {}) {
         // Uma aba móvel pode perder o WebSocket quando fica em segundo plano.
         // Não descarte a mesa nem a cadeira: o token ainda permite voltar.
         aguardandoEstadoAposReconexao = true;
-        mudar({ status: 'reconectando', msg: null, movimentos: [], batida: null });
+        mudar({ status: 'reconectando', msg: null, estadoAnterior: guardarAnterior(), movimentos: [], batida: null });
         return;
       }
       largar(true);
     });
     persistir(s.reconnectionToken);
-    mudar({ status: 'na-mesa', msg: null, eventos: [], chat: [], salaId: s.roomId, batida: null, movimentos: [] });
+    // Nova tentativa na MESMA sala (retry do app depois da queda): a mesa antiga fica na tela
+    // até o estado novo chegar. Outra sala começa limpa.
+    const anterior = s.roomId === estado.salaId ? guardarAnterior() : null;
+    mudar({ status: 'na-mesa', msg: null, estadoAnterior: anterior, eventos: [], chat: [], salaId: s.roomId, batida: null, movimentos: [] });
     s.send('sincronizar');
   }
 
@@ -188,7 +198,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
     getSnapshot: (): EstadoLoja => estado,
     conectar,
     marcarConectando: () => mudar({ status: 'conectando' }),
-    marcarReconectando: () => mudar({ status: 'reconectando', msg: null }),
+    marcarReconectando: () => mudar({ status: 'reconectando', msg: null, estadoAnterior: guardarAnterior() }),
     /** Volta ao lobby; com mensagem, mostra o toast. */
     falhouConexao: (mensagem?: string) => {
       mudar({ status: 'fora' });
