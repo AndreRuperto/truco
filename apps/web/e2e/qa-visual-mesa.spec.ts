@@ -135,7 +135,7 @@ for (const [largura, altura] of alturasMao) {
  * escondia o excesso, então o assert de scrollWidth passava mesmo com o texto cortado.
  */
 for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
-  test('balões das cadeiras cabem na largura - ' + largura + 'x' + altura, async ({ page }) => {
+  test('balões das cadeiras cabem na largura e não se encobrem - ' + largura + 'x' + altura, async ({ page }) => {
     test.setTimeout(90_000);
     await page.setViewportSize({ width: largura, height: altura });
     await page.goto('/');
@@ -146,12 +146,12 @@ for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
     // Amostra os balões enquanto o ritual e as primeiras jogadas acontecem.
     const vistos = new Set<string>();
     const cortados: string[] = [];
-    const ate = Date.now() + 25_000;
-    while (Date.now() < ate && (vistos.size < 3 || cortados.length === 0)) {
+    const ate = Date.now() + 35_000;
+    while (Date.now() < ate) {
       await agirNoRitual(page).catch(() => false);
       const baloes = await page.evaluate(() => Array.from(document.querySelectorAll('.tela-mesa .balao')).map((b) => {
         const r = b.getBoundingClientRect();
-        return { texto: b.textContent ?? '', esquerda: r.left, direita: r.right };
+        return { texto: b.textContent ?? '', esquerda: r.left, direita: r.right, topo: r.top, base: r.bottom };
       }));
       for (const b of baloes) {
         vistos.add(b.texto);
@@ -159,11 +159,20 @@ for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
           cortados.push(`"${b.texto}" ${Math.round(b.esquerda)}..${Math.round(b.direita)}`);
         }
       }
+      // Dois balões ao mesmo tempo não podem se encobrir (um tapava o texto do outro em 320px).
+      for (let i = 0; i < baloes.length; i++) {
+        for (let j = i + 1; j < baloes.length; j++) {
+          const a = baloes[i], b = baloes[j];
+          const x = Math.min(a.direita, b.direita) - Math.max(a.esquerda, b.esquerda);
+          const y = Math.min(a.base, b.base) - Math.max(a.topo, b.topo);
+          if (x > 2 && y > 2) cortados.push(`"${a.texto}" sobre "${b.texto}" (${Math.round(x)}x${Math.round(y)})`);
+        }
+      }
       if (cortados.length) break;
       await page.waitForTimeout(150);
     }
     expect(vistos.size, 'nenhum balão apareceu para medir').toBeGreaterThan(0);
-    expect(cortados, 'balões fora da viewport').toEqual([]);
+    expect(cortados, 'balões fora da viewport ou encobertos').toEqual([]);
   });
 }
 
