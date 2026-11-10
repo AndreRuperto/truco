@@ -107,10 +107,30 @@ Um segundo defeito, sem deploy: `clientePadrao` guardava a promessa rejeitada do
 
 **Pendente (P3):** o cache `truco-assets-v1` nunca é limpo e acumula os arquivos de todos os deploys. Limpar exige saber quais hashes a versão atual usa (o `sw.js` é estático). O efeito é só espaço em disco do aparelho.
 
+## Aviso na volta (5º passo, 2026-11-10)
+
+**Problema:** depois de uma queda, a mesa só pulava para o estado novo. Quem ficava fora mais que o prazo não sabia que o servidor tinha feito a ação padrão por ele, nem que o placar tinha mudado.
+
+**Mudança:** `logica/volta.ts` (`resumoDaVolta`) compara o último estado visto com o novo e diz uma frase só, a mais importante:
+1. "A partida terminou enquanto você esteve fora.";
+2. "Enquanto você esteve fora: Nós 2 → 3, Eles 4 → 4.";
+3. "Enquanto você esteve fora, o prazo da sua vez acabou e 1 carta foi jogada por você.";
+4. nada, se nada mudou.
+
+A loja dispara o aviso uma vez, no primeiro estado depois da queda.
+
+O aviso é uma variante **informativa** do toast:
+- tom de lousa, `role="status"` (não interrompe o leitor de tela) e 6 s na tela;
+- fica no **topo** e largo. A primeira versão, embaixo e estreita, quebrava em 6 linhas e cobria a mão justo na decisão do truco (captura);
+- o aviso de recarga por deploy passou a usar a mesma variante.
+
+**Testes:** `volta.test.ts` (5), `toast.test.tsx` (2) e `loja.test.ts` (1). O E2E "fora por mais que o prazo..." fica 24 s fora e verifica o aviso informativo, com `role=status` e sem cobrir a mão nem as ações.
+
+**Verificação local:** typecheck ✅ · engine 233/233 · servidor 347/347 · web 414/414 · build ✅ · `pnpm test:e2e` 40 aprovados, 9 pulados (auditorias), 0 falhas.
+
 ## Próximos passos do ciclo 4
 
 - Aparelho real: trocar de app no Android/iOS com a partida na vez e medir se o socket cai e em quanto tempo volta (o emulado não derruba o socket ao congelar).
-- Comunicação na volta: mostrar o que aconteceu enquanto esteve fora (o prazo correu, ação padrão aplicada) em vez de só pular de estado.
 - Limpeza do cache de `/assets` entre deploys (P3).
 
 ## Não testado
