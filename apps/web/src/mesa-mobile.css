@@ -69,7 +69,21 @@
  */
 @media (max-width: 820px) and (orientation: portrait) {
   .tela-mesa {
-    --altura-mesa-mobile: clamp(350px, 64dvh, 690px);
+    /* A arena fica com o que sobra da tela depois de reservar o resto da partida
+       no pior caso comum (placar com situação, cronômetro, mão e uma linha de ações).
+       Assim o rodapé sticky nunca cobre as cartas e a página não precisa rolar.
+       Valores medidos em e2e/auditoria-mesa.spec.ts; guardados em qa-visual-mesa.spec.ts. */
+    --reserva-mesa: calc(
+      41px                          /* barra de ícones */
+      + 69px                        /* placar com linha de situação */
+      + 14px                        /* cronômetro */
+      + var(--carta-l) * 1.66       /* mão: altura visual da carta; "Jogar coberta" fica ao lado */
+      + 62px                        /* rodapé com uma linha de ações */
+      + 5 * 4px                     /* gaps entre as 6 linhas */
+      + 18px                        /* padding vertical da tela */
+      + env(safe-area-inset-top) + env(safe-area-inset-bottom)
+    );
+    --altura-mesa-mobile: clamp(220px, calc(100dvh - var(--reserva-mesa)), 690px);
     --carta-c: clamp(32px, 10vw, 44px);
     --carta-p: clamp(19px, 5.4vw, 25px);
     --carta-l: clamp(62px, 19.5vw, 82px);
@@ -174,6 +188,21 @@
   .tela-mesa .minha-mao {
     min-height: 0;
     gap: 2px;
+    /* "Jogar coberta" vai ao lado das cartas (sobra largura, falta altura).
+       Sem o botão, a 2ª coluna fica vazia e com largura zero. */
+    grid-template-columns: minmax(0, auto) auto;
+    justify-content: center;
+    align-items: center;
+    column-gap: 6px;
+  }
+  .tela-mesa .minha-mao > .dica-pilha { grid-column: 1 / -1; }
+  .tela-mesa .minha-mao > .alternar-coberta {
+    width: 76px;
+    min-height: 44px;
+    padding: 6px 7px;
+    font-size: .8rem;
+    line-height: 1.15;
+    white-space: normal;
   }
   .tela-mesa .minha-mao .cartas {
     max-width: 100%;
@@ -241,7 +270,6 @@
 /* Em telas muito baixas, preservar a mão e ações no lugar do tampo vazio. */
 @media (max-width: 820px) and (orientation: portrait) and (max-height: 650px) {
   .tela-mesa {
-    --altura-mesa-mobile: clamp(300px, 53dvh, 390px);
     --carta-c: 30px;
     --carta-l: 58px;
     --carta-p: 18px;
@@ -260,9 +288,6 @@
 /* A arena ocupa a maior parte da altura útil no celular, sem deixar um
    grande vazio abaixo do tampo em telas compridas. */
 @media (max-width: 820px) and (orientation: portrait) and (min-height: 651px) {
-  .tela-mesa {
-    --altura-mesa-mobile: clamp(350px, 64dvh, 690px);
-  }
   .tela-mesa .mesa-ambiente > .tampo {
     grid-template-rows: minmax(40px, auto) minmax(0, 1fr) minmax(42px, auto);
   }
