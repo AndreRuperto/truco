@@ -89,11 +89,29 @@ O aviso da queda passou a dizer "Sua cadeira fica guardada por até 5 minutos en
 
 **Limitação:** o servidor reiniciando *durante* a partida não foi reproduzido de ponta a ponta, porque o Playwright gerencia o servidor. O E2E cobre a volta com o token de uma sala descartada, que é o que o cliente vê depois de um deploy.
 
+## Service worker e deploy (4º passo, 2026-11-10)
+
+**O que já estava certo (código):** `public/sw.js` busca o `index.html` sempre na rede (offline mostra uma página clara de "sem conexão") e guarda só `/assets` com hash. Ele ativa na hora (`skipWaiting` + `clients.claim`), e o servidor manda `no-cache` para `index.html`, `sw.js` e o manifesto. Um F5 depois do deploy pega a versão nova.
+
+**Defeito (reproduzido contra o build de produção, com o service worker controlando a página):** uma aba aberta **antes** de um deploy pede pedaços carregados sob demanda com o hash antigo. Esses pedaços são o SDK do Colyseus, no "Jogar agora", e a cena 3D. O servidor novo responde 404:
+- "Jogar agora" **falhava em silêncio** e o jogador ficava no início;
+- a vista 3D dizia "Não deu para abrir a vista 3D **neste aparelho**".
+
+Um segundo defeito, sem deploy: `clientePadrao` guardava a promessa rejeitada do `import()` do SDK. Um "Jogar agora" sem internet fazia todos os seguintes falharem. Medido: o navegador também guarda a falha do `import()` daquele arquivo enquanto a página estiver aberta, então só uma recarga resolve.
+
+**Correção:** `rede/recarga.ts` (`importarComRecarga`) reconhece o erro de pedaço ausente (Chromium, Safari, Firefox) e, com internet, recarrega a página uma vez. Uma trava de 60 s em `sessionStorage` impede o loop. Sem internet, o erro vai para quem chamou e aparece como "o servidor não respondeu". Na volta, o App avisa "Recarregamos a página para terminar de carregar o Truco. Tente de novo.", e numa mesa o token devolve a cadeira. `clientePadrao` não guarda mais a falha.
+
+**Testes:** `recarga.test.ts` (8). O E2E `deploy.spec.ts` roda contra o build da porta 2570 com o service worker ativo, em 3 cenários: aba aberta e deploy no "Jogar agora"; sem internet e depois com internet; deploy no meio da partida e vista 3D. **Os 3 falham com o build antigo** e passam 6/6 com o novo. Pulam se o `dist` não estiver atualizado; `TRUCO_DEPLOY_FORCAR=1` força a execução.
+
+**Verificação local:** typecheck ✅ · engine 233/233 · servidor 347/347 · web 406/406 · build ✅ · `pnpm test:e2e` 39 aprovados, 9 pulados (auditorias), 0 falhas.
+
+**Pendente (P3):** o cache `truco-assets-v1` nunca é limpo e acumula os arquivos de todos os deploys. Limpar exige saber quais hashes a versão atual usa (o `sw.js` é estático). O efeito é só espaço em disco do aparelho.
+
 ## Próximos passos do ciclo 4
 
 - Aparelho real: trocar de app no Android/iOS com a partida na vez e medir se o socket cai e em quanto tempo volta (o emulado não derruba o socket ao congelar).
 - Comunicação na volta: mostrar o que aconteceu enquanto esteve fora (o prazo correu, ação padrão aplicada) em vez de só pular de estado.
-- Service worker depois de deploy (cache e atualização).
+- Limpeza do cache de `/assets` entre deploys (P3).
 
 ## Não testado
 
