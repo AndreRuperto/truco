@@ -17,8 +17,24 @@ describe('configDoAmbiente', () => {
       origens: [],
       admins: [],
       confiarProxy: false,
+      pagamento: { modo: 'desligado', handle: null, apiKey: null },
       avisos: [],
     });
+  });
+
+  test('LOJA_PAGAMENTO: on exige handle; simulado só fora de produção', () => {
+    expect(configDoAmbiente({ LOJA_PAGAMENTO: 'on', INFINITEPAY_HANDLE: '$boteco', INFINITEPAY_API_KEY: 'inchk_1' }, PADROES).pagamento).toEqual({
+      modo: 'infinitepay',
+      handle: 'boteco',
+      apiKey: 'inchk_1',
+    });
+    const semHandle = configDoAmbiente({ LOJA_PAGAMENTO: 'on' }, PADROES);
+    expect(semHandle.pagamento.modo).toBe('desligado');
+    expect(semHandle.avisos.join()).toMatch(/INFINITEPAY_HANDLE/);
+    expect(configDoAmbiente({ LOJA_PAGAMENTO: 'simulado' }, PADROES).pagamento.modo).toBe('simulado');
+    const prod = configDoAmbiente({ NODE_ENV: 'production', TRUCO_URL_PUBLICA: 'https://t.app', LOJA_PAGAMENTO: 'simulado' }, PADROES);
+    expect(prod.pagamento.modo).toBe('desligado');
+    expect(prod.avisos.join()).toMatch(/simulado/);
   });
 
   test('TRUCO_PGLITE=memoria e caminho próprio', () => {

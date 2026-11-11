@@ -93,7 +93,7 @@ export function gatewayInfinitePay(o: OpcoesInfinitePay): GatewayPagamento {
   };
 }
 
-/** Gateway falso para testes e para desenvolvimento local (`LOJA_PAGAMENTO=teste`). */
+/** Gateway falso para testes (o teste decide quando "paga"). */
 export class GatewayDeTeste implements GatewayPagamento {
   readonly links: PedidoLink[] = [];
   /** `transactionNsu` → resultado do payment_check. */
@@ -116,4 +116,25 @@ export class GatewayDeTeste implements GatewayPagamento {
     if (this.falharVerificacao) throw new ErroGateway('falha simulada');
     return this.pagamentos.get(p.transactionNsu) ?? { pago: false, centavos: 0, metodo: null };
   }
+}
+
+/**
+ * `LOJA_PAGAMENTO=simulado` (fora de produção): o "checkout" é o próprio retorno, já pago.
+ * Serve para o E2E e para testar a loja sem cobrar ninguém.
+ */
+export function gatewaySimulado(): GatewayPagamento {
+  const g = new GatewayDeTeste();
+  return {
+    async criarLink(p) {
+      const transactionNsu = `simulado-${p.orderNsu}`;
+      g.pagar(transactionNsu, p.centavos, 'simulado');
+      const u = new URL(p.redirectUrl);
+      u.searchParams.set('order_nsu', p.orderNsu);
+      u.searchParams.set('transaction_nsu', transactionNsu);
+      u.searchParams.set('slug', 'simulado');
+      u.searchParams.set('capture_method', 'simulado');
+      return { url: u.toString() };
+    },
+    verificar: (p) => g.verificar(p),
+  };
 }

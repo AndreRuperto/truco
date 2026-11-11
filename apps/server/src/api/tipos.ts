@@ -209,3 +209,50 @@ export interface VisualJogador {
   roupa: import('../loja/catalogo').VisualRoupa;
   moldura: import('../loja/catalogo').EstiloMoldura;
 }
+
+/** `GET /api/loja/catalogo`. */
+export interface CatalogoApi {
+  itens: import('../loja/catalogo').ItemLoja[];
+  pacotes: import('../loja/catalogo').PacotePila[];
+  /** false = compra de Pila desligada (a loja mostra "em breve"). */
+  pagamentoAtivo: boolean;
+}
+
+export interface LancamentoApi {
+  id: number;
+  moeda: import('../loja/regras').Moeda;
+  delta: number;
+  saldoDepois: number;
+  motivo: import('../loja/regras').Motivo;
+  ref: string | null;
+  criadoEm: string;
+}
+
+/** `GET /api/loja/eu`. */
+export interface CarteiraApi {
+  fichas: number;
+  pila: number;
+  inventario: string[];
+  equipados: Partial<Record<'verso' | 'roupa' | 'moldura' | 'tampo', string>>;
+  /** Avatar da conta (`pronto:`, `loja:` ou imagem), para a loja saber qual está em uso. */
+  avatar: string | null;
+  /** Bônus aplicados nesta leitura (cadastro, diário, resgate), para o aviso na tela. */
+  bonus: { motivo: import('../loja/regras').Motivo; delta: number }[];
+  extrato: LancamentoApi[];
+}
+
+export interface PedidoApi {
+  id: string;
+  pacoteId: string;
+  pila: number;
+  valorCentavos: number;
+  status: 'criado' | 'pago' | 'estornado';
+}
+
+export interface PedidoAdmin extends PedidoApi {
+  usuarioId: number;
+  apelido: string;
+  captureMethod: string | null;
+  criadoEm: string;
+  pagoEm: string | null;
+}
