@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { abrirBanco } from '../src/banco/banco';
-import { participacoes, partidas, ratings, usuarios } from '../src/banco/schema';
+import { carteiras, participacoes, partidas, ratings, usuarios } from '../src/banco/schema';
 import { type BancoDeTeste, bancoDeTeste, ehViolacaoUnica } from './banco-helpers';
 
 let b: BancoDeTeste;
@@ -35,6 +35,21 @@ describe('banco (PGlite + migração inicial)', () => {
     await b.db.insert(participacoes).values({ partidaId: p.id, usuarioId: u.id, nome: 'Bia', humano: true, cadeira: 0, dupla: 0 });
     await b.db.delete(partidas).where(eq(partidas.id, p.id));
     expect(await b.db.select().from(participacoes)).toEqual([]);
+  });
+
+  test('carteira nunca fica negativa (check no banco)', async () => {
+    const [u] = await b.db.insert(usuarios).values({ apelido: 'Cid' }).returning();
+    const erro = await b.db
+      .insert(carteiras)
+      .values({ usuarioId: u.id, fichas: -1 })
+      .catch((e: unknown) => e);
+    expect(erro).toBeInstanceOf(Error);
+    const erroPila = await b.db
+      .insert(carteiras)
+      .values({ usuarioId: u.id, pila: -5 })
+      .catch((e: unknown) => e);
+    expect(erroPila).toBeInstanceOf(Error);
+    expect(await b.db.select().from(carteiras)).toEqual([]);
   });
 });
 

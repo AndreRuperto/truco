@@ -1,6 +1,8 @@
 import { sql } from 'drizzle-orm';
 import type { PreferenciasMesa } from '../api/tipos';
-import { boolean, index, integer, jsonb, pgTable, primaryKey, serial, smallint, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { boolean, check, index, integer, jsonb, pgTable, primaryKey, serial, smallint, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import type { Slot } from '../loja/catalogo';
+import { MOEDAS, MOTIVOS } from '../loja/regras';
 
 export const VARIANTES = ['paulista', 'mineiro'] as const;
 export const MODOS = ['classica', 'desafio', 'privada', 'ranqueada'] as const;
@@ -20,6 +22,8 @@ export const usuarios = pgTable(
     /** Ver `UsuarioApi.avatar`. */
     avatar: text('avatar'),
     preferencias: jsonb('preferencias').$type<PreferenciasMesa>(),
+    /** Itens da loja em uso, por slot (ver `loja/catalogo.ts`); o avatar fica em `avatar`. */
+    equipados: jsonb('equipados').$type<Partial<Record<Exclude<Slot, 'avatar'>, string>>>(),
     /** Conta suspensa por um admin: sessões não valem e o login é recusado. null = normal. */
     banidoEm: quando('banido_em'),
     criadoEm: quando('criado_em').notNull().defaultNow(),
@@ -80,6 +84,10 @@ export const partidas = pgTable('partidas', {
   terminadaEm: quando('terminada_em'),
   /** Terminou só com bots (todos os humanos saíram): não conta. */
   abandonada: boolean('abandonada').notNull().default(false),
+  /** Fichas que cada humano com conta pagou (cacife efetivo); 0 = sem cacife. */
+  cacife: integer('cacife').notNull().default(0),
+  /** Soma dos cacifes pagos. */
+  pote: integer('pote').notNull().default(0),
 });
 
 export const participacoes = pgTable(
@@ -117,3 +125,74 @@ export const bloqueiosFila = pgTable('bloqueios_fila', {
   ate: quando('ate').notNull(),
   motivo: text('motivo').notNull(),
 });
+
+/** Saldos (cache da soma de `lancamentos`; só `repo/carteira.ts#movimentar` escreve). */
+export const carteiras = pgTable(
+  'carteiras',
+  {
+    usuarioId: integer('usuario_id')
+      .primaryKey()
+      .references(() => usuarios.id, { onDelete: 'cascade' }),
+    fichas: integer('fichas').notNull().default(0),
+    pila: integer('pila').notNull().default(0),
+    bonusCadastro: boolean('bonus_cadastro').notNull().default(false),
+    /** Dia (AAAA-MM-DD, São Paulo) do último bônus diário. */
+    ultimoDiario: text('ultimo_diario'),
+  },
+  (t) => [check('carteiras_fichas_positivas', sql`${t.fichas} >= 0`), check('carteiras_pila_positivo', sql`${t.pila} >= 0`)],
+);
+
+/** Extrato: toda mudança de saldo, com o saldo depois dela. */
+export const lancamentos = pgTable(
+  'lancamentos',
+  {
+    id: serial('id').primaryKey(),
+    usuarioId: integer('usuario_id')
+      .notNull()
+      .references(() => usuarios.id, { onDelete: 'cascade' }),
+    moeda: text('moeda', { enum: MOEDAS }).notNull(),
+    delta: integer('delta').notNull(),
+    saldoDepois: integer('saldo_depois').notNull(),
+    motivo: text('motivo', { enum: MOTIVOS }).notNull(),
+    /** Partida, item ou pedido que originou o lançamento. */
+    ref: text('ref'),
+    criadoEm: quando('criado_em').notNull().defaultNow(),
+  },
+  (t) => [index('lancamentos_usuario_idx').on(t.usuarioId, t.criadoEm)],
+);
+
+export const inventario = pgTable(
+  'inventario',
+  {
+    usuarioId: integer('usuario_id')
+      .notNull()
+      .references(() => usuarios.id, { onDelete: 'cascade' }),
+    itemId: text('item_id').notNull(),
+    adquiridoEm: quando('adquirido_em').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.usuarioId, t.itemId] })],
+);
+
+export const STATUS_PEDIDO = ['criado', 'pago', 'estornado'] as const;
+
+/** Compra de Pila. `id` é o `order_nsu` mandado à InfinitePay. */
+export const pedidos = pgTable(
+  'pedidos',
+  {
+    id: text('id').primaryKey(),
+    usuarioId: integer('usuario_id')
+      .notNull()
+      .references(() => usuarios.id, { onDelete: 'cascade' }),
+    pacoteId: text('pacote_id').notNull(),
+    valorCentavos: integer('valor_centavos').notNull(),
+    pila: integer('pila').notNull(),
+    status: text('status', { enum: STATUS_PEDIDO }).notNull().default('criado'),
+    checkoutUrl: text('checkout_url'),
+    slug: text('slug'),
+    transactionNsu: text('transaction_nsu').unique(),
+    captureMethod: text('capture_method'),
+    pagoEm: quando('pago_em'),
+    criadoEm: quando('criado_em').notNull().defaultNow(),
+  },
+  (t) => [index('pedidos_usuario_idx').on(t.usuarioId, t.criadoEm)],
+);
