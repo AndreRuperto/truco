@@ -1,3 +1,12 @@
+const TAMANHOS = [
+  { width: 320, height: 568 },
+  { width: 360, height: 640 },
+  { width: 360, height: 740 },
+  { width: 390, height: 844 },
+  { width: 430, height: 932 },
+  { width: 1280, height: 800 },
+];
+
 import { type Browser, devices, expect, type Page, test } from '@playwright/test';
 
 const WEB = 'http://127.0.0.1:5180';
@@ -20,7 +29,7 @@ async function entrar(browser: Browser, email: string, viewport?: { width: numbe
 
 const carteira = async (page: Page) => (await page.request.get(`${WEB}/api/loja/eu`)).json();
 
-test('bônus de cadastro, Pila pelo checkout (simulado) e verso comprado e equipado', async ({ browser }) => {
+test('bônus de cadastro, Pila pelo checkout (simulado), verso comprado e loja sem rolagem horizontal do 320×568 ao desktop', async ({ browser }) => {
   const ana = await entrar(browser, 'ana.loja@teste.dev');
   try {
     // Cadastro (1.000) + bônus do dia (100), avisados na faixa.
@@ -45,6 +54,23 @@ test('bônus de cadastro, Pila pelo checkout (simulado) e verso comprado e equip
     expect(c).toMatchObject({ fichas: 1100, pila: 100, inventario: ['verso-boteco'], equipados: { verso: 'verso-boteco' } });
     // Pila nunca vira Fichas: o extrato só tem as entradas esperadas.
     expect(c.extrato.map((l: { motivo: string }) => l.motivo).sort()).toEqual(['cadastro', 'compra_item', 'compra_pila', 'diario']);
+
+    // Mesmo login (o limite de links mágicos por IP vale para a suíte toda): a loja não rola
+    // na horizontal em nenhum tamanho do AGENTS.md.
+    for (const t of TAMANHOS) {
+      await ana.setViewportSize(t);
+      for (const aba of ['verso', 'roupa', 'moldura', 'avatar', 'tampo', 'pila']) {
+        await ana.goto(`/#/loja/${aba}`);
+        await expect(ana.getByRole('heading', { level: 2 })).toBeVisible();
+        const sobra = await ana.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(sobra, `${t.width}x${t.height} #/loja/${aba}`).toBeLessThanOrEqual(0);
+      }
+      for (const aba of ['verso', 'roupa', 'moldura']) {
+        await ana.goto(`/#/loja/${aba}`);
+        await expect(ana.getByRole('heading', { level: 2 })).toBeVisible();
+        await ana.screenshot({ path: `test-results/loja-${aba}-${t.width}x${t.height}.png`, fullPage: true });
+      }
+    }
   } finally {
     await ana.context().close();
   }
@@ -86,33 +112,3 @@ test('mesa privada valendo 100 Fichas: convidado sem conta é barrado e os dois 
   }
 });
 
-const TAMANHOS = [
-  { width: 320, height: 568 },
-  { width: 360, height: 640 },
-  { width: 360, height: 740 },
-  { width: 390, height: 844 },
-  { width: 430, height: 932 },
-  { width: 1280, height: 800 },
-];
-
-test('loja sem rolagem horizontal do 320×568 ao desktop', async ({ browser }) => {
-  const page = await entrar(browser, 'ana.layout@teste.dev', TAMANHOS[0]);
-  try {
-    for (const t of TAMANHOS) {
-      await page.setViewportSize(t);
-      for (const aba of ['verso', 'roupa', 'moldura', 'avatar', 'tampo', 'pila']) {
-        await page.goto(`/#/loja/${aba}`);
-        await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
-        const sobra = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-        expect(sobra, `${t.width}x${t.height} #/loja/${aba}`).toBeLessThanOrEqual(0);
-      }
-      for (const aba of ['verso', 'roupa', 'moldura']) {
-        await page.goto(`/#/loja/${aba}`);
-        await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
-        await page.screenshot({ path: `test-results/loja-${aba}-${t.width}x${t.height}.png`, fullPage: true });
-      }
-    }
-  } finally {
-    await page.context().close();
-  }
-});

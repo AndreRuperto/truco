@@ -1,5 +1,5 @@
 import type { PreferenciasMesa, UsuarioApi } from '@truco/api';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Cabecalho } from './componentes/Cabecalho';
 import { FundoCartas } from './componentes/FundoCartas';
 import { Toast } from './componentes/Toast';
@@ -83,6 +83,15 @@ export function App() {
   useEffect(() => {
     if (rota.tela === 'loja') void carteira.carregarCatalogo();
   }, [rota.tela]);
+  // O aviso do bônus vale para a tela em que apareceu: ao trocar de tela ele some.
+  const telaDoAviso = useRef<string | null>(null);
+  useEffect(() => {
+    if (avisoBonus && telaDoAviso.current === null) telaDoAviso.current = rota.tela;
+    else if (telaDoAviso.current !== null && telaDoAviso.current !== rota.tela) {
+      telaDoAviso.current = null;
+      setAvisoBonus(null);
+    }
+  }, [rota.tela, avisoBonus]);
   useEffect(() => {
     setPrefsConta(undefined);
     if (idUsuario === undefined) return;
