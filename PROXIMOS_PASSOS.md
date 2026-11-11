@@ -28,19 +28,25 @@ O CI do GitHub Actions está sem minutos até virar o ciclo de cobrança: o gate
 - [ ] Ciclo 2 (temas, mesas e modos): pendências P2/P3 do Ciclo 1 (etiqueta de família, layout de paisagem, dica sobre o centro em 320 px, desktop 1440×900 rolando 35 px).
 - [ ] Baixa prioridade: limpar o cache de `/assets` entre deploys; avatar repetido em cada estado; limites por IP em `/api/perfil/:id` e na criação de salas; trilha de auditoria.
 
-## Em andamento: loja com duas moedas (brainstorming, 2026-11-10)
+## Loja com duas moedas — branch `claude/loja` (worktree `C:\projetos	ruco-loja`), 2026-11-11
 
-Análise legal em `docs/legal/modo-apostado-2026-11.md` (modo apostado com dinheiro real: **não pode**).
-Decisões já tomadas com o dono:
-- Duas moedas **sem ponte entre elas**: **Ouro** (comprada em reais, só para a loja, nunca apostada, nunca transferida, sem saque) e **Fichas** (só ganhas jogando, nunca vendidas nem de brinde em compra).
-- Cobrança já na primeira entrega pela **InfinitePay Checkout Integrado**: `POST https://api.checkout.infinitepay.io/links` (handle ou `X-Api-Key`, items em centavos, `order_nsu`, `redirect_url`, `webhook_url`). O webhook **não tem assinatura**, então é preciso confirmar com `POST /payment_check` (handle, order_nsu, transaction_nsu, slug). Não há sandbox (teste real de R$ 1,00 e estorno pelo app). Estorno não existe na API. Mínimo de R$ 1,00. Docs: https://www.infinitepay.io/checkout-documentacao
-- Catálogo v1: verso do baralho, roupa do personagem, avatar e moldura, tampo da mesa (só visual, sem vantagem).
-- Fichas apostáveis em **mesas casuais/privadas e na ranqueada** (cacife). Atenção ao conluio (SEC-03) e à regra de mesa com bot.
+Design: `docs/plans/2026-11-11-loja-duas-moedas-design.md` · Plano: `docs/plans/2026-11-11-loja-duas-moedas.md` · Base legal: `docs/legal/modo-apostado-2026-11.md`.
+A branch sai de `claude/seguranca` (inclui os commits de segurança ainda sem merge).
 
-- [ ] Continuar o brainstorming: ganho de Fichas (vitória, diária, piso quando zerar), cacife por mesa/patente, anticonluio, preços dos pacotes de Ouro.
-- [ ] Apresentar o design em seções, gravar em `docs/plans/2026-11-1x-loja-duas-moedas-design.md` e escrever o plano (superpowers:writing-plans).
-- [ ] Implementar: tabelas (saldos, inventário, pedidos, lançamentos/ledger), rotas da API, webhook + payment_check idempotente, loja na web, cacife no servidor da mesa, testes.
-- [ ] Antes de ligar a cobrança: advogado + confirmação por escrito da InfinitePay; termos de uso e política de reembolso (CDC art. 49).
+**Feito (tarefas 1–14 do plano):**
+- **Fichas** (ganhas: 1.000 no cadastro, +100 por dia, resgate para 500 abaixo de 100; apostadas como cacife) e **Pila** (só comprado pela InfinitePay; só para itens). Não existe conversão entre elas: todo saldo passa por `movimentar` com extrato (`lancamentos`) e `CHECK >= 0`.
+- Cacife: casual/privada (dono escolhe 0/50/100/250/500/1000; exige conta e saldo; os humanos sentam como adversários) e ranqueada (pela patente mais alta). O efetivo é o menor saldo, debitado no início; o pote vai para quem ficou na dupla vencedora; abandono perde; desligamento e órfã devolvem; anti-fazenda depois de 5 ranqueadas iguais em 24 h.
+- Loja `#/loja` (verso, roupa, moldura, avatar, tampo, pacotes de Pila), retorno `#/loja/obrigado`, saldo no cabeçalho, verso de quem dá as cartas, roupa e moldura na mesa.
+- InfinitePay: `LOJA_PAGAMENTO=on` + `INFINITEPAY_HANDLE` (+ `INFINITEPAY_API_KEY` opcional). Webhook e retorno só apontam o pedido; quem confirma é o `payment_check`. **Desligado por padrão.**
+- Verificação local: `pnpm -r typecheck` ok; `pnpm -r test` e `pnpm test:e2e` (ver o resultado no fim da sessão); `e2e/loja.spec.ts` com 3 testes, inclusive a loja sem rolagem horizontal de 320×568 a 1280×800.
+
+**Pendente:**
+- [ ] Revisar e abrir o PR de `claude/loja` (depois do merge do PR de segurança, ou junto com ele).
+- [ ] **Antes de `LOJA_PAGAMENTO=on`:** advogado (modelo, Fichas na ranqueada, termos da loja em `TermosLoja`, ECA Digital e caixas para menores), confirmação **por escrito** da InfinitePay sobre vender moeda virtual de jogo, contador (nota e tributos), teste real com R$ 4,90 e estorno.
+- [ ] Painel de admin: aba de pedidos e ajuste de saldo na interface (hoje só pela API: `GET /api/admin/pedidos`, `POST /api/admin/usuarios/:id/ajuste`).
+- [ ] Vista 3D: verso e roupa equipados ainda não aparecem no 3D (só no 2D personagens/cadeiras).
+- [ ] Estorno vindo do webhook (`refunded`) ainda não desconta o Pila sozinho: hoje é pelo ajuste de admin.
+- [ ] QA visual independente (outro agente ou pessoa) da loja e da mesa com cacife, como pede o `AGENTS.md`.
 
 ## Comandos úteis
 
