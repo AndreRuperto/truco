@@ -1,4 +1,5 @@
 import { criarApi } from './api';
+import { criarCarteira } from './carteira';
 import { abrirFila, entrarComReserva, gravarToken } from './conexao';
 import { criarLojaFila, type SalaFilaLike } from './fila';
 import { criarLoja } from './loja';
@@ -17,6 +18,7 @@ export const loja = criarLoja({
 // 401 numa chamada que exige login = a sessão expirou: volta a convidado.
 export const api = criarApi(undefined, '', () => sessao.definirUsuario(null));
 export const sessao = criarSessao(api);
+export const carteira = criarCarteira(api);
 
 export const lojaFila = criarLojaFila({
   abrir: async (o) => (await abrirFila(o)) as SalaFilaLike,

@@ -114,17 +114,80 @@ export function DesenhoAvatar({ id }: { id: AvatarPronto }) {
   );
 }
 
+/** Avatares exclusivos da loja (`loja:<id do item>`), no mesmo traço dos prontos. */
+export const DESENHOS_LOJA: Record<string, ReactNode> = {
+  'avatar-violeiro': (
+    <>
+      <circle cx="32" cy="32" r="32" fill="#2d6a45" />
+      <ellipse cx="32" cy="18" rx="17" ry="4.5" fill="#e8c35e" />
+      <path d="M22 18c0-7 4-11 10-11s10 4 10 11Z" fill="#e8c35e" />
+      <circle cx="32" cy="26" r="8" fill="#d9a47a" />
+      <path d="M24 30c2 3 5 4 8 4s6-1 8-4" stroke="#3a2618" strokeWidth="2" fill="none" />
+      <path d="M14 64c0-14 8-22 18-22s18 8 18 22Z" fill="#b8202a" />
+      <g transform="rotate(-30 32 50)">
+        <ellipse cx="32" cy="52" rx="9" ry="7" fill="#e3a35b" />
+        <circle cx="32" cy="52" r="2.4" fill="#5e3a1f" />
+        <rect x="30.6" y="30" width="2.8" height="18" fill="#5e3a1f" />
+      </g>
+    </>
+  ),
+  'avatar-garrafa': (
+    <>
+      <circle cx="32" cy="32" r="32" fill="#24304a" />
+      <rect x="10" y="46" width="44" height="8" rx="2" fill="#9a6337" />
+      <path d="M28 10h8v8c0 2 4 4 4 9v19H24V27c0-5 4-7 4-9Z" fill="#3f9b66" />
+      <rect x="27" y="8" width="10" height="4" rx="1" fill="#e9b02c" />
+      <rect x="26" y="30" width="12" height="9" rx="1.5" fill="#fbf3dc" />
+      <path d="M44 40h7v6h-7Z" fill="#e9b02c" />
+      <path d="M43 36h9" stroke="#fbf3dc" strokeWidth="3" strokeLinecap="round" />
+    </>
+  ),
+};
+
 /**
  * Foto do usuário: a imagem enviada, um avatar do site ou, sem nada, a inicial do apelido.
  * Decorativa por padrão (o apelido costuma estar ao lado); `rotulo` a torna uma imagem nomeada.
  */
-export function Avatar({ apelido, avatar, tamanho = 32, rotulo }: { apelido: string; avatar?: string | null; tamanho?: number; rotulo?: string }) {
+export function Avatar({
+  apelido,
+  avatar,
+  tamanho = 32,
+  rotulo,
+  moldura,
+}: {
+  apelido: string;
+  avatar?: string | null;
+  tamanho?: number;
+  rotulo?: string;
+  /** Moldura da loja (`corda`, `madeira`, `neon`, `giz`); ausente/`nenhuma` = sem. */
+  moldura?: string | null;
+}) {
+  const corpo = <AvatarSemMoldura apelido={apelido} avatar={avatar} tamanho={tamanho} rotulo={rotulo} />;
+  if (!moldura || moldura === 'nenhuma') return corpo;
+  return (
+    <span className={`avatar-moldura moldura-${moldura}`} data-moldura={moldura}>
+      {corpo}
+    </span>
+  );
+}
+
+function AvatarSemMoldura({ apelido, avatar, tamanho = 32, rotulo }: { apelido: string; avatar?: string | null; tamanho?: number; rotulo?: string }) {
   const nome = rotulo ? { role: 'img', 'aria-label': rotulo } : { 'aria-hidden': true as const };
   const estilo = { width: tamanho, height: tamanho, fontSize: tamanho * 0.45 };
   if (avatar?.startsWith('data:image/')) {
     return (
       <span className="avatar avatar-foto" style={estilo} {...nome}>
         <img src={avatar} alt="" />
+      </span>
+    );
+  }
+  const daLoja = avatar?.startsWith('loja:') ? DESENHOS_LOJA[avatar.slice(5)] : undefined;
+  if (daLoja) {
+    return (
+      <span className="avatar avatar-pronto" style={estilo} {...nome}>
+        <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+          {daLoja}
+        </svg>
       </span>
     );
   }

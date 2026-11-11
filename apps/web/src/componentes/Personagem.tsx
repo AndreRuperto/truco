@@ -1,4 +1,6 @@
+import type { VisualRoupa } from '@truco/api';
 import type { CSSProperties } from 'react';
+import { vestir } from '../logica/lojaItens';
 import { cx } from './cx';
 
 /**
@@ -45,10 +47,12 @@ interface Props {
   lado: 'cima' | 'esquerda' | 'direita';
   daVez: boolean;
   gritando: boolean;
+  /** Roupa da loja (camisa, estampa, chapéu) por cima do tipo. */
+  roupa?: VisualRoupa | null;
 }
 
-export function Personagem({ tipo, lado, daVez, gritando }: Props) {
-  const t = TIPOS[tipo % TIPOS.length];
+export function Personagem({ tipo, lado, daVez, gritando, roupa }: Props) {
+  const t = vestir(TIPOS[tipo % TIPOS.length], roupa);
   const estilo = { '--atraso': `${(tipo * 0.7) % 3}s` } as CSSProperties;
   return (
     <svg

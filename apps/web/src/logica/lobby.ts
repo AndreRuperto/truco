@@ -21,6 +21,8 @@ export interface FormLobby {
   sinais: boolean;
   /** Mesa privada (link de convite). */
   privada: boolean;
+  /** Fichas por cabeça (0 = sem cacife). Não fica nas preferências: cada mesa escolhe. */
+  cacife?: number;
 }
 
 /** Opções do campo "Adversários podem interceptar sinais". */
@@ -48,6 +50,8 @@ export interface OpcoesEntrada {
   modo: 'classica' | 'desafio' | 'privada';
   /** Foto de quem entra sem conta (`pronto:<id>` ou `data:`); logado, o servidor usa a da conta. */
   avatar?: string | null;
+  /** Fichas por cabeça (0/ausente = sem cacife; o servidor valida e só aceita com conta). */
+  cacife?: number;
 }
 
 export const CHAVE_APELIDO = 'truco:apelido';
@@ -202,6 +206,8 @@ export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
     sinais: f.sinais,
     chaveRegras: chaveRegras({ variante: f.variante, ...regras }, chance, f.tempoFamiliaS, f.sinais),
     modo: f.privada ? 'privada' : f.nivelBot === 'dificil' ? 'desafio' : 'classica',
+    // Sozinho contra bots não há aposta.
+    cacife: f.privada || f.humanos >= 2 ? (f.cacife ?? 0) : 0,
   };
 }
 

@@ -1,8 +1,10 @@
-import type { AparenciaMesa } from '../logica/aparenciaMesa';
+import { type AparenciaMesa, TAMPOS_DA_LOJA } from '../logica/aparenciaMesa';
 
 interface Props {
   valor: AparenciaMesa;
   temConta: boolean;
+  /** Itens da conta: os tampos da loja só aparecem para quem tem. */
+  inventario?: readonly string[];
   aoEscolher: (valor: AparenciaMesa) => void;
   aoFechar: () => void;
 }
@@ -26,9 +28,21 @@ const OPCOES = [
     descricao: 'A amarela da resenha, com estampa da casa.',
     selo: 'GRÁTIS',
   },
+  {
+    id: 'marmore',
+    titulo: 'Mármore de bar',
+    descricao: 'Pedra fria de balcão antigo, com veios cinzentos.',
+    selo: 'DA LOJA',
+  },
+  {
+    id: 'formica',
+    titulo: 'Fórmica anos 70',
+    descricao: 'Verde-água de cozinha de vó, com borda de alumínio.',
+    selo: 'DA LOJA',
+  },
 ] as const;
 
-export function SeletorAparenciaMesa({ valor, temConta, aoEscolher, aoFechar }: Props) {
+export function SeletorAparenciaMesa({ valor, temConta, inventario = [], aoEscolher, aoFechar }: Props) {
   return (
     <aside className="personalizar-mesa" id="personalizar-mesa" aria-labelledby="titulo-aparencia">
       <header className="personalizar-mesa-cabecalho">
@@ -44,7 +58,10 @@ export function SeletorAparenciaMesa({ valor, temConta, aoEscolher, aoFechar }: 
         <div className={`personalizar-mesa-preview amostra-${valor}`}><span className="preview-aro"><span className="preview-cartas">♠ ♣ ♦</span></span></div>
       </div>
       <div className="personalizar-mesa-opcoes" role="group" aria-label="Escolher aparência da mesa">
-        {OPCOES.map((o) => {
+        {OPCOES.filter((o) => {
+          const item = TAMPOS_DA_LOJA[o.id];
+          return !item || (temConta && inventario.includes(item));
+        }).map((o) => {
           const bloqueada = o.id === 'feltro' && !temConta;
           return (
             <button
@@ -70,6 +87,7 @@ export function SeletorAparenciaMesa({ valor, temConta, aoEscolher, aoFechar }: 
         {temConta
           ? 'O feltro Premium está em prévia gratuita para contas. Ainda não há assinatura ou cobrança.'
           : 'Visitantes usam madeira por padrão. Entre na sua conta para experimentar o feltro Premium.'}
+        {' '}Outros tampos ficam na <a href="#/loja/tampo">loja</a>.
         {' '}Quando uma mesa quebra durante a partida, o plástico aparece automaticamente.
       </p>
     </aside>

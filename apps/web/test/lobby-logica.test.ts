@@ -39,6 +39,7 @@ describe('formulário do lobby', () => {
       sinais: true,
       chaveRegras: '1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|lim:0|int:0|sin:1',
       modo: 'desafio',
+      cacife: 0,
     });
     expect(opcoesDeEntrada({ ...formPadrao('paulista'), nome: '   ', humanos: 9 })).toMatchObject({ nome: 'Jogador', humanos: 4 });
   });

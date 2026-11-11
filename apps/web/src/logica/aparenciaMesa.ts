@@ -5,22 +5,29 @@
  * O feltro é uma PRÉVIA de um futuro item Premium para contas.
  * Não existe cobrança ou assinatura no projeto nesta fase.
  */
-export type AparenciaMesa = 'madeira' | 'feltro' | 'plastico';
+export type AparenciaMesa = 'madeira' | 'feltro' | 'plastico' | 'marmore' | 'formica';
+
+/** Tampos vendidos na loja: só aparecem para quem tem o item. */
+export const TAMPOS_DA_LOJA: Partial<Record<AparenciaMesa, string>> = { marmore: 'tampo-marmore', formica: 'tampo-formica' };
+const VALIDAS: readonly AparenciaMesa[] = ['madeira', 'feltro', 'plastico', 'marmore', 'formica'];
 
 export const CHAVE_APARENCIA_MESA = 'truco:aparencia-mesa';
 
 export function lerAparenciaMesa(): AparenciaMesa {
   try {
     const valor = localStorage.getItem(CHAVE_APARENCIA_MESA);
-    return valor === 'feltro' || valor === 'plastico' ? valor : 'madeira';
+    return (VALIDAS as readonly (string | null)[]).includes(valor) ? (valor as AparenciaMesa) : 'madeira';
   } catch {
     return 'madeira';
   }
 }
 
-/** Sem conta: feltro bloqueado, madeira e plástico disponíveis. */
-export function aparenciaPermitida(escolhida: AparenciaMesa, temConta: boolean): AparenciaMesa {
-  return escolhida === 'feltro' && !temConta ? 'madeira' : escolhida;
+/** Sem conta: feltro bloqueado. Tampo da loja: só com o item no inventário. */
+export function aparenciaPermitida(escolhida: AparenciaMesa, temConta: boolean, inventario: readonly string[] = []): AparenciaMesa {
+  if (escolhida === 'feltro' && !temConta) return 'madeira';
+  const item = TAMPOS_DA_LOJA[escolhida];
+  if (item && (!temConta || !inventario.includes(item))) return 'madeira';
+  return escolhida;
 }
 
 export function salvarAparenciaMesa(valor: AparenciaMesa): void {

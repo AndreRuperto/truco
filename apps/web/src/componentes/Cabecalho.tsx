@@ -1,5 +1,6 @@
 import type { UsuarioApi } from '@truco/api';
 import { useEffect, useId, useRef, useState } from 'react';
+import { formatarSaldo } from '../logica/lojaItens';
 import { Avatar } from './Avatar';
 
 interface Props {
@@ -9,17 +10,28 @@ interface Props {
   aoSair: () => void;
   /** Tela atual (`Rota['tela']`): a aba dela fica marcada com aria-current. */
   atual?: string;
+  /** Saldos da conta (null = sem conta ou carregando). */
+  saldos?: { fichas: number; pila: number } | null;
+  /** Moldura equipada (aparece no avatar do menu). */
+  moldura?: string | null;
 }
 
-export function Cabecalho({ pronta, usuario, aoSair, atual }: Props) {
+export function Cabecalho({ pronta, usuario, aoSair, atual, saldos, moldura }: Props) {
   const aba = (tela: string) => (tela === atual ? ('page' as const) : undefined);
   return (
     <nav className="cabecalho" aria-label="Navegação">
       <a href="#/" aria-current={aba('inicio')}>Início</a>
       <a href="#/salas" aria-current={aba('salas')}>Salas</a>
       <a href="#/ranking/paulista" aria-current={aba('ranking')}>Ranking</a>
+      <a href="#/loja" aria-current={aba('loja')}>Loja</a>
+      {usuario && saldos && (
+        <a href="#/loja" className="cabecalho-saldo" aria-label={`Saldo: ${formatarSaldo(saldos.fichas)} Fichas e ${formatarSaldo(saldos.pila)} Pila`} data-testid="cabecalho-saldo">
+          <span className="ficha">{formatarSaldo(saldos.fichas)} F</span>
+          <span className="pila">{formatarSaldo(saldos.pila)} P</span>
+        </a>
+      )}
       {!pronta ? null : usuario ? (
-        <MenuConta usuario={usuario} aoSair={aoSair} atual={aba} />
+        <MenuConta usuario={usuario} aoSair={aoSair} atual={aba} moldura={moldura} />
       ) : (
         <a href="#/entrar" aria-current={aba('entrar')}>Entrar</a>
       )}
@@ -31,7 +43,7 @@ export function Cabecalho({ pronta, usuario, aoSair, atual }: Props) {
 }
 
 /** Botão com o apelido que abre a lista da conta (padrão "disclosure": Esc e clique fora fecham). */
-function MenuConta({ usuario, aoSair, atual }: { usuario: UsuarioApi; aoSair: () => void; atual: (t: string) => 'page' | undefined }) {
+function MenuConta({ usuario, aoSair, atual, moldura }: { usuario: UsuarioApi; aoSair: () => void; atual: (t: string) => 'page' | undefined; moldura?: string | null }) {
   const [aberto, setAberto] = useState(false);
   const id = useId();
   const raiz = useRef<HTMLDivElement>(null);
@@ -66,7 +78,7 @@ function MenuConta({ usuario, aoSair, atual }: { usuario: UsuarioApi; aoSair: ()
         onClick={() => setAberto((a) => !a)}
         data-testid="usuario-logado"
       >
-        <Avatar apelido={usuario.apelido} avatar={usuario.avatar} />
+        <Avatar apelido={usuario.apelido} avatar={usuario.avatar} moldura={moldura} />
         <span className="menu-conta-nome">{usuario.apelido}</span>
         <span className="menu-conta-seta" aria-hidden="true" />
       </button>

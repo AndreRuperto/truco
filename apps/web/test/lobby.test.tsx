@@ -31,6 +31,7 @@ describe('Lobby', () => {
       sinais: false,
       chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|lim:0|int:0.25|tf:20|sin:0',
       modo: 'desafio',
+      cacife: 0,
     });
     expect(localStorage.getItem(CHAVE_APELIDO)).toBe('Ana');
   });
