@@ -182,3 +182,28 @@ export interface PartidaAdmin {
   terminadaEm: string | null;
   jogadores: JogadorPartidaAdmin[];
 }
+
+// ---------- loja (Fichas e Pila) ----------
+
+export type {
+  EstampaVerso,
+  EstiloMoldura,
+  ItemLoja,
+  PacotePila,
+  Slot,
+  SuperficieTampo,
+  VisualAvatar,
+  VisualItem,
+  VisualMoldura,
+  VisualRoupa,
+  VisualTampo,
+  VisualVerso,
+} from '../loja/catalogo';
+export type { Moeda, Motivo } from '../loja/regras';
+
+/** O que os outros veem de um jogador na mesa (vem do servidor; o tampo é só de quem escolheu). */
+export interface VisualJogador {
+  verso: import('../loja/catalogo').VisualVerso;
+  roupa: import('../loja/catalogo').VisualRoupa;
+  moldura: import('../loja/catalogo').EstiloMoldura;
+}
