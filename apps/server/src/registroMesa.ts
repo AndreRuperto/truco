@@ -2,7 +2,7 @@ import type { AcaoJogador, Cadeira, EstadoPartida, Variante } from '@truco/engin
 import type { Formato } from './api/tipos';
 import type { ModoMesa } from './mesa/protocolo';
 import { type Contadores, contadoresZerados, contarAcao } from './ranking/estatisticas';
-import { type AssentoRegistro, encerrarAbandonada, iniciarPartida, registrarAbandono, terminarPartida } from './repo/partidas';
+import { type AssentoRegistro, encerrarAbandonada, iniciarPartidaComCacife, registrarAbandono, terminarPartida } from './repo/partidas';
 import type { Servicos } from './servicos';
 
 export interface JogadorSala {
@@ -16,6 +16,8 @@ export interface InfoRegistro {
   variante: Variante;
   modo: ModoMesa;
   formato: Formato | null;
+  /** Cacife pedido em Fichas (0 = sem). */
+  cacife?: number;
 }
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
@@ -31,6 +33,8 @@ export class RegistroMesa {
   private cadeia: Promise<void> = Promise.resolve();
   /** Servidor desligando (redeploy): ninguém é punido pelas quedas que vêm a seguir. */
   private desligando = false;
+  /** Avisado com o cacife efetivo e o pote depois que o início foi gravado. */
+  aoCacife: (cacife: number, pote: number) => void = () => {};
 
   constructor(
     private readonly s: Servicos | null,
@@ -74,7 +78,9 @@ export class RegistroMesa {
         const j = this.humanos.get(c);
         return j ? { cadeira: c, usuarioId: j.usuarioId, nome: j.nome, humano: true } : { cadeira: c, usuarioId: null, nome: 'Bot', humano: false };
       });
-      this.partidaId = await iniciarPartida(s.banco, { ...this.info, assentos }, s.agora());
+      const r = await iniciarPartidaComCacife(s.banco, { ...this.info, assentos }, s.agora());
+      this.partidaId = r.id;
+      this.aoCacife(r.cacife, r.pote);
     });
   }
 
@@ -106,9 +112,11 @@ export class RegistroMesa {
   encerrarAbandonada(): void {
     const s = this.s;
     if (!s) return;
+    // No desligamento a culpa é do servidor: o cacife volta para todo mundo.
+    const reembolsar = this.desligando;
     this.encadear(async () => {
       if (this.partidaId === null) return;
-      await encerrarAbandonada(s.banco, this.partidaId, s.agora());
+      await encerrarAbandonada(s.banco, this.partidaId, s.agora(), { reembolsar });
     });
   }
 
