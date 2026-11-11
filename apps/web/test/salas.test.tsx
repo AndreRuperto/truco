@@ -5,7 +5,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { TelaEntrarPrivada } from '../src/telas/EntrarPrivada';
 import { TelaSalas, textoAtualizado } from '../src/telas/Salas';
 
-const SALA = { id: 'abc123', modo: 'desafio', variante: 'mineiro', humanos: 2, nivelBot: 'dificil', regras: REGRAS_RANQUEADA.mineiro, ocupados: 1, dono: 'Ana' } as const;
+const SALA = { id: 'abc123', modo: 'desafio', variante: 'mineiro', humanos: 2, nivelBot: 'dificil', regras: REGRAS_RANQUEADA.mineiro, ocupados: 1, dono: 'Ana', cacife: 0 } as const;
 
 describe('TelaSalas', () => {
   test('lista mesas abertas e entra pelo id', async () => {
