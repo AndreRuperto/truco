@@ -39,7 +39,7 @@ describe('TelaLoja', () => {
     expect(screen.getByTestId('saldo-fichas')).toHaveTextContent('1.100');
     expect(screen.getByTestId('saldo-pila')).toHaveTextContent('300');
     expect(within(screen.getByTestId('item-verso-classico')).getByText('Em uso')).toBeInTheDocument();
-    expect(within(screen.getByTestId('item-verso-cartola')).getByRole('button', { name: 'Fichas insuficientes' })).toBeDisabled();
+    expect(within(screen.getByTestId('item-verso-cartola')).getByRole('button', { name: 'Faltam Fichas' })).toBeDisabled();
     await user.click(within(screen.getByTestId('item-verso-chita')).getByRole('button', { name: 'Comprar' }));
     expect(screen.getByRole('dialog')).toHaveTextContent('Seu saldo fica em 0 Pila');
     await user.click(screen.getByRole('button', { name: 'Comprar e equipar' }));

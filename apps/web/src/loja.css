@@ -181,7 +181,7 @@
 }
 .loja-grade {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
   gap: var(--e3);
   margin: 0;
   padding: 0;
@@ -367,5 +367,33 @@
   }
   .cabecalho-saldo .pila {
     display: none;
+  }
+}
+
+/* Aviso do bônus do dia: no fluxo da página, logo abaixo do cabeçalho (não cobre nada). */
+.faixa-bonus {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2) var(--e3);
+  max-width: 960px;
+  margin: var(--e2) auto 0;
+  padding: var(--e2) var(--e3);
+  border: 3px solid var(--lousa-borda);
+  border-radius: var(--raio-botao);
+  background: var(--lousa);
+  color: var(--grito);
+  font-weight: 800;
+  text-align: center;
+}
+.faixa-bonus button {
+  min-height: 44px;
+}
+@media (max-width: 620px) {
+  .faixa-bonus {
+    margin-inline: 12px;
   }
 }

@@ -177,7 +177,7 @@ export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrP
                       </button>
                     ) : estado === 'sem-saldo' ? (
                       <button type="button" disabled title={`Falta ${NOME_MOEDA[item.preco!.moeda]}`}>
-                        {item.preco!.moeda === 'pila' ? 'Pila insuficiente' : 'Fichas insuficientes'}
+                        {item.preco!.moeda === 'pila' ? 'Falta Pila' : 'Faltam Fichas'}
                       </button>
                     ) : null}
                   </li>

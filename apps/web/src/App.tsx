@@ -336,6 +336,14 @@ export function App() {
             void sessao.sair();
           }}
         />
+        {avisoBonus && snap.status === 'fora' && (
+          <div className="faixa-bonus" role="status">
+            <span>{avisoBonus}</span>
+            <button type="button" className="botao-discreto" onClick={() => setAvisoBonus(null)}>
+              Fechar
+            </button>
+          </div>
+        )}
         {/* A tela inicial tem o fundo de cartas inteiro (com mouse); as outras, a versão discreta. */}
         {rota.tela !== 'inicio' && <FundoCartas discreto />}
         {/* trocar de conta remonta a tela: nada do usuário anterior sobrevive em estado local */}
@@ -372,14 +380,7 @@ export function App() {
       )}
       {tela}
       {snap.erro && <Toast key={snap.erro.id} erro={snap.erro} aoFechar={loja.limparErro} />}
-      {avisoBonus && snap.status === 'fora' && (
-        <div className="faixa-aviso faixa-bonus" role="status">
-          <span>{avisoBonus}</span>
-          <button type="button" className="botao-discreto" onClick={() => setAvisoBonus(null)}>
-            Fechar
-          </button>
-        </div>
-      )}
+
     </>
   );
 }
