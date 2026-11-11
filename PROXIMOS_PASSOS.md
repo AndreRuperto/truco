@@ -38,7 +38,7 @@ A branch sai de `claude/seguranca` (inclui os commits de segurança ainda sem me
 - Cacife: casual/privada (dono escolhe 0/50/100/250/500/1000; exige conta e saldo; os humanos sentam como adversários) e ranqueada (pela patente mais alta). O efetivo é o menor saldo, debitado no início; o pote vai para quem ficou na dupla vencedora; abandono perde; desligamento e órfã devolvem; anti-fazenda depois de 5 ranqueadas iguais em 24 h.
 - Loja `#/loja` (verso, roupa, moldura, avatar, tampo, pacotes de Pila), retorno `#/loja/obrigado`, saldo no cabeçalho, verso de quem dá as cartas, roupa e moldura na mesa.
 - InfinitePay: `LOJA_PAGAMENTO=on` + `INFINITEPAY_HANDLE` (+ `INFINITEPAY_API_KEY` opcional). Webhook e retorno só apontam o pedido; quem confirma é o `payment_check`. **Desligado por padrão.**
-- Verificação local: `pnpm -r typecheck` ok; `pnpm -r test` e `pnpm test:e2e` (ver o resultado no fim da sessão); `e2e/loja.spec.ts` com 3 testes, inclusive a loja sem rolagem horizontal de 320×568 a 1280×800.
+- Verificação local em 2026-11-11: `pnpm -r typecheck` ok; `pnpm -r test` ok (servidor 406, web 404, engine 233); `pnpm --filter @truco/web build` ok; `pnpm test:e2e` 37 passaram e 9 pulados (os de auditoria, que só rodam com variável própria). `e2e/loja.spec.ts` cobre checkout simulado, compra e equipamento, mesa com cacife e a loja sem rolagem horizontal de 320×568 a 1280×800.
 
 **Pendente:**
 - [ ] Revisar e abrir o PR de `claude/loja` (depois do merge do PR de segurança, ou junto com ele).
