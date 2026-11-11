@@ -28,7 +28,7 @@ O CI do GitHub Actions está sem minutos até virar o ciclo de cobrança: o gate
 - [ ] Ciclo 2 (temas, mesas e modos): pendências P2/P3 do Ciclo 1 (etiqueta de família, layout de paisagem, dica sobre o centro em 320 px, desktop 1440×900 rolando 35 px).
 - [ ] Baixa prioridade: limpar o cache de `/assets` entre deploys; avatar repetido em cada estado; limites por IP em `/api/perfil/:id` e na criação de salas; trilha de auditoria.
 
-## Loja com duas moedas — branch `claude/loja` (worktree `C:\projetos	ruco-loja`), 2026-11-11
+## Loja com duas moedas — branch `claude/loja` (worktree `C:/projetos/truco-loja`), 2026-11-11
 
 Design: `docs/plans/2026-11-11-loja-duas-moedas-design.md` · Plano: `docs/plans/2026-11-11-loja-duas-moedas.md` · Base legal: `docs/legal/modo-apostado-2026-11.md`.
 A branch sai de `claude/seguranca` (inclui os commits de segurança ainda sem merge).
