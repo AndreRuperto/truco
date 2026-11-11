@@ -9,6 +9,9 @@ import { FilaRoom } from '../src/FilaRoom';
 import { MesaRoom } from '../src/MesaRoom';
 import { chaveRegras, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA } from '../src/mesa/protocolo';
 import { ratingDe } from '../src/repo/partidas';
+import { itemPorId } from '../src/loja/catalogo';
+import { movimentar, saldosDe } from '../src/repo/carteira';
+import { comprarItem, equipar } from '../src/repo/loja';
 import { criarSessao, entrarComEmail, trocarAvatar } from '../src/repo/usuarios';
 import { criarServidor } from '../src/servidor';
 import { type Servicos, servicosDeTeste } from '../src/servicos';
@@ -754,5 +757,57 @@ describe('conta suspensa (auditoria de segurança 2026-11-10)', () => {
     expect(saiuAna).toBe(false);
     MesaRoom.readmitirConta(bia.u.id);
     await sala.leave();
+  });
+});
+
+/** Logado com saldo ajustado direto no banco. */
+async function logadoCom(email: string, fichas: number, pila = 0) {
+  const r = await logado(email);
+  await banco.db.transaction(async (tx) => {
+    if (fichas) await movimentar(tx, r.u.id, 'fichas', fichas, 'ajuste_admin');
+    if (pila) await movimentar(tx, r.u.id, 'pila', pila, 'ajuste_admin');
+  });
+  return r;
+}
+
+describe('mesa com cacife', () => {
+  test('convidado e quem não tem saldo não entram', async () => {
+    const { cliente: dono } = await logadoCom('ana@x.com', 500);
+    const sala = await dono.create('mesa', { modo: 'privada', cacife: 250 });
+    await expect(new Client(URL_TESTE).joinById(sala.roomId, { nome: 'Convidado' })).rejects.toThrow(/conta/);
+    const { cliente: pobre } = await logadoCom('bia@x.com', 100);
+    await expect(pobre.joinById(sala.roomId, {})).rejects.toThrow(/250 Fichas/);
+  });
+
+  test('dois logados viram adversários, pagam o cacife e o estado mostra o pote e o visual', async () => {
+    const { u: ana, cliente: ca } = await logadoCom('ana@x.com', 1000, 300);
+    await comprarItem(banco.db, ana.id, 'verso-chita');
+    await equipar(banco.db, ana.id, 'verso', 'verso-chita');
+    const { u: bia, cliente: cb } = await logadoCom('bia@x.com', 1000);
+    const sala = await ca.joinOrCreate('mesa', { humanos: 2, cacife: 100 });
+    const ma = coletor(sala);
+    const outra = await cb.joinOrCreate('mesa', { humanos: 2, cacife: 100 });
+    expect(outra.roomId).toBe(sala.roomId);
+    const mb = coletor(outra);
+    await esperar(() => mb.estado?.at(-1)?.cacife?.efetivo === 100);
+    const e = mb.estado.at(-1);
+    expect(e.cacife).toEqual({ pedido: 100, efetivo: 100, pote: 200 });
+    // Adversários: cadeiras 0 e 1.
+    expect(e.cadeiras[0]).toMatchObject({ nome: 'ana', visual: { verso: itemPorId('verso-chita')!.visual } });
+    expect(e.cadeiras[1]).toMatchObject({ nome: 'bia', tipo: 'humano' });
+    expect(e.cadeiras[2].visual).toBeNull();
+    expect(ma.estado.at(-1).minhaCadeira).toBe(0);
+    expect((await saldosDe(banco.db, ana.id)).fichas).toBe(900);
+    expect((await saldosDe(banco.db, bia.id)).fichas).toBe(900);
+  });
+
+  test('joinOrCreate não junta mesas de cacifes diferentes', async () => {
+    const { cliente: ca } = await logadoCom('ana@x.com', 1000);
+    const { cliente: cb } = await logadoCom('bia@x.com', 1000);
+    const a = await ca.joinOrCreate('mesa', { humanos: 2, cacife: 100 });
+    const b = await cb.joinOrCreate('mesa', { humanos: 2, cacife: 500 });
+    expect(b.roomId).not.toBe(a.roomId);
+    const salas = (await (await fetch(`${URL_TESTE}/api/salas`)).json()) as { salas: { cacife: number }[] };
+    expect(salas.salas.map((s) => s.cacife).sort((x, y) => x - y)).toEqual([100, 500]);
   });
 });

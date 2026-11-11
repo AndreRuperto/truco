@@ -1,3 +1,4 @@
+import type { VisualJogador } from '../api/tipos';
 import { webcrypto } from 'node:crypto';
 import {
   type AcaoJogador,
@@ -29,6 +30,7 @@ import {
 import {
   ehFala,
   ehSinal,
+  type CacifeMesa,
   type InfoCadeira,
   limparChat,
   limparNome,
@@ -133,11 +135,15 @@ interface Ocupante {
   avatar?: string | null;
   /** Ver `InfoCadeira.voz`. */
   voz?: string | null;
+  /** Ver `InfoCadeira.visual`. */
+  visual?: VisualJogador | null;
 }
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
 /** Os dois primeiros humanos ficam parceiros. */
 const ORDEM_SENTAR: Cadeira[] = [0, 2, 1, 3];
+/** Valendo Fichas, os dois primeiros ficam adversários (senão apostariam juntos contra os bots). */
+const ORDEM_SENTAR_CACIFE: Cadeira[] = [0, 1, 2, 3];
 const NOMES_BOT = ['Zé', 'Tião', 'Dita', 'Nhô'];
 
 const vazio = (): Ocupante => ({ id: null, nome: null, humano: false, conectado: false, ultimaMensagem: -Infinity });
@@ -245,14 +251,14 @@ export class Mesa {
   // ---------- lobby ----------
 
   /** Senta na `cadeira` pedida (ranqueada: a que a fila reservou) ou na próxima livre. */
-  sentar(id: string, nome: unknown, cadeira?: Cadeira, avatar: string | null = null, voz: string | null = null): Cadeira | null {
+  sentar(id: string, nome: unknown, cadeira?: Cadeira, avatar: string | null = null, voz: string | null = null, visual: VisualJogador | null = null): Cadeira | null {
     if (this.iniciada || this.cadeiraDe(id) !== null) return null;
     const cad =
       cadeira !== undefined
         ? this.ocupantes[cadeira]?.id === null
           ? cadeira
           : undefined
-        : ORDEM_SENTAR.find((c) => this.ocupantes[c].id === null);
+        : (this.cacife ? ORDEM_SENTAR_CACIFE : ORDEM_SENTAR).find((c) => this.ocupantes[c].id === null);
     if (cad === undefined) return null;
     this.ocupantes[cad] = {
       id,
@@ -262,6 +268,7 @@ export class Mesa {
       ultimaMensagem: -Infinity,
       avatar,
       voz,
+      visual,
     };
     if (this.humanosSentados() >= this.o.humanosEsperados) this.iniciar();
     else this.enviarEstados();
@@ -766,6 +773,7 @@ export class Mesa {
         (a.tipo !== 'familia' || !this.janela || this.janelaAberta())
       ) : [],
       mesaFisica: this.fisica,
+      cacife: this.cacife,
     };
     this.o.enviar(this.ocupantes[c].id!, 'estado', msg);
   }
@@ -777,7 +785,22 @@ export class Mesa {
       conectado: o.humano ? o.conectado : true,
       avatar: o.avatar ?? null,
       voz: o.voz ?? null,
+      visual: o.humano ? (o.visual ?? null) : null,
     }));
+  }
+
+  /** Cacife pedido pela mesa (0 = sem); o efetivo chega com `definirCacife` depois do início. */
+  private cacife: CacifeMesa | null = null;
+
+  configurarCacife(pedido: number): void {
+    this.cacife = pedido > 0 ? { pedido, efetivo: null, pote: 0 } : null;
+  }
+
+  /** O início foi gravado: quanto cada um pagou e o pote (efetivo 0 = a partida corre sem Fichas). */
+  definirCacife(efetivo: number, pote: number): void {
+    if (!this.cacife) return;
+    this.cacife = { ...this.cacife, efetivo, pote };
+    this.enviarEstados();
   }
 
   /** Cada bot conta ao parceiro sua melhor carta (só em mão normal: na de 10/11 não faz sentido). */

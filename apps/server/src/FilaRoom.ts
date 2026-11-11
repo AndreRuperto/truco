@@ -4,6 +4,7 @@ import type { Formato, MsgPareado } from './api/tipos';
 import { cadeirasDoPareamento, type EntradaFila, Fila, normalizarCodigoDupla, type Pareamento } from './fila/fila';
 import { SAIDA_CONTA_SUSPENSA, SAIDA_FILA_SUBSTITUIDA, SAIDA_PARTIDA_CANCELADA } from './mesa/protocolo';
 import { MesaRoom } from './MesaRoom';
+import { cacifeDaRanqueada } from './loja/regras';
 import { bloqueioAte, ratingDe } from './repo/partidas';
 import type { Servicos } from './servicos';
 import { type UsuarioConexao, usuarioDaConexao } from './sessaoSala';
@@ -133,7 +134,11 @@ export class FilaRoom extends Room {
    */
   private async criarMesa(p: Pareamento): Promise<void> {
     const assentos = cadeirasDoPareamento(p);
+    // Cacife pela patente do mais alto da mesa (o efetivo é limitado pelo menor saldo no início).
+    const s = FilaRoom.servicos;
+    const pontos = s ? await Promise.all(assentos.map(async (a) => (await ratingDe(s.banco, a.entrada.usuarioId, p.variante)).pontos)) : [];
     const sala = await matchMaker.createRoom('mesa', {
+      cacife: s ? cacifeDaRanqueada(pontos) : 0,
       modo: 'ranqueada',
       variante: p.variante,
       humanos: assentos.length,

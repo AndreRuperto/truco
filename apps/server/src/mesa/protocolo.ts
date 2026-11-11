@@ -11,6 +11,8 @@ import {
   type Variante,
   type Visao,
 } from '@truco/engine';
+import type { VisualJogador } from '../api/tipos';
+import { cacifeRanqueadaValido, cacifeValido } from '../loja/regras';
 import type { MesaFisica } from './mesaFisica';
 
 export type { MesaFisica, MsgBatida, Rachadura, TipoMesa } from './mesaFisica';
@@ -82,6 +84,15 @@ export interface InfoCadeira {
   avatar?: string | null;
   /** Voz pessoal da conta (ex.: 'andre'): as falas dessa cadeira saem com ela. Só para contas logadas. */
   voz?: string | null;
+  /** Itens da loja equipados (verso, roupa, moldura). Ausente = visual padrão (convidado/bot). */
+  visual?: VisualJogador | null;
+}
+
+/** Fichas em jogo: `pedido` é o da mesa; `efetivo`/`pote` só depois que a partida começou. */
+export interface CacifeMesa {
+  pedido: number;
+  efetivo: number | null;
+  pote: number;
 }
 
 export interface MsgEstado {
@@ -113,6 +124,8 @@ export interface MsgEstado {
   minhasAcoes: AcaoJogador[];
   /** Tampo ("bater na mesa"): rachaduras e se já quebrou e virou plástico. Sempre enviado pelo servidor. */
   mesaFisica?: MesaFisica;
+  /** Mesa valendo Fichas; null/ausente = sem cacife. */
+  cacife?: CacifeMesa | null;
 }
 
 export interface MsgAcao {
@@ -196,6 +209,8 @@ export interface OpcoesSala {
   tempoFamiliaS: TempoFamiliaS;
   /** Sinais entre parceiros liberados. Padrão: desligados no mineiro, ligados no paulista. */
   sinais: boolean;
+  /** Fichas que cada humano com conta põe no pote (0 = sem cacife). */
+  cacife: number;
 }
 
 /** Sinais vêm ligados no paulista e desligados no mineiro (quem quiser liga na mesa). */
@@ -254,13 +269,25 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
   const nivelPedido = um(o.nivelBot, ['facil', 'dificil'] as const, 'facil');
   const modo = um(o.modo, MODOS_MESA, nivelPedido === 'dificil' ? 'desafio' : 'classica');
   if (modo === 'ranqueada') {
-    return { modo, regras: { ...REGRAS_RANQUEADA[variante] }, humanos: h === 4 ? 4 : 2, nivelBot: 'dificil', chanceInterceptarSinal: 0, tempoFamiliaS: 20, sinais: sinaisPadrao(variante) };
+    return {
+      modo,
+      regras: { ...REGRAS_RANQUEADA[variante] },
+      humanos: h === 4 ? 4 : 2,
+      nivelBot: 'dificil',
+      chanceInterceptarSinal: 0,
+      tempoFamiliaS: 20,
+      sinais: sinaisPadrao(variante),
+      // Vem só da fila (que calcula pela patente); o cliente não cria ranqueada.
+      cacife: cacifeRanqueadaValido(o.cacife),
+    };
   }
   const nivelBot: NivelBot = modo === 'classica' ? 'facil' : modo === 'desafio' ? 'dificil' : nivelPedido;
   // Mesa privada é para chamar gente pelo link: com 1 humano ela começaria na hora, sem sala de
   // espera (e sem link). Espera até 4; o dono pode começar com bots quando quiser.
   const humanosMesa = modo === 'privada' && humanos < 2 ? 4 : humanos;
-  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais };
+  // Sozinho contra bots não há com quem apostar.
+  const cacife = humanosMesa >= 2 ? cacifeValido(o.cacife) : 0;
+  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, cacife };
 }
 
 /** Campos do `filterBy` da sala `mesa`, sempre preenchidos com valores validados. */
@@ -270,6 +297,8 @@ export interface FiltroSala {
   humanos: number;
   nivelBot: NivelBot;
   chaveRegras: string;
+  /** Mesas de cacifes diferentes nunca se misturam no `joinOrCreate`. */
+  cacife: number;
 }
 
 export function filtroDaSala(o: OpcoesSala): FiltroSala {
@@ -279,5 +308,6 @@ export function filtroDaSala(o: OpcoesSala): FiltroSala {
     humanos: o.humanos,
     nivelBot: o.nivelBot,
     chaveRegras: chaveRegras(o.regras, o.chanceInterceptarSinal, o.tempoFamiliaS, o.sinais),
+    cacife: o.cacife,
   };
 }

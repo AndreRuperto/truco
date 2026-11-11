@@ -4,6 +4,8 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { Mesa, type Tempos } from './mesa/Mesa';
 import { filtroDaSala, limparNome, opcoesDaSala, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA } from './mesa/protocolo';
 import { RegistroMesa } from './registroMesa';
+import { saldosDe } from './repo/carteira';
+import { visualDe } from './repo/loja';
 import { avatarValido } from './repo/usuarios';
 import { vozDaConta } from './mesa/vozes';
 import type { Servicos } from './servicos';
@@ -140,6 +142,8 @@ export class MesaRoom extends Room {
   private mesa!: Mesa;
   private registro!: RegistroMesa;
   private reservados: JogadorReservado[] | null = null;
+  /** Fichas pedidas por cabeça (0 = sem cacife). */
+  private cacife = 0;
   /** Ranqueada que não lotou a tempo e está sendo descartada. */
   private cancelada = false;
 
@@ -197,9 +201,10 @@ export class MesaRoom extends Room {
     if (modo === 'privada' || modo === 'ranqueada') void this.setPrivate(true);
     // Acima disso o Colyseus derruba o cliente (sinais/falas/chat já têm limite próprio na Mesa).
     this.maxMessagesPerSecond = 20;
+    this.cacife = opcoes.cacife;
     this.registro = new RegistroMesa(
       MesaRoom.servicos,
-      { variante: regras.variante, modo, formato: modo === 'ranqueada' ? (humanos === 2 ? '1x1' : '2x2') : null },
+      { variante: regras.variante, modo, formato: modo === 'ranqueada' ? (humanos === 2 ? '1x1' : '2x2') : null, cacife: opcoes.cacife },
       (e) => console.error(`[MesaRoom ${this.roomId}] falha ao gravar`, e),
     );
     MesaRoom.registrosVivos.add(this.registro);
@@ -235,6 +240,9 @@ export class MesaRoom extends Room {
       },
     });
 
+    this.mesa.configurarCacife(opcoes.cacife);
+    this.registro.aoCacife = (efetivo, pote) => this.mesa.definirCacife(efetivo, pote);
+
     this.onMessage('acao', (client, payload) => this.mesa.acao(client.sessionId, payload));
     this.onMessage('sinal', (client, payload) => this.mesa.sinal(client.sessionId, payload));
     this.onMessage('fala', (client, payload) => this.mesa.fala(client.sessionId, payload));
@@ -260,8 +268,17 @@ export class MesaRoom extends Room {
     }
   }
 
-  onJoin(client: Client, options?: { nome?: unknown; avatar?: unknown }) {
+  async onJoin(client: Client, options?: { nome?: unknown; avatar?: unknown }) {
     const auth = client.auth as UsuarioConexao | undefined;
+    const s = MesaRoom.servicos;
+    // Mesa valendo Fichas: só conta logada, e com saldo para o cacife (a ranqueada pode
+    // começar com menos: o efetivo é limitado pelo menor saldo).
+    if (this.cacife > 0 && !this.reservados && s) {
+      if (!auth) throw new Error('entre na sua conta para jogar valendo Fichas');
+      const { fichas } = await saldosDe(s.banco, auth.usuarioId);
+      if (fichas < this.cacife) throw new Error(`você precisa de ${this.cacife} Fichas para esta mesa (tem ${fichas})`);
+    }
+    const visual = auth && s ? ((await visualDe(s.banco, [auth.usuarioId])).get(auth.usuarioId) ?? null) : null;
     // Logado: a foto da conta. Sem conta: a que escolheu ao pôr o apelido (mesmas regras da conta).
     const avatar = auth ? (auth.avatar ?? null) : (avatarValido(options?.avatar) ?? null);
     const voz = auth ? vozDaConta(auth.apelido) : null;
@@ -270,9 +287,9 @@ export class MesaRoom extends Room {
     if (this.reservados) {
       const r = auth ? this.reservados.find((j) => j.usuarioId === auth.usuarioId) : undefined;
       if (!r || !auth) throw new Error('lugar não reservado para você');
-      cadeira = this.mesa.sentar(client.sessionId, auth.apelido, r.cadeira, avatar, voz);
+      cadeira = this.mesa.sentar(client.sessionId, auth.apelido, r.cadeira, avatar, voz, visual);
     } else {
-      cadeira = this.mesa.sentar(client.sessionId, auth?.apelido ?? options?.nome, undefined, avatar, voz);
+      cadeira = this.mesa.sentar(client.sessionId, auth?.apelido ?? options?.nome, undefined, avatar, voz, visual);
     }
     if (cadeira === null) throw new Error('mesa cheia ou já iniciada');
     this.registro.sentou({ cadeira, usuarioId: auth?.usuarioId ?? null, nome: auth?.apelido ?? limparNome(options?.nome) });

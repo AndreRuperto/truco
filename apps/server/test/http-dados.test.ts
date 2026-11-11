@@ -28,7 +28,7 @@ beforeEach(async () => {
   app = await subirApp(s, {
     pastaWeb,
     listarSalas: async () => [
-      { id: 'abc', modo: 'classica', variante: 'paulista', humanos: 2, nivelBot: 'facil', regras: null, ocupados: 1, dono: 'Ana' },
+      { id: 'abc', modo: 'classica', variante: 'paulista', humanos: 2, nivelBot: 'facil', regras: null, ocupados: 1, dono: 'Ana', cacife: 0 },
     ],
   });
 });

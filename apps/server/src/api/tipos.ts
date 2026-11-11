@@ -103,6 +103,8 @@ export interface SalaAberta {
   regras: RegrasMesa | null;
   ocupados: number;
   dono: string | null;
+  /** Fichas por cabeça (0 = sem cacife). */
+  cacife: number;
 }
 
 export interface MsgStatusFila {
