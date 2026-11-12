@@ -452,11 +452,12 @@ for (const [largura, altura] of RETRATOS) {
     const problemas = new Set<string>();
     let medidas = 0;
     const ate = Date.now() + 100_000;
-    while (Date.now() < ate && medidas < 12) {
+    while (Date.now() < ate && medidas < 80) {
       await passoComFamilia(page);
       const m = await page.evaluate(() => {
         const cx = (el: Element) => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
-        const visiveis = (s: string) => Array.from(document.querySelectorAll(s)).filter((e) => e.getBoundingClientRect().width > 0).map(cx);
+        const visiveis = (s: string) => Array.from(document.querySelectorAll(s)).filter((e) => e.getBoundingClientRect().width > 0)
+          .map((e) => ({ ...cx(e), texto: `${e.tagName.toLowerCase()}.${[...e.classList].join('.')} em ${e.parentElement?.className ?? ''}` }));
         return {
           w: innerWidth,
           etiquetas: Array.from(document.querySelectorAll('figure.familia:not(.abertas-corte) figcaption'))
@@ -478,6 +479,8 @@ for (const [largura, altura] of RETRATOS) {
             }),
           obstaculos: {
             monte: visiveis('[data-testid="monte"]'),
+            'carta do centro': visiveis('[data-testid="centro"] .carta, .jogada, .vira'),
+            'nome de assento': visiveis('.assento-nome'),
           } as Record<string, Caixa[]>,
           outras: Array.from(document.querySelectorAll('figure.familia figcaption')).filter((e) => e.getBoundingClientRect().width > 0).map(cx),
         };

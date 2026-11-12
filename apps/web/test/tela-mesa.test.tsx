@@ -296,6 +296,21 @@ describe('TelaMesa no ritual e na família', () => {
     expect(within(fam).queryAllByRole('img', { name: 'carta virada' })).toHaveLength(0);
   });
 
+  test('a família sai da mesa quando cai a 1ª carta (a cruz das jogadas fica livre)', () => {
+    // Conferida há mais de SEGURA_CONFERIDA_MS (a recém-conferida espera revelar: revelacoes-sequenciais.test.tsx).
+    const agora = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    const t = reduce(distribuida(MINEIRO, [['Qo', 'Jo', 'Ko']]), { tipo: 'familia', cadeira: 0 });
+    const u = reduce(t, { tipo: 'conferir', cadeira: 1, conferir: true });
+    const { rerender } = render(<TelaMesa snap={snap(msgEstado(u, 2))} acoes={acoesFalsas()} />);
+    expect(screen.getByTestId('familia-conferida')).toBeInTheDocument();
+    agora.mockReturnValue(1_010_000);
+    const jogou = jogar(u, [[u.mao!.vez, 0]]);
+    rerender(<TelaMesa snap={snap(msgEstado(jogou, 2))} acoes={acoesFalsas()} />);
+    expect(screen.queryByTestId('familia-conferida')).toBeNull();
+    expect(screen.queryByTestId('familia')).toBeNull();
+    agora.mockRestore();
+  });
+
   test('entre mãos: o resumo fica até o pé novo embaralhar', () => {
     let s = naSegundaRodada(distribuida(PAULISTA)); // truco só da 2ª rodada em diante
     s = reduce(reduce(s, { tipo: 'truco', cadeira: 0 }), { tipo: 'correr', cadeira: 1 });

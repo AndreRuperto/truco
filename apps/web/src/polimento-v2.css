@@ -521,10 +521,6 @@
 }
 @media (max-width: 380px) and (orientation: portrait) {
   .tela-mesa .placar-situacao { max-width: 110px; font-size: .62rem; }
-  /* Etiquetas de família das laterais: estreitas (quebram em linhas) para não chegar ao monte de
-     baixo nem ao meio da cruz, que em 320px fica a ~90px da lateral. */
-  .tela-mesa .familia.pos-esquerda figcaption,
-  .tela-mesa .familia.pos-direita figcaption { max-width: 27vw; }
   .tela-mesa .assento-nome { max-width: 100%; overflow-wrap: anywhere; }
   .tela-mesa .barra-acoes .acao { min-height: 46px; }
 }

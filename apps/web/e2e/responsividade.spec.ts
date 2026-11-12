@@ -77,6 +77,10 @@ test('telas com conta (perfil, histórico, fila, loja, admin) e sala de espera',
   test.setTimeout(300_000);
   const contexto = await browser.newContext({ ...devices['Pixel 7'], baseURL: WEB });
   const page = await contexto.newPage();
+  // Só o login (POST /api/auth/...) sai com IP próprio: o limite de 5 links por IP em 15 min é da
+  // suíte toda (loja e ranqueada entram antes). O resto, inclusive o WebSocket da mesa, é igual aos
+  // outros testes. O servidor do E2E confia no proxy (TRUCO_TRUST_PROXY); nenhum limite muda.
+  await page.route('**/api/auth/**', (r) => r.continue({ headers: { ...r.request().headers(), 'x-forwarded-for': '192.0.2.30' } }));
   try {
     await page.goto('/#/entrar');
     await page.getByLabel('E-mail').fill('admin.qa@teste.dev');

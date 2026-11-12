@@ -586,8 +586,8 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
   }
 
   function atualizar(e: Estado3D): void {
-    aplicarVerso(e.verso ?? null);
     if (destruido) return;
+    aplicarVerso(e.verso ?? null);
     const primeiro = anterior === null;
     const ant = new Map<Posicao, Jogador3D>((anterior?.jogadores ?? []).map((j) => [j.pos, j]));
 

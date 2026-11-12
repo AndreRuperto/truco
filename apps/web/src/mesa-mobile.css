@@ -205,6 +205,17 @@
     right: 0;
     translate: 50% 0;
   }
+  /* Etiquetas de família das laterais: estreitas (quebram em linhas) para não chegar ao meio da
+     cruz, onde fica o monte quando quem deu está embaixo (de 360 a 430px a etiqueta de 42vw
+     chegava nele; QA da fase 2). */
+  .tela-mesa .familia.pos-esquerda figcaption,
+  .tela-mesa .familia.pos-direita figcaption { max-width: 24vw; }
+  /* Em até 380px a figura lateral (3 cartinhas + texto em 3 linhas) descia até o meu nome: fica só
+     o texto, que já diz tudo ("Bot Dita: família fechada", "conferiu: era blefe! +2 pra eles"). */
+  @media (max-width: 380px) {
+    .tela-mesa .familia.pos-esquerda .familia-cartas,
+    .tela-mesa .familia.pos-direita .familia-cartas { display: none; }
+  }
   /* Em até 340px, dois balões de cadeiras vizinhas ("Corta aí!" de quem dá e "Toma 3, parceiro!"
      de quem corta) ainda se encostavam (9x38px, 1 em 30 execuções): mais estreitos, quebram linha. */
   @media (max-width: 340px) {
@@ -341,7 +352,7 @@
     width: auto;
     min-height: 46px;
     gap: 0 6px;
-    padding: 3px 6px;
+    padding: 1px 6px;
   }
   .tela-mesa .rodape-mesa > .janela-familia .janela-familia-texto {
     grid-column: 1;
@@ -358,6 +369,7 @@
     grid-column: 2;
     grid-row: 1 / span 2;
     align-self: center;
+    min-height: 44px;
     padding: 4px 9px;
     font-size: .85rem;
   }
@@ -368,7 +380,7 @@
     /* Quebra entre palavras ("Pedir família / fechada"), nunca letra por letra. */
     overflow-wrap: normal;
   }
-  @media (max-width: 380px) {
+  @media (max-width: 340px) {
     /* Em 320px não cabe tudo numa linha: "Fechadas usadas: 0/3" sai da vista (continua para leitor
        de tela; o limite é do motor e o botão muda sozinho) e a janela encolhe a fonte. */
     .tela-mesa .rodape-mesa > .janela-familia .familia-limite {

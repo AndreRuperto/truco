@@ -1713,6 +1713,11 @@ body:has(.tela-mesa) {
 @media (min-width: 768px) and (min-height: 521px) {
   .dica-mesa { top: 146px; }
 }
+/* Telas baixas (celular deitado, zoom 200%): a dica rola com a página em vez de ficar fixa. Fixa,
+   a dica longa (3 linhas) cobria o topo da mão depois de rolar até ela (QA da fase 2, 720x450). */
+@media (max-height: 520px) {
+  .tela-mesa > .dica-mesa { position: absolute; }
+}
 .dica-mesa p {
   margin: 0 0 var(--e2);
   line-height: 1.4;
@@ -3026,17 +3031,23 @@ body:has(.tela-mesa) {
 /* Em cima e embaixo: ao lado do nome do jogador, fora da cruz das jogadas. Em cima, ancorada
    pela direita (e não com translate -100%) e sem passar da metade: um texto largo quebra em
    linhas em vez de sair da tela pela esquerda (em 320 px começava em x = -7). */
+/* Afastamento do meio: metade do nome do jogador (até 120px de nome) ou 0,9 carta, o que for maior;
+   com só 0,9 carta, um apelido largo encostava na própria etiqueta (QA da fase 2). */
+.familia.pos-cima,
+.familia.pos-baixo {
+  --familia-afasta: max(var(--carta-c) * 0.9, 60px);
+}
 .familia.pos-cima {
   top: var(--e2);
-  right: calc(50% + var(--carta-c) * 0.9);
+  right: calc(50% + var(--familia-afasta));
 }
 .familia.pos-baixo {
   bottom: var(--e2);
-  left: calc(50% + var(--carta-c) * 0.9);
+  left: calc(50% + var(--familia-afasta));
 }
 .familia.pos-cima figcaption,
 .familia.pos-baixo figcaption {
-  max-width: min(42vw, calc(50vw - var(--carta-c) * 0.9 - 2 * var(--e2)));
+  max-width: min(42vw, calc(50vw - var(--familia-afasta) - 2 * var(--e2)));
 }
 /* Nas laterais: fora da faixa do meio, onde ficam o monte de quem deu (encostado na lateral da
    cruz) e a carta jogada pela lateral; e sem o translate -50% que as centrava, que criava um
