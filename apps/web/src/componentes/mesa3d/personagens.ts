@@ -9,7 +9,7 @@ const clamp = THREE.MathUtils.clamp;
 
 export type Estilo = 'palha' | 'careca' | 'coque' | 'bone' | 'boina';
 
-interface Visual {
+export interface Visual {
   estilo: Estilo;
   pele: string;
   camisa: string | 'xadrez' | 'bolinhas' | 'listras';

@@ -347,23 +347,30 @@ export function criarTexturas(): Texturas {
     g.fillRect(0, 0, w, w);
   });
 
-  const verso = tela(140, 200, (g, w, h) => {
+  const verso = texturaVerso(COR.verso, COR.versoLinha);
+
+  return { azulejo, reboco, piso, madeira, palha, xadrez, bolinhas, listras, rotulo, discoZapada, placa, lousa, brilho, verso };
+}
+
+/** Verso das cartas (losangos sobre a cor): o padrão da casa ou o do item da loja de quem deu. */
+export function texturaVerso(cor: string, linha: string): THREE.CanvasTexture {
+  return tela(140, 200, (g, w, h) => {
     g.fillStyle = COR.papel;
     g.fillRect(0, 0, w, h);
     retRedondo(g, 8, 8, w - 16, h - 16, 8);
-    g.fillStyle = COR.verso;
+    g.fillStyle = cor;
     g.fill();
     g.save();
     retRedondo(g, 8, 8, w - 16, h - 16, 8);
     g.clip();
-    g.strokeStyle = COR.versoLinha;
+    g.strokeStyle = linha;
     g.lineWidth = 2.2;
     for (let i = -h; i < w + h; i += 15) {
       g.beginPath(); g.moveTo(i, 0); g.lineTo(i + h, h); g.stroke();
       g.beginPath(); g.moveTo(i, h); g.lineTo(i + h, 0); g.stroke();
     }
     g.restore();
-    g.strokeStyle = COR.versoLinha;
+    g.strokeStyle = linha;
     g.lineWidth = 3;
     retRedondo(g, 15, 15, w - 30, h - 30, 6);
     g.stroke();
@@ -372,8 +379,6 @@ export function criarTexturas(): Texturas {
     g.moveTo(w / 2, h / 2 - 18); g.lineTo(w / 2 + 12, h / 2); g.lineTo(w / 2, h / 2 + 18); g.lineTo(w / 2 - 12, h / 2);
     g.fill();
   });
-
-  return { azulejo, reboco, piso, madeira, palha, xadrez, bolinhas, listras, rotulo, discoZapada, placa, lousa, brilho, verso };
 }
 
 // ---------------------------------------------------------------- faces das cartas

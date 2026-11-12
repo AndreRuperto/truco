@@ -3694,7 +3694,8 @@ body:has(.tela-mesa) {
   list-style: none;
 }
 .manual-sumario button {
-  min-height: 40px;
+  /* 44px: alvo de toque da meta do projeto (era 40; e2e/responsividade.spec.ts). */
+  min-height: 44px;
   padding: 0 var(--e3);
   border-radius: 999px;
   font-size: var(--t-1);

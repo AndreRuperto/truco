@@ -1,3 +1,4 @@
+import type { VisualRoupa } from '@truco/api';
 import type { Carta } from '@truco/engine';
 import type { AparenciaMesa } from '../../logica/aparenciaMesa';
 import type { Posicao } from '../../logica/posicoes';
@@ -24,6 +25,8 @@ export interface Jogador3D {
   gritando: boolean;
   /** Caiu (sem conexão): o personagem fica apagado. */
   caiu: boolean;
+  /** Roupa equipada na loja (null = a roupa padrão do personagem). */
+  roupa?: VisualRoupa | null;
 }
 
 export interface Jogada3D {
@@ -49,6 +52,8 @@ export interface Estado3D {
   plastico: boolean;
   /** Preferência local; em mesas antigas o padrão é madeira. */
   aparenciaMesa?: AparenciaMesa;
+  /** Verso das cartas de quem deu (item da loja equipado pelo pé); null = o verso padrão. */
+  verso?: { cor: string; linha: string } | null;
   /** Mineiro com mão limpa usa coringa ('C'); a face do coringa precisa existir. */
   variante: 'paulista' | 'mineiro';
 }

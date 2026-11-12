@@ -11,7 +11,8 @@ import {
 import {
   copoDeCerveja, criarCadeira, criarLuzes, criarMesas, criarSala, malha, mat, MEIA, R_ASSENTO, TOPO,
 } from './sala';
-import { COR, criarTexturas, semente } from './texturas';
+import { COR, criarTexturas, semente, texturaVerso } from './texturas';
+import { vestir3D } from './vestir';
 
 const PI = Math.PI;
 const V = (x = 0, y = 0, z = 0): THREE.Vector3 => new THREE.Vector3(x, y, z);
@@ -321,16 +322,20 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
       for (const mm of ms) if (!poupar.has(mm)) mm.dispose();
     });
   }
-  function garantirPersonagem(pos: Outro, nome: string): Personagem {
+  /** Roupa com que cada personagem foi criado (chave): trocou de roupa, recria o personagem. */
+  const roupaDe: Partial<Record<Outro, string>> = {};
+  function garantirPersonagem(pos: Outro, nome: string, roupa: Jogador3D['roupa'] = null): Personagem {
     const atual = personagens[pos];
-    if (atual && atual.nome === nome) return atual;
+    const chaveRoupa = JSON.stringify(roupa ?? null);
+    if (atual && atual.nome === nome && roupaDe[pos] === chaveRoupa) return atual;
     if (atual) {
       baloes[pos].obj.removeFromParent();
       atual.raiz.removeFromParent();
       anim.cancelar(atual);
       descartarObjeto(atual.raiz, new Set<unknown>([baralho.geo, baralho.borda, baralho.verso]));
     }
-    const p = criarPersonagem(nome, visualPorNome(nome), tx, false, rnd);
+    const p = criarPersonagem(nome, vestir3D(visualPorNome(nome), roupa), tx, false, rnd);
+    roupaDe[pos] = chaveRoupa;
     bases[pos].add(p.raiz);
     personagens[pos] = p;
     prenderBalao(pos);
@@ -568,7 +573,20 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
   let anterior: Estado3D | null = null;
   let destruido = false;
 
+  // Verso do baralho: o de quem deu (item da loja). Só redesenha quando muda (no máximo 1x por mão).
+  let chaveVerso = '';
+  function aplicarVerso(v: Estado3D['verso']): void {
+    const chave = v ? `${v.cor}|${v.linha}` : '';
+    if (chave === chaveVerso) return;
+    chaveVerso = chave;
+    const antiga = baralho.verso.map;
+    baralho.verso.map = v ? texturaVerso(v.cor, v.linha) : tx.verso;
+    baralho.verso.needsUpdate = true;
+    if (antiga && antiga !== tx.verso) antiga.dispose();
+  }
+
   function atualizar(e: Estado3D): void {
+    aplicarVerso(e.verso ?? null);
     if (destruido) return;
     const primeiro = anterior === null;
     const ant = new Map<Posicao, Jogador3D>((anterior?.jogadores ?? []).map((j) => [j.pos, j]));
@@ -583,7 +601,7 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
     // personagens
     for (const j of e.jogadores) {
       if (j.pos === 'baixo') continue;
-      const p = garantirPersonagem(j.pos, j.nome);
+      const p = garantirPersonagem(j.pos, j.nome, j.roupa);
       apagar(p, j.caiu);
     }
 

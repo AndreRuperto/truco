@@ -32,7 +32,7 @@
 .instalar-truco-texto strong { font-size: .88rem; }
 .instalar-truco-texto small { color: var(--giz-suave); line-height: 1.35; }
 .instalar-truco-botao {
-  min-height: 42px;
+  min-height: 44px;
   padding: 8px 13px;
   border: 1px solid var(--grito);
   border-radius: 9px;
@@ -204,6 +204,13 @@
     left: auto;
     right: 0;
     translate: 50% 0;
+  }
+  /* Em até 340px, dois balões de cadeiras vizinhas ("Corta aí!" de quem dá e "Toma 3, parceiro!"
+     de quem corta) ainda se encostavam (9x38px, 1 em 30 execuções): mais estreitos, quebram linha. */
+  @media (max-width: 340px) {
+    .tela-mesa .balao { max-width: 38vw; }
+    .tela-mesa .assento.pos-esquerda .balao,
+    .tela-mesa .assento.pos-direita .balao { max-width: 28vw; }
   }
   /* Dica da partida: sobre a metade de baixo da arena, nunca no placar, no botão "Ordem"
      (que a dica cita), na mão ou nas ações. 120px ≈ padding + barra + placar + gaps, os

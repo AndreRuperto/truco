@@ -28,6 +28,8 @@ export default defineConfig({
         DATABASE_URL: '',
         TRUCO_PGLITE: 'memoria',
         TRUCO_EMAIL_TESTE: '1',
+        // Admin só para o E2E das telas (responsividade.spec.ts); conta de teste da caixa de saída.
+        ADMIN_EMAILS: 'admin.qa@teste.dev',
         // Loja: o checkout volta pago na hora (nunca cobra; ignorado em produção).
         LOJA_PAGAMENTO: 'simulado',
         TRUCO_URL_PUBLICA: `http://127.0.0.1:${PORTA_WEB}`,
