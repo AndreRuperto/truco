@@ -1,6 +1,7 @@
 import type { AcaoJogador } from '@truco/engine';
 import { type Fala, type MsgAcao, type MsgBatida, type MsgChat, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
 import { type Evento, FALA_TEXTO, type NovoEvento, textoDaAcao } from '../logica/eventos';
+import { resumoDaVolta } from '../logica/volta';
 
 /**
  * O mínimo de um `Room` do @colyseus/sdk 0.18 que a loja usa. O `Room` real satisfaz
@@ -42,7 +43,8 @@ export interface EstadoLoja {
    * em relação ao `estado`: o `sinal` dos bots pode chegar antes do `estado` da mão nova.
    */
   eventos: Evento[];
-  erro: { id: number; mensagem: string } | null;
+  /** Toast: erro (padrão) ou `tipo: 'aviso'` (informativo, ex.: o que aconteceu durante a queda). */
+  erro: { id: number; mensagem: string; tipo?: 'aviso' } | null;
   /** Chat da mesa privada (últimas 50). */
   chat: MsgChat[];
   /** `roomId` da sala atual (código do convite da mesa privada). */
@@ -89,6 +91,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
   const evento = (e: NovoEvento) =>
     mudar({ eventos: [...estado.eventos, { ...e, id: ++seq, em: agora() }].slice(-maxEventos) });
   const erro = (mensagem: string) => mudar({ erro: { id: ++seq, mensagem } });
+  const aviso = (mensagem: string) => mudar({ erro: { id: ++seq, mensagem, tipo: 'aviso' } });
   /** `esquecerToken` = false numa queda: um F5 ainda recupera a cadeira (o servidor guarda 300 s). */
   const largar = (esquecerToken = true) => {
     sala = null;
@@ -109,7 +112,10 @@ export function criarLoja(o: OpcoesLoja = {}) {
     s.onMessage('estado', (m: MsgEstado) => {
       if (sala === s) {
         aguardandoEstadoAposReconexao = false;
+        // Volta de uma queda: conta o que aconteceu enquanto esteve fora (uma vez, se houve algo).
+        const resumo = estado.estadoAnterior ? resumoDaVolta(estado.estadoAnterior, m) : null;
         mudar({ msg: m, estadoAnterior: null });
+        if (resumo) aviso(resumo);
       }
     });
     s.onMessage('acao', (a: MsgAcao) => {
@@ -234,6 +240,8 @@ export function criarLoja(o: OpcoesLoja = {}) {
         // já estamos fora; o servidor trata a queda como saída depois de 300 s
       }
     },
+    /** Só mostra um aviso (toast informativo), sem mudar o status da conexão. */
+    avisar: (mensagem: string) => aviso(mensagem),
     /** Desiste da recuperação e permite voltar ao lobby manualmente. */
     desistirReconexao: () => largar(true),
     limparErro: (id: number) => {

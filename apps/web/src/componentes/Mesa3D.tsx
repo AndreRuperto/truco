@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { posicaoRelativa } from '../logica/posicoes';
 import { movimentoReduzido } from './animacaoMesa';
 import type { Cena3D, Estado3D } from './mesa3d/tipos';
+import { importarComRecarga } from '../rede/recarga';
 
 interface Props {
   estado: Estado3D;
@@ -26,7 +27,8 @@ export function Mesa3D({ estado, minha, batida = null, aoFalhar }: Props) {
 
   useEffect(() => {
     let vivo = true;
-    import('./mesa3d/cena')
+    // Arquivo da cena sumido num deploy (aba aberta antes) recarrega a página em vez de culpar o aparelho.
+    importarComRecarga(() => import('./mesa3d/cena'))
       .then(({ criarCena3D }) => {
         if (!vivo || !caixa.current) return;
         const c = criarCena3D(caixa.current, { reduzido: movimentoReduzido() });

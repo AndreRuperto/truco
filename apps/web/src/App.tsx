@@ -22,6 +22,7 @@ import { SalaEspera } from './telas/SalaEspera';
 import { TelaSalas } from './telas/Salas';
 import { TelaAdmin } from './telas/Admin';
 import { TelaComoJogar } from './telas/ComoJogar';
+import { avisoDeAtualizacao } from './rede/recarga';
 
 /** Tela que exige login: espera a sessão; convidado (ou sessão expirada) recebe o link para entrar. */
 function PedirLogin({ titulo, pronta }: { titulo: string; pronta: boolean }) {
@@ -125,6 +126,9 @@ export function App() {
   useEffect(() => {
     void tentarReconectar(loja);
     void sessao.carregar();
+    // A página veio de uma recarga por deploy (pedaço de código antigo sumiu): conta o porquê.
+    const aviso = avisoDeAtualizacao();
+    if (aviso) loja.avisar(aviso);
   }, []);
 
   useEffect(() => {
@@ -367,7 +371,7 @@ export function App() {
         <div className="faixa-aviso faixa-reconexao" role="status">
           <p>
             <strong>Conexão caiu — reconectando…</strong>
-            <span>Sua cadeira fica guardada. A mesa volta sozinha quando a internet voltar.</span>
+            <span>Sua cadeira fica guardada por até 5 minutos enquanto a conexão volta.</span>
           </p>
           {snap.status === 'reconectando' && (
             <div className="faixa-reconexao-botoes">

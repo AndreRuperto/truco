@@ -104,3 +104,56 @@ test('queda de conexão: a mesa não some, fica inerte com o aviso e volta sem p
   expect(sumiu, 'a mesa sumiu da tela durante a queda ou a volta').toEqual([]);
   expect(await mesa.evaluate((el) => (el as HTMLElement).inert)).toBe(false);
 });
+
+/**
+ * Ciclo 4: depois de um deploy (servidor reiniciado) ou do fim da partida, a sala é descartada e o
+ * Colyseus responde `room "x" has been disposed.` ao reconnect. Antes o cliente tratava isso como
+ * falha passageira e ficava para sempre em "Recuperando sua mesa…". Agora volta ao início e explica.
+ */
+test('voltar com o token de uma sala encerrada: sai da recuperação, apaga o token e explica', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => sessionStorage.setItem('truco:reconexao', 'salaQueNaoExiste:tokenVelho'));
+  await page.reload();
+  await expect(page.getByText('A mesa foi encerrada (o servidor reiniciou ou a partida acabou). Entre de novo para jogar.')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('button', { name: 'Jogar agora', exact: true })).toBeVisible();
+  await expect(page.getByText('Recuperando sua mesa e sua cadeira…')).toBeHidden();
+  expect(await page.evaluate(() => sessionStorage.getItem('truco:reconexao'))).toBeNull();
+});
+
+/**
+ * Ciclo 4, aviso na volta: fora por mais que o prazo da sua vez (20 s), o servidor faz a ação
+ * padrão por você. Antes, a mesa só pulava para o estado novo; agora um aviso informativo
+ * (não de erro) conta o que aconteceu.
+ */
+test('fora por mais que o prazo: na volta, um aviso conta o que aconteceu', async ({ page, context }) => {
+  test.setTimeout(150_000);
+  await page.goto('/');
+  await page.getByLabel('Apelido').fill('QA Aviso');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.getByTestId('centro')).toBeVisible({ timeout: 15_000 });
+  await ateMinhaVez(page);
+  // Fecha a dica de primeira vez, que também é um toast-like e poderia confundir a leitura.
+  const entendi = page.getByRole('button', { name: 'Entendi' });
+  if (await entendi.isVisible()) await entendi.click();
+
+  await context.setOffline(true);
+  await expect(page.getByText('Conexão caiu — reconectando…')).toBeVisible({ timeout: 10_000 });
+  await page.waitForTimeout(24_000); // prazo da jogada (20 s) + folga
+  await context.setOffline(false);
+
+  await expect(page.locator('.tela-mesa:not([data-desatualizada])')).toBeVisible({ timeout: 15_000 });
+  const aviso = page.locator('.toast.toast-aviso');
+  await expect(aviso).toBeVisible({ timeout: 5_000 });
+  await expect(aviso).toHaveText(/Enquanto você esteve fora|A partida terminou enquanto você esteve fora/);
+  await expect(aviso).toHaveAttribute('role', 'status');
+  // O aviso não cobre a mão nem as ações (a volta costuma cair numa decisão, ex.: truco).
+  const caixaAviso = (await aviso.boundingBox())!;
+  const mao = await page.getByTestId('minha-mao').boundingBox();
+  const rodape = await page.locator('.rodape-mesa').boundingBox();
+  for (const [nome, r] of [['mão', mao], ['ações', rodape]] as const) {
+    if (!r || r.height === 0) continue;
+    const cruza = caixaAviso.y < r.y + r.height && r.y < caixaAviso.y + caixaAviso.height;
+    expect(cruza, `aviso cobre ${nome}`).toBe(false);
+  }
+  await page.screenshot({ path: test.info().outputPath('aviso-volta.png') });
+});

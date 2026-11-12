@@ -2748,6 +2748,21 @@ body:has(.tela-mesa) {
   align-items: center;
   gap: 10px;
 }
+/* Aviso informativo (não é erro): tom de lousa e giz, como a faixa de reconexão. Fica no
+   topo e largo (duas linhas), para não cobrir a mão nem as ações na hora de decidir. */
+.toast.toast-aviso {
+  top: calc(8px + env(safe-area-inset-top));
+  bottom: auto;
+  width: min(560px, calc(100% - 16px));
+  max-width: none;
+  border: 2px solid var(--grito);
+  background: var(--lousa);
+  color: var(--giz);
+  line-height: 1.35;
+}
+.toast.toast-aviso > span {
+  flex: 1;
+}
 .toast-fechar {
   flex: none;
   min-width: 44px;

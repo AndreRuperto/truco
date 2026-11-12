@@ -1,6 +1,7 @@
 import type { Room } from '@colyseus/sdk';
 import type { OpcoesEntrada } from '../logica/lobby';
 import type { Loja, SalaLike } from './loja';
+import { importarComRecarga } from './recarga';
 import { urlServidor } from './url';
 
 export const CHAVE_TOKEN = 'truco:reconexao';
@@ -42,9 +43,19 @@ void _roomEhSala;
 
 let padrao: Promise<ClienteSala> | null = null;
 
-/** Carrega o SDK só quando precisa. O `Room` que ele devolve satisfaz `SalaLike`. */
+/**
+ * Carrega o SDK só quando precisa. O `Room` que ele devolve satisfaz `SalaLike`.
+ * Falhou (sem internet, ou o arquivo sumiu num deploy)? Não guarda a falha: a próxima tentativa
+ * importa de novo. Arquivo sumido com internet recarrega a página (ver recarga.ts).
+ */
 function clientePadrao(): Promise<ClienteSala> {
-  padrao ??= import('@colyseus/sdk').then(({ Client }) => new Client(urlServidor()) as unknown as ClienteSala);
+  padrao ??= importarComRecarga(() => import('@colyseus/sdk')).then(
+    ({ Client }) => new Client(urlServidor()) as unknown as ClienteSala,
+    (e: unknown) => {
+      padrao = null;
+      throw e;
+    },
+  );
   return padrao;
 }
 
@@ -68,6 +79,27 @@ export async function entrarNaMesa(loja: Loja, opcoes: OpcoesEntrada, cliente?: 
 
 const reconexoesEmAndamento = new WeakMap<Loja, Promise<boolean>>();
 
+/** `ErrorCode` do Colyseus 0.18 que o `reconnect` devolve (MatchMakeError.code). */
+const SALA_DESCARTADA = 522; // MATCHMAKE_INVALID_ROOM_ID: `room "x" has been disposed.`
+const RESERVA_EXPIRADA = 524; // MATCHMAKE_EXPIRED: token vencido ou reserva vencida
+
+/**
+ * Erro do `reconnect` que encerra a recuperação (não adianta tentar de novo), com a frase para
+ * quem joga; null = falha passageira (rede, servidor sem responder), continua tentando.
+ * Sala descartada acontece quando o servidor reinicia (deploy) ou a partida acabou.
+ */
+function fimDaReconexao(e: unknown): string | null {
+  const code = (e as { code?: unknown } | null)?.code;
+  const texto = mensagem(e);
+  if (code === SALA_DESCARTADA || /disposed|not found/i.test(texto)) {
+    return 'A mesa foi encerrada (o servidor reiniciou ou a partida acabou). Entre de novo para jogar.';
+  }
+  if (code === RESERVA_EXPIRADA || /expired|expir|invalid|seat reservation/i.test(texto)) {
+    return 'A sessão da mesa expirou. Entre novamente para jogar.';
+  }
+  return null;
+}
+
 /**
  * Depois de recarregar a página: se há token, volta para a mesma cadeira (o servidor a
  * guarda por 300 s). Quedas de rede sem recarregar o SDK 0.18 já reconecta sozinho.
@@ -89,9 +121,10 @@ export function tentarReconectar(loja: Loja, cliente?: ClienteLike): Promise<boo
     } catch (e) {
       // Uma falha de rede transitória não invalida a cadeira. O servidor pode
       // continuar guardando a reserva enquanto o celular volta à internet.
-      if (/expired|expir|not found|invalid|already disposed|seat reservation/i.test(mensagem(e))) {
+      const fim = fimDaReconexao(e);
+      if (fim) {
         gravarToken(null);
-        loja.falhouConexao('A sessão da mesa expirou. Entre novamente para jogar.');
+        loja.falhouConexao(fim);
       } else {
         loja.marcarReconectando();
       }
