@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { ErroJogada, reduce } from '../src/reducer';
-import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, distribuida, jogarSeq } from './helpers';
+import { MAOS_DUPLA0_VENCE, MINEIRO, PAULISTA, distribuida, jogarAteOFimDaMao, jogarSeq } from './helpers';
 
 const DUAS_RODADAS: [0 | 1 | 2 | 3, number][] = [[0, 0], [1, 0], [2, 0], [3, 0], [0, 0], [1, 0], [2, 0], [3, 0]];
 
@@ -90,5 +90,42 @@ describe('mão de 11 (ferro)', () => {
   test('maoDe11 off nunca ativa', () => {
     const regras = { ...PAULISTA, maoDe11: 'off' as const };
     expect(distribuida(regras, MAOS_DUPLA0_VENCE, '5p', [11, 11]).mao!.tipo).toBe('normal');
+  });
+});
+
+/**
+ * Item 7 da auditoria: mão de ferro na escada 2-4-8-10-12 (mineiro com mão de 11 ligada).
+ * Vale o 1º nível de truco (4), e a mão de ferro tem precedência sobre a mão de 10 no 10 a 11.
+ */
+describe('mão de 11 (ferro) na escada 2-4-8-10-12', () => {
+  const FERRO_MINEIRO = { ...MINEIRO, maoDe11: 'qualquerDupla' as const };
+
+  test('10 a 11: é mão de ferro (não de 10), vale 4, e a vitória de quem tem 10 encerra a partida', () => {
+    const s = distribuida(FERRO_MINEIRO, MAOS_DUPLA0_VENCE, undefined, [10, 11]);
+    expect(s.mao!.tipo).toBe('mao11');
+    expect(s.fase).toBe('jogando');
+    expect(s.mao!.nivel).toBe(1);
+    expect(() => reduce(s, { tipo: 'truco', cadeira: 0 })).toThrow(ErroJogada);
+    const fim = jogarAteOFimDaMao(s);
+    expect(fim.ultimaMao).toMatchObject({ vencedor: 0, pontos: 4, motivo: 'rodadas' });
+    expect(fim.placar).toEqual([14, 11]);
+    expect(fim.fase).toBe('fimPartida');
+    expect(fim.vencedor).toBe(0);
+  });
+
+  test('11 a 3: quem tem 11 também ganha 4', () => {
+    const fim = jogarAteOFimDaMao(distribuida(FERRO_MINEIRO, MAOS_DUPLA0_VENCE, undefined, [11, 3]));
+    expect(fim.ultimaMao).toMatchObject({ vencedor: 0, pontos: 4 });
+    expect(fim.placar).toEqual([15, 3]);
+  });
+
+  test('onzeAOnze só ativa no 11 a 11 (no 11 a 3 vale a mão normal: 2)', () => {
+    const regras = { ...MINEIRO, maoDe11: 'onzeAOnze' as const };
+    const normal = distribuida(regras, MAOS_DUPLA0_VENCE, undefined, [11, 3]);
+    expect(normal.mao!.tipo).toBe('normal');
+    expect(jogarAteOFimDaMao(normal).ultimaMao).toMatchObject({ vencedor: 0, pontos: 2 });
+    const ferro = distribuida(regras, MAOS_DUPLA0_VENCE, undefined, [11, 11]);
+    expect(ferro.mao!.tipo).toBe('mao11');
+    expect(jogarAteOFimDaMao(ferro).ultimaMao).toMatchObject({ vencedor: 0, pontos: 4 });
   });
 });

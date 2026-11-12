@@ -88,6 +88,43 @@ describe('truco', () => {
     expect(() => reduce(s, { tipo: 'truco', cadeira: 0 })).toThrow(ErroJogada);
   });
 
+  /**
+   * Item 6 da auditoria: correr em cada nível, nas duas escadas. A dupla 0 pede truco e as duas
+   * duplas vão aumentando; quem corre do pedido de nível k dá a quem pediu o valor do nível k-1.
+   */
+  describe.each([
+    { nome: '1-3-6-9-12', comeco: base, valores: [1, 3, 6, 9] },
+    { nome: '2-4-8-10-12', comeco: baseMineiro, valores: [2, 4, 8, 10] },
+  ])('correr em cada nível ($nome)', ({ comeco, valores }) => {
+    test.each([1, 2, 3, 4])('pedido de nível %i', (nivel) => {
+      const acoes: Acao[] = [{ tipo: 'truco', cadeira: 0 }];
+      for (let k = 2; k <= nivel; k++) acoes.push({ tipo: 'aumentar', cadeira: k % 2 === 0 ? 1 : 0 });
+      let s = seq(comeco(), acoes);
+      const quemPediu = s.mao!.trucoPendente!.dupla;
+      expect(s.mao!.trucoPendente!.proposto).toBe(nivel);
+      expect(quemPediu).toBe(nivel % 2 === 1 ? 0 : 1);
+      s = reduce(s, { tipo: 'correr', cadeira: quemPediu === 0 ? 1 : 0 });
+      const esperado: [number, number] = [0, 0];
+      esperado[quemPediu] = valores[nivel - 1];
+      expect(s.placar).toEqual(esperado);
+      expect(s.ultimaMao).toMatchObject({ vencedor: quemPediu, pontos: valores[nivel - 1], motivo: 'correu' });
+    });
+  });
+
+  test('doze aceito: ninguém pede mais nada nesta mão', () => {
+    const s = seq(base(), [
+      { tipo: 'truco', cadeira: 0 },
+      { tipo: 'aumentar', cadeira: 1 },
+      { tipo: 'aumentar', cadeira: 0 },
+      { tipo: 'aumentar', cadeira: 1 },
+      { tipo: 'aceitar', cadeira: 0 },
+    ]);
+    expect(s.mao!.nivel).toBe(4);
+    expect(s.mao!.vez).toBe(0);
+    expect(() => reduce(s, { tipo: 'truco', cadeira: 0 })).toThrow(/máximo/);
+    expect(acoesValidas(s, 0).some((a) => a.tipo === 'truco')).toBe(false);
+  });
+
   test('truco fora da vez e resposta da própria dupla são erro', () => {
     expect(() => reduce(base(), { tipo: 'truco', cadeira: 1 })).toThrow(ErroJogada);
     const s = reduce(base(), { tipo: 'truco', cadeira: 0 });
