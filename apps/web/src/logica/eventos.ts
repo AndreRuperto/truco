@@ -64,9 +64,19 @@ export function textoDaAcao(a: MsgAcao, anterior: Visao | null): string | null {
   }
 }
 
-/** Balão atual de cada cadeira: o evento (ação/fala) mais recente dentro da duração. */
-export function baloesAtivos(eventos: Evento[], agora: number, duracaoMs = DURACAO_BALAO_MS): Map<Cadeira, string> {
-  const r = new Map<Cadeira, string>();
-  for (const e of eventos) if (e.tipo !== 'sinal' && agora - e.em < duracaoMs) r.set(e.de, e.texto);
-  return r;
+/**
+ * Balão atual de cada cadeira: o evento (ação/fala) mais recente dentro da duração. Com `maximo`,
+ * só as `maximo` cadeiras que falaram por último (em telas estreitas, três balões ao mesmo tempo
+ * se encobriam: o mais antigo some).
+ */
+export function baloesAtivos(
+  eventos: Evento[],
+  agora: number,
+  duracaoMs = DURACAO_BALAO_MS,
+  maximo = Infinity,
+): Map<Cadeira, string> {
+  const ultimo = new Map<Cadeira, { texto: string; em: number }>();
+  for (const e of eventos) if (e.tipo !== 'sinal' && agora - e.em < duracaoMs) ultimo.set(e.de, { texto: e.texto, em: e.em });
+  const recentes = [...ultimo].sort(([, a], [, b]) => a.em - b.em).slice(-maximo);
+  return new Map(recentes.map(([c, { texto }]) => [c, texto]));
 }
