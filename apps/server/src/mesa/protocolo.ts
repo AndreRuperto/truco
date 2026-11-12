@@ -34,6 +34,8 @@ export type ModoMesa = (typeof MODOS_MESA)[number];
 export const SAIDA_PARTIDA_CANCELADA = 4020;
 /** Close code: o mesmo usuário entrou na fila por outra aba (a entrada antiga é derrubada). */
 export const SAIDA_FILA_SUBSTITUIDA = 4011;
+/** Close code: a conta foi suspensa pelo admin; a cadeira não fica guardada (vira abandono). */
+export const SAIDA_CONTA_SUSPENSA = 4021;
 
 export const ehSinal = (x: unknown): x is Sinal => (SINAIS as readonly unknown[]).includes(x);
 export const ehFala = (x: unknown): x is Fala => (FALAS as readonly unknown[]).includes(x);

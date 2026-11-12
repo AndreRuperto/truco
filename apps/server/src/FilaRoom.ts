@@ -2,7 +2,7 @@ import { type AuthContext, type Client, ErrorCode, matchMaker, Room, ServerError
 import type { Variante } from '@truco/engine';
 import type { Formato, MsgPareado } from './api/tipos';
 import { cadeirasDoPareamento, type EntradaFila, Fila, normalizarCodigoDupla, type Pareamento } from './fila/fila';
-import { SAIDA_FILA_SUBSTITUIDA, SAIDA_PARTIDA_CANCELADA } from './mesa/protocolo';
+import { SAIDA_CONTA_SUSPENSA, SAIDA_FILA_SUBSTITUIDA, SAIDA_PARTIDA_CANCELADA } from './mesa/protocolo';
 import { MesaRoom } from './MesaRoom';
 import { bloqueioAte, ratingDe } from './repo/partidas';
 import type { Servicos } from './servicos';
@@ -45,7 +45,24 @@ export class FilaRoom extends Room {
     return u;
   }
 
+  /** Filas vivas (para tirar uma conta suspensa). */
+  private static readonly salasVivas = new Set<FilaRoom>();
+
+  /** Admin suspendeu a conta: sai da fila (as sessões já foram apagadas, então não volta). */
+  static derrubarConta(usuarioId: number): void {
+    for (const sala of FilaRoom.salasVivas) {
+      for (const client of sala.clients) {
+        if ((client.auth as UsuarioConexao | undefined)?.usuarioId === usuarioId) sala.kickClient(client.sessionId, SAIDA_CONTA_SUSPENSA);
+      }
+    }
+  }
+
+  onDispose() {
+    FilaRoom.salasVivas.delete(this);
+  }
+
   onCreate() {
+    FilaRoom.salasVivas.add(this);
     this.maxClients = 5_000;
     this.clock.setInterval(() => void this.rodada(), FilaRoom.intervaloMs);
   }

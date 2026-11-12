@@ -25,10 +25,17 @@ export function extrairLink(texto: string): string | null {
   return texto.match(/https?:\/\/\S+/)?.[0] ?? null;
 }
 
-/** Dev sem RESEND_API_KEY: o link aparece no console do servidor. */
-export function emailsConsole(log: (msg: string) => void = console.log): Emails {
+/**
+ * Sem RESEND_API_KEY: em dev o link aparece no console do servidor. Com `omitirLink` (produção),
+ * o corpo não é registrado: o link leva o token de login, e quem lesse o log entraria na conta.
+ */
+export function emailsConsole(log: (msg: string) => void = console.log, o: { omitirLink?: boolean } = {}): Emails {
   return {
     async enviar(e) {
+      if (o.omitirLink) {
+        log(`[e-mail para ${e.para}] ${e.assunto} (não enviado e conteúdo omitido: configure RESEND_API_KEY)`);
+        return;
+      }
       log(`[e-mail para ${e.para}] ${e.assunto}\n${e.texto}`);
     },
   };

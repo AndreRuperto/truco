@@ -7,7 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { bloqueiosFila, participacoes, partidas } from '../src/banco/schema';
 import { FilaRoom } from '../src/FilaRoom';
 import { MesaRoom } from '../src/MesaRoom';
-import { chaveRegras, SAIDA_PARTIDA_CANCELADA } from '../src/mesa/protocolo';
+import { chaveRegras, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA } from '../src/mesa/protocolo';
 import { ratingDe } from '../src/repo/partidas';
 import { criarSessao, entrarComEmail, trocarAvatar } from '../src/repo/usuarios';
 import { criarServidor } from '../src/servidor';
@@ -709,5 +709,50 @@ describe('fila ranqueada', () => {
 
     for (const m of mesas) await m.leave(true);
     await esperarAsync(async () => (await banco.db.select().from(bloqueiosFila)).length === 4);
+  });
+});
+
+describe('conta suspensa (auditoria de segurança 2026-11-10)', () => {
+  afterEach(() => MesaRoom.readmitirConta(-1));
+
+  test('banida no meio da partida: sai da mesa com 4021 e não reconecta pelo token', async () => {
+    const ana = await logado('ana-ban@x.com');
+    const sala = await ana.cliente.create('mesa', { variante: 'mineiro', humanos: 1, nome: 'Ana' });
+    const msgs = coletor(sala);
+    await esperar(() => !!msgs.estado?.some((m) => m.visao));
+    const token = sala.reconnectionToken;
+    let codigo: number | null = null;
+    sala.onLeave((c) => {
+      codigo = c;
+    });
+
+    MesaRoom.derrubarConta(ana.u.id);
+    await esperar(() => codigo !== null);
+    expect(codigo).toBe(SAIDA_CONTA_SUSPENSA);
+    // A cadeira não fica guardada para ela: a reconexão é recusada.
+    await expect(new Client(URL_TESTE).reconnect(token)).rejects.toThrow();
+    MesaRoom.readmitirConta(ana.u.id);
+  });
+
+  test('outra conta na mesma mesa não é afetada', async () => {
+    const ana = await logado('ana-fica@x.com');
+    const bia = await logado('bia-sai@x.com');
+    const sala = await ana.cliente.create('mesa', { variante: 'mineiro', humanos: 2, nome: 'Ana', modo: 'privada' });
+    const salaBia = await bia.cliente.joinById(sala.roomId, { nome: 'Bia' });
+    let saiuAna = false;
+    sala.onLeave(() => {
+      saiuAna = true;
+    });
+    let codigoBia: number | null = null;
+    salaBia.onLeave((c) => {
+      codigoBia = c;
+    });
+    MesaRoom.derrubarConta(bia.u.id);
+    await esperar(() => codigoBia !== null);
+    expect(codigoBia).toBe(SAIDA_CONTA_SUSPENSA);
+    await new Promise((r) => setTimeout(r, 200));
+    expect(saiuAna).toBe(false);
+    MesaRoom.readmitirConta(bia.u.id);
+    await sala.leave();
   });
 });

@@ -147,3 +147,28 @@ describe('cabecalhosCors', () => {
     expect(cabecalhosCors(null, 'x', PROD)).toEqual({});
   });
 });
+
+// Auditoria de segurança 2026-11-10 (COD-05, baixa): sem URL pública (só fora de produção), o Host
+// do pedido ia cru para dentro de um atributo do index.html.
+describe('index.html com o Host do pedido', () => {
+  test('o Host refletido é escapado (não fecha o atributo)', async () => {
+    const semUrl = await subirApp(servicosDeTeste(b.db, { urlPublica: null }), { pastaWeb });
+    try {
+      const { request } = await import('node:http');
+      const url = new URL(semUrl.base);
+      const corpo = await new Promise<string>((ok, falha) => {
+        const req = request({ host: url.hostname, port: url.port, path: '/', headers: { host: 'x"><img src=y onerror=alert(1)>' } }, (r) => {
+          let d = '';
+          r.on('data', (c) => (d += c));
+          r.on('end', () => ok(d));
+        });
+        req.on('error', falha);
+        req.end();
+      });
+      expect(corpo).not.toContain('"><img');
+      expect(corpo).toContain('&quot;&gt;&lt;img');
+    } finally {
+      await semUrl.fechar();
+    }
+  });
+});
