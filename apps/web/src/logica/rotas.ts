@@ -10,7 +10,13 @@ export type Rota =
   | { tela: 'privada'; codigo: string }
   | { tela: 'fila' }
   | { tela: 'manual' }
-  | { tela: 'admin'; aba: AbaAdmin };
+  | { tela: 'admin'; aba: AbaAdmin }
+  | { tela: 'loja'; aba: AbaLoja }
+  | { tela: 'lojaObrigado'; pedido: string | null };
+
+/** Abas da loja: os slots de itens e os pacotes de Pila. */
+export const ABAS_LOJA = ['verso', 'roupa', 'moldura', 'avatar', 'tampo', 'pila'] as const;
+export type AbaLoja = (typeof ABAS_LOJA)[number];
 
 export const ABAS_ADMIN = ['resumo', 'usuarios', 'mesas', 'partidas'] as const;
 export type AbaAdmin = (typeof ABAS_ADMIN)[number];
@@ -41,6 +47,13 @@ export function lerRota(hash: string): Rota {
       return { tela: 'manual' };
     case 'admin':
       return { tela: 'admin', aba: (ABAS_ADMIN as readonly string[]).includes(partes[1]) ? (partes[1] as AbaAdmin) : 'resumo' };
+    case 'loja': {
+      if (partes[1] === 'obrigado') {
+        const id = new URLSearchParams(busca).get('pedido');
+        return { tela: 'lojaObrigado', pedido: id && /^[0-9a-f-]{36}$/.test(id) ? id : null };
+      }
+      return { tela: 'loja', aba: (ABAS_LOJA as readonly string[]).includes(partes[1]) ? (partes[1] as AbaLoja) : 'verso' };
+    }
     default:
       return { tela: 'inicio' };
   }
@@ -68,6 +81,10 @@ export function hrefDe(r: Rota): string {
       return '#/como-jogar';
     case 'admin':
       return r.aba === 'resumo' ? '#/admin' : `#/admin/${r.aba}`;
+    case 'loja':
+      return r.aba === 'verso' ? '#/loja' : `#/loja/${r.aba}`;
+    case 'lojaObrigado':
+      return r.pedido ? `#/loja/obrigado?pedido=${r.pedido}` : '#/loja/obrigado';
   }
 }
 

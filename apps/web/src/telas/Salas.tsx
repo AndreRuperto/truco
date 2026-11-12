@@ -102,6 +102,7 @@ export function TelaSalas({ api, aoEntrar, aoJogarComBots, aoCriarMesa, aoRanque
                 <strong>{NOME_MODO[s.modo]} · {NOME_VARIANTE[s.variante]}</strong>
                 <small>Por {s.dono ?? 'jogador convidado'}</small>
                 <span className="sala-ocupacao">{s.ocupados}/{s.humanos} humanos</span>
+                {s.cacife > 0 && <span className="chip-cacife">Valendo {s.cacife} Fichas</span>}
               </span>
               <button type="button" aria-label={`Entrar na mesa de ${s.dono ?? 'alguém'}`} onClick={() => aoEntrar(s.id)}>
                 Entrar

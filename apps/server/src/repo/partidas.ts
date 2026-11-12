@@ -8,6 +8,8 @@ import { conquistasDe } from '../ranking/conquistas';
 import { ELO_INICIAL, novosPontos, patenteDe, proximaPatente } from '../ranking/elo';
 import { type Contadores, contadoresZerados, percentual } from '../ranking/estatisticas';
 import { deltaAbandono, deltasDoFim, type JogadorRanqueado } from '../ranking/resultado';
+import { cacifeEfetivo, dividirPote, LIMITE_PREMIO_MESMOS } from '../loja/regras';
+import { movimentar, saldosDe } from './carteira';
 
 /** O que `Banco` e uma transação têm em comum (o que as funções abaixo usam). */
 type Exec = Pick<Banco, 'select' | 'insert' | 'update' | 'delete'>;
@@ -24,6 +26,15 @@ export interface InicioPartida {
   modo: ModoMesa;
   formato: Formato | null;
   assentos: AssentoRegistro[];
+  /** Cacife pedido (Fichas); 0 ou ausente = sem cacife. */
+  cacife?: number;
+}
+
+export interface PartidaIniciada {
+  id: number;
+  /** Cacife efetivo que cada pagante pagou (0 = partida sem cacife). */
+  cacife: number;
+  pote: number;
 }
 
 export interface FimPartida {
@@ -73,6 +84,18 @@ function jogadoresRanqueados(ps: readonly LinhaParticipacao[]): JogadorRanqueado
 }
 
 export async function iniciarPartida(db: Banco, i: InicioPartida, agora: Date): Promise<number> {
+  return (await iniciarPartidaComCacife(db, i, agora)).id;
+}
+
+/** Humanos com conta: só eles pagam e recebem Fichas (convidado e bot nunca). */
+const pagantes = <T extends { humano: boolean; usuarioId: number | null }>(xs: readonly T[]) =>
+  xs.filter((x): x is T & { usuarioId: number } => x.humano && x.usuarioId !== null);
+
+/**
+ * Grava o início e, com cacife, debita o efetivo de cada pagante na mesma transação.
+ * Sem pagante em uma das duplas, a partida corre sem cacife.
+ */
+export async function iniciarPartidaComCacife(db: Banco, i: InicioPartida, agora: Date): Promise<PartidaIniciada> {
   return db.transaction(async (tx) => {
     const ranqueada = i.modo === 'ranqueada';
     const [p] = await tx
@@ -93,7 +116,19 @@ export async function iniciarPartida(db: Banco, i: InicioPartida, agora: Date): 
       });
     }
     await tx.insert(participacoes).values(linhas);
-    return p.id;
+    const quem = pagantes(i.assentos);
+    const asDuas = [0, 1].every((d) => quem.some((a) => duplaDe(a.cadeira) === d));
+    let cacife = 0;
+    if ((i.cacife ?? 0) > 0 && asDuas) {
+      const saldos = [];
+      for (const a of quem) saldos.push((await saldosDe(tx, a.usuarioId)).fichas);
+      cacife = cacifeEfetivo(i.cacife ?? 0, saldos);
+    }
+    if (cacife === 0) return { id: p.id, cacife: 0, pote: 0 };
+    const pote = cacife * quem.length;
+    for (const a of quem) await movimentar(tx, a.usuarioId, 'fichas', -cacife, 'cacife', String(p.id));
+    await tx.update(partidas).set({ cacife, pote }).where(eq(partidas.id, p.id));
+    return { id: p.id, cacife, pote };
   });
 }
 
@@ -167,6 +202,7 @@ export async function terminarPartida(db: Banco, partidaId: number, fim: FimPart
       .update(partidas)
       .set({ placar0: fim.placar[0], placar1: fim.placar[1], vencedora: fim.vencedora, terminadaEm: o.agora, abandonada })
       .where(eq(partidas.id, partidaId));
+    if (p.pote > 0 && !abandonada && fim.vencedora !== null) await pagarPote(tx, p, ps, fim.vencedora, o.agora);
     return deltas;
   });
 }
@@ -176,13 +212,69 @@ export async function terminarPartida(db: Banco, partidaId: number, fim: FimPart
  * `abandonada`, sem placar nem Elo (as penalidades de quem abandonou já foram gravadas).
  * Não mexe numa partida já terminada.
  */
-export async function encerrarAbandonada(db: Banco, partidaId: number, agora: Date): Promise<boolean> {
-  const r = await db
-    .update(partidas)
-    .set({ terminadaEm: agora, abandonada: true })
-    .where(and(eq(partidas.id, partidaId), isNull(partidas.terminadaEm)))
-    .returning({ id: partidas.id });
-  return r.length > 0;
+export async function encerrarAbandonada(db: Banco, partidaId: number, agora: Date, o: { reembolsar?: boolean } = {}): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const r = await tx
+      .update(partidas)
+      .set({ terminadaEm: agora, abandonada: true })
+      .where(and(eq(partidas.id, partidaId), isNull(partidas.terminadaEm)))
+      .returning({ id: partidas.id, cacife: partidas.cacife });
+    if (r.length === 0) return false;
+    // Sem `reembolsar` (todos os humanos saíram), o pote some: quem saiu perdeu o cacife.
+    if (o.reembolsar && r[0].cacife > 0) await reembolsar(tx, r[0].id, r[0].cacife);
+    return true;
+  });
+}
+
+/** Devolve o cacife a todos os pagantes (inclusive quem caiu): a culpa foi do servidor, não deles. */
+async function reembolsar(tx: Exec, partidaId: number, cacife: number): Promise<void> {
+  const ps = await tx.select().from(participacoes).where(eq(participacoes.partidaId, partidaId));
+  for (const x of pagantes(ps)) await movimentar(tx, x.usuarioId, 'fichas', cacife, 'estorno_partida', String(partidaId));
+}
+
+/**
+ * Fim com vencedora: o pote vai para os pagantes da dupla vencedora que ficaram até o fim.
+ * Ranqueada repetida entre o mesmo grupo (anti-fazenda): cada um que ficou recebe o seu de volta.
+ * Ninguém da vencedora ficou: o pote some.
+ */
+async function pagarPote(tx: Exec, p: typeof partidas.$inferSelect, ps: readonly LinhaParticipacao[], vencedora: Dupla, agora: Date): Promise<void> {
+  const quem = pagantes(ps);
+  if (p.ranqueada && (await partidasDoMesmoGrupo(tx, p.id, quem.map((x) => x.usuarioId), agora)) >= LIMITE_PREMIO_MESMOS) {
+    for (const x of quem.filter((y) => !y.abandonou)) await movimentar(tx, x.usuarioId, 'fichas', p.cacife, 'estorno_partida', String(p.id));
+    return;
+  }
+  const vencedores = quem.filter((x) => x.dupla === vencedora && !x.abandonou);
+  const porCadeira = new Map(vencedores.map((x) => [x.cadeira, x.usuarioId]));
+  for (const [cadeira, valor] of dividirPote(p.pote, [...porCadeira.keys()])) {
+    await movimentar(tx, porCadeira.get(cadeira)!, 'fichas', valor, 'premio', String(p.id));
+  }
+}
+
+/** Ranqueadas terminadas nas últimas 24 h (fora esta) com exatamente o mesmo grupo de contas. */
+async function partidasDoMesmoGrupo(tx: Exec, partidaId: number, ids: readonly number[], agora: Date): Promise<number> {
+  const desde = new Date(agora.getTime() - 24 * 60 * 60_000);
+  const linhas = await tx
+    .select({ partidaId: participacoes.partidaId, usuarioId: participacoes.usuarioId })
+    .from(participacoes)
+    .innerJoin(partidas, eq(participacoes.partidaId, partidas.id))
+    .where(
+      and(
+        eq(partidas.ranqueada, true),
+        eq(partidas.abandonada, false),
+        gt(partidas.terminadaEm, desde),
+        isNotNull(participacoes.usuarioId),
+        sql`${partidas.id} <> ${partidaId}`,
+      ),
+    );
+  const grupos = new Map<number, Set<number>>();
+  for (const l of linhas) {
+    if (!grupos.has(l.partidaId)) grupos.set(l.partidaId, new Set());
+    grupos.get(l.partidaId)!.add(l.usuarioId!);
+  }
+  const alvo = [...new Set(ids)].sort((a, b) => a - b).join(',');
+  let n = 0;
+  for (const g of grupos.values()) if ([...g].sort((a, b) => a - b).join(',') === alvo) n++;
+  return n;
 }
 
 /**
@@ -191,12 +283,15 @@ export async function encerrarAbandonada(db: Banco, partidaId: number, agora: Da
  * bloqueio. Só pode rodar antes de o servidor aceitar conexões (1 réplica). Devolve quantas.
  */
 export async function encerrarOrfas(db: Banco, agora: Date): Promise<number> {
-  const r = await db
-    .update(partidas)
-    .set({ terminadaEm: agora, abandonada: true })
-    .where(isNull(partidas.terminadaEm))
-    .returning({ id: partidas.id });
-  return r.length;
+  return db.transaction(async (tx) => {
+    const r = await tx
+      .update(partidas)
+      .set({ terminadaEm: agora, abandonada: true })
+      .where(isNull(partidas.terminadaEm))
+      .returning({ id: partidas.id, cacife: partidas.cacife });
+    for (const x of r) if (x.cacife > 0) await reembolsar(tx, x.id, x.cacife);
+    return r.length;
+  });
 }
 
 export async function bloqueioAte(db: Banco, usuarioId: number, agora: Date): Promise<Date | null> {

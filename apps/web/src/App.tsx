@@ -1,12 +1,14 @@
 import type { PreferenciasMesa, UsuarioApi } from '@truco/api';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Cabecalho } from './componentes/Cabecalho';
 import { FundoCartas } from './componentes/FundoCartas';
 import { Toast } from './componentes/Toast';
 import { formInicial, gravarAvatarLocal, lerApelido, lerAvatarLocal, lerPreferenciasLocais, type OpcoesEntrada, opcoesDeEntrada, opcoesDeVitrine } from './logica/lobby';
 import { criarMesaAberta, criarMesaPrivada, entrarNaMesa, entrarPorCodigo, lerToken, tentarReconectar } from './rede/conexao';
-import { useFila, useLoja, useSessao } from './rede/hooks';
-import { api, loja, lojaFila, sessao } from './rede/instancia';
+import { useCarteira, useFila, useLoja, useSessao } from './rede/hooks';
+import { api, carteira, loja, lojaFila, sessao } from './rede/instancia';
+import { TelaLoja, TelaLojaObrigado } from './telas/Loja';
+import { itemPorIdDoCatalogo, textoDosBonus } from './logica/lojaApp';
 import { navegar, useRota } from './rede/rota';
 import { TelaEntrar } from './telas/Entrar';
 import { TelaEntrarPrivada } from './telas/EntrarPrivada';
@@ -62,9 +64,34 @@ export function App() {
   const ses = useSessao(sessao);
   const rota = useRota();
   const fila = useFila(lojaFila);
+  const cart = useCarteira(carteira);
+  const [avisoBonus, setAvisoBonus] = useState<string | null>(null);
   // Regras da tela inicial guardadas na conta: undefined = sem conta ou carregando.
   const [prefsConta, setPrefsConta] = useState<PreferenciasMesa | null | undefined>(undefined);
   const idUsuario = ses.usuario?.id;
+  // Carteira da conta: ao entrar (aplica os bônus do dia no servidor) e ao voltar de uma partida.
+  useEffect(() => {
+    if (idUsuario === undefined) {
+      carteira.limpar();
+      return;
+    }
+    void carteira.carregar().then((c) => {
+      const t = c ? textoDosBonus(c.bonus) : null;
+      if (t) setAvisoBonus(t);
+    });
+  }, [idUsuario, snap.status === 'fora']);
+  useEffect(() => {
+    if (rota.tela === 'loja') void carteira.carregarCatalogo();
+  }, [rota.tela]);
+  // O aviso do bônus vale para a tela em que apareceu: ao trocar de tela ele some.
+  const telaDoAviso = useRef<string | null>(null);
+  useEffect(() => {
+    if (avisoBonus && telaDoAviso.current === null) telaDoAviso.current = rota.tela;
+    else if (telaDoAviso.current !== null && telaDoAviso.current !== rota.tela) {
+      telaDoAviso.current = null;
+      setAvisoBonus(null);
+    }
+  }, [rota.tela, avisoBonus]);
   useEffect(() => {
     setPrefsConta(undefined);
     if (idUsuario === undefined) return;
@@ -135,6 +162,7 @@ export function App() {
     tela = (
       <TelaMesa
         temConta={!!ses.usuario}
+        inventario={cart.carteira?.inventario}
         snap={{ ...snap, msg: { ...anterior, prazo: null } }}
         acoes={loja}
         desatualizada
@@ -166,6 +194,7 @@ export function App() {
       tela = (
         <TelaMesa
           temConta={!!ses.usuario}
+          inventario={cart.carteira?.inventario}
           snap={snap}
           acoes={loja}
           aoChat={loja.enviarChat}
@@ -241,6 +270,30 @@ export function App() {
       case 'manual':
         conteudo = <TelaComoJogar />;
         break;
+      case 'loja':
+        conteudo = (
+          <TelaLoja
+            aba={rota.aba}
+            api={api}
+            usuario={ses.usuario}
+            catalogo={cart.catalogo}
+            carteira={cart.carteira}
+            aoMudar={async () => {
+              await carteira.carregar();
+              // O avatar da loja fica na conta: a sessão precisa da foto nova.
+              const eu = await api.eu().catch(() => null);
+              if (eu?.usuario) sessao.definirUsuario(eu.usuario);
+            }}
+          />
+        );
+        break;
+      case 'lojaObrigado':
+        conteudo = ses.usuario ? (
+          <TelaLojaObrigado pedido={rota.pedido} api={api} aoPago={() => void carteira.carregar()} />
+        ) : (
+          <PedirLogin titulo="Compra de Pila" pronta={ses.pronta} />
+        );
+        break;
       case 'admin':
         conteudo = ses.usuario ? <TelaAdmin aba={rota.aba} api={api} /> : <PedirLogin titulo="Admin" pronta={ses.pronta} />;
         break;
@@ -284,12 +337,22 @@ export function App() {
         <Cabecalho
           pronta={ses.pronta}
           usuario={ses.usuario}
-          atual={rota.tela === 'perfil' && rota.id !== null ? undefined : rota.tela}
+          atual={rota.tela === 'perfil' && rota.id !== null ? undefined : rota.tela === 'lojaObrigado' ? 'loja' : rota.tela}
+          saldos={cart.carteira}
+          moldura={itemPorIdDoCatalogo(cart.catalogo, cart.carteira?.equipados.moldura)}
           aoSair={() => {
             navegar({ tela: 'inicio' });
             void sessao.sair();
           }}
         />
+        {avisoBonus && snap.status === 'fora' && (
+          <div className="faixa-bonus" role="status">
+            <span>{avisoBonus}</span>
+            <button type="button" className="botao-discreto" onClick={() => setAvisoBonus(null)}>
+              Fechar
+            </button>
+          </div>
+        )}
         {/* A tela inicial tem o fundo de cartas inteiro (com mouse); as outras, a versão discreta. */}
         {rota.tela !== 'inicio' && <FundoCartas discreto />}
         {/* trocar de conta remonta a tela: nada do usuário anterior sobrevive em estado local */}
@@ -326,6 +389,7 @@ export function App() {
       )}
       {tela}
       {snap.erro && <Toast key={snap.erro.id} erro={snap.erro} aoFechar={loja.limparErro} />}
+
     </>
   );
 }

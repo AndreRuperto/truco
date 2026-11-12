@@ -37,6 +37,9 @@ interface Props {
 /** Espera depois da última mudança antes de mandar para a conta. */
 const ESPERA_SALVAR_MS = 600;
 
+/** Os mesmos de `CACIFES_MESA` no servidor (ele valida). */
+const CACIFES = [0, 50, 100, 250, 500, 1000] as const;
+
 export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta, aoSalvarNaConta, avatar = null, aoTrocarAvatar, apelidoConta }: Props) {
   const [f, setFCru] = useState<FormLobby>(() => formInicial(lerApelido(), lerPreferenciasLocais()));
   // Só grava depois que a pessoa mexe: abrir a tela não sobrescreve o que está na conta.
@@ -175,6 +178,18 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
                 <option value="4">4 humanos</option>
               </select>
             </div>
+            {apelidoConta !== undefined && (f.humanos >= 2 || f.privada) && (
+              <div className="campo">
+                <label htmlFor="cacife">Valendo Fichas</label>
+                <select id="cacife" value={String(f.cacife ?? 0)} onChange={(e) => mudar('cacife', Number(e.target.value))}>
+                  {CACIFES.map((c) => (
+                    <option key={c} value={String(c)}>
+                      {c === 0 ? 'Sem cacife' : `${c} Fichas por cabeça`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="campo">
               <label htmlFor="bots">Bots</label>
               <select id="bots" value={f.nivelBot} onChange={(e) => mudar('nivelBot', e.target.value as NivelBot)}>
@@ -242,6 +257,7 @@ function resumoLobby(f: FormLobby): string {
     f.variante === 'mineiro' && f.maoLimpa ? 'mão limpa' : null,
     bots > 0 ? `${bots} ${bots === 1 ? 'bot' : 'bots'} ${nivel}` : 'só humanos',
     !f.sinais ? 'sem sinais' : f.chanceInterceptarSinal > 0 ? 'sinais interceptáveis' : null,
+    f.cacife && (f.humanos >= 2 || f.privada) ? `valendo ${f.cacife} Fichas` : null,
   ];
   return partes.filter(Boolean).join(', ');
 }

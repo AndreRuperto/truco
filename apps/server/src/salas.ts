@@ -15,6 +15,7 @@ export async function listarSalasAbertas(): Promise<SalaAberta[]> {
       regras: s.metadata.regras ?? null,
       ocupados: s.clients,
       dono: s.metadata.dono ?? null,
+      cacife: typeof s.metadata.cacife === 'number' ? s.metadata.cacife : 0,
     }));
 }
 

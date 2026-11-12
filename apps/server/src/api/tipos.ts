@@ -103,6 +103,8 @@ export interface SalaAberta {
   regras: RegrasMesa | null;
   ocupados: number;
   dono: string | null;
+  /** Fichas por cabeça (0 = sem cacife). */
+  cacife: number;
 }
 
 export interface MsgStatusFila {
@@ -181,4 +183,76 @@ export interface PartidaAdmin {
   iniciadaEm: string;
   terminadaEm: string | null;
   jogadores: JogadorPartidaAdmin[];
+}
+
+// ---------- loja (Fichas e Pila) ----------
+
+export type {
+  EstampaVerso,
+  EstiloMoldura,
+  ItemLoja,
+  PacotePila,
+  Slot,
+  SuperficieTampo,
+  VisualAvatar,
+  VisualItem,
+  VisualMoldura,
+  VisualRoupa,
+  VisualTampo,
+  VisualVerso,
+} from '../loja/catalogo';
+export type { Moeda, Motivo } from '../loja/regras';
+
+/** O que os outros veem de um jogador na mesa (vem do servidor; o tampo é só de quem escolheu). */
+export interface VisualJogador {
+  verso: import('../loja/catalogo').VisualVerso;
+  roupa: import('../loja/catalogo').VisualRoupa;
+  moldura: import('../loja/catalogo').EstiloMoldura;
+}
+
+/** `GET /api/loja/catalogo`. */
+export interface CatalogoApi {
+  itens: import('../loja/catalogo').ItemLoja[];
+  pacotes: import('../loja/catalogo').PacotePila[];
+  /** false = compra de Pila desligada (a loja mostra "em breve"). */
+  pagamentoAtivo: boolean;
+}
+
+export interface LancamentoApi {
+  id: number;
+  moeda: import('../loja/regras').Moeda;
+  delta: number;
+  saldoDepois: number;
+  motivo: import('../loja/regras').Motivo;
+  ref: string | null;
+  criadoEm: string;
+}
+
+/** `GET /api/loja/eu`. */
+export interface CarteiraApi {
+  fichas: number;
+  pila: number;
+  inventario: string[];
+  equipados: Partial<Record<'verso' | 'roupa' | 'moldura' | 'tampo', string>>;
+  /** Avatar da conta (`pronto:`, `loja:` ou imagem), para a loja saber qual está em uso. */
+  avatar: string | null;
+  /** Bônus aplicados nesta leitura (cadastro, diário, resgate), para o aviso na tela. */
+  bonus: { motivo: import('../loja/regras').Motivo; delta: number }[];
+  extrato: LancamentoApi[];
+}
+
+export interface PedidoApi {
+  id: string;
+  pacoteId: string;
+  pila: number;
+  valorCentavos: number;
+  status: 'criado' | 'pago' | 'estornado';
+}
+
+export interface PedidoAdmin extends PedidoApi {
+  usuarioId: number;
+  apelido: string;
+  captureMethod: string | null;
+  criadoEm: string;
+  pagoEm: string | null;
 }

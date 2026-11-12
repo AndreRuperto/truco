@@ -55,6 +55,11 @@ export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = win
         <p className="sala-situacao" role="status">
           {faltam > 0 ? `Esperando ${faltam} ${faltam === 1 ? 'jogador' : 'jogadores'}…` : 'Começando…'}
         </p>
+        {msg.cacife && (
+          <p className="sala-cacife">
+            <span className="chip-cacife">Valendo {msg.cacife.pedido} Fichas</span> por cabeça. Quem vencer leva o pote. Com menos saldo na mesa, vale o menor.
+          </p>
+        )}
       </header>
 
       <section className="sala-mesa" aria-label="Lugares na mesa">

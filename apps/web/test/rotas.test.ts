@@ -23,10 +23,16 @@ describe('rotas por hash', () => {
     expect(lerRota('#/admin/usuarios')).toEqual({ tela: 'admin', aba: 'usuarios' });
     expect(lerRota('#/admin/xyz')).toEqual({ tela: 'admin', aba: 'resumo' });
     expect(lerRota('#/nada')).toEqual({ tela: 'inicio' });
+    expect(lerRota('#/loja')).toEqual({ tela: 'loja', aba: 'verso' });
+    expect(lerRota('#/loja/pila')).toEqual({ tela: 'loja', aba: 'pila' });
+    expect(lerRota('#/loja/xyz')).toEqual({ tela: 'loja', aba: 'verso' });
+    const id = '0b6f0c1e-9a51-4a0b-8f53-2f6f2c4f9a10';
+    expect(lerRota(`#/loja/obrigado?pedido=${id}`)).toEqual({ tela: 'lojaObrigado', pedido: id });
+    expect(lerRota('#/loja/obrigado?pedido=<x>')).toEqual({ tela: 'lojaObrigado', pedido: null });
   });
 
   test('hrefDe é o inverso de lerRota', () => {
-    for (const h of ['#/', '#/entrar', '#/entrar?token=t1', '#/perfil', '#/perfil?editar', '#/perfil/3', '#/historico', '#/ranking/mineiro', '#/salas', '#/privada/abcd', '#/fila', '#/como-jogar', '#/admin', '#/admin/mesas']) {
+    for (const h of ['#/', '#/entrar', '#/entrar?token=t1', '#/perfil', '#/perfil?editar', '#/perfil/3', '#/historico', '#/ranking/mineiro', '#/salas', '#/privada/abcd', '#/fila', '#/como-jogar', '#/admin', '#/admin/mesas', '#/loja', '#/loja/moldura', '#/loja/pila', '#/loja/obrigado?pedido=0b6f0c1e-9a51-4a0b-8f53-2f6f2c4f9a10']) {
       expect(hrefDe(lerRota(h))).toBe(h);
     }
   });

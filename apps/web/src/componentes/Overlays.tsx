@@ -26,9 +26,11 @@ interface PropsFim {
    * outros; `quantos` = quem pediu / quantos humanos são.
    */
   revanche?: { aoPedir: () => void; jaPedi: boolean; quantos: [number, number] } | null;
+  /** Mesa valendo Fichas: o que estava em jogo. */
+  cacife?: { efetivo: number | null; pote: number } | null;
 }
 
-export function FimDePartida({ titulo, placar, venceu, aoJogarDeNovo, aoVoltar, revanche = null }: PropsFim) {
+export function FimDePartida({ titulo, placar, venceu, aoJogarDeNovo, aoVoltar, revanche = null, cacife = null }: PropsFim) {
   const [pediram, total] = revanche?.quantos ?? [0, 0];
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-labelledby="titulo-fim" data-testid="fim-partida">
@@ -38,6 +40,13 @@ export function FimDePartida({ titulo, placar, venceu, aoJogarDeNovo, aoVoltar, 
         <h2 id="titulo-fim">{titulo}</h2>
         <p className="resultado-placar">{placar}</p>
         <p className="resultado-legenda">{venceu ? 'Vitória da sua dupla. Boa jogada!' : 'Partida encerrada. A próxima mão pode ser sua.'}</p>
+        {cacife?.efetivo ? (
+          <p className="resultado-fichas" data-testid="resultado-fichas">
+            {venceu
+              ? `O pote de ${cacife.pote} Fichas vai para a sua dupla.`
+              : `Valia ${cacife.efetivo} Fichas: o pote foi para os adversários.`}
+          </p>
+        ) : null}
         {revanche ? (
           <>
             <button type="button" className="botao-principal" onClick={revanche.aoPedir} disabled={revanche.jaPedi} autoFocus>

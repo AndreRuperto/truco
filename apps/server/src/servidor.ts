@@ -22,7 +22,7 @@ export function criarServidor(servicos: Servicos, extras: ExtrasServidor = {}) {
     // regras (`chaveRegras`). `MesaRoom.onAuth` preenche esses campos nas opções de quem
     // procura e `MesaRoom.onCreate` na metadata da sala: ninguém fica sem filtro.
     rooms: {
-      mesa: defineRoom(MesaRoom).filterBy(['modo', 'variante', 'humanos', 'nivelBot', 'chaveRegras']),
+      mesa: defineRoom(MesaRoom).filterBy(['modo', 'variante', 'humanos', 'nivelBot', 'chaveRegras', 'cacife']),
       // Uma sala só com todo mundo na fila; ela cria as mesas ranqueadas e reserva os assentos.
       fila: defineRoom(FilaRoom),
     },

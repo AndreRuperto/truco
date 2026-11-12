@@ -1,6 +1,7 @@
 import { abrirBanco, type Banco } from './banco/banco';
 import { CaixaDeTeste, type Emails, emailsConsole, emailsResend } from './auth/emails';
 import { type VerificadorGoogle, verificadorGoogle } from './auth/google';
+import { type GatewayPagamento, gatewayInfinitePay, gatewaySimulado } from './pagamento/infinitepay';
 import { K_PADRAO } from './ranking/elo';
 
 /** Tudo de que HTTP, salas e registro precisam. Os testes montam um com `servicosDeTeste`. */
@@ -21,7 +22,15 @@ export interface Servicos {
   kElo: number;
   bloqueioAbandonoMs: number;
   agora: () => Date;
+  /** Compra de Pila. null/ausente = desligada (a loja mostra "em breve"). */
+  pagamento?: { gateway: GatewayPagamento } | null;
 }
+
+/**
+ * `LOJA_PAGAMENTO`: `on` = InfinitePay de verdade (exige `INFINITEPAY_HANDLE`); `simulado` = o
+ * checkout volta pago na hora (só fora de produção: E2E e desenvolvimento); outro = desligado.
+ */
+export type ModoPagamento = 'desligado' | 'infinitepay' | 'simulado';
 
 export interface ConfigAmbiente {
   producao: boolean;
@@ -36,6 +45,7 @@ export interface ConfigAmbiente {
   origens: string[];
   admins: string[];
   confiarProxy: boolean;
+  pagamento: { modo: ModoPagamento; handle: string | null; apiKey: string | null };
   avisos: string[];
 }
 
@@ -83,6 +93,17 @@ export function configDoAmbiente(env: Env, padroes: { pastaPglite: string }): Co
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
 
+  const handle = vazio(env.INFINITEPAY_HANDLE)?.replace(/^\$/, '') ?? null;
+  const pedidoPagamento = vazio(env.LOJA_PAGAMENTO);
+  let modoPagamento: ModoPagamento = 'desligado';
+  if (pedidoPagamento === 'on') {
+    if (handle) modoPagamento = 'infinitepay';
+    else avisos.push('LOJA_PAGAMENTO=on sem INFINITEPAY_HANDLE: compra de Pila desligada');
+  } else if (pedidoPagamento === 'simulado') {
+    if (producao) avisos.push('LOJA_PAGAMENTO=simulado ignorado em produção');
+    else modoPagamento = 'simulado';
+  }
+
   return {
     producao,
     databaseUrl,
@@ -95,6 +116,7 @@ export function configDoAmbiente(env: Env, padroes: { pastaPglite: string }): Co
     origens,
     admins,
     confiarProxy,
+    pagamento: { modo: modoPagamento, handle, apiKey: vazio(env.INFINITEPAY_API_KEY) },
     avisos,
   };
 }
@@ -110,6 +132,13 @@ export async function servicosDoAmbiente(
   const caixa = config.emailTeste ? new CaixaDeTeste() : null;
   const emails = caixa ?? (config.resend ? emailsResend(config.resend) : emailsConsole(console.log, { omitirLink: config.producao }));
   const google = config.googleClientId ? { clientId: config.googleClientId, verificar: verificadorGoogle(config.googleClientId) } : null;
+  const pg = config.pagamento;
+  const pagamento =
+    pg.modo === 'infinitepay' && pg.handle
+      ? { gateway: gatewayInfinitePay({ handle: pg.handle, apiKey: pg.apiKey }) }
+      : pg.modo === 'simulado'
+        ? { gateway: gatewaySimulado() }
+        : null;
   return {
     config,
     fechar: conexao.fechar,
@@ -126,6 +155,7 @@ export async function servicosDoAmbiente(
       kElo: config.kElo,
       bloqueioAbandonoMs: BLOQUEIO_ABANDONO_MS,
       agora: () => new Date(),
+      pagamento,
     },
   };
 }

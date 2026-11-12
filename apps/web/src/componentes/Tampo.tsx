@@ -1,4 +1,5 @@
 import type { Cadeira } from '@truco/engine';
+import type { VisualRoupa } from '@truco/api';
 import type { MesaFisica, MsgBatida } from '@truco/protocolo';
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { posicaoRelativa } from '../logica/posicoes';
@@ -35,6 +36,8 @@ export interface JogadorDesenhado {
   nome: string;
   daVez: boolean;
   gritando: boolean;
+  /** Roupa equipada na loja (vem do servidor). */
+  roupa?: VisualRoupa | null;
 }
 
 /** O tampo usa a preferência visual local; a quebra real sempre força o plástico de bar. */
@@ -59,7 +62,7 @@ export function Tampo({ fisica, aparencia = 'madeira', minha, batida, jogadores 
       <Mobilia jogadores={jogadores} />
     <div data-testid="tampo" className={cx('tampo', tipo === 'feltro' && 'tampo-feltro', tipo === 'plastico' && 'tampo-plastico', ativa && 'tremendo')} data-superficie={tipo} style={estilo}>
       {tipo === 'plastico' && <EstampaZapada />}
-      <Rachaduras rachaduras={fisica?.rachaduras ?? []} tipo={tipo === 'feltro' ? 'madeira' : tipo} minha={minha} novaId={ativa?.rachadura?.id ?? null} />
+      <Rachaduras rachaduras={fisica?.rachaduras ?? []} tipo={tipo === 'plastico' ? 'plastico' : 'madeira'} minha={minha} novaId={ativa?.rachadura?.id ?? null} />
       {children}
       {ativa && (
         <span key={ativa.id} className={cx('tum', `pos-${posicaoRelativa(minha, ativa.de)}`)} aria-hidden="true">
@@ -96,7 +99,7 @@ function Mobilia({ jogadores }: { jogadores: JogadorDesenhado[] }) {
     <div className="mobilia" aria-hidden="true">
       {jogadores.map((j, i) => (
         <div key={j.pos} className={`lugar lugar-${j.pos}`}>
-          <Personagem tipo={tipos[i]} lado={j.pos} daVez={j.daVez} gritando={j.gritando} />
+          <Personagem tipo={tipos[i]} lado={j.pos} daVez={j.daVez} gritando={j.gritando} roupa={j.roupa} />
         </div>
       ))}
       {(['cima', 'direita', 'baixo', 'esquerda'] as const).map((lado) => (

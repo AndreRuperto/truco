@@ -32,6 +32,7 @@ import { banirUsuario, desbanirUsuario, listarUsuariosAdmin, partidasRecentesAdm
 import { historico, perfil, ranking } from '../repo/partidas';
 import type { Servicos } from '../servicos';
 import { cabecalhosSeguranca, hashesDeScriptsInline } from './cabecalhos';
+import { rotasAdminLoja, rotasLoja } from './loja';
 
 export interface ExtrasApp {
   /** Mesas casuais abertas (o servidor passa `listarSalasAbertas`). */
@@ -272,6 +273,13 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     res.json({ linhas: await ranking(s.banco, v as Variante) });
   });
 
+  rotasLoja(api, {
+    s,
+    usuarioDe,
+    // Sem URL pública (só fora de produção) a origem é a do pedido, como no link mágico.
+    origem: (req) => s.urlPublica ?? origemDoPedido(req),
+  });
+
   api.get('/salas', async (_req, res) => {
     res.json({ salas: x.listarSalas ? await x.listarSalas() : [] });
   });
@@ -341,6 +349,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   admin.get('/partidas', async (_req, res) => {
     res.json({ partidas: await partidasRecentesAdmin(s.banco) });
   });
+  rotasAdminLoja(admin, s);
   api.use('/admin', admin);
 
   api.get('/teste/emails', (_req, res) => {

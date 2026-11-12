@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import type { Carteira, EstadoCarteira } from './carteira';
 import type { EstadoFila, LojaFila } from './fila';
 import type { EstadoLoja, Loja } from './loja';
 import type { EstadoSessao, Sessao } from './sessao';
@@ -18,6 +19,8 @@ export function useAgora(intervaloMs = 250): number {
 export const useFila = (f: LojaFila): EstadoFila => useSyncExternalStore(f.subscribe, f.getSnapshot);
 
 export const useSessao = (s: Sessao): EstadoSessao => useSyncExternalStore(s.subscribe, s.getSnapshot);
+
+export const useCarteira = (c: Carteira): EstadoCarteira => useSyncExternalStore(c.subscribe, c.getSnapshot);
 
 /** Busca dados ao montar e quando `deps` mudam; `recarregar()` busca de novo. */
 export function useCarregar<T>(fn: () => Promise<T>, deps: readonly unknown[]) {

@@ -1,6 +1,12 @@
 import type { Variante } from '@truco/engine';
 import type {
+  CarteiraApi,
+  CatalogoApi,
   ConfigApi,
+  Moeda,
+  PedidoAdmin,
+  PedidoApi,
+  Slot,
   ItemHistorico,
   LinhaRanking,
   MesaAdmin,
@@ -66,7 +72,18 @@ export function criarApi(f: typeof fetch = (...a) => fetch(...a), base = '', aoN
     preferencias: () => pedir<{ preferencias: PreferenciasMesa | null }>('GET', '/api/preferencias', undefined, true),
     salvarPreferencias: (preferencias: PreferenciasMesa) =>
       pedir<{ preferencias: PreferenciasMesa }>('PUT', '/api/preferencias', { preferencias }, true),
+    loja: {
+      catalogo: () => pedir<CatalogoApi>('GET', '/api/loja/catalogo'),
+      eu: () => pedir<CarteiraApi>('GET', '/api/loja/eu', undefined, true),
+      comprarItem: (itemId: string) => pedir<void>('POST', '/api/loja/comprar-item', { itemId }, true),
+      equipar: (slot: Slot, itemId: string | null) => pedir<void>('PUT', '/api/loja/equipar', { slot, itemId }, true),
+      criarPedido: (pacoteId: string) => pedir<{ pedido: PedidoApi; url: string }>('POST', '/api/loja/pedidos', { pacoteId }, true),
+      pedido: (id: string) => pedir<{ pedido: PedidoApi }>('GET', `/api/loja/pedidos/${encodeURIComponent(id)}`, undefined, true),
+    },
     admin: {
+      pedidos: () => pedir<{ pedidos: PedidoAdmin[] }>('GET', '/api/admin/pedidos', undefined, true),
+      ajuste: (id: number, moeda: Moeda, delta: number, motivo: string) =>
+        pedir<{ saldo: number }>('POST', `/api/admin/usuarios/${id}/ajuste`, { moeda, delta, motivo }, true),
       resumo: () => pedir<ResumoAdmin>('GET', '/api/admin/resumo', undefined, true),
       usuarios: (busca = '') =>
         pedir<{ usuarios: UsuarioAdmin[] }>('GET', `/api/admin/usuarios${busca.trim() ? `?busca=${encodeURIComponent(busca.trim())}` : ''}`, undefined, true),

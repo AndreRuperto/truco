@@ -25,6 +25,7 @@ import { Placar } from '../componentes/Placar';
 import { Tampo } from '../componentes/Tampo';
 import { agruparAcoes } from '../logica/acoes';
 import { aparenciaPermitida, lerAparenciaMesa, salvarAparenciaMesa, type AparenciaMesa } from '../logica/aparenciaMesa';
+import { estiloVerso } from '../logica/lojaItens';
 import { botaoBate } from '../logica/batida';
 import { rotuloCarta } from '../logica/cartas';
 import { baloesAtivos } from '../logica/eventos';
@@ -57,9 +58,11 @@ interface Props {
    * foco ou leitor de tela entra nela). A App mostra o aviso da reconexão por cima.
    */
   desatualizada?: boolean;
+  /** Itens da loja que a conta tem (libera os tampos comprados). */
+  inventario?: readonly string[];
 }
 
-export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false, desatualizada = false }: Props) {
+export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false, desatualizada = false, inventario = [] }: Props) {
   const agora = useAgora(250);
   const raiz = useRef<HTMLElement>(null);
   // React 18 não conhece `inert` como propriedade booleana: liga direto no elemento.
@@ -80,9 +83,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   const vista3d = visualizacao === '3d';
   const [aparenciaSalva, setAparenciaSalva] = useState<AparenciaMesa>(lerAparenciaMesa);
   const [personalizando, setPersonalizando] = useState(false);
-  const aparencia = aparenciaPermitida(aparenciaSalva, temConta);
+  const aparencia = aparenciaPermitida(aparenciaSalva, temConta, inventario);
   const mudarAparencia = (escolhida: AparenciaMesa) => {
-    if (escolhida === 'feltro' && !temConta) return;
+    if (aparenciaPermitida(escolhida, temConta, inventario) !== escolhida) return;
     setAparenciaSalva(escolhida);
     salvarAparenciaMesa(escolhida);
   };
@@ -104,6 +107,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   const msg = snap.msg!;
   const modo = msg.modo;
   const v = msg.visao!;
+  const verso = estiloVerso(msg.cadeiras[v.pe]?.visual?.verso);
   const m = v.mao;
   const minha = msg.minhaCadeira;
   const camadaRitual = useRef<HTMLDivElement>(null);
@@ -166,7 +170,16 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   );
 
   return (
-    <main ref={raiz} className="tela-mesa" data-visualizacao={visualizacao} data-desatualizada={desatualizada || undefined} aria-hidden={desatualizada || undefined}>
+    <main
+      ref={raiz}
+      className="tela-mesa"
+      data-visualizacao={visualizacao}
+      data-desatualizada={desatualizada || undefined}
+      aria-hidden={desatualizada || undefined}
+      // O baralho da mão é o de quem dá as cartas (o pé): todos veem o verso que ele equipou.
+      data-verso={verso?.estampa}
+      style={verso?.style}
+    >
       {/* Menu da mesa: ícones no canto de cima (o nome de cada um vai no aria-label e no title). */}
       <nav className="barra-mesa" aria-label="Menu da mesa">
         {msg.sinais !== false && (
@@ -228,6 +241,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
         <SeletorAparenciaMesa
           valor={aparencia}
           temConta={temConta}
+          inventario={inventario}
           aoEscolher={mudarAparencia}
           aoFechar={() => setPersonalizando(false)}
         />
@@ -237,7 +251,10 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
         eles={eles}
         valor={m ? valorMao(v.regras, m.nivel) : null}
         pedido={pedido?.replace(/\.$/, '') ?? null}
-        situacao={fim ? 'Partida encerrada' : msg.janelaFamilia ? 'Hora da família' : etapa ? 'Preparando a mão' : daVez(minha) ? 'Sua vez' : 'Aguardando jogada'}
+        situacao={
+          (fim ? 'Partida encerrada' : msg.janelaFamilia ? 'Hora da família' : etapa ? 'Preparando a mão' : daVez(minha) ? 'Sua vez' : 'Aguardando jogada') +
+          (msg.cacife?.efetivo ? ` · pote ${msg.cacife.pote} Fichas` : '')
+        }
       />
       {vista3d ? (
         <div className="mesa-3d" data-testid="mesa-3d">
@@ -287,7 +304,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
         batida={snap.batida}
         jogadores={(['cima', 'esquerda', 'direita'] as const).map((pos) => {
           const c = cadeiraNaPosicao(minha, pos);
-          return { pos, nome: nome(c), daVez: daVez(c), gritando: GRITOS.has(baloes.get(c) ?? '') };
+          return { pos, nome: nome(c), daVez: daVez(c), gritando: GRITOS.has(baloes.get(c) ?? ''), roupa: msg.cadeiras[c]?.visual?.roupa };
         })}
       >
         {(['cima', 'esquerda', 'direita'] as const).map((pos) => {
@@ -427,6 +444,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
           titulo={fim.titulo}
           placar={fim.placar}
           venceu={fim.venceu}
+          cacife={msg.cacife}
           aoJogarDeNovo={aoJogarDeNovo}
           aoVoltar={() => void acoes.sair()}
           revanche={

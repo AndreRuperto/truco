@@ -29,7 +29,7 @@ export function Assento({ posicao, info, qtdCartas, daVez, balao, maoVisivel, va
     <div className={cx('assento', `pos-${posicao}`, daVez && 'da-vez', info && !info.conectado && 'caiu')} data-testid={`assento-${posicao}`}>
       {/* Sem etiqueta "bot": o server reserva o prefixo "Bot " aos nomes dos bots. */}
       <div className="assento-nome">
-        {info?.avatar && <Avatar apelido={info.nome ?? '?'} avatar={info.avatar} tamanho={22} />}
+        {info?.avatar && <Avatar apelido={info.nome ?? '?'} avatar={info.avatar} tamanho={22} moldura={info.visual?.moldura} />}
         <span>{info?.nome ?? '—'}</span>
         {info && !info.conectado && <span className="etiqueta off">caiu</span>}
         {daVez && <span className="etiqueta vez">{posicao === 'baixo' ? 'sua vez' : 'vez'}</span>}
