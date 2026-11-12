@@ -31,18 +31,54 @@ describe('tempo e bots', () => {
     expect(t.de('a', 'acao')[antes]).toEqual({ cadeira: 0, tipo: 'jogar' });
   });
 
-  test('desconectado: bot assume na hora e nada é enviado', () => {
+  // Ciclo 4 (decisão do produto, 2026-11-10): quem cai (troca de app, rede) tem o mesmo prazo de
+  // quem está parado; antes o bot jogava por ele em ~botMs, inclusive respondendo truco.
+  test('desconectado na vez: espera o prazo normal, sem enviar nada, e então faz a ação padrão', () => {
     const t = criarMesa();
     t.mesa.sentar('a', 'Ana');
     avancarAte(() => minhaVez(t));
-    const enviados = t.caixa.get('a')!.length;
-    const cartasAntes = t.mesa.partida!.mao!.maos[0].length;
+    const ate = t.estado('a')!.prazo!.ate;
+    const acoes = t.de('a', 'acao').length;
     t.mesa.desconectar('a');
-    vi.advanceTimersByTime(TEMPOS.botMs);
+    const enviados = t.caixa.get('a')!.length;
+    // Bem mais que o ritmo do bot: ninguém joga pela cadeira desconectada antes do prazo
+    // (o estado da partida é imutável: o mesmo objeto = nenhuma ação aplicada).
+    const partidaAntes = t.mesa.partida;
+    vi.advanceTimersByTime(ate - Date.now() - 1);
+    expect(t.mesa.partida).toBe(partidaAntes);
     expect(t.caixa.get('a')!.length).toBe(enviados);
+    vi.advanceTimersByTime(1);
+    // A cadeira desconectada não recebe `acao`; a jogada aparece no estado da partida.
     const m = t.mesa.partida!.mao;
-    // jogou por ele: ou a mão acabou (mao null durante a pausa) ou ele tem uma carta a menos
-    expect(m === null || m.maos[0].length === cartasAntes - 1).toBe(true);
+    expect(m === null || m.maos[0].length === 2).toBe(true);
+    t.mesa.reconectar('a');
+    expect(t.de('a', 'acao')).toHaveLength(acoes);
+  });
+
+  test('cair e voltar dentro do prazo: a vez continua sua, com o mesmo prazo', () => {
+    const t = criarMesa();
+    t.mesa.sentar('a', 'Ana');
+    avancarAte(() => minhaVez(t));
+    const ate = t.estado('a')!.prazo!.ate;
+    t.mesa.desconectar('a');
+    vi.advanceTimersByTime(TEMPOS.jogadaMs / 2);
+    t.mesa.reconectar('a');
+    const e = t.estado('a')!;
+    expect(e.prazo!.cadeiras).toEqual([0]);
+    expect(e.prazo!.ate).toBe(ate);
+    expect(e.minhasAcoes.some((x) => x.tipo === 'jogar')).toBe(true);
+    expect(t.mesa.partida!.mao!.maos[0]).toHaveLength(3);
+  });
+
+  test('o estado mostra aos outros o prazo da cadeira desconectada', () => {
+    const t = criarMesa({ humanosEsperados: 2 });
+    t.mesa.sentar('a', 'Ana');
+    t.mesa.sentar('b', 'Bia');
+    avancarAte(() => minhaVez(t) && t.mesa.partida!.fase === 'jogando');
+    t.mesa.desconectar('a');
+    const e = t.estado('b')!;
+    expect(e.prazo!.cadeiras).toEqual([0]);
+    expect(e.cadeiras[0]).toMatchObject({ tipo: 'humano', conectado: false });
   });
 
   test('reconectar reenvia o estado', () => {

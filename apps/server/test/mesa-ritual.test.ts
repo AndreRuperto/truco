@@ -122,15 +122,17 @@ describe('ritual na Mesa', () => {
     expect(novas(t, n)[0]).toMatchObject({ cadeira: 0, tipo: 'distribuir', modo: 'porCima' });
   });
 
-  test('humano cai no meio do ritual: o bot assume a etapa e a mão sai (não trava)', () => {
+  test('humano cai no meio do ritual: a etapa espera o prazo dele e a mão sai (não trava)', () => {
     const t = comAna();
     ateEtapa(t, 'embaralhando');
     t.mesa.acao('a', { tipo: 'embaralhar' });
     t.mesa.desconectar('a');
     const antes = Date.now();
+    // Dentro do prazo do ritual a etapa continua dele.
+    vi.advanceTimersByTime(TEMPOS.ritualMs - 1);
+    expect(t.mesa.partida!.fase).toBe('embaralhando');
     avancarAte(() => t.mesa.partida!.fase === 'jogando');
-    // Sem esperar o ritualMs da Ana: o bot faz a etapa no ritmo dele.
-    expect(Date.now() - antes).toBeLessThan(TEMPOS.ritualMs);
+    expect(Date.now() - antes).toBeGreaterThanOrEqual(TEMPOS.ritualMs);
     expect(t.mesa.partida!.mao!.maos.every((m) => m.length === 3)).toBe(true);
   });
 

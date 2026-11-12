@@ -31,6 +31,7 @@ import {
 import { banirUsuario, desbanirUsuario, listarUsuariosAdmin, partidasRecentesAdmin, resumoAdmin } from '../repo/admin';
 import { historico, perfil, ranking } from '../repo/partidas';
 import type { Servicos } from '../servicos';
+import { cabecalhosSeguranca, hashesDeScriptsInline } from './cabecalhos';
 
 export interface ExtrasApp {
   /** Mesas casuais abertas (o servidor passa `listarSalasAbertas`). */
@@ -41,6 +42,12 @@ export interface ExtrasApp {
   pastaWeb?: string | null;
   limiteLinkIp?: LimiteTaxa;
   limiteLinkEmail?: LimiteTaxa;
+  /** Por IP, em confirmar link e login com Google (padrão: 30 a cada 15 min). */
+  limiteAuthIp?: LimiteTaxa;
+  /** Banimento: derruba a conta das salas em tempo real (o servidor passa MesaRoom/FilaRoom). */
+  derrubarConta?: (usuarioId: number) => void;
+  /** Desbanimento: a conta volta a poder reconectar. */
+  liberarConta?: (usuarioId: number) => void;
 }
 
 /** Cookie e depois Bearer (sem repetir): um cookie vencido não pode esconder um Bearer válido. */
@@ -54,12 +61,22 @@ function origemDoPedido(req: Request): string {
   return req.get('origin') ?? `${req.protocol}://${req.get('host')}`;
 }
 
+const escaparAtributo = (t: string) =>
+  t.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll("'", '&#39;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+
 /** Caminho com extensão no último segmento (ex.: /assets/x.js, /favicon.ico). */
 const temExtensao = (caminho: string) => /\.[^/]+$/.test(caminho);
 
 export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}): void {
   const limiteIp = x.limiteLinkIp ?? new LimiteTaxa(5, 15 * 60_000);
   const limiteEmail = x.limiteLinkEmail ?? new LimiteTaxa(3, 15 * 60_000);
+  const limiteAuth = x.limiteAuthIp ?? new LimiteTaxa(30, 15 * 60_000);
+  /** Confirmar link e Google: cada pedido custa banco e chamada ao Google; limitar por IP. */
+  const passouLimiteAuth = (req: Request, res: Response): boolean => {
+    if (limiteAuth.permitir(chaveDeIp(req.ip))) return false;
+    res.status(429).json({ erro: 'muitos pedidos; tente de novo em alguns minutos' });
+    return true;
+  };
   const usuarioDe = async (req: Request): Promise<Usuario | null> => {
     for (const t of tokensDe(req)) {
       const u = await usuarioDaSessao(s.banco, t, s.agora());
@@ -82,6 +99,21 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   // corretos. Sem proxy (dev), confiar nisso deixaria qualquer um forjar o IP do limite de taxa.
   app.set('trust proxy', s.producao || s.confiarProxy ? 1 : false);
   app.disable('x-powered-by');
+  // Antes de qualquer rota: vale para a página, os estáticos e a API.
+  app.use(
+    cabecalhosSeguranca({
+      producao: s.producao,
+      urlPublica: s.urlPublica,
+      hashesScript: () => {
+        if (!x.pastaWeb) return [];
+        try {
+          return hashesDeScriptsInline(readFileSync(join(x.pastaWeb, 'index.html'), 'utf8'));
+        } catch {
+          return [];
+        }
+      },
+    }),
+  );
 
   app.get('/saude', async (_req, res) => {
     await s.banco.execute(sql`select 1`);
@@ -161,6 +193,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   });
 
   api.post('/auth/link/confirmar', async (req, res) => {
+    if (passouLimiteAuth(req, res)) return;
     const token = typeof req.body?.token === 'string' ? req.body.token : '';
     const email = await consumirLinkMagico(s.banco, token, s.agora());
     if (!email) return void res.status(400).json({ erro: 'link inválido ou expirado; peça outro' });
@@ -169,6 +202,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
 
   api.post('/auth/google', async (req, res) => {
     if (!s.google) return void res.status(404).json({ erro: 'login com Google desligado' });
+    if (passouLimiteAuth(req, res)) return;
     const credencial = typeof req.body?.credencial === 'string' ? req.body.credencial : '';
     let perfilGoogle;
     try {
@@ -284,6 +318,8 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (!alvo) return void res.status(404).json({ erro: 'usuário não encontrado' });
     if (ehAdmin(alvo)) return void res.status(400).json({ erro: 'admin não pode ser banido' });
     if (!(await banirUsuario(s.banco, id, s.agora()))) return void res.status(409).json({ erro: 'já está banido' });
+    // As sessões HTTP já foram apagadas; os WebSockets abertos (mesa, fila) também caem.
+    x.derrubarConta?.(id);
     console.log(`[admin] ${(res.locals.admin as Usuario).apelido} baniu #${id} (${alvo.apelido})`);
     res.status(204).end();
   });
@@ -294,6 +330,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (!(await usuarioPorId(s.banco, id))) return void res.status(404).json({ erro: 'usuário não encontrado' });
     if (!(await desbanirUsuario(s.banco, id))) return void res.status(409).json({ erro: 'não está banido' });
     console.log(`[admin] ${(res.locals.admin as Usuario).apelido} desbaniu #${id}`);
+    x.liberarConta?.(id);
     res.status(204).end();
   });
 
@@ -342,7 +379,9 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
       } catch {
         return void res.sendFile('index.html', { root: pasta });
       }
-      const origem = s.urlPublica ?? `${req.protocol}://${req.get('host')}`;
+      // Sem URL pública (só fora de produção) a origem vem do Host do pedido: escapar para não
+      // fechar o atributo do og:image e injetar HTML.
+      const origem = escaparAtributo(s.urlPublica ?? `${req.protocol}://${req.get('host')}`);
       res.type('html').send(indice.replaceAll('__ORIGEM__', origem));
     });
   }

@@ -1,6 +1,6 @@
 import type { Formato, MsgPareado, MsgStatusFila } from '@truco/api';
 import type { Variante } from '@truco/engine';
-import { SAIDA_FILA_SUBSTITUIDA } from '@truco/protocolo';
+import { SAIDA_CONTA_SUSPENSA, SAIDA_FILA_SUBSTITUIDA } from '@truco/protocolo';
 import { textoErroFila } from '../logica/conta';
 
 export interface OpcoesFila {
@@ -70,7 +70,7 @@ export function criarLojaFila(o: { abrir: (op: OpcoesFila) => Promise<SalaFilaLi
     s.onLeave((code) => {
       if (sala !== s) return;
       sala = null;
-      mudar({ ...INICIAL, opcoes: estado.opcoes, erro: code === SAIDA_FILA_SUBSTITUIDA ? 'Você entrou na fila em outra aba.' : 'Você saiu da fila.' });
+      mudar({ ...INICIAL, opcoes: estado.opcoes, erro: code === SAIDA_FILA_SUBSTITUIDA ? 'Você entrou na fila em outra aba.' : code === SAIDA_CONTA_SUSPENSA ? 'Sua conta foi suspensa.' : 'Você saiu da fila.' });
     });
     if (statusAtual() === 'entrando') mudar({ status: 'na-fila' });
   }

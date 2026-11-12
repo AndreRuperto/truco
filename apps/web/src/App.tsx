@@ -127,7 +127,20 @@ export function App() {
   }, []);
 
   let tela;
-  if (snap.status === 'conectando') tela = <p className="aviso-centro">Conectando…</p>;
+  // Queda de conexão com uma partida já na tela: a mesa fica, esmaecida e sem comandos, com o
+  // último estado visto (sem cronômetro, que já não vale), até o estado novo chegar.
+  const anterior = snap.estadoAnterior?.visao ? snap.estadoAnterior : null;
+  const mesaCaida = !!anterior && !snap.msg && snap.status !== 'fora';
+  if (mesaCaida)
+    tela = (
+      <TelaMesa
+        temConta={!!ses.usuario}
+        snap={{ ...snap, msg: { ...anterior, prazo: null } }}
+        acoes={loja}
+        desatualizada
+      />
+    );
+  else if (snap.status === 'conectando') tela = <p className="aviso-centro">Conectando…</p>;
   else if (snap.status === 'reconectando') tela = (
     <main className="aviso-centro" role="status">
       <p>Recuperando sua mesa e sua cadeira…</p>
@@ -287,10 +300,29 @@ export function App() {
 
   return (
     <>
-      {snap.status === 'reconectando' && (
-        <div className="faixa-aviso" role="status">
-          Conexão caiu — reconectando…
+      {mesaCaida ? (
+        <div className="faixa-aviso faixa-reconexao" role="status">
+          <p>
+            <strong>Conexão caiu — reconectando…</strong>
+            <span>Sua cadeira fica guardada. A mesa volta sozinha quando a internet voltar.</span>
+          </p>
+          {snap.status === 'reconectando' && (
+            <div className="faixa-reconexao-botoes">
+              <button type="button" onClick={() => void tentarReconectar(loja)}>
+                Tentar agora
+              </button>
+              <button type="button" className="botao-discreto" onClick={() => loja.desistirReconexao()}>
+                Voltar ao início
+              </button>
+            </div>
+          )}
         </div>
+      ) : (
+        snap.status === 'reconectando' && (
+          <div className="faixa-aviso" role="status">
+            Conexão caiu — reconectando…
+          </div>
+        )
       )}
       {tela}
       {snap.erro && <Toast key={snap.erro.id} erro={snap.erro} aoFechar={loja.limparErro} />}

@@ -2,7 +2,9 @@ node_modules/
 dist/
 coverage/
 *.log
-.env
+# Segredos: qualquer .env (.env.local, .env.production...); exemplos versionáveis.
+.env*
+!.env.example
 test-results/
 playwright-report/
 .dados/

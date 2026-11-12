@@ -6,5 +6,7 @@
 **/playwright-report
 coverage
 *.log
-.env
+# Segredos: qualquer .env (.env.local, .env.production...); exemplos versionáveis.
+.env*
+!.env.example
 .claude

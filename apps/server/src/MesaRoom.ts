@@ -2,7 +2,7 @@ import { type AuthContext, type Client, ErrorCode, Room, type RoomException, typ
 import type { Cadeira } from '@truco/engine';
 import { randomInt, randomUUID } from 'node:crypto';
 import { Mesa, type Tempos } from './mesa/Mesa';
-import { filtroDaSala, limparNome, opcoesDaSala, SAIDA_PARTIDA_CANCELADA } from './mesa/protocolo';
+import { filtroDaSala, limparNome, opcoesDaSala, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA } from './mesa/protocolo';
 import { RegistroMesa } from './registroMesa';
 import { avatarValido } from './repo/usuarios';
 import { vozDaConta } from './mesa/vozes';
@@ -66,6 +66,34 @@ export class MesaRoom extends Room {
 
   /** Mesas ranqueadas vivas cuja partida já começou. */
   private static readonly ranqueadasIniciadas = new Set<string>();
+
+  /** Mesas vivas (para derrubar uma conta suspensa de todas). */
+  private static readonly salasVivas = new Set<MesaRoom>();
+  /** Contas suspensas neste processo: não reconectam nem guardam cadeira. */
+  private static readonly contasSuspensas = new Set<number>();
+
+  /**
+   * Admin suspendeu a conta: apagar as sessões HTTP não fecha os WebSockets já abertos, e o
+   * `reconnect` não passa pelo `onAuth`. Derruba a conta de toda mesa viva; a saída vira abandono.
+   */
+  static derrubarConta(usuarioId: number): void {
+    MesaRoom.contasSuspensas.add(usuarioId);
+    for (const sala of MesaRoom.salasVivas) {
+      for (const client of sala.clients) {
+        if ((client.auth as UsuarioConexao | undefined)?.usuarioId === usuarioId) sala.kickClient(client.sessionId, SAIDA_CONTA_SUSPENSA);
+      }
+    }
+  }
+
+  /** Admin tirou a suspensão. */
+  static readmitirConta(usuarioId: number): void {
+    MesaRoom.contasSuspensas.delete(usuarioId);
+  }
+
+  private suspensa(client: Client): boolean {
+    const id = (client.auth as UsuarioConexao | undefined)?.usuarioId;
+    return id !== undefined && MesaRoom.contasSuspensas.has(id);
+  }
 
   /** A conta foi pareada e a mesa dela ainda não acabou (a fila recusa a conta). */
   static emRanqueada(usuarioId: number): boolean {
@@ -149,6 +177,7 @@ export class MesaRoom extends Room {
   }
 
   onCreate(options: unknown) {
+    MesaRoom.salasVivas.add(this);
     const cru = (options && typeof options === 'object' ? options : {}) as Record<string, unknown>;
     const opcoes = opcoesDaSala(cru);
     const { modo, regras, humanos, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais } = opcoes;
@@ -253,6 +282,8 @@ export class MesaRoom extends Room {
     // Cliente cujo onJoin falhou (nunca sentou) também passa por aqui. Mesa cancelada: o
     // código de saída não é consentido (cai aqui), mas não há para onde reconectar.
     if (this.cancelada || this.mesa.cadeiraDe(client.sessionId) === null) return;
+    // Conta suspensa: sem allowReconnection, o Colyseus chama o onLeave em seguida (abandono).
+    if (this.suspensa(client)) return;
     this.mesa.desconectar(client.sessionId);
     // Navegadores móveis suspendem abas em segundo plano por vários minutos.
     // Preserve a cadeira durante esse intervalo em vez de tratar a troca de app
@@ -261,10 +292,12 @@ export class MesaRoom extends Room {
   }
 
   onReconnect(client: Client) {
+    // Reconexão que já estava pendente quando a conta foi suspensa.
+    if (this.suspensa(client)) return void this.kickClient(client.sessionId, SAIDA_CONTA_SUSPENSA);
     this.mesa.reconectar(client.sessionId);
   }
 
-  /** Saída definitiva (consentida ou fim dos 60 s de reconexão). */
+  /** Saída definitiva (consentida ou fim dos 300 s de reconexão). */
   onLeave(client: Client) {
     const auth = client.auth as UsuarioConexao | undefined;
     if (this.reservados && auth) this.liberarConta(auth.usuarioId);
@@ -277,6 +310,7 @@ export class MesaRoom extends Room {
   }
 
   onDispose() {
+    MesaRoom.salasVivas.delete(this);
     this.liberarReservados();
     MesaRoom.ranqueadasIniciadas.delete(this.roomId);
     if (!this.mesa) return;

@@ -52,10 +52,20 @@ interface Props {
   aoChat?: (texto: string) => void;
   /** Começa outra partida com as mesmas opções (a App decide como). Sem ele, o fim só volta ao início. */
   aoJogarDeNovo?: () => void;
+  /**
+   * Conexão caída: a mesa mostra o último estado visto, esmaecida e inerte (nenhum clique,
+   * foco ou leitor de tela entra nela). A App mostra o aviso da reconexão por cima.
+   */
+  desatualizada?: boolean;
 }
 
-export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false }: Props) {
+export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false, desatualizada = false }: Props) {
   const agora = useAgora(250);
+  const raiz = useRef<HTMLElement>(null);
+  // React 18 não conhece `inert` como propriedade booleana: liga direto no elemento.
+  useEffect(() => {
+    if (raiz.current) raiz.current.inert = desatualizada;
+  }, [desatualizada]);
   const [painel, setPainel] = useState<'sinais' | 'falas' | 'chat' | null>(null);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
   const [manual, setManual] = useState(false);
@@ -156,7 +166,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false 
   );
 
   return (
-    <main className="tela-mesa" data-visualizacao={visualizacao}>
+    <main ref={raiz} className="tela-mesa" data-visualizacao={visualizacao} data-desatualizada={desatualizada || undefined} aria-hidden={desatualizada || undefined}>
       {/* Menu da mesa: ícones no canto de cima (o nome de cada um vai no aria-label e no title). */}
       <nav className="barra-mesa" aria-label="Menu da mesa">
         {msg.sinais !== false && (

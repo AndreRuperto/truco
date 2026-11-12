@@ -128,7 +128,7 @@ Para cada ciclo: (1) investigar; (2) registrar causa e solução; (3) implementa
 | 1 — Mesa | **Concluído (2026-11-10)**, sem P0/P1 abertos | PRs [#14](https://github.com/AndreRuperto/truco/pull/14), [#15](https://github.com/AndreRuperto/truco/pull/15), [#16](https://github.com/AndreRuperto/truco/pull/16)/[#17](https://github.com/AndreRuperto/truco/pull/17) e o PR de fechamento | NAO_EXECUTADO a partir do #15 (Actions sem minutos); verificação local como gate | [Auditoria](../qa-frontend/auditoria-ciclo1-2026-11-09.md): 2 rodadas de QA independente (C1–C8 aprovados). Pendentes P2/P3 para os ciclos 2/3: etiqueta de família, layout de paisagem, dica sobre o centro em 320px, desktop 1440×900 rolando 35px. Aparelhos reais NAO_EXECUTADO |
 | 2 — Temas | Não iniciado | — | — | — |
 | 3 — Animações | Não iniciado | — | — | — |
-| 4 — Multiplayer/PWA | Não iniciado | — | — | — |
+| 4 — Multiplayer/PWA | Em andamento — 1º passo (2026-11-10) | branch `claude/ciclo4-reconexao` | NAO_EXECUTADO (Actions sem minutos); verificação local verde | [Diagnóstico](../qa-frontend/diagnostico-ciclo4-reconexao.md): reconexão funciona; o servidor jogava por quem caía em ~1 s. Agora quem cai tem o prazo normal (decisão do produto). Pendentes: aparelho real, comunicação na volta, tela de reconexão, servidor reiniciado, service worker |
 | 5 — Competitivo | Não iniciado | — | — | — |
 | 6 — Lançamento | Não iniciado | — | — | — |
 

@@ -4,5 +4,7 @@ import type { Tempos } from './mesa/Mesa';
 export const TEMPOS_RAPIDOS: Readonly<Partial<Tempos>> = Object.freeze({ botMs: 60, pausaMaoMs: 400, ritualMs: 3_000, distribuicaoMs: 300, janelaFamiliaMs: 500 });
 
 export function temposDoAmbiente(env: Record<string, string | undefined>): Partial<Tempos> {
+  // Em produção é sempre o padrão: o modo do E2E encurtaria os prazos de quem joga de verdade.
+  if (env.NODE_ENV === 'production') return {};
   return env.TRUCO_TEMPOS === 'rapido' ? { ...TEMPOS_RAPIDOS } : {};
 }
