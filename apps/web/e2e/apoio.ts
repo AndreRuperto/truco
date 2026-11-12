@@ -3,13 +3,20 @@ import type { Page } from '@playwright/test';
 /** A ação padrão de cada etapa: passar sem embaralhar, cortar (até gastar os 3), dar por cima, não conferir. */
 const PADRAO = ['Passar pra cortar', 'Cortar', 'Por cima', 'Deixar passar'] as const;
 
-/** Faz a etapa do ritual (ou do conferir) que estiver na tela; true se clicou em algo. */
+/**
+ * Faz a etapa do ritual (ou do conferir) que estiver na tela; true se clicou em algo.
+ * Com várias abas, o botão pode sumir (outro jogador agiu, novo `estado`) entre o
+ * `isVisible` e o clique, ou o clique ficar preso: isso conta como "não agiu" e quem
+ * chama tenta de novo na próxima volta, em vez de derrubar o teste.
+ */
 export async function agirNoRitual(page: Page): Promise<boolean> {
   for (const nome of PADRAO) {
     const b = page.getByRole('button', { name: nome, exact: true });
     if (await b.isVisible()) {
-      await b.click({ timeout: 1_000 });
-      return true;
+      return b
+        .click({ timeout: 1_000 })
+        .then(() => true)
+        .catch(() => false);
     }
   }
   return false;
