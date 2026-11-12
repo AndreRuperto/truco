@@ -437,6 +437,7 @@ function secoesDe(v: Variante): SecaoInfo[] {
           Depois que um pedido é aceito, <strong>a dupla que pediu não pode pedir de novo</strong>: o próximo aumento tem que
           vir do outro lado. O máximo é Doze. Quem responde é qualquer um da dupla; o primeiro a responder decide pelos dois.
         </p>
+        <p>Regra desta casa: em muitas mesas dá para pedir truco já na 1ª rodada; aqui, só depois que ela termina.</p>
         <h3>Bater na mesa</h3>
         <p>
           Para pedir Seis, Nove ou Doze com estilo, <strong>segure o botão</strong>: quanto mais tempo segurar, mais forte o
@@ -464,7 +465,9 @@ function secoesDe(v: Variante): SecaoInfo[] {
             <strong>Não se pede truco</strong> e <strong>não se joga coberta</strong>.
           </li>
           <li>A mão já começa valendo o primeiro nível de truco: <strong>3 pontos</strong> na escada 1–3–6–9–12, ou <strong>4 pontos</strong> na escada 2–4–8–10–12. Quem atingir 12 pontos vence a partida.</li>
+          <li>Como ninguém vê as cartas, a mão de 11 não tem cangada: se a 1ª rodada empatar, o jogo segue carta a carta.</li>
         </ul>
+        <p>Regra desta casa: a mão de 11 é sempre às cegas e já vale o primeiro nível de truco; em outras mesas ela funciona de outro jeito.</p>
       </>
     ),
   },
@@ -488,7 +491,7 @@ function secoesDe(v: Variante): SecaoInfo[] {
         <p>
           Nessa mão <strong>ninguém pede truco</strong>: ela já é trucada. Na mesa de verdade, quem pede truco na mão de 10
           dá tento para os adversários (o valor da mão); aqui o botão de truco nem aparece. Se as duas duplas estiverem com
-          10, a mão é normal.
+          10, a mão é normal. Se a outra dupla estiver com 11 e a mão de 11 estiver ligada, vale a mão de 11.
         </p>
       </>
     ),
@@ -525,6 +528,11 @@ function secoesDe(v: Variante): SecaoInfo[] {
         </ul>
         <p>
           São no máximo 3 famílias fechadas por mão (o "abrir 3" do corte conta como uma). Depois disso, só aberta.
+        </p>
+        <p>
+          Os pontos de família entram no placar na hora, antes da primeira carta. Se levarem a dupla a 12, a partida acaba na
+          hora. Se levarem o placar a uma mão de 10 ou de 11, a mão que está sendo jogada continua igual, mas não se pede mais
+          truco nem família nessa mão.
         </p>
         <h3>Família aberta</h3>
         <p>
