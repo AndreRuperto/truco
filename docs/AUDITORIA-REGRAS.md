@@ -27,20 +27,22 @@
 ## Problemas e riscos identificados
 
 1. **[Corrigido] Manual contradizia o motor na mão de onze**: informava 1/2 pontos, mas a mão passa a valer 3/4. Alterado em `Manual.tsx`.
-2. **[Validar com o dono do produto] Truco somente após a primeira rodada**: o motor bloqueia pedidos na primeira rodada (`pedirTruco`), e o manual explica essa restrição. Não alterar sem decidir se é uma regra deliberada.
-3. **[Validar com o dono do produto] Mão de onze**: a regra de 3 pontos e cartas às cegas é uma escolha deste produto; não deve ser apresentada como universal para todo Truco Paulista.
-4. **[Testar] Pontos de família no meio da mão**: `pontuarFamilia` pode mudar o placar, e `tipoPeloPlacar` é consultado novamente para restringir truco/família. Adicionar casos com placares 9/10/11, vitórias imediatas e famílias consecutivas.
-5. **[Testar] Empates**: cobrir todas as combinações de três rodadas, inclusive empates nas duas primeiras e vitória na terceira, e a cangada após o primeiro empate.
-6. **[Testar] Limites de aposta**: verificar o resultado de correr em cada nível, aumentos alternados e bloqueio de pedidos em mãos especiais.
-7. **[Testar] Mão de onze em escada mineira customizada**: confirmar 4 pontos e encerramento em placar 10×11, além de `onzeAOnze`.
-8. **[Executar] Suíte de testes e E2E**: auditoria estática não comprova funcionamento em produção; conferir CI e partidas reais.
+2. **[Decidido: D2, manter] Truco somente após a primeira rodada**: o motor bloqueia pedidos na primeira rodada (`pedirTruco`). Regra da casa; o manual diz isso explicitamente desde 2026-11-12 (`apps/web/test/manual.test.tsx`).
+3. **[Decidido: D3, manter] Mão de onze**: às cegas e valendo o 1º nível de truco (3/4), inclusive na ranqueada. O manual a apresenta como regra desta casa, não como universal.
+4. **[Testado em 2026-11-12] Pontos de família no meio da mão**: `packages/engine/test/familia-placar.test.ts` (11 casos): placar 9, 10 e 11 nas duas escadas; família que leva a 10/11 no meio da mão não muda o tipo da mão (fecha só truco e família); duas famílias somam; 8 → 10 → 12 e 11 + base encerram a partida na hora. O motor já se comportava assim: nenhuma linha de `packages/engine/src` mudou.
+5. **[Testado em 2026-11-12] Empates**: `packages/engine/test/empates.test.ts` (18 casos): E,V; E,E,V; E,E,E; V,E; V,D,E; E,D; D,E jogados pelo reducer no paulista e no mineiro, conferindo quem leva, pontos, próximo pé, cangada depois do 1º empate e ausência de cangada depois de uma rodada vencida. A tabela pura continua em `mao.test.ts`.
+6. **[Testado em 2026-11-12] Limites de aposta**: `truco.test.ts`: correr em cada nível (1 a 4) nas duas escadas e doze aceito sem novo pedido. Bloqueio na mão de 10 e na de ferro e bloqueio de quem fez o último aumento já estavam em `maos-especiais.test.ts`, `truco.test.ts` e `extras.test.ts`.
+7. **[Testado em 2026-11-12] Mão de onze na escada 2-4-8-10-12**: `maos-especiais.test.ts`: vale 4; no 10 a 11 tem precedência sobre a mão de 10 e a vitória de quem tem 10 encerra a partida; `onzeAOnze` só no 11 a 11.
+8. **[Executado em 2026-11-12] Suíte de testes e E2E**: ver o gate no PR da fase 1 e em `docs/release/checklist-mvp.md`. Os testes novos foram conferidos com 4 mutações no motor (família sem fim em 12, V,E invertido, correr pagando o nível pedido, mão de ferro valendo a base): todas derrubaram testes.
 
-## Decisões pendentes
+## Decisões (plano MVP, `docs/plans/2026-11-12-plano-mvp.md`, seção 4)
 
-- O modo padrão deve seguir regras regionais tradicionais ou preservar as variações atuais?
-- Permitir truco na primeira rodada?
-- A mão de onze deve continuar obrigatoriamente valendo 3/4 pontos, inclusive no modo ranqueado?
-- Família, mão limpa, cangada e ritual de corte devem ser opcionais ou padronizados por variante?
+- **D2:** truco na 1ª rodada continua bloqueado (regra da casa, explicada no manual).
+- **D3:** mão de onze valendo 3/4 e às cegas continua, inclusive na ranqueada.
+- **D4:** família, mão limpa, cangada e ritual continuam como opções por variante, como estão.
+- O modo padrão preserva as variações atuais (consequência de D2 a D4).
+
+Lacunas do manual encontradas na revisão de 2026-11-12 e corrigidas: na mão de ferro não há cangada; no 10 a 11 vale a mão de 11; pontos de família no meio da mão podem encerrar a partida e fecham truco e família quando levam a 10/11.
 
 ## Critério de conclusão
 

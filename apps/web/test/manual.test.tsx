@@ -60,6 +60,24 @@ describe('manual de como jogar', () => {
     expect(screen.getAllByText(/paus › copas › espadas › ouros/).length).toBeGreaterThan(0);
   });
 
+  test('regras da casa e casos de placar que o motor aplica (auditoria de regras, itens 2 a 7)', () => {
+    render(<Manual varianteInicial="mineiro" />);
+    const secao = (titulo: string) => screen.getByRole('heading', { level: 2, name: titulo }).closest('section')!;
+    // D2: truco só da 2ª rodada é regra desta casa.
+    expect(within(secao('Truco: aumentando a aposta')).getByText(/Regra desta casa/)).toHaveTextContent(/1ª rodada/);
+    // D3: mão de 11 às cegas valendo o 1º nível de truco é regra desta casa.
+    const ferro = secao('Mão de 11 (mão de ferro)');
+    expect(within(ferro).getByText(/Regra desta casa/)).toHaveTextContent(/às cegas/);
+    // Na mão de ferro o empate da 1ª não vira cangada (packages/engine: fecharRodada).
+    expect(ferro).toHaveTextContent(/não tem cangada/);
+    // 10 a 11 com as duas opções ligadas: vale a mão de 11 (tipoPeloPlacar).
+    expect(secao('Mão de 10')).toHaveTextContent(/a outra dupla estiver com 11 e a mão de 11 estiver ligada, vale a mão de 11/);
+    // Pontos de família no meio da mão (familia-placar.test.ts no engine).
+    const familia = secao('Família');
+    expect(familia).toHaveTextContent(/levarem a dupla a 12, a partida acaba na hora/);
+    expect(familia).toHaveTextContent(/não se pede mais truco nem família nessa mão/);
+  });
+
   test('cabeçalho tem o ? que leva ao manual', () => {
     render(<Cabecalho pronta usuario={null} aoSair={() => {}} atual="manual" />);
     const ajuda = screen.getByRole('link', { name: 'Como jogar' });

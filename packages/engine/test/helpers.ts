@@ -88,6 +88,23 @@ export function empilharTodos(s: EstadoPartida, cima: readonly number[] = [0, 0,
 }
 
 /**
+ * Joga a mão corrente até o fim: cada um na sua vez joga a carta de índice 0; se cangar, todos
+ * empilham (a de índice 0 por cima) e a vez manda mostrar. Para quando a mão acaba (ritual da
+ * próxima ou fim da partida). Não pede truco nem responde nada.
+ */
+export function jogarAteOFimDaMao(s: EstadoPartida): EstadoPartida {
+  for (let passos = 0; s.mao && passos < 20; passos++) {
+    const m = s.mao;
+    if (s.fase === 'empilhando') s = empilharTodos(s);
+    else if (m.cangada && m.cangada.etapa !== 'empilhando') s = reduce(s, { tipo: 'mostrar', cadeira: m.vez });
+    else if (s.fase === 'jogando') s = reduce(s, { tipo: 'jogar', cadeira: m.vez, indice: 0 });
+    else throw new Error(`jogarAteOFimDaMao: fase inesperada ${s.fase}`);
+  }
+  if (s.mao) throw new Error('jogarAteOFimDaMao: a mão não terminou');
+  return s;
+}
+
+/**
  * Paulista, vira '5p', MAOS_DUPLA0_VENCE: a cadeira 0 joga o 6o (manilha) e vence a 1ª rodada,
  * então volta a ter a vez na 2ª.
  */
