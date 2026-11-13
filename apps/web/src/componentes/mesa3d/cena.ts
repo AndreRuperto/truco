@@ -134,11 +134,14 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
   const largura = (): number => Math.max(1, container.clientWidth);
   const altura = (): number => Math.max(1, container.clientHeight);
 
+  // Celular (tela pequena): no máximo 1,5 pixel por ponto e sombra PCF simples. Com a CPU 4x mais
+  // lenta a cena fazia ~8 FPS (e2e/auditoria-desempenho.spec.ts, docs/qa-frontend/animacoes-2026-11.md).
+  const pequeno = Math.min(largura(), altura()) < 500;
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pequeno ? 1.5 : 2));
   renderer.setSize(largura(), altura(), false);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = pequeno ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   Object.assign(renderer.domElement.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', display: 'block' });
@@ -158,7 +161,6 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
 
   const tx = criarTexturas();
   const baralho = new Baralho3D(tx.verso);
-  const pequeno = Math.min(largura(), altura()) < 500;
   cena.add(criarSala(tx), criarLuzes(pequeno ? 512 : 1024));
   const mesas = criarMesas(tx);
   const mesaGrupo = new THREE.Group();

@@ -23,6 +23,12 @@ export function textoPedidoPendente(v: Visao): string | null {
   return `${quem} ${nomePedido(p.proposto)}! Vale ${valorMao(v.regras, p.proposto)}.`;
 }
 
+/** Quem levou a rodada que acabou de fechar, do ponto de vista de quem olha (texto, não só cor). */
+export function textoResultadoRodada(resultado: 0 | 1 | 'empate', minhaDupla: 0 | 1): string {
+  if (resultado === 'empate') return 'Cangou!';
+  return resultado === minhaDupla ? 'Rodada nossa!' : 'Rodada deles.';
+}
+
 export function placarRelativo(v: Visao): { nos: number; eles: number } {
   const d = duplaDe(v.cadeira);
   return { nos: v.placar[d], eles: v.placar[1 - d] };
