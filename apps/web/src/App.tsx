@@ -282,6 +282,8 @@ export function App() {
             usuario={ses.usuario}
             catalogo={cart.catalogo}
             carteira={cart.carteira}
+            erroCatalogo={cart.catalogo ? null : cart.erro}
+            aoTentarDeNovo={() => void carteira.carregarCatalogo()}
             aoMudar={async () => {
               await carteira.carregar();
               // O avatar da loja fica na conta: a sessão precisa da foto nova.

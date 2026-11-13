@@ -26,9 +26,12 @@ interface Props {
   aoMudar: () => Promise<void>;
   /** Abre o checkout (a App troca de página). */
   aoIrParaPagamento?: (url: string) => void;
+  /** O catálogo não carregou: mensagem e como tentar de novo. */
+  erroCatalogo?: string | null;
+  aoTentarDeNovo?: () => void;
 }
 
-export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrParaPagamento = (u) => window.location.assign(u) }: Props) {
+export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrParaPagamento = (u) => window.location.assign(u), erroCatalogo = null, aoTentarDeNovo }: Props) {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
   const [confirmar, setConfirmar] = useState<ItemLoja | null>(null);
@@ -121,7 +124,18 @@ export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrP
       )}
 
       {!catalogo ? (
-        <p role="status">Carregando a loja…</p>
+        erroCatalogo ? (
+          <div className="loja-aviso loja-aviso-erro" role="alert">
+            <p>Não deu para abrir a loja agora ({erroCatalogo}).</p>
+            {aoTentarDeNovo && (
+              <button type="button" onClick={aoTentarDeNovo}>
+                Tentar de novo
+              </button>
+            )}
+          </div>
+        ) : (
+          <p role="status">Carregando a loja…</p>
+        )
       ) : aba === 'pila' ? (
         <section aria-labelledby="titulo-pila">
           <h2 id="titulo-pila">Pacotes de Pila</h2>
