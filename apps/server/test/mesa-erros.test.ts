@@ -1,7 +1,7 @@
 import { ErroJogada } from '@truco/engine';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { OpcoesMesa } from '../src/mesa/Mesa';
-import { avancarAte, criarMesa } from './mesa-helpers';
+import { avancarAte, criarMesa, vezDeJogar } from './mesa-helpers';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -53,5 +53,35 @@ describe('falhas nos timers não travam a mesa', () => {
     const t = mesaSoBots(() => null);
     avancarAte(() => t.mesa.partida!.ultimaMao !== null, 10, 120_000);
     expect(t.aoErro).not.toHaveBeenCalled();
+  });
+});
+
+describe('ação repetida (toque duplo, F3.4)', () => {
+  test('a mesma jogada duas vezes seguidas: a 2ª é recusada e não muda a partida', () => {
+    const t = criarMesa();
+    t.mesa.sentar('a', 'Ana');
+    // Uma vez em que eu não fecho a rodada (fechando e ganhando, a vez volta para mim e a 2ª vale).
+    avancarAte(() => vezDeJogar(t) && (t.mesa.partida!.mao?.mesa.length ?? 3) < 3);
+    t.mesa.acao('a', { tipo: 'jogar', indice: 0 });
+    expect(t.mesa.partida!.mao!.vez).not.toBe(0);
+    const depoisDaPrimeira = JSON.stringify(t.mesa.partida);
+    const errosAntes = t.de('a', 'erro').length;
+    t.mesa.acao('a', { tipo: 'jogar', indice: 0 });
+    expect(JSON.stringify(t.mesa.partida)).toBe(depoisDaPrimeira);
+    expect(t.de('a', 'erro').length).toBe(errosAntes + 1);
+  });
+
+  test('"Truco!" duas vezes seguidas: o 2º é recusado e o pedido continua o mesmo', () => {
+    const t = criarMesa();
+    t.mesa.sentar('a', 'Ana');
+    // Truco só da 2ª rodada: chega a uma vez minha com rodada já jogada.
+    avancarAte(() => vezDeJogar(t) && (t.mesa.partida!.mao?.rodadas.length ?? 0) > 0 && t.mesa.partida!.mao!.tipo === 'normal');
+    t.mesa.acao('a', { tipo: 'truco' });
+    expect(t.mesa.partida!.fase).toBe('respondendoTruco');
+    const depoisDoPrimeiro = JSON.stringify(t.mesa.partida);
+    const errosAntes = t.de('a', 'erro').length;
+    t.mesa.acao('a', { tipo: 'truco' });
+    expect(JSON.stringify(t.mesa.partida)).toBe(depoisDoPrimeiro);
+    expect(t.de('a', 'erro').length).toBe(errosAntes + 1);
   });
 });

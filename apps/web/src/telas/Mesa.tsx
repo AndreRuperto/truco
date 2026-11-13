@@ -1,4 +1,4 @@
-import { type Cadeira, ehFamilia, ehFaseRitual, fechadasUsadas, LIMITE_FAMILIAS_FECHADAS, parceiroDe, quemDeveAgir } from '@truco/engine';
+import { type Cadeira, duplaDe, ehFamilia, ehFaseRitual, fechadasUsadas, LIMITE_FAMILIAS_FECHADAS, parceiroDe, quemDeveAgir } from '@truco/engine';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CartaVisual } from '../componentes/CartaVisual';
 import { BaralhoNaPartida } from '../componentes/BaralhoNaPartida';
@@ -34,7 +34,7 @@ import { cadeiraNaPosicao } from '../logica/posicoes';
 import { prazoEhMeu } from '../logica/prazo';
 import { donoDoMonte, mostrarResumoMao, textoEtapa } from '../logica/ritual';
 import { type SinalRecebido, temCoringa, textoSinalRecebido } from '../logica/sinais';
-import { placarRelativo, resumoFimMao, resumoFimPartida, textoPedidoPendente, valorMao } from '../logica/textos';
+import { placarRelativo, resumoFimMao, resumoFimPartida, textoPedidoPendente, textoResultadoRodada, valorMao } from '../logica/textos';
 import { useAvisoNaAba } from '../logica/avisoAba';
 import { dicaAgora, gravarDicas, type IdDica, lerDicas } from '../logica/dicas';
 import { useAgora } from '../rede/hooks';
@@ -164,12 +164,22 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
     if (antes && antes !== dica?.id) marcarVista(antes);
   }, [dica?.id, marcarVista]);
   const rodada = useRodadaNaMesa(m, ultimaVisivel);
+  // Enquanto a rodada que fechou fica no meio (MOSTRA_RODADA_MS), a linha diz quem levou; a vez
+  // continua no assento ("vez") e no placar. Anunciada (polite); a vez com segundos não (off).
+  const exib = rodada.exibicao;
+  const resultadoRodada = m && !etapa && exib.anterior && exib.jogadas.length > 0 && exib.resultado !== null
+    ? textoResultadoRodada(exib.resultado, duplaDe(minha))
+    : null;
+  const textoLinha = etapa ?? resultadoRodada ?? vezTexto ?? '';
+  const soVez = !etapa && !resultadoRodada && !!vezTexto;
   const linhaEtapa = (
     // Sempre montada: a região viva só anuncia mudanças de texto se já existia.
-    <p className={vezTexto ? 'etapa vez-linha' : 'etapa'} role="status" data-testid="etapa" aria-live={vezTexto ? 'off' : undefined}>
-      {etapa ?? vezTexto ?? ''}
+    <p className={soVez ? 'etapa vez-linha' : 'etapa'} role="status" data-testid="etapa" aria-live={soVez ? 'off' : undefined}>
+      {textoLinha}
     </p>
   );
+  // Uma região só para leitor de tela: o pedido com o valor em jogo, ou "Sua vez." (sem segundos).
+  const anuncio = pedido ?? (v.fase === 'jogando' && !msg.janelaFamilia && daVez(minha) ? 'Sua vez.' : '');
 
   return (
     <main
@@ -413,6 +423,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
           aoBater={acoes.enviarBatida}
         />
       </div>
+      {/* Depois do rodapé, e não entre a mão e ele: o desktop põe as ações ao lado da mão com
+          `.minha-mao + .rodape-mesa` (estilos.css), e um irmão no meio quebrava o seletor. */}
+      <p className="so-leitor" role="status" data-testid="anuncio-mesa">{anuncio}</p>
       {painel === 'sinais' && msg.sinais !== false && (
         <PainelSinais
           chanceInterceptar={msg.chanceInterceptarSinal}

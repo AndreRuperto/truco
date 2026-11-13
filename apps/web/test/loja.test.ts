@@ -11,6 +11,42 @@ function montar() {
   return { loja, sala, tokens, passar: (ms: number) => (agora += ms) };
 }
 
+describe('toque duplo (F3.4)', () => {
+  const enviadasAcao = (sala: SalaFalsa) => sala.enviados.filter(([tipo]) => tipo === 'acao');
+
+  test('a mesma ação repetida antes do estado novo sai uma vez só', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    sala.receber('estado', msgEstado(distribuida(PAULISTA)));
+    loja.enviarAcao({ tipo: 'jogar', cadeira: 0, indice: 0 });
+    loja.enviarAcao({ tipo: 'jogar', cadeira: 0, indice: 0 });
+    expect(enviadasAcao(sala)).toHaveLength(1);
+    // Ação diferente passa (o servidor decide se vale).
+    loja.enviarAcao({ tipo: 'truco', cadeira: 0 });
+    expect(enviadasAcao(sala)).toHaveLength(2);
+  });
+
+  test('libera a mesma ação depois de um estado novo, de um erro ou de 1,5 s', () => {
+    const { loja, sala, passar } = montar();
+    loja.conectar(sala);
+    const s = distribuida(PAULISTA);
+    sala.receber('estado', msgEstado(s));
+    const jogarA = { tipo: 'jogar' as const, cadeira: 0 as const, indice: 0 };
+    loja.enviarAcao(jogarA);
+    sala.receber('estado', msgEstado(s));
+    loja.enviarAcao(jogarA);
+    expect(enviadasAcao(sala)).toHaveLength(2);
+    sala.receber('erro', { mensagem: 'não é sua vez' });
+    loja.enviarAcao(jogarA);
+    expect(enviadasAcao(sala)).toHaveLength(3);
+    loja.enviarAcao(jogarA);
+    expect(enviadasAcao(sala)).toHaveLength(3);
+    passar(1_600);
+    loja.enviarAcao(jogarA);
+    expect(enviadasAcao(sala)).toHaveLength(4);
+  });
+});
+
 describe('loja', () => {
   test('registra todos os handlers antes de pedir sincronizar', () => {
     const { loja, sala, tokens } = montar();

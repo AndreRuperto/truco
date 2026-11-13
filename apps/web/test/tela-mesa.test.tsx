@@ -10,6 +10,39 @@ import { distribuida, jogar, MINEIRO, msgEstado, naSegundaRodada, noRitual, PAUL
 const acoesFalsas = () => ({ enviarAcao: vi.fn(), enviarSinal: vi.fn(), enviarFala: vi.fn(), sair: vi.fn() });
 const snap = (msg: EstadoLoja['msg'], eventos: Evento[] = []): EstadoLoja => ({ status: 'na-mesa', msg, eventos, erro: null, chat: [], salaId: 'r1' });
 
+describe('F3.3: vez, truco e resultado com texto e anúncio (não só cor)', () => {
+  test('a rodada que acabou de fechar diz quem levou, dos dois lados', () => {
+    const s = naSegundaRodada(distribuida(PAULISTA)); // a dupla 0 levou a 1ª
+    expect(s.mao!.rodadas).toEqual([0]);
+    const { unmount } = render(<TelaMesa snap={snap(msgEstado(s, 0))} acoes={acoesFalsas()} />);
+    expect(screen.getByTestId('etapa')).toHaveTextContent('Rodada nossa!');
+    expect(screen.getByTestId('etapa')).not.toHaveAttribute('aria-live', 'off');
+    unmount();
+    render(<TelaMesa snap={snap(msgEstado(s, 1))} acoes={acoesFalsas()} />);
+    expect(screen.getByTestId('etapa')).toHaveTextContent('Rodada deles.');
+  });
+
+  test('sua vez é anunciada numa região só, sem os segundos; na vez dos outros, nada', () => {
+    const s = distribuida(PAULISTA);
+    expect(s.mao!.vez).toBe(0);
+    const { unmount } = render(<TelaMesa snap={snap(msgEstado(s, 0))} acoes={acoesFalsas()} />);
+    const anuncio = screen.getByTestId('anuncio-mesa');
+    expect(anuncio).toHaveAttribute('role', 'status');
+    expect(anuncio).toHaveClass('so-leitor');
+    expect(anuncio).toHaveTextContent(/^Sua vez\.$/);
+    unmount();
+    render(<TelaMesa snap={snap(msgEstado(s, 1))} acoes={acoesFalsas()} />);
+    expect(screen.getByTestId('anuncio-mesa')).toHaveTextContent(/^$/);
+  });
+
+  test('pedido de truco: o placar mostra o valor em jogo e a região anuncia', () => {
+    const s = reduce(naSegundaRodada(distribuida(PAULISTA)), { tipo: 'truco', cadeira: 0 });
+    render(<TelaMesa snap={snap(msgEstado(s, 1))} acoes={acoesFalsas()} />);
+    expect(screen.getByRole('group', { name: /Placar: .*Pediram Truco! Vale 3/ })).toBeInTheDocument();
+    expect(screen.getByTestId('anuncio-mesa')).toHaveTextContent('Pediram Truco! Vale 3.');
+  });
+});
+
 describe('TelaMesa', () => {
   test('botão ? abre o manual por cima da mesa e Voltar fecha', async () => {
     const user = userEvent.setup();

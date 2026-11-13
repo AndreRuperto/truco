@@ -82,6 +82,8 @@ export function criarLoja(o: OpcoesLoja = {}) {
   let sala: SalaLike | null = null;
   let seq = 0;
   let aguardandoEstadoAposReconexao = false;
+  /** Última ação enviada (JSON) e quando: a mesma de novo antes do estado novo é toque duplo. */
+  let ultimaAcao: { chave: string; em: number } | null = null;
   const ouvintes = new Set<() => void>();
 
   const mudar = (p: Partial<EstadoLoja>) => {
@@ -112,6 +114,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
     s.onMessage('estado', (m: MsgEstado) => {
       if (sala === s) {
         aguardandoEstadoAposReconexao = false;
+        ultimaAcao = null;
         // Volta de uma queda: conta o que aconteceu enquanto esteve fora (uma vez, se houve algo).
         const resumo = estado.estadoAnterior ? resumoDaVolta(estado.estadoAnterior, m) : null;
         mudar({ msg: m, estadoAnterior: null });
@@ -131,7 +134,10 @@ export function criarLoja(o: OpcoesLoja = {}) {
       if (sala === s) evento({ tipo: 'sinal', de: x.de, sinal: x.sinal, interceptado: !!x.interceptado });
     });
     s.onMessage('erro', (e: MsgErro) => {
-      if (sala === s) erro(e.mensagem);
+      if (sala === s) {
+        ultimaAcao = null;
+        erro(e.mensagem);
+      }
     });
     s.onMessage('chat', (m: MsgChat) => {
       if (sala === s) mudar({ chat: [...estado.chat, m].slice(-50) });
@@ -217,7 +223,15 @@ export function criarLoja(o: OpcoesLoja = {}) {
     },
     // Nunca enfileirar comandos enquanto o socket caiu: o estado do turno pode
     // ter mudado. Após reconectar, sincronizar primeiro e aguardar nova ação.
-    enviarAcao: (a: AcaoJogador) => enviarSeConectado('acao', a),
+    // Toque duplo (dois toques na mesma carta ou no "Truco!" antes de o estado voltar): a mesma
+    // ação só sai de novo depois de um estado novo, de um erro ou de 1,5 s. Ação diferente passa.
+    enviarAcao: (a: AcaoJogador) => {
+      const chave = JSON.stringify(a);
+      if (ultimaAcao && ultimaAcao.chave === chave && agora() - ultimaAcao.em < 1_500) return;
+      if (estado.status !== 'na-mesa' || aguardandoEstadoAposReconexao) return;
+      ultimaAcao = { chave, em: agora() };
+      sala?.send('acao', a);
+    },
     enviarSinal: (x: Sinal) => enviarSeConectado('sinal', x),
     enviarFala: (f: Fala) => enviarSeConectado('fala', f),
     enviarSemFamilia: () => enviarSeConectado('semFamilia'),

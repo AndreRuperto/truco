@@ -1,5 +1,18 @@
 # Próximos passos — Truco
 
+## 2026-11-13 · branch `claude/mvp-f3-animacoes` · Fase 3 pronta para revisão
+
+Fases 0, 1 e 2 estão em produção. A Fase 3 (animações e sensação de jogo) está com o gate local verde e um PR aberto esperando o "pode" (o merge dispara o deploy). Detalhes e números: `docs/qa-frontend/animacoes-2026-11.md`.
+
+Pendências registradas:
+- [ ] Desempenho 2D com a CPU 4x mais lenta: de 3 a 5 quadros acima de 100 ms por mão (meta: nenhum). Falta um perfil de CPU com atribuição das tarefas longas.
+- [ ] Desempenho 3D: 12,3 FPS no headless com WebGL em software (meta: 30). Medir em aparelho real (Fase 7).
+- [ ] QA independente da Fase 3 (não feito).
+- [ ] Pendências da Fase 2: dica sobre o centro em 320/360×640 (P3), painel "Ordem" sobre o placar no desktop (P2), balões 3D laterais fora do quadro (P2).
+- [ ] PR da branch `claude/mvp-f0-checklist`.
+
+Próximo: Fase 4 (competitivo, integridade e segurança restante), branch `claude/mvp-f4-competitivo`.
+
 ## 2026-11-16 · branch `claude/mvp-f2-visual` · Fase 2 pronta para revisão
 
 Fases 0 e 1 estão em produção. Fase 2 (acabamento visual e temas) concluída, com o gate local verde e um PR aberto esperando o "pode" do André (o merge dispara o deploy). Critérios, resultado do QA independente e resposta a cada achado: `docs/qa-frontend/qa-fase2-2026-11.md`.
