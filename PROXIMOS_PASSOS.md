@@ -1,8 +1,12 @@
 # Próximos passos — Truco
 
-## 2026-11-13 · branch `claude/mvp-f6-lancamento` · Fase 6 pronta para o gate
+## 2026-11-13 · Fase 6 em produção (PR #29, merge 197f93e)
 
-Fases 0 a 5 em produção. Fase 6 (acessibilidade, carga e páginas legais):
+Fases 0 a 6 em produção. Deploy conferido nos dois domínios: `/saude` com `versao` 197f93e e banco ok,
+migração 0009 aplicada (`/api/perfil/1` 200), `DELETE /api/eu` 401 sem login, Privacidade/Termos no bundle, 5 cabeçalhos.
+**Achado no deploy:** `/assets` saía com 7 dias, sem `immutable`, porque em produção a pasta do build termina em `/`.
+Corrigido na branch `claude/mvp-f6-cache-assets` (PR à parte; precisa do "pode").
+Próximo: Fase 7 (beta com gente de verdade). Fase 6 (acessibilidade, carga e páginas legais):
 - [x] F6.1 E2E de teclado (`e2e/teclado.spec.ts`) e de contraste/nomes (`e2e/contraste.spec.ts`) nos dois temas; 4 anéis de foco
   e 3 contrastes corrigidos; balão do assento sem região viva. Relatório: `docs/qa-frontend/acessibilidade-2026-11.md`.
 - [x] F6.2 orçamento do bundle com teste (JS inicial 129,2 kB, CSS 33,6 kB gzip); `/assets` immutable por um ano.
@@ -10,7 +14,7 @@ Fases 0 a 5 em produção. Fase 6 (acessibilidade, carga e páginas legais):
 - [x] F6.4 `#/privacidade` e `#/termos` em **rascunho** (`apps/web/src/logica/legal.ts`), links no início, entrar e loja;
   `DELETE /api/eu` anonimiza a conta (migração **0009** `removido_em`).
 - [x] F6.5 "Denunciar" na mesa → aba Auditoria do admin.
-- [ ] Gate completo (E2E) e PR; merge só com o "pode" (aplica a migração 0009 e publica as páginas como rascunho).
+- [x] Gate local: 1208 testes unitários; E2E 104 ok, 0 falhas.
 
 PARAR (precisam do André):
 - [ ] Aprovar o texto de Privacidade e Termos (D8); preencher `RESPONSAVEL` e `VIGENCIA` e trocar `RASCUNHO_LEGAL` para false.

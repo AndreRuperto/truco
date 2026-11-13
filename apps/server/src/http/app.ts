@@ -2,7 +2,7 @@ import type { Variante } from '@truco/engine';
 import { sql } from 'drizzle-orm';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import type { MesaAdmin, SalaAberta, UsuarioApi } from '../api/tipos';
 import { emailDoLink, extrairLink } from '../auth/emails';
 import { chaveDeIp, LimiteTaxa } from '../auth/limite';
@@ -461,7 +461,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
         setHeaders: (res, caminho) => {
           if (caminho.endsWith('index.html') || caminho.endsWith('sw.js') || caminho.endsWith('manifest.webmanifest')) {
             res.setHeader('Cache-Control', 'no-cache');
-          } else if (/[\\/]assets[\\/]/.test(caminho.slice(pasta.length))) {
+          } else if (relative(pasta, caminho).split(sep)[0] === 'assets') {
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
           }
         },

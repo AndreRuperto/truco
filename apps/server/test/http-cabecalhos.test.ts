@@ -111,4 +111,14 @@ describe('cache dos arquivos (F6.2)', () => {
       await app.fechar();
     }
   });
+
+  test('pasta com barra no fim (como o main.ts passa em produção) também marca /assets como immutable', async () => {
+    const app = await subirApp(servicosDeTeste(b.db), { pastaWeb: pastaWeb + '/' });
+    try {
+      const r = await fetch(app.base + '/assets/index-abc123.js');
+      expect(r.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+    } finally {
+      await app.fechar();
+    }
+  });
 });
