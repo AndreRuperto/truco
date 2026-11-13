@@ -31,6 +31,7 @@ import {
   ehFala,
   ehSinal,
   type CacifeMesa,
+  efeitoDaMoldura,
   type InfoCadeira,
   type MsgAvatares,
   limparChat,
@@ -39,6 +40,7 @@ import {
   type MsgChat,
   msgDaAcao,
   type MsgEstado,
+  type MsgProvocacao,
   type NivelBot,
   type Sinal,
 } from './protocolo';
@@ -108,6 +110,8 @@ export interface OpcoesMesa {
   sinaisBot?: boolean;
   /** Sinais liberados na mesa (padrão: sim). Desligados, ninguém sinaliza (nem os bots). */
   sinais?: boolean;
+  /** Provocações com a moldura (padrão: sim; na ranqueada nunca). */
+  provocacoes?: boolean;
   /** Chance (0–1) de um bot comentar o fim de uma rodada ("boa", "bora", "vixe"). Padrão 0. */
   chanceFalaBot?: number;
   aoTerminar?: (s: EstadoPartida) => void;
@@ -146,6 +150,9 @@ interface Ocupante {
 }
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
+/** Provocações: 1 a cada 8 s por jogador; no máximo 3 por minuto no mesmo alvo. */
+const INTERVALO_PROVOCACAO_MS = 8_000;
+const MAX_PROVOCACOES_POR_MINUTO = 3;
 
 /** Id curto (12 hex) de uma foto `data:`; avatar pronto ou nenhum: null (vai inline no estado). */
 function idDoAvatar(avatar: string | null | undefined): string | null {
@@ -214,6 +221,10 @@ export class Mesa {
   private votosRevanche = new Set<Cadeira>();
   /** Última mensagem de chat por cadeira (limite próprio, separado de sinais/falas). */
   private readonly ultimoChat: number[] = [-Infinity, -Infinity, -Infinity, -Infinity];
+  /** Provocações: última de cada cadeira e os instantes por par "de>para" (limite de 3 por minuto). */
+  private readonly ultimaProvocacao: number[] = [-Infinity, -Infinity, -Infinity, -Infinity];
+  private readonly provocacoesPorPar = new Map<string, number[]>();
+  private seqProvocacao = 0;
   /** Tampo da mesa ("bater na mesa"): rachaduras, dano e se já virou plástico. */
   private fisica = mesaFisicaInicial();
   /** Último pedido de seis/nove/doze que ainda pode ser acompanhado de uma batida. */
@@ -411,6 +422,33 @@ export class Mesa {
     const c = this.cadeiraDe(id);
     if (c === null || !this.estado || !ehFala(fala) || !this.podeMandar(c)) return;
     this.paraHumanos((destino) => this.o.enviar(destino, 'fala', { de: c, fala }));
+  }
+
+  private provocacoesLigadas(): boolean {
+    return this.o.modo !== 'ranqueada' && this.o.provocacoes !== false;
+  }
+
+  /**
+   * Provocação com a moldura: só visual, não mexe no jogo. Alvo é outra cadeira ocupada (humano ou
+   * bot); 1 a cada 8 s por jogador e no máximo 3 por minuto no mesmo alvo vindas da mesma pessoa.
+   */
+  provocar(id: string, alvoCru: unknown): void {
+    const c = this.cadeiraDe(id);
+    if (c === null) return;
+    if (!this.provocacoesLigadas()) return void this.erro(id, 'provocações desligadas nesta mesa');
+    if (typeof alvoCru !== 'number' || ![0, 1, 2, 3].includes(alvoCru) || alvoCru === c) return;
+    const alvo = alvoCru as Cadeira;
+    const ocupante = this.ocupantes[alvo];
+    if (!ocupante.humano && !ocupante.nome) return;
+    const agora = this.relogio.agora();
+    if (agora - this.ultimaProvocacao[c] < INTERVALO_PROVOCACAO_MS) return void this.erro(id, 'calma: espere um pouco para provocar de novo');
+    const par = `${c}>${alvo}`;
+    const recentes = (this.provocacoesPorPar.get(par) ?? []).filter((t) => agora - t < 60_000);
+    if (recentes.length >= MAX_PROVOCACOES_POR_MINUTO) return void this.erro(id, 'calma: espere um pouco para provocar de novo');
+    this.ultimaProvocacao[c] = agora;
+    this.provocacoesPorPar.set(par, [...recentes, agora]);
+    const msg: MsgProvocacao = { id: ++this.seqProvocacao, de: c, para: alvo, efeito: efeitoDaMoldura(this.ocupantes[c].visual?.moldura) };
+    this.paraHumanos((destino) => this.o.enviar(destino, 'provocacao', msg));
   }
 
   /** "Sem família": o humano abre mão de pedir nesta janela; com todos decididos, o jogo segue. */
@@ -798,6 +836,7 @@ export class Mesa {
       regras: this.o.regras,
       chanceInterceptarSinal: this.o.chanceInterceptarSinal ?? 0,
       sinais: this.o.sinais !== false,
+      provocacoes: this.provocacoesLigadas(),
       humanosEsperados: this.o.humanosEsperados,
       visao: s ? visaoDoJogador(s, c) : null,
       prazo: this.prazo,

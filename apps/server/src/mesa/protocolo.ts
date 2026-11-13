@@ -76,6 +76,20 @@ export function limparChat(cru: unknown): string {
     .trim();
 }
 
+/** Efeito da provocação: vem da moldura de quem provoca (sem moldura ou convidado: guardanapo). */
+export const EFEITOS_PROVOCACAO = ['guardanapo', 'laco', 'farpa', 'ofusca', 'po-de-giz'] as const;
+export type EfeitoProvocacao = (typeof EFEITOS_PROVOCACAO)[number];
+const EFEITO_DA_MOLDURA: Record<string, EfeitoProvocacao> = { corda: 'laco', madeira: 'farpa', neon: 'ofusca', giz: 'po-de-giz' };
+export const efeitoDaMoldura = (moldura: string | null | undefined): EfeitoProvocacao => EFEITO_DA_MOLDURA[moldura ?? ''] ?? 'guardanapo';
+
+/** Mensagem `provocacao` (servidor → humanos): `id` só cresce, para a animação tocar uma vez. */
+export interface MsgProvocacao {
+  id: number;
+  de: Cadeira;
+  para: Cadeira;
+  efeito: EfeitoProvocacao;
+}
+
 /** Mensagem `avatares`: fotos enviadas (`data:`) por id, mandadas uma vez a cada cliente antes do `estado`. */
 export type MsgAvatares = Record<string, string>;
 
@@ -111,6 +125,8 @@ export interface MsgEstado {
   chanceInterceptarSinal: number;
   /** Sinais liberados nesta mesa (false = ninguém sinaliza; o botão some). Ausente = ligados. */
   sinais?: boolean;
+  /** Provocações com a moldura liberadas (nunca na ranqueada). Ausente = desligadas (servidor antigo). */
+  provocacoes?: boolean;
   /** Quantos humanos a mesa espera antes de começar sozinha (o resto vira bot). */
   humanosEsperados: number;
   visao: Visao | null;
@@ -216,6 +232,8 @@ export interface OpcoesSala {
   tempoFamiliaS: TempoFamiliaS;
   /** Sinais entre parceiros liberados. Padrão: desligados no mineiro, ligados no paulista. */
   sinais: boolean;
+  /** Provocações com a moldura (padrão: ligadas; ranqueada: sempre desligadas). */
+  provocacoes: boolean;
   /** Fichas que cada humano com conta põe no pote (0 = sem cacife). */
   cacife: number;
 }
@@ -232,7 +250,13 @@ export type TempoFamiliaS = (typeof TEMPOS_FAMILIA_S)[number];
  * ela já tem filtro próprio. O cliente oficial sempre manda esta chave em
  * `joinOrCreate`; a sala a recalcula a partir das opções validadas (ver `MesaRoom.onCreate`).
  */
-export function chaveRegras(regras: RegrasMesa, chanceInterceptarSinal: number, tempoFamiliaS: number = 20, sinais: boolean = sinaisPadrao(regras.variante)): string {
+export function chaveRegras(
+  regras: RegrasMesa,
+  chanceInterceptarSinal: number,
+  tempoFamiliaS: number = 20,
+  sinais: boolean = sinaisPadrao(regras.variante),
+  provocacoes: boolean = true,
+): string {
   return [
     regras.pontuacao,
     `m10:${regras.maoDe10 ? 1 : 0}`,
@@ -242,6 +266,8 @@ export function chaveRegras(regras: RegrasMesa, chanceInterceptarSinal: number, 
     `int:${chanceInterceptarSinal}`,
     ...(regras.familia === 'off' ? [] : [`tf:${tempoFamiliaS}`]),
     `sin:${sinais ? 1 : 0}`,
+    // Só quando desligadas: as chaves das mesas de antes (e do PWA antigo) não mudam.
+    ...(provocacoes ? [] : ['prov:0']),
   ].join('|');
 }
 
@@ -273,6 +299,7 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
   const tf = o.tempoFamiliaS;
   const tempoFamiliaS: TempoFamiliaS = (TEMPOS_FAMILIA_S as readonly unknown[]).includes(tf) ? (tf as TempoFamiliaS) : 20;
   const sinais = typeof o.sinais === 'boolean' ? o.sinais : sinaisPadrao(variante);
+  const provocacoes = o.provocacoes !== false;
   const nivelPedido = um(o.nivelBot, ['facil', 'dificil'] as const, 'facil');
   const modo = um(o.modo, MODOS_MESA, nivelPedido === 'dificil' ? 'desafio' : 'classica');
   if (modo === 'ranqueada') {
@@ -284,6 +311,7 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
       chanceInterceptarSinal: 0,
       tempoFamiliaS: 20,
       sinais: sinaisPadrao(variante),
+      provocacoes: false,
       // Vem só da fila (que calcula pela patente); o cliente não cria ranqueada.
       cacife: cacifeRanqueadaValido(o.cacife),
     };
@@ -294,7 +322,7 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
   const humanosMesa = modo === 'privada' && humanos < 2 ? 4 : humanos;
   // Sozinho contra bots não há com quem apostar.
   const cacife = humanosMesa >= 2 ? cacifeValido(o.cacife) : 0;
-  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, cacife };
+  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, provocacoes, cacife };
 }
 
 /** Campos do `filterBy` da sala `mesa`, sempre preenchidos com valores validados. */
@@ -314,7 +342,7 @@ export function filtroDaSala(o: OpcoesSala): FiltroSala {
     variante: o.regras.variante,
     humanos: o.humanos,
     nivelBot: o.nivelBot,
-    chaveRegras: chaveRegras(o.regras, o.chanceInterceptarSinal, o.tempoFamiliaS, o.sinais),
+    chaveRegras: chaveRegras(o.regras, o.chanceInterceptarSinal, o.tempoFamiliaS, o.sinais, o.provocacoes),
     cacife: o.cacife,
   };
 }
