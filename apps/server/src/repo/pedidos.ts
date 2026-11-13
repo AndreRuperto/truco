@@ -4,7 +4,8 @@ import type { Banco } from '../banco/banco';
 import { pedidos, usuarios } from '../banco/schema';
 import { pacotePorId } from '../loja/catalogo';
 import type { GatewayPagamento } from '../pagamento/infinitepay';
-import { movimentar } from './carteira';
+import { registrarAuditoria } from './auditoria';
+import { movimentar, saldosDe } from './carteira';
 
 export const LIMITE_PEDIDOS_HORA = 5;
 
@@ -109,3 +110,42 @@ export async function pedidosAdmin(db: Banco, limite = 100) {
     .orderBy(desc(pedidos.criadoEm))
     .limit(limite);
 }
+
+export interface ResultadoEstorno {
+  resultado: 'estornado' | 'ja-estornado' | 'nao-pago' | 'desconhecido';
+  /** Pila tirado da carteira agora. */
+  debitado: number;
+  /** O que não deu para tirar (o usuário já tinha gastado): fica registrado na auditoria. */
+  faltou: number;
+}
+
+/**
+ * Estorno manual (o admin estornou no app da InfinitePay). O webhook não é assinado, então o corpo
+ * nunca é verdade: só o admin marca. Numa transação: `pago` -> `estornado` (uma vez só, pela
+ * condição no UPDATE) e tira o Pila; se o saldo não cobrir, tira o que houver e anota a diferença.
+ */
+export async function estornarPedido(db: Banco, pedidoId: string, adminId: number, agora: Date): Promise<ResultadoEstorno> {
+  return db.transaction(async (tx) => {
+    const [marcado] = await tx
+      .update(pedidos)
+      .set({ status: 'estornado' })
+      .where(and(eq(pedidos.id, pedidoId), eq(pedidos.status, 'pago')))
+      .returning();
+    if (!marcado) {
+      const [p] = await tx.select({ status: pedidos.status }).from(pedidos).where(eq(pedidos.id, pedidoId));
+      const resultado = !p ? 'desconhecido' : p.status === 'estornado' ? 'ja-estornado' : 'nao-pago';
+      return { resultado, debitado: 0, faltou: 0 };
+    }
+    const saldo = (await saldosDe(tx, marcado.usuarioId)).pila;
+    const debitado = Math.min(saldo, marcado.pila);
+    const faltou = marcado.pila - debitado;
+    if (debitado > 0) await movimentar(tx, marcado.usuarioId, 'pila', -debitado, 'estorno_pila', marcado.id);
+    await registrarAuditoria(
+      tx,
+      { adminId, acao: 'estorno_pila', alvoId: marcado.usuarioId, detalhe: { pedido: marcado.id, pila: marcado.pila, debitado, faltou } },
+      agora,
+    );
+    return { resultado: 'estornado', debitado, faltou };
+  });
+}
+

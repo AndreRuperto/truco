@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { usuarios } from '../src/banco/schema';
 import { GatewayDeTeste } from '../src/pagamento/infinitepay';
-import { saldosDe } from '../src/repo/carteira';
-import { confirmarPedido, criarPedido, dadosDoRetorno, type Pedido, pedidoDe } from '../src/repo/pedidos';
+import { movimentar, saldosDe } from '../src/repo/carteira';
+import { auditoriaRecente } from '../src/repo/auditoria';
+import { confirmarPedido, criarPedido, dadosDoRetorno, estornarPedido, type Pedido, pedidoDe } from '../src/repo/pedidos';
 import { type BancoDeTeste, bancoDeTeste } from './banco-helpers';
 
 let b: BancoDeTeste;
@@ -74,3 +75,46 @@ describe('pedidos de Pila', () => {
     expect(dadosDoRetorno(null)).toBeNull();
   });
 });
+
+describe('estorno de Pila (F4.8)', () => {
+  async function pago(): Promise<{ dono: number; p: Pedido }> {
+    const dono = await novo();
+    const g = new GatewayDeTeste();
+    const p = (await criarPedido(b.db, dono, 'bolso', T0)) as Pedido;
+    g.pagar(`tx-${p.id}`, 990);
+    expect(await confirmarPedido(b.db, g, retorno(p, `tx-${p.id}`), T0)).toBe('pago');
+    return { dono, p };
+  }
+
+  test('pago vira estornado e debita o Pila uma vez; repetir não debita de novo', async () => {
+    const admin = await novo();
+    const { dono, p } = await pago();
+    expect(await estornarPedido(b.db, p.id, admin, T0)).toEqual({ resultado: 'estornado', debitado: 220, faltou: 0 });
+    expect((await saldosDe(b.db, dono)).pila).toBe(0);
+    expect(await pedidoDe(b.db, p.id, dono)).toMatchObject({ status: 'estornado' });
+    expect(await estornarPedido(b.db, p.id, admin, T0)).toEqual({ resultado: 'ja-estornado', debitado: 0, faltou: 0 });
+    expect((await saldosDe(b.db, dono)).pila).toBe(0);
+    const [linha] = await auditoriaRecente(b.db);
+    expect(linha).toMatchObject({ acao: 'estorno_pila', adminId: admin, alvoId: dono, detalhe: { pedido: p.id, pila: 220, debitado: 220, faltou: 0 } });
+  });
+
+  test('saldo que não cobre (já gastou): debita o que há, não fica negativo e a diferença vai para a auditoria', async () => {
+    const admin = await novo();
+    const { dono, p } = await pago();
+    await b.db.transaction((tx) => movimentar(tx, dono, 'pila', -200, 'compra_item', 'x'));
+    expect(await estornarPedido(b.db, p.id, admin, T0)).toEqual({ resultado: 'estornado', debitado: 20, faltou: 200 });
+    expect((await saldosDe(b.db, dono)).pila).toBe(0);
+    const [linha] = await auditoriaRecente(b.db);
+    expect(linha.detalhe).toEqual({ pedido: p.id, pila: 220, debitado: 20, faltou: 200 });
+  });
+
+  test('pedido não pago ou desconhecido não estorna', async () => {
+    const admin = await novo();
+    const dono = await novo();
+    const p = (await criarPedido(b.db, dono, 'bolso', T0)) as Pedido;
+    expect((await estornarPedido(b.db, p.id, admin, T0)).resultado).toBe('nao-pago');
+    expect((await estornarPedido(b.db, 'nao-existe', admin, T0)).resultado).toBe('desconhecido');
+    expect(await auditoriaRecente(b.db)).toEqual([]);
+  });
+});
+

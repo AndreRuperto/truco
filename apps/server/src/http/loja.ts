@@ -6,7 +6,7 @@ import { ITENS, PACOTES, pacotePorId } from '../loja/catalogo';
 import { MOEDAS, type Moeda } from '../loja/regras';
 import { carteiraDe, extrato, movimentar, SaldoInsuficiente } from '../repo/carteira';
 import { comprarItem, equipadosDe, equipar, inventarioDe } from '../repo/loja';
-import { anexarCheckout, confirmarPedido, criarPedido, dadosDoRetorno, type Pedido, pedidoDe, pedidosAdmin } from '../repo/pedidos';
+import { anexarCheckout, confirmarPedido, criarPedido, dadosDoRetorno, estornarPedido, type Pedido, pedidoDe, pedidosAdmin } from '../repo/pedidos';
 import { type Usuario, usuarioPorId } from '../repo/usuarios';
 import type { Servicos } from '../servicos';
 
@@ -161,6 +161,16 @@ export function rotasAdminLoja(admin: Router, s: Servicos): void {
       pagoEm: p.pagoEm?.toISOString() ?? null,
     }));
     res.json({ pedidos: ps });
+  });
+
+  /** Estorno de Pila (o admin estornou no app da InfinitePay): tira o Pila e anota na auditoria. */
+  admin.post('/pedidos/:id/estorno', async (req, res) => {
+    const r = await estornarPedido(s.banco, String(req.params.id), (res.locals.admin as Usuario).id, s.agora());
+    if (r.resultado === 'desconhecido') return void res.status(404).json({ erro: 'pedido não encontrado' });
+    if (r.resultado === 'ja-estornado') return void res.status(409).json({ erro: 'este pedido já foi estornado' });
+    if (r.resultado === 'nao-pago') return void res.status(409).json({ erro: 'este pedido não foi pago' });
+    console.log(`[admin] ${(res.locals.admin as Usuario).apelido} estornou o pedido ${req.params.id}: -${r.debitado} Pila (faltou ${r.faltou})`);
+    res.json(r);
   });
 
   /** Ajuste manual (ex.: estorno feito no app da InfinitePay). Fica no extrato como `ajuste_admin`. */
