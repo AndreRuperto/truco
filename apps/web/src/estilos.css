@@ -1660,8 +1660,9 @@ body:has(.tela-mesa) {
 .campo:has(.seletor-avatar) {
   position: relative;
 }
+/* No painel do início (largura do formulário) ficam sempre 5 por fileira. */
 .seletor-avatar-painel .avatares-prontos {
-  max-width: none;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 .formulario .seletor-avatar-painel .avatares-prontos button {
   display: block;
@@ -4179,18 +4180,31 @@ body:has(.tela-mesa) {
   color: var(--giz-suave);
 }
 .avatares-prontos {
+  /* Ocupa a largura do bloco: as fotos crescem com a coluna (até 72 px) em vez de ficarem num canto. */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  /* 10 avatares: duas fileiras de 5 no celular, uma de 10 com espaço (sem fileira com 2 sobrando). */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--e2);
-  max-width: 340px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
+@media (min-width: 700px) {
+  .avatares-prontos {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+}
+.avatares-prontos > li {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
 .editar-perfil .avatares-prontos button {
   display: block;
-  width: 52px;
-  height: 52px;
+  width: 100%;
+  max-width: 72px;
+  height: auto;
+  aspect-ratio: 1;
   min-height: 0;
   padding: 0;
   border: 0;

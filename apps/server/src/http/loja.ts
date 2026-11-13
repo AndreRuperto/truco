@@ -23,6 +23,8 @@ const ERROS_COMPRA = {
 export interface DepsLoja {
   s: Servicos;
   usuarioDe: (req: Request) => Promise<Usuario | null>;
+  /** Admin tem todos os itens da loja (sem comprar): ver `equipar`. */
+  ehAdmin?: (u: Usuario) => boolean;
   /** Base pública para montar as URLs de retorno e de webhook. */
   origem: (req: Request) => string;
   limiteWebhook?: LimiteTaxa;
@@ -31,6 +33,8 @@ export interface DepsLoja {
 /** Rotas da loja em `/api/loja/*`. */
 export function rotasLoja(api: Router, d: DepsLoja): void {
   const { s, usuarioDe } = d;
+  const ehAdmin = d.ehAdmin ?? (() => false);
+  const TODOS_PAGOS = ITENS.filter((i) => i.preco).map((i) => i.id);
   const limiteWebhook = d.limiteWebhook ?? new LimiteTaxa(60, 60_000);
   const logado = async (req: Request, res: Response): Promise<Usuario | null> => {
     const u = await usuarioDe(req);
@@ -51,7 +55,7 @@ export function rotasLoja(api: Router, d: DepsLoja): void {
     const r: CarteiraApi = {
       fichas: c.fichas,
       pila: c.pila,
-      inventario: inv,
+      inventario: ehAdmin(u) ? [...new Set([...inv, ...TODOS_PAGOS])] : inv,
       equipados: eq,
       avatar: conta?.avatar ?? null,
       bonus: c.bonus,
@@ -75,7 +79,7 @@ export function rotasLoja(api: Router, d: DepsLoja): void {
     const u = await logado(req, res);
     if (!u) return;
     const itemId = req.body?.itemId === null ? null : req.body?.itemId;
-    const r = await equipar(s.banco, u.id, req.body?.slot, itemId);
+    const r = await equipar(s.banco, u.id, req.body?.slot, itemId, { liberarTudo: ehAdmin(u) });
     if (r === 'invalido') return void res.status(400).json({ erro: 'item ou lugar inválido' });
     if (r === 'nao-tem') return void res.status(403).json({ erro: 'você ainda não tem esse item' });
     res.status(204).end();

@@ -1,5 +1,21 @@
 # Próximos passos — Truco
 
+## 2026-11-13 · branch `claude/admin-itens-avatares` · avatares e admin prontos, provocações em design
+
+Fases 0–6 em produção (último merge: #31, 6f2ee1e, e-mail de contato nas páginas legais). Fase 7 **não** começou (André disse "ainda não").
+
+Pedidos do André em aberto, nesta ordem:
+- [x] Grade de avatares do Perfil ocupando a largura (5 por fileira no celular, 10 com espaço; o painel do início fica em 5).
+- [x] Admin tem todos os itens da loja: inventário com todos os pagos e equipa qualquer um, sem comprar nem mexer no saldo.
+- [ ] **Provocação com a moldura na mesa** (brainstorm, parte 1 apresentada, falta o André validar):
+  regra da mesa "Provocações" (liga/desliga, padrão ligado, entra na `chaveRegras`; nunca na ranqueada);
+  clicar/Enter na foto de outro jogador abre botão "Provocar"; mensagem `provocar {alvo}` validada no servidor
+  (modo, regra, moldura equipada lida da conta, limite 1 a cada 8 s e 3/min no mesmo alvo); efeito por moldura:
+  sem moldura = bolinha de guardanapo, corda = laço, madeira = farpa, neon = ofusca, giz = pó de giz; ~1,5 s,
+  todos veem; movimento reduzido = ícone + texto; 3D = selo curto. Depois: escrever
+  `docs/plans/2026-11-13-provocacoes-design.md` e o plano. "Especiais que atrapalham" = modo futuro, fora disso.
+
+
 ## 2026-11-13 · Fase 6 em produção (PR #29, merge 197f93e)
 
 Fases 0 a 6 em produção. Deploy conferido nos dois domínios: `/saude` com `versao` 197f93e e banco ok,

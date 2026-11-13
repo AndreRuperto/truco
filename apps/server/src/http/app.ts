@@ -356,6 +356,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   rotasLoja(api, {
     s,
     usuarioDe,
+    ehAdmin,
     // Sem URL pública (só fora de produção) a origem é a do pedido, como no link mágico.
     origem: (req) => s.urlPublica ?? origemDoPedido(req),
   });
