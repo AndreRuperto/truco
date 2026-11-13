@@ -381,6 +381,7 @@ export async function historico(db: Banco, usuarioId: number, limite = 20): Prom
       variante: partidas.variante,
       modo: partidas.modo,
       ranqueada: partidas.ranqueada,
+      eloCongelado: partidas.eloCongelado,
       placar0: partidas.placar0,
       placar1: partidas.placar1,
       iniciadaEm: partidas.iniciadaEm,
@@ -406,6 +407,7 @@ export async function historico(db: Banco, usuarioId: number, limite = 20): Prom
     venceu: l.venceu,
     abandonou: l.abandonou,
     deltaElo: l.eloAntes !== null && l.eloDepois !== null ? l.eloDepois - l.eloAntes : null,
+    eloCongelado: l.eloCongelado,
     iniciadaEm: l.iniciadaEm.toISOString(),
     terminadaEm: l.terminadaEm?.toISOString() ?? null,
   }));

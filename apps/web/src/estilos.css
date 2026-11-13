@@ -4013,6 +4013,12 @@ body:has(.tela-mesa) {
   font-size: var(--t-1);
   font-variant-numeric: tabular-nums;
 }
+/* Ranqueada com Elo congelado (mesmo grupo 5 vezes em 24 h): texto, não só o "0" do delta. */
+.historico-congelado {
+  color: var(--giz-suave);
+  font-size: var(--t-1);
+  font-style: italic;
+}
 .historico-placar {
   display: grid;
   justify-items: center;

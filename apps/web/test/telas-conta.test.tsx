@@ -136,8 +136,8 @@ describe('TelaPerfil', () => {
 describe('TelaHistorico', () => {
   test('lista as partidas com resultado e delta', async () => {
     const partidas = [
-      { partidaId: 2, variante: 'mineiro', modo: 'ranqueada', ranqueada: true, nos: 12, eles: 8, venceu: true, abandonou: false, deltaElo: 16, iniciadaEm: '2026-11-05T12:00:00Z', terminadaEm: '2026-11-05T12:20:00Z' },
-      { partidaId: 1, variante: 'paulista', modo: 'classica', ranqueada: false, nos: 3, eles: 12, venceu: false, abandonou: false, deltaElo: null, iniciadaEm: '2026-11-05T11:00:00Z', terminadaEm: '2026-11-05T11:15:00Z' },
+      { partidaId: 2, variante: 'mineiro', modo: 'ranqueada', ranqueada: true, nos: 12, eles: 8, venceu: true, abandonou: false, deltaElo: 16, eloCongelado: false, iniciadaEm: '2026-11-05T12:00:00Z', terminadaEm: '2026-11-05T12:20:00Z' },
+      { partidaId: 1, variante: 'paulista', modo: 'classica', ranqueada: false, nos: 3, eles: 12, venceu: false, abandonou: false, deltaElo: null, eloCongelado: false, iniciadaEm: '2026-11-05T11:00:00Z', terminadaEm: '2026-11-05T11:15:00Z' },
     ] as const;
     render(<TelaHistorico api={{ historico: vi.fn(async () => ({ partidas: [...partidas] })) }} />);
     const itens = await screen.findAllByRole('listitem');
@@ -153,6 +153,16 @@ describe('TelaHistorico', () => {
     expect(screen.getByRole('listitem')).toHaveTextContent('Vitória');
     await userEvent.click(screen.getByRole('button', { name: 'Derrotas' }));
     expect(screen.getByRole('listitem')).toHaveTextContent('Derrota');
+  });
+
+  test('ranqueada com Elo congelado: delta 0 e a marca "não contou para o ranking" (F4.9)', async () => {
+    const partidas = [
+      { partidaId: 9, variante: 'mineiro', modo: 'ranqueada', ranqueada: true, nos: 12, eles: 3, venceu: true, abandonou: false, deltaElo: 0, eloCongelado: true, iniciadaEm: '2026-11-05T12:00:00Z', terminadaEm: '2026-11-05T12:20:00Z' },
+    ] as const;
+    render(<TelaHistorico api={{ historico: vi.fn(async () => ({ partidas: [...partidas] })) }} />);
+    const [item] = await screen.findAllByRole('listitem');
+    expect(item).toHaveTextContent('Vitória');
+    expect(item).toHaveTextContent('não contou para o ranking');
   });
 
   test('vazio', async () => {

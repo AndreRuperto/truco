@@ -80,6 +80,8 @@ export interface ItemHistorico {
   venceu: boolean | null;
   abandonou: boolean;
   deltaElo: number | null;
+  /** Ranqueada repetida entre o mesmo grupo em 24 h: valeu, mas não mudou o ranking (delta 0). */
+  eloCongelado: boolean;
   iniciadaEm: string;
   terminadaEm: string | null;
 }
