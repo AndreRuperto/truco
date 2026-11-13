@@ -1,5 +1,25 @@
 # Próximos passos — Truco
 
+## 2026-11-13 · branch `claude/mvp-f4-competitivo` · Fase 4 EM ANDAMENTO (sem PR)
+
+Fases 0 a 3 estão em produção (PRs #18, #21–#24 e #26).
+
+Feito e enviado nesta branch (cada parte com testes):
+- [x] F4.1 Elo congelado na 6ª ranqueada entre o mesmo grupo em 24 h (migração `0006_elo_congelado`; aviso no fim da partida).
+- [x] F4.2 Conta nova não repete e-mail de outra só mudando o `+tag` (migração `0007_email_canonico`, com preenchimento das contas existentes; 409 com mensagem).
+- [x] F4.3 Integridade: queda e volta sem abandono (integração) e soma zero do Elo.
+
+Pendente, nesta ordem:
+- [ ] **F4.4 Avatar fora do `estado`.** Desenho decidido, código não começado: `InfoCadeira.avatarId` (hash curto) para fotos `data:`, e `pronto:` continua inline. Mensagem `avatares` (id → foto) enviada em `Mesa.enviarEstado(c)` antes do `estado`, só com as fotos que a cadeira ainda não recebeu (registro por ocupante, zerado em `reconectar`/`sincronizar`). Na web, a loja guarda o mapa (handler novo; atualizar o teste "registra todos os handlers"), e `Assento`/`SalaEspera` resolvem a foto pelo id. Testes: estado com 4 fotos de 60 kB < 8 kB, quem entra depois recebe as fotos, `loja.test`, `foto-na-mesa.test`.
+- [ ] F4.5 Limites por IP (`/api/perfil/:id`, `/api/ranking/:variante`, `/api/salas`, `/api/loja/catalogo` com 120/min; criação de sala 20/10 min em `MesaRoom.onAuth`).
+- [ ] F4.6 Trilha de auditoria (migração `0008_auditoria`) e F4.7 admin da loja na interface.
+- [ ] F4.8 Estorno de Pila; F4.9 histórico/estatísticas (partida com Elo congelado com etiqueta).
+- [ ] Gate completo, relatório de segurança (SEC-03 e SEC-09) e PR (merge só com o "pode").
+
+Numeração das migrações: o plano previa 0006 e-mail e 0007 auditoria; ficou 0006 Elo congelado, 0007 e-mail canônico e 0008 auditoria.
+
+Outras pendências: desempenho 2D/3D da Fase 3, QA independente das Fases 3 e 4, P2/P3 da Fase 2, PR da `claude/mvp-f0-checklist`.
+
 ## 2026-11-13 · branch `claude/mvp-f3-animacoes` · Fase 3 pronta para revisão
 
 Fases 0, 1 e 2 estão em produção. A Fase 3 (animações e sensação de jogo) está com o gate local verde e um PR aberto esperando o "pode" (o merge dispara o deploy). Detalhes e números: `docs/qa-frontend/animacoes-2026-11.md`.
