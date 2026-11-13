@@ -58,3 +58,17 @@ Já atendido pelo código; agora com teste da síntese de verdade (`test/som-sin
 | 3D, depois de limitar a 1,5 pixel por ponto e sombra PCF simples em tela pequena (`cena.ts`) | 12,3 | 200 ms | 7 de 96 | 119 ms | média ≥ 30 FPS | **não atingida** (+54% de FPS, p95 de 183 para 117 ms) |
 
 Limitações: no headless o WebGL roda em software (SwiftShader), então o 3D aqui é pessimista e não representa um celular com GPU; a medição em aparelho real fica com o André (Fase 7, roteiro). O 2D precisa de um perfil de CPU com atribuição das tarefas longas para achar a causa (provável: renderização da tela inteira a cada mudança de estado durante dar as cartas); fica como pendência.
+
+## Gate da fase (local)
+
+| Etapa | Resultado |
+|---|---|
+| `pnpm -r typecheck` | ok |
+| `pnpm -r test` | server 408, web 442, engine 274: tudo passou |
+| `pnpm --filter @truco/web build` | ok |
+| `TRUCO_DEPLOY_FORCAR=1 pnpm test:e2e` | 93 passaram, 17 pulados (auditorias sob demanda), 0 falhas inesperadas, saída 0 (19 min). A falha esperada é a P3 da dica em 320×568 (`test.fail`). |
+
+O E2E pegou uma regressão desta fase antes do PR: a região de anúncio, inserida entre a mão e o rodapé, quebrava o seletor `.minha-mao + .rodape-mesa`, e o desktop voltava a rolar. A região foi movida para depois do rodapé (`85e0ec8`).
+
+QA independente desta fase: **não feito** (mesmo modelo implementou e verificou).
+
