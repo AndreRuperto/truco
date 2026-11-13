@@ -428,6 +428,11 @@ function textoAuditoria(l: LinhaAuditoria): string {
       const faltou = Number(d.faltou) ? `, faltaram ${Number(d.faltou)}` : '';
       return `estornou o pedido ${String(d.pedido)} de #${l.alvoId}: -${Number(d.debitado)} Pila${faltou}`;
     }
+    case 'denuncia': {
+      const alvo = l.alvoId ? `#${l.alvoId} (${String(d.nome ?? '')})` : `o convidado ${String(d.nome ?? '')}`;
+      const partida = d.partidaId ? ` na partida #${Number(d.partidaId)}` : '';
+      return `denunciou ${alvo}${partida}: ${String(d.motivo ?? '')}`;
+    }
     default:
       return l.alvoId ? `${l.acao} #${l.alvoId}` : l.acao;
   }

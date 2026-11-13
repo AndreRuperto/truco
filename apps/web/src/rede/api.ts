@@ -67,6 +67,8 @@ export function criarApi(f: typeof fetch = (...a) => fetch(...a), base = '', aoN
     confirmarLink: (token: string) => pedir<{ usuario: UsuarioApi }>('POST', '/api/auth/link/confirmar', { token }),
     entrarGoogle: (credencial: string) => pedir<{ usuario: UsuarioApi }>('POST', '/api/auth/google', { credencial }),
     sair: () => pedir<void>('POST', '/api/auth/sair', {}),
+    /** Exclui a conta (F6.4): o servidor confere o apelido digitado. */
+    excluirConta: (apelido: string) => pedir<void>('DELETE', '/api/eu', { apelido }, true),
     perfil: (id?: number) => (id ? pedir<PerfilApi>('GET', `/api/perfil/${id}`) : pedir<PerfilApi>('GET', '/api/perfil', undefined, true)),
     historico: () => pedir<{ partidas: ItemHistorico[] }>('GET', '/api/historico', undefined, true),
     ranking: (v: Variante) => pedir<{ linhas: LinhaRanking[] }>('GET', `/api/ranking/${v}`),

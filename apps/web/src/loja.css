@@ -204,6 +204,8 @@
   background: var(--papel);
   color: var(--tinta);
   text-align: center;
+  /* Cartão de papel nos dois temas: foco cor de tinta (o giz amarelo dava 1,8:1 no papel, F6.1). */
+  --foco: var(--tinta);
 }
 .loja-cartao[data-estado='equipado'] {
   border-color: var(--nos);
@@ -332,6 +334,12 @@
 .loja-extrato .credito {
   color: var(--nos);
   font-weight: 700;
+}
+@media (prefers-color-scheme: light) {
+  /* No azulejo claro o verde puro dava 2,9:1; um verde mais fundo passa de 4,5:1 (F6.1). */
+  .loja-extrato .credito {
+    color: color-mix(in srgb, var(--nos) 60%, var(--tinta));
+  }
 }
 .loja-extrato .debito {
   color: var(--eles);

@@ -46,6 +46,10 @@
   --link: var(--giz);
   --foco: var(--grito);
   --erro-texto: #ffb4a8;
+  /* Borda de campo de formulário (WCAG 1.4.11, ≥ 3:1; F6.1): na lousa, 3,9:1 com a lousa e 4,6:1
+     com o campo; no papel, 4,0:1 com o papel e 4,2:1 com o campo branco. */
+  --campo-borda-lousa: color-mix(in srgb, var(--giz-suave) 65%, var(--lousa));
+  --campo-borda-papel: color-mix(in srgb, var(--tinta-suave) 70%, var(--papel));
 
   --fonte-ui: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --fonte-giz: 'Caveat Brush', 'Bricolage Grotesque', cursive;
@@ -270,6 +274,7 @@ button:disabled {
 .formulario {
   --form-fundo: var(--lousa);
   --form-borda: #3e4d45;
+  --form-campo-borda: var(--campo-borda-lousa);
   --form-campo: var(--lousa-noite);
   --form-tinta: var(--giz);
   --form-tinta-suave: var(--giz-suave);
@@ -289,6 +294,7 @@ button:disabled {
   .formulario {
     --form-fundo: var(--papel);
     --form-borda: var(--papel-borda);
+    --form-campo-borda: var(--campo-borda-papel);
     --form-campo: var(--branco);
     --form-tinta: var(--tinta);
     --form-tinta-suave: var(--tinta-suave);
@@ -326,7 +332,7 @@ button:disabled {
 .chat-form input {
   min-height: 44px;
   padding: 0 var(--e3);
-  border: 2px solid var(--form-borda, var(--papel-borda));
+  border: 2px solid var(--form-campo-borda, var(--campo-borda-papel));
   border-radius: var(--raio-carta);
   background: var(--form-campo, var(--branco));
   color: var(--form-tinta, var(--tinta));
@@ -954,6 +960,7 @@ button:disabled {
   margin: 0;
   --form-campo: var(--lousa-noite);
   --form-borda: #3e4d45;
+  --form-campo-borda: var(--campo-borda-lousa);
   --form-tinta: var(--giz);
 }
 .sala-espera .chat input::placeholder,
@@ -1058,7 +1065,7 @@ button:disabled {
   min-height: 100dvh;
   max-width: 900px;
   margin: 0 auto;
-  padding: var(--e2) var(--e2) calc(var(--e2) + env(safe-area-inset-bottom));
+  padding: calc(var(--e2) + env(safe-area-inset-top)) var(--e2) calc(var(--e2) + env(safe-area-inset-bottom));
 }
 
 /* Placar de giz */
@@ -1817,6 +1824,11 @@ body:has(.tela-mesa) {
   gap: 6px;
   --foco: var(--grito);
 }
+/* F6.1: o anel por fora caía sobre o azulejo bege (1,3:1) e a barra (que rola na horizontal no
+   celular) cortava o anel em cima e embaixo. Por dentro, ele fica sobre o verde escuro do ícone. */
+.barra-mesa .icone-mesa:focus-visible {
+  outline-offset: -6px;
+}
 .icone-mesa {
   display: grid;
   place-items: center;
@@ -1840,7 +1852,8 @@ body:has(.tela-mesa) {
   position: relative;
 }
 .tela-mesa > .painel,
-.tela-mesa > .chat {
+.tela-mesa > .chat,
+.tela-mesa > .painel-denunciar {
   position: absolute;
   z-index: 50;
   top: 60px;
@@ -3100,7 +3113,9 @@ body:has(.tela-mesa) {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--e1);
-  padding: var(--e1) var(--e2);
+  /* App instalado (viewport-fit=cover): o entalhe em cima e nas laterais (paisagem). F6.3. */
+  padding: calc(var(--e1) + env(safe-area-inset-top)) calc(var(--e2) + env(safe-area-inset-right)) var(--e1)
+    calc(var(--e2) + env(safe-area-inset-left));
   border-bottom: 4px solid var(--lousa-borda);
   background: var(--lousa);
   color: var(--giz);
@@ -3382,6 +3397,24 @@ body:has(.tela-mesa) {
   background: var(--lousa);
   color: var(--giz);
   --foco: var(--grito);
+}
+/* Denunciar (F6.5): painel de lousa igual ao do chat. */
+.painel-denunciar {
+  margin: var(--e3) 0;
+  padding: var(--e3);
+  border: 4px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  --foco: var(--grito);
+}
+.painel-denunciar .linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+.painel-denunciar [role='status']:empty {
+  display: none;
 }
 .chat-mensagens {
   max-height: 30vh;
@@ -4254,6 +4287,38 @@ body:has(.tela-mesa) {
   }
 }
 
+/* Excluir conta (F6.4): bloco de lousa no fim do perfil; o botão vermelho é o mesmo do admin (4,7:1 com branco). */
+.excluir-conta-abrir {
+  margin: var(--e5) 0 0;
+  text-align: center;
+}
+.excluir-conta {
+  margin: var(--e5) 0 0;
+  padding: var(--e4);
+  border: 3px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  --foco: var(--grito);
+}
+.excluir-conta h2 {
+  margin-top: 0;
+}
+.excluir-conta .linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e3);
+}
+.botao-perigo {
+  border-color: #c9473e;
+  background: #c9473e;
+  color: var(--branco);
+}
+.botao-perigo:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* Próprio perfil: bloco de edição em lousa. */
 .editar-perfil {
   margin: 0 0 var(--e5);
@@ -4273,6 +4338,7 @@ body:has(.tela-mesa) {
   /* Dentro da lousa o formulário é sempre o escuro, nos dois temas. */
   --form-fundo: transparent;
   --form-borda: #3e4d45;
+  --form-campo-borda: var(--campo-borda-lousa);
   --form-campo: var(--lousa-noite);
   --form-tinta: var(--giz);
   --form-tinta-suave: var(--giz-suave);
@@ -4689,7 +4755,7 @@ body:has(.tela-mesa) {
   min-width: 0;
   min-height: 44px;
   padding: 0 var(--e3);
-  border: 1px solid #3e4d45;
+  border: 1px solid var(--campo-borda-lousa);
   border-radius: var(--raio-botao);
   background: var(--lousa-noite);
   color: var(--giz);
@@ -5178,4 +5244,32 @@ body:has(.tela-mesa) {
   .sala-truques-botoes button {
     transition: none;
   }
+}
+
+/* Páginas legais (F6.4): texto corrido, largura de leitura; aviso de rascunho enquanto não aprovado (D8). */
+.tela-legal {
+  max-width: 72ch;
+}
+.tela-legal h2 {
+  margin-top: var(--e5);
+}
+.tela-legal li + li {
+  margin-top: var(--e2);
+}
+.aviso-rascunho {
+  padding: var(--e3) var(--e4);
+  border: 2px dashed currentColor;
+  border-radius: var(--raio-painel);
+}
+.rodape-legal {
+  /* Fica por cima das cartas decorativas do fundo do início, num fundo da cor da página. */
+  position: relative;
+  z-index: 1;
+  width: fit-content;
+  margin: var(--e4) auto 0;
+  padding: var(--e1) var(--e3);
+  border-radius: 100px;
+  background: var(--fundo);
+  text-align: center;
+  font-size: 0.9rem;
 }

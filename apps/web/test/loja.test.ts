@@ -77,9 +77,23 @@ describe('loja', () => {
     const { loja, sala, tokens } = montar();
     loja.conectar(sala);
     expect(sala.enviados).toEqual([['sincronizar', undefined]]);
-    expect(sala.ouvintesNoEnvio[0]).toEqual({ estado: 1, avatares: 1, acao: 1, sinal: 1, fala: 1, erro: 1, chat: 1, batida: 1 });
+    expect(sala.ouvintesNoEnvio[0]).toEqual({ estado: 1, avatares: 1, acao: 1, sinal: 1, fala: 1, erro: 1, chat: 1, batida: 1, denuncia: 1 });
     expect(loja.getSnapshot().status).toBe('na-mesa');
     expect(tokens).toEqual(['r1:t1']);
+  });
+
+  test('denunciar (F6.5): manda cadeira e motivo; a resposta do servidor fica no snapshot com id novo', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    loja.denunciar(2, 'xingou');
+    expect(sala.enviados.at(-1)).toEqual(['denunciar', { cadeira: 2, motivo: 'xingou' }]);
+    expect(loja.getSnapshot().denuncia ?? null).toBeNull();
+    sala.receber('denuncia', { resultado: 'ok' });
+    const d1 = loja.getSnapshot().denuncia!;
+    expect(d1.resultado).toBe('ok');
+    sala.receber('denuncia', { resultado: 'repetida' });
+    expect(loja.getSnapshot().denuncia!.resultado).toBe('repetida');
+    expect(loja.getSnapshot().denuncia!.id).toBeGreaterThan(d1.id);
   });
 
   test('estado novo troca o snapshot e avisa quem assina', () => {

@@ -293,18 +293,30 @@ function Previa({ item, usuario }: { item: ItemLoja; usuario: UsuarioApi | null 
 }
 
 /** Rascunho dos termos da loja: precisa de revisão do advogado antes de ligar a cobrança. */
+/** Regras das moedas e da compra: aparecem na loja e nos Termos de uso (F6.4). */
+export function ItensTermosLoja() {
+  return (
+    <>
+      <li>Pila é uma moeda do jogo, sem valor fora dele: não pode ser sacado, trocado por dinheiro nem passado a outro jogador.</li>
+      <li>Pila não vira Fichas, e Fichas não viram Pila. Pila não entra em mesa nem em aposta.</li>
+      <li>Os itens são só de visual e não dão vantagem na partida.</li>
+      <li>O pagamento é feito na página da InfinitePay (Pix ou cartão). O Pila entra na conta assim que o pagamento é confirmado.</li>
+      <li>Arrependimento: em até 7 dias da compra, o Pila que ainda não foi usado pode ser devolvido com reembolso (Código de Defesa do Consumidor, art. 49). Fale com a gente pelo e-mail do site.</li>
+      <li>Conta suspensa por violar as regras perde o acesso aos saldos.</li>
+    </>
+  );
+}
+
 export function TermosLoja() {
   return (
     <details className="loja-termos">
       <summary>Como funciona a compra (termos da loja)</summary>
       <ul>
-        <li>Pila é uma moeda do jogo, sem valor fora dele: não pode ser sacado, trocado por dinheiro nem passado a outro jogador.</li>
-        <li>Pila não vira Fichas, e Fichas não viram Pila. Pila não entra em mesa nem em aposta.</li>
-        <li>Os itens são só de visual e não dão vantagem na partida.</li>
-        <li>O pagamento é feito na página da InfinitePay (Pix ou cartão). O Pila entra na conta assim que o pagamento é confirmado.</li>
-        <li>Arrependimento: em até 7 dias da compra, o Pila que ainda não foi usado pode ser devolvido com reembolso (Código de Defesa do Consumidor, art. 49). Fale com a gente pelo e-mail do site.</li>
-        <li>Conta suspensa por violar as regras perde o acesso aos saldos.</li>
+        <ItensTermosLoja />
       </ul>
+      <p>
+        <a href="#/termos">Termos de uso</a> · <a href="#/privacidade">Privacidade</a>
+      </p>
     </details>
   );
 }

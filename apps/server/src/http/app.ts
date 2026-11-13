@@ -19,6 +19,7 @@ import {
   entrarComEmail,
   entrarComGoogle,
   ErroEmailCanonico,
+  excluirConta,
   ErroGoogleOutraConta,
   gravarPreferencias,
   lerPreferencias,
@@ -215,6 +216,18 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (r === 'invalido') return void res.status(400).json({ erro: 'o apelido precisa ter de 3 a 20 caracteres' });
     if (r === 'em-uso') return void res.status(409).json({ erro: 'esse apelido já tem dono' });
     res.json({ usuario: paraApi(await usuarioPorId(s.banco, u.id)) });
+  });
+
+  // Excluir a conta (F6.4): só logado, e digitando o apelido para confirmar.
+  api.delete('/eu', async (req, res) => {
+    const u = await usuarioDe(req);
+    if (!u) return void res.status(401).json({ erro: 'entre na sua conta' });
+    const digitado = typeof req.body?.apelido === 'string' ? req.body.apelido.trim().toLowerCase() : '';
+    if (digitado !== u.apelido.toLowerCase()) return void res.status(400).json({ erro: 'digite o seu apelido para confirmar' });
+    await excluirConta(s.banco, u.id, s.agora());
+    log.info('conta_removida', { usuarioId: u.id });
+    res.setHeader('Set-Cookie', cookieApagado(s.producao));
+    res.status(204).end();
   });
 
   api.get('/preferencias', async (req, res) => {
@@ -439,7 +452,8 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
 
   if (x.pastaWeb) {
     const pasta = x.pastaWeb;
-    // Os arquivos do Vite em /assets têm hash no nome: podem ficar em cache. O index.html não.
+    // Os arquivos do Vite em /assets têm hash no nome: um ano e immutable (F6.2). O index.html, o
+    // service worker e o manifesto não (no-cache). O resto (ícones, vozes) muda sem trocar de nome: 7 dias.
     app.use(
       express.static(pasta, {
         index: false,
@@ -447,6 +461,8 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
         setHeaders: (res, caminho) => {
           if (caminho.endsWith('index.html') || caminho.endsWith('sw.js') || caminho.endsWith('manifest.webmanifest')) {
             res.setHeader('Cache-Control', 'no-cache');
+          } else if (/[\\/]assets[\\/]/.test(caminho.slice(pasta.length))) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
           }
         },
       }),

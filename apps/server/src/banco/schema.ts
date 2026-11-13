@@ -28,6 +28,8 @@ export const usuarios = pgTable(
     equipados: jsonb('equipados').$type<Partial<Record<Exclude<Slot, 'avatar'>, string>>>(),
     /** Conta suspensa por um admin: sessões não valem e o login é recusado. null = normal. */
     banidoEm: quando('banido_em'),
+    /** A pessoa excluiu a conta (F6.4): dados pessoais apagados, partidas e extrato mantidos. */
+    removidoEm: quando('removido_em'),
     criadoEm: quando('criado_em').notNull().defaultNow(),
   },
   // "Ana" e "ana" são o mesmo apelido.

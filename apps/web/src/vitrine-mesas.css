@@ -63,7 +63,8 @@
   border: 1px solid color-mix(in srgb, var(--grito) 16%, var(--lousa-borda));
   border-radius: 100px;
   background: color-mix(in srgb, var(--lousa) 70%, transparent);
-  color: var(--texto);
+  /* Pílula de lousa nos dois temas: giz (a tinta do tema claro dava 2,9:1, F6.1). */
+  color: var(--giz);
   font-size: .86rem;
   font-weight: 700;
   cursor: pointer;

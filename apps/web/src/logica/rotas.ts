@@ -10,6 +10,8 @@ export type Rota =
   | { tela: 'privada'; codigo: string }
   | { tela: 'fila' }
   | { tela: 'manual' }
+  | { tela: 'privacidade' }
+  | { tela: 'termos' }
   | { tela: 'admin'; aba: AbaAdmin }
   | { tela: 'loja'; aba: AbaLoja }
   | { tela: 'lojaObrigado'; pedido: string | null };
@@ -45,6 +47,10 @@ export function lerRota(hash: string): Rota {
       return { tela: 'fila' };
     case 'como-jogar':
       return { tela: 'manual' };
+    case 'privacidade':
+      return { tela: 'privacidade' };
+    case 'termos':
+      return { tela: 'termos' };
     case 'admin':
       return { tela: 'admin', aba: (ABAS_ADMIN as readonly string[]).includes(partes[1]) ? (partes[1] as AbaAdmin) : 'resumo' };
     case 'loja': {
@@ -79,6 +85,10 @@ export function hrefDe(r: Rota): string {
       return '#/fila';
     case 'manual':
       return '#/como-jogar';
+    case 'privacidade':
+      return '#/privacidade';
+    case 'termos':
+      return '#/termos';
     case 'admin':
       return r.aba === 'resumo' ? '#/admin' : `#/admin/${r.aba}`;
     case 'loja':

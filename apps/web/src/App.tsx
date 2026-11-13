@@ -22,6 +22,8 @@ import { SalaEspera } from './telas/SalaEspera';
 import { TelaSalas } from './telas/Salas';
 import { TelaAdmin } from './telas/Admin';
 import { TelaComoJogar } from './telas/ComoJogar';
+import { TelaPrivacidade } from './telas/Privacidade';
+import { TelaTermos } from './telas/Termos';
 import { avisoDeAtualizacao } from './rede/recarga';
 
 /** Tela que exige login: espera a sessão; convidado (ou sessão expirada) recebe o link para entrar. */
@@ -224,6 +226,10 @@ export function App() {
               usuario={ses.usuario}
               googleClientId={ses.config.google}
               aoTrocarApelido={(u) => sessao.definirUsuario(u)}
+              aoExcluir={() => {
+                sessao.definirUsuario(null);
+                navegar({ tela: 'inicio' });
+              }}
             />
           );
         break;
@@ -273,6 +279,12 @@ export function App() {
         break;
       case 'manual':
         conteudo = <TelaComoJogar />;
+        break;
+      case 'privacidade':
+        conteudo = <TelaPrivacidade />;
+        break;
+      case 'termos':
+        conteudo = <TelaTermos />;
         break;
       case 'loja':
         conteudo = (

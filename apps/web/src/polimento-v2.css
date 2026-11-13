@@ -14,9 +14,11 @@
   --pol-suave: 260ms;
 }
 
-/* Fundamentos: áreas de toque e foco consistentes. */
+/* Fundamentos: áreas de toque e foco consistentes. O anel segue o --foco de cada contexto
+   (tinta no papel do tema claro, giz amarelo na lousa e na madeira): o amarelo fixo dava
+   1,7:1 no papel claro (F6.1, e2e/teclado.spec.ts). */
 :where(.tela-mesa, .tela-conta, .lobby, .sala-espera) :where(button, a):focus-visible {
-  outline: 3px solid var(--pol-foco);
+  outline: 3px solid var(--foco);
   outline-offset: 3px;
 }
 :where(.tela-mesa, .tela-conta, .lobby, .sala-espera) button:disabled {
@@ -271,10 +273,10 @@
   outline-offset: 2px;
   box-shadow: 0 16px 30px color-mix(in srgb, var(--sombra) 50%, transparent);
 }
-/* A mão fica sobre o piso claro: anel externo cor de tinta (contraste com o piso, como o
-   foco "no claro" do resto do site) e a faixa amarela de giz por dentro, junto da carta. */
+/* Anel externo com o --foco da página (tinta no piso claro, giz no tema escuro: a tinta fixa
+   dava 1,1:1 no escuro, F6.1) e a faixa amarela de giz por dentro, junto da carta. */
 .tela-mesa .carta-botao:focus-visible {
-  outline: 3px solid var(--tinta);
+  outline: 3px solid var(--foco);
   box-shadow: 0 0 0 3px var(--grito);
 }
 .tela-mesa .carta-botao:disabled .carta { filter: saturate(.94); }

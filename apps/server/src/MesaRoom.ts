@@ -278,6 +278,17 @@ export class MesaRoom extends Room {
     this.onMessage('revanche', (client) => this.mesa.revanche(client.sessionId));
     this.onMessage('batida', (client, payload) => this.mesa.batida(client.sessionId, (payload as { forca?: unknown } | null)?.forca));
     this.onMessage('chat', (client, payload) => this.mesa.chat(client.sessionId, payload));
+    // Denúncia (F6.5): só a resposta volta, e só para quem denunciou.
+    this.onMessage('denunciar', (client, payload) => {
+      const de = this.mesa.cadeiraDe(client.sessionId);
+      const p = (payload ?? {}) as { cadeira?: unknown; motivo?: unknown };
+      const alvo = p.cadeira;
+      const resultado =
+        de === null || typeof alvo !== 'number' || ![0, 1, 2, 3].includes(alvo)
+          ? 'invalida'
+          : this.registro.denunciar(de, alvo as Cadeira, p.motivo);
+      client.send('denuncia', { resultado });
+    });
     // Ranqueada começa sozinha quando todos os reservados sentam; ninguém completa com bots.
     this.onMessage('iniciar', (client) => {
       if (!this.reservados) this.mesa.iniciar(client.sessionId);

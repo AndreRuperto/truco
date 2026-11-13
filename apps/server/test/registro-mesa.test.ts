@@ -2,7 +2,7 @@ import { botFacil, type Cadeira, type Dupla, ehFamilia, type EstadoPartida, jane
 import { asc } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Banco } from '../src/banco/banco';
-import { participacoes, partidas } from '../src/banco/schema';
+import { auditoria, participacoes, partidas } from '../src/banco/schema';
 import { Mesa, type Relogio } from '../src/mesa/Mesa';
 import { RegistroMesa } from '../src/registroMesa';
 import { TEMPOS } from './mesa-helpers';
@@ -324,4 +324,33 @@ describe('RegistroMesa', () => {
     expect((await ratingDe(b.db, ga.id, 'mineiro')).elo).toBe(1016);
     expect((await ratingDe(b.db, pe.id, 'mineiro')).elo).toBe(984);
   });
+
+  test('denúncia (F6.5): grava na auditoria quem denunciou, o alvo, o motivo e a partida; uma por alvo', async () => {
+    const s = servicosDeTeste(b.db, { agora: () => T0 });
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia' });
+    const r = new RegistroMesa(s, { variante: 'paulista', modo: 'privada', formato: null });
+    r.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+    r.sentou({ cadeira: 1, usuarioId: bia.id, nome: 'bia' });
+    r.sentou({ cadeira: 2, usuarioId: null, nome: 'Zé' });
+    r.iniciou();
+    await r.ocioso();
+    const [p] = await b.db.select().from(partidas);
+
+    expect(r.denunciar(0, 1, '  xingou   no chat ')).toBe('ok');
+    expect(r.denunciar(0, 1, 'de novo')).toBe('repetida');
+    expect(r.denunciar(0, 0, 'eu mesma')).toBe('invalida');
+    expect(r.denunciar(0, 3, 'bot')).toBe('invalida');
+    expect(r.denunciar(2, 0, 'convidado')).toBe('sem-conta');
+    expect(r.denunciar(1, 2, 'x'.repeat(300))).toBe('ok');
+    await r.ocioso();
+
+    const linhas = await b.db.select().from(auditoria).orderBy(asc(auditoria.id));
+    expect(linhas).toHaveLength(2);
+    expect(linhas[0]).toMatchObject({ adminId: ana.id, acao: 'denuncia', alvoId: bia.id, detalhe: { partidaId: p.id, cadeira: 1, nome: 'bia', motivo: 'xingou no chat' } });
+    // Convidado não tem conta: fica o nome e a cadeira; motivo cortado em 140.
+    expect(linhas[1]).toMatchObject({ adminId: bia.id, alvoId: null, detalhe: { partidaId: p.id, cadeira: 2, nome: 'Zé' } });
+    expect((linhas[1].detalhe as { motivo: string }).motivo).toHaveLength(140);
+  });
 });
+

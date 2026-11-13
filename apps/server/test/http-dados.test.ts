@@ -244,7 +244,7 @@ describe('estáticos da SPA', () => {
     expect((await app.pedir('/qualquer/coisa')).texto).toContain('<div id="raiz">');
     expect((await app.pedir('/assets/app.js')).texto).toBe('console.log(1)');
     expect((await app.pedir('/index.html')).headers.get('cache-control')).toBe('no-cache');
-    expect((await app.pedir('/assets/app.js')).headers.get('cache-control')).toMatch(/max-age=604800/);
+    expect((await app.pedir('/assets/app.js')).headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
     expect((await app.pedir('/assets/sumiu.js')).status).toBe(404);
     expect((await app.pedir('/favicon.ico')).status).toBe(404);
     expect((await app.pedir('/perfil/7')).texto).toContain('<div id="raiz">');

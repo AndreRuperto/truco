@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
@@ -25,6 +25,11 @@ beforeAll(async () => {
     join(pastaWeb, 'index.html'),
     `<!doctype html><head><script>${SCRIPT_INLINE}</script><script type="module" src="/assets/a.js"></script></head><div id="raiz"></div>`,
   );
+  mkdirSync(join(pastaWeb, 'assets'));
+  writeFileSync(join(pastaWeb, 'assets', 'index-abc123.js'), 'console.log(1)');
+  writeFileSync(join(pastaWeb, 'sw.js'), '// sw');
+  writeFileSync(join(pastaWeb, 'manifest.webmanifest'), '{}');
+  writeFileSync(join(pastaWeb, 'icone-192.png'), 'png');
 }, 30_000);
 afterAll(() => b.fechar());
 
@@ -85,6 +90,23 @@ describe('cabeçalhos de segurança', () => {
       expect(csp['connect-src']).toContain('wss://truco.exemplo.com');
       expect(csp['connect-src']).not.toContain('wss:');
       expect(csp['connect-src']).not.toContain('ws:');
+    } finally {
+      await app.fechar();
+    }
+  });
+});
+
+describe('cache dos arquivos (F6.2)', () => {
+  test('/assets tem hash no nome: um ano e immutable; index.html, sw.js e manifesto: no-cache', async () => {
+    const app = await subirApp(servicosDeTeste(b.db), { pastaWeb });
+    try {
+      const cc = async (caminho: string) => (await fetch(app.base + caminho)).headers.get('cache-control');
+      expect(await cc('/assets/index-abc123.js')).toBe('public, max-age=31536000, immutable');
+      expect(await cc('/')).toBe('no-cache');
+      expect(await cc('/sw.js')).toBe('no-cache');
+      expect(await cc('/manifest.webmanifest')).toBe('no-cache');
+      // Fora de /assets o nome não muda a cada build: cache curto, sem immutable.
+      expect(await cc('/icone-192.png')).not.toMatch(/immutable/);
     } finally {
       await app.fechar();
     }

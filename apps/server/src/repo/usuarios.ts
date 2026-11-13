@@ -3,7 +3,7 @@ import { randomInt } from 'node:crypto';
 import type { PerfilGoogle } from '../auth/google';
 import { gerarToken, hashToken } from '../auth/tokens';
 import type { Banco } from '../banco/banco';
-import { linksMagicos, sessoes, usuarios } from '../banco/schema';
+import { bloqueiosFila, linksMagicos, participacoes, ratings, sessoes, usuarios } from '../banco/schema';
 import { AVATARES_PRONTOS, type PreferenciasMesa } from '../api/tipos';
 import { limparNome, opcoesDaSala } from '../mesa/protocolo';
 
@@ -86,9 +86,13 @@ export function normalizarEmail(cru: unknown): string | null {
 }
 
 /** Apelido escolhido pelo usuário: as regras de `limparNome` e 3 a 20 caracteres. */
+/** Apelido que as contas excluídas recebem (`Jogador removido <id>`); ninguém pode escolher um assim. */
+export const NOME_REMOVIDO = 'Jogador removido';
+
 export function apelidoValido(cru: unknown): string | null {
   if (typeof cru !== 'string' || !cru.trim()) return null;
   const n = limparNome(cru);
+  if (n.toLowerCase().startsWith(NOME_REMOVIDO.toLowerCase())) return null;
   return n.length >= 3 ? n : null;
 }
 
@@ -370,3 +374,34 @@ export async function limparExpirados(db: Banco, agora: Date): Promise<{ sessoes
     .returning({ t: linksMagicos.tokenHash });
   return { sessoes: s.length, links: l.length };
 }
+
+/**
+ * Exclusão de conta pedida pela própria pessoa (F6.4, LGPD). Anonimiza em vez de apagar: o extrato
+ * (carteira, lançamentos, pedidos) e as partidas dos outros continuam de pé, mas sem e-mail, Google,
+ * foto, preferências nem o apelido antigo. Sessões, links mágicos, ranking e bloqueios de fila somem.
+ */
+export async function excluirConta(db: Banco, id: number, agora: Date): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [u] = await tx.select({ email: usuarios.email }).from(usuarios).where(eq(usuarios.id, id));
+    if (!u) return;
+    await tx.delete(sessoes).where(eq(sessoes.usuarioId, id));
+    if (u.email) await tx.delete(linksMagicos).where(eq(linksMagicos.email, u.email));
+    await tx.delete(ratings).where(eq(ratings.usuarioId, id));
+    await tx.delete(bloqueiosFila).where(eq(bloqueiosFila.usuarioId, id));
+    await tx.update(participacoes).set({ nome: NOME_REMOVIDO }).where(eq(participacoes.usuarioId, id));
+    await tx
+      .update(usuarios)
+      .set({
+        apelido: `${NOME_REMOVIDO} ${id}`,
+        email: null,
+        emailCanonico: null,
+        googleSub: null,
+        avatar: null,
+        preferencias: null,
+        equipados: null,
+        removidoEm: agora,
+      })
+      .where(eq(usuarios.id, id));
+  });
+}
+

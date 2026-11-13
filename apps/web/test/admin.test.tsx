@@ -145,5 +145,18 @@ describe('admin da loja e auditoria (F4.7)', () => {
     expect(itens[0]).toHaveTextContent('compensação');
     expect(itens[1]).toHaveTextContent('baniu #3');
   });
+
+  test('auditoria: denúncia mostra quem, o alvo, a partida e o motivo (F6.5)', async () => {
+    const auditoria = vi.fn(async () => ({
+      auditoria: [
+        { id: 4, adminId: 5, admin: 'ana', acao: 'denuncia', alvoId: 6, detalhe: { partidaId: 12, cadeira: 1, nome: 'bia', motivo: 'xingou' }, criadoEm: '2026-11-10T12:00:00Z' },
+        { id: 3, adminId: 5, admin: 'ana', acao: 'denuncia', alvoId: null, detalhe: { partidaId: null, cadeira: 2, nome: 'Zé', motivo: 'spam' }, criadoEm: '2026-11-10T11:00:00Z' },
+      ],
+    }));
+    render(<TelaAdmin aba="auditoria" api={apiFalsa({ auditoria })} />);
+    const itens = await screen.findAllByRole('listitem');
+    expect(itens[0]).toHaveTextContent('denunciou #6 (bia) na partida #12: xingou');
+    expect(itens[1]).toHaveTextContent('denunciou o convidado Zé: spam');
+  });
 });
 

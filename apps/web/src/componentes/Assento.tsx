@@ -48,8 +48,10 @@ export function Assento({ posicao, info, qtdCartas, daVez, balao, maoVisivel, va
           ))}
         </div>
       ) : null}
+      {/* Sem região viva (F6.1): o pedido de truco já é anunciado na região única da mesa
+          (anuncio-mesa); o balão falando junto fazia o leitor de tela repetir. */}
       {balao && (
-        <div className={cx('balao', GRITOS.has(balao) && 'grito')} role="status">
+        <div className={cx('balao', GRITOS.has(balao) && 'grito')}>
           {balao}
         </div>
       )}
