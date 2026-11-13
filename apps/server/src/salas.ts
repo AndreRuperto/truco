@@ -20,6 +20,12 @@ export async function listarSalasAbertas(): Promise<SalaAberta[]> {
 }
 
 /** Para o painel de admin: todas as mesas vivas (privadas, ranqueadas e já começadas também). */
+/** Salas de mesa vivas e quantos clientes estão conectados nelas (para /saude e o admin). */
+export async function contarSalas(): Promise<{ salas: number; jogadores: number }> {
+  const salas = await matchMaker.query({ name: 'mesa' });
+  return { salas: salas.length, jogadores: salas.reduce((n, s) => n + (s.clients ?? 0), 0) };
+}
+
 export async function listarMesasAdmin(): Promise<MesaAdmin[]> {
   const salas = await matchMaker.query({ name: 'mesa' });
   return salas.map((s) => ({

@@ -48,6 +48,10 @@ export interface ExtrasApp {
   limiteLinkEmail?: LimiteTaxa;
   /** Por IP, em confirmar link e login com Google (padrão: 30 a cada 15 min). */
   limiteAuthIp?: LimiteTaxa;
+  /** Commit em produção (RAILWAY_GIT_COMMIT_SHA, 7 letras), para /saude e o resumo do admin. */
+  versao?: string | null;
+  /** Salas vivas e jogadores conectados agora (o servidor conta no Colyseus). */
+  contarSalas?: () => Promise<{ salas: number; jogadores: number }>;
   /** Por IP, em POST /api/erro-cliente (padrão: 10 por minuto). */
   limiteErroClienteIp?: LimiteTaxa;
   /** Por IP, somando perfil público, ranking, salas e catálogo (padrão: 120 por minuto). */
@@ -74,6 +78,20 @@ const escaparAtributo = (t: string) =>
 
 /** Caminho com extensão no último segmento (ex.: /assets/x.js, /favicon.ico). */
 const temExtensao = (caminho: string) => /\.[^/]+$/.test(caminho);
+
+/** O banco respondeu a um `select 1` dentro de `limiteMs`? (e quanto levou). */
+async function bancoResponde(s: Servicos, limiteMs: number): Promise<{ ok: boolean; ms: number }> {
+  const inicio = Date.now();
+  try {
+    await Promise.race([
+      s.banco.execute(sql`select 1`),
+      new Promise((_, falha) => setTimeout(() => falha(new Error('tempo esgotado')), limiteMs).unref?.()),
+    ]);
+    return { ok: true, ms: Date.now() - inicio };
+  } catch {
+    return { ok: false, ms: Date.now() - inicio };
+  }
+}
 
 export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}): void {
   const limiteIp = x.limiteLinkIp ?? new LimiteTaxa(5, 15 * 60_000);
@@ -123,9 +141,18 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     }),
   );
 
+  // Saúde (F5.4): versão (commit do Railway), salas vivas, jogadores conectados e se o banco
+  // respondeu a um `select 1` em até 1 s. Nada sensível. Banco fora: 503, para o healthcheck perceber.
   app.get('/saude', async (_req, res) => {
-    await s.banco.execute(sql`select 1`);
-    res.json({ ok: true });
+    const banco = await bancoResponde(s, 1_000);
+    const vivas = x.contarSalas ? await x.contarSalas().catch(() => null) : null;
+    res.status(banco.ok ? 200 : 503).json({
+      ok: banco.ok,
+      versao: x.versao ?? null,
+      salas: vivas?.salas ?? null,
+      jogadores: vivas?.jogadores ?? null,
+      banco,
+    });
   });
 
   const api = express.Router();
@@ -341,7 +368,9 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   admin.get('/resumo', async (_req, res) => {
     const r = await resumoAdmin(s.banco, s.agora());
     const mesasAtivas = x.listarMesas ? (await x.listarMesas()).length : 0;
-    res.json({ ...r, mesasAtivas });
+    const vivas = x.contarSalas ? await x.contarSalas().catch(() => null) : null;
+    const banco = await bancoResponde(s, 1_000);
+    res.json({ ...r, mesasAtivas, jogadoresConectados: vivas?.jogadores ?? null, versao: x.versao ?? null, bancoMs: banco.ok ? banco.ms : null });
   });
 
   admin.get('/usuarios', async (req, res) => {

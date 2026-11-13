@@ -74,6 +74,20 @@ function Resumo({ api }: { api: ApiAdmin }) {
               <dd>{dados.mesasAtivas}</dd>
             </div>
           </dl>
+          <dl className="admin-numeros" role="group" aria-label="Saúde do servidor">
+            <div>
+              <dt>Jogadores conectados</dt>
+              <dd>{dados.jogadoresConectados ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>Versão</dt>
+              <dd>{dados.versao ?? 'local'}</dd>
+            </div>
+            <div>
+              <dt>Banco</dt>
+              <dd>{dados.bancoMs === null || dados.bancoMs === undefined ? 'sem resposta' : `${dados.bancoMs} ms`}</dd>
+            </div>
+          </dl>
           <div className="admin-graficos">
             <Barras titulo="Partidas por dia" dias={dados.porDia} campo="partidas" />
             <Barras titulo="Contas novas por dia" dias={dados.porDia} campo="usuarios" />

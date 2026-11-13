@@ -149,10 +149,24 @@ describe('dados', () => {
     expect((await app.pedir('/api/teste/emails')).status).toBe(404);
   });
 
-  test('/saude', async () => {
+  test('/saude (F5.4): versão, salas, jogadores e banco, sem nada sensível', async () => {
+    await app.fechar();
+    app = await subirApp(s, { versao: 'abc1234', contarSalas: async () => ({ salas: 3, jogadores: 7 }) });
     const r = await app.pedir('/saude');
     expect(r.status).toBe(200);
-    expect(r.json).toEqual({ ok: true });
+    expect(r.json).toMatchObject({ ok: true, versao: 'abc1234', salas: 3, jogadores: 7, banco: { ok: true } });
+    expect(r.json.banco.ms).toBeGreaterThanOrEqual(0);
+    expect(Object.keys(r.json).sort()).toEqual(['banco', 'jogadores', 'ok', 'salas', 'versao']);
+  });
+
+  test('/saude com o banco fora: 503 e ok false (o healthcheck do Railway percebe)', async () => {
+    await app.fechar();
+    const quebrado = { ...s, banco: { ...s.banco, execute: async () => { throw new Error('conexão recusada'); } } } as unknown as typeof s;
+    app = await subirApp(quebrado, { versao: null });
+    const r = await app.pedir('/saude');
+    expect(r.status).toBe(503);
+    expect(r.json).toMatchObject({ ok: false, banco: { ok: false } });
+    expect(JSON.stringify(r.json)).not.toContain('conexão recusada');
   });
 });
 

@@ -143,9 +143,11 @@ Sem `RESEND_API_KEY` o servidor não manda e-mail; escreve a mensagem no log. Pe
 
 ## 8. Conferir o deploy
 
-- **Deployments** → logs: `truco: servidor ouvindo na porta ... (banco: postgres; web: build servido)`.
-  Avisos `truco: aviso: ...` dizem o que falta configurar.
-- `https://seu.dominio/saude` → `{"ok":true}`.
+- **Deployments** → logs: uma linha de JSON por evento. No boot:
+  `{"nivel":"info","evento":"servidor_ouvindo","porta":...,"banco":"postgres","web":"build servido",...}`.
+  Linhas com `"evento":"config_aviso"` dizem o que falta configurar.
+- `https://seu.dominio/saude` → `{"ok":true,"versao":"<commit>","salas":N,"jogadores":N,"banco":{"ok":true,"ms":N}}`.
+  `versao` vem de `RAILWAY_GIT_COMMIT_SHA` (o Railway define sozinho). Banco fora: **503** e `"ok":false`.
 - Do seu computador: `TRUCO_URL_FUMACA=https://seu.dominio pnpm --filter @truco/server fumaca`
   → `fumaça: tudo certo`.
 - Entre com o link mágico, jogue uma partida e veja o histórico.
@@ -162,6 +164,34 @@ Sem `RESEND_API_KEY` o servidor não manda e-mail; escreve a mensagem no log. Pe
   veja se o `DATABASE_URL` resolve (logs de migração); link mágico com domínio errado →
   `TRUCO_URL_PUBLICA`; botão do Google some → `GOOGLE_CLIENT_ID` ausente ou origem não autorizada no
   Google Cloud (o console do navegador mostra o erro do GIS).
+
+## 10. Logs e alertas
+
+**Formato.** O servidor escreve uma linha de JSON por evento: `nivel` (`info`, `aviso`, `erro`), `evento`,
+`ts` e campos. Token, e-mail, cookie, authorization e chaves de API saem sempre como `"[oculto]"`
+(`apps/server/src/log.ts`). Erros do navegador chegam como `"evento":"erro_cliente"` (mensagem, pilha curta,
+rota sem query e versão do build).
+
+**Ver os logs.** Serviço → **Deployments** → deployment ativo → **View Logs**, ou **Observability** →
+**Logs**. Filtros úteis na busca do Railway:
+
+| Para ver | Busca |
+|---|---|
+| Só erros | `"nivel":"erro"` |
+| Erros dos navegadores | `"evento":"erro_cliente"` |
+| O que os admins fizeram | `"evento":"admin_` |
+| Pedidos pagos | `"evento":"loja_pedido_pago"` |
+| Processo caiu | `"evento":"excecao_nao_tratada"` |
+
+Pela [CLI](https://docs.railway.com/guides/cli): `railway logs | grep '"nivel":"erro"'`.
+
+**Alerta de saúde.** Em **Settings** → **Deploy** → **Healthcheck Path**, ponha `/saude`. O Railway só
+troca para o deploy novo se `/saude` responder 200 (o banco precisa responder em até 1 s), e mantém o
+anterior se o novo não subir. Para ser avisado quando o serviço cair, ligue as notificações do projeto
+(**Project Settings** → **Notifications**: e-mail ou webhook para falhas de deploy e de serviço).
+
+**Admin.** A aba Resumo do `#/admin` mostra jogadores conectados, a versão em produção e quanto o banco
+levou para responder.
 
 ## Rodar localmente
 
