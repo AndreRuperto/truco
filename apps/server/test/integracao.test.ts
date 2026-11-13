@@ -5,6 +5,7 @@ import { REGRAS_RANQUEADA } from '@truco/engine';
 import { eq } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { bloqueiosFila, participacoes, partidas } from '../src/banco/schema';
+import { LimiteTaxa } from '../src/auth/limite';
 import { FilaRoom } from '../src/FilaRoom';
 import { MesaRoom } from '../src/MesaRoom';
 import { chaveRegras, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA } from '../src/mesa/protocolo';
@@ -24,6 +25,8 @@ let servicos: Servicos;
 beforeAll(async () => {
   MesaRoom.tempos = { botMs: 20, pausaMaoMs: 50, jogadaMs: 2_000, ritualMs: 300, conferirMs: 200, janelaFamiliaMs: 20, distribuicaoMs: 20 };
   FilaRoom.intervaloMs = 100;
+  // A suíte cria dezenas de mesas de 127.0.0.1; o limite de 20 em 10 min (SEC-09) é testado em mesaroom-auth.test.ts.
+  MesaRoom.limiteCriacao = new LimiteTaxa(10_000, 10 * 60_000);
   banco = await bancoDeTeste();
   servicos = servicosDeTeste(banco.db);
   colyseus = await boot(criarServidor(servicos));

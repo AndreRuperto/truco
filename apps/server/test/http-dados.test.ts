@@ -103,6 +103,29 @@ describe('dados', () => {
   });
 });
 
+describe('limite por IP nas leituras públicas (F4.5, SEC-09)', () => {
+  test('o 121º pedido no mesmo minuto volta 429 com mensagem curta', async () => {
+    for (let i = 0; i < 120; i++) expect((await app.pedir('/api/salas')).status).toBe(200);
+    const r = await app.pedir('/api/salas');
+    expect(r.status).toBe(429);
+    expect(r.json.erro).toMatch(/muitos pedidos/);
+  });
+
+  test('o limite vale para perfil, ranking, salas e catálogo da loja, juntos, por IP', async () => {
+    await app.fechar();
+    const { LimiteTaxa } = await import('../src/auth/limite');
+    app = await subirApp(s, { limiteLeituraIp: new LimiteTaxa(4, 60_000) });
+    const u = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    expect((await app.pedir(`/api/perfil/${u.id}`)).status).toBe(200);
+    expect((await app.pedir('/api/ranking/paulista')).status).toBe(200);
+    expect((await app.pedir('/api/salas')).status).toBe(200);
+    expect((await app.pedir('/api/loja/catalogo')).status).toBe(200);
+    for (const rota of [`/api/perfil/${u.id}`, '/api/ranking/paulista', '/api/salas', '/api/loja/catalogo']) {
+      expect((await app.pedir(rota)).status, rota).toBe(429);
+    }
+  });
+});
+
 describe('estáticos da SPA', () => {
   test('/ e rotas desconhecidas servem o index.html; assets e /api seguem seu caminho', async () => {
     const raiz = await app.pedir('/');

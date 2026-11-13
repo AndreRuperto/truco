@@ -46,6 +46,8 @@ export interface ExtrasApp {
   limiteLinkEmail?: LimiteTaxa;
   /** Por IP, em confirmar link e login com Google (padrão: 30 a cada 15 min). */
   limiteAuthIp?: LimiteTaxa;
+  /** Por IP, somando perfil público, ranking, salas e catálogo (padrão: 120 por minuto). */
+  limiteLeituraIp?: LimiteTaxa;
   /** Banimento: derruba a conta das salas em tempo real (o servidor passa MesaRoom/FilaRoom). */
   derrubarConta?: (usuarioId: number) => void;
   /** Desbanimento: a conta volta a poder reconectar. */
@@ -141,6 +143,14 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     res.json({ usuario: paraApi(novo) });
   });
   api.use(express.json({ limit: '16kb' }));
+
+  // Leituras públicas (perfil de qualquer um, ranking, salas, catálogo): 120 por IP por minuto,
+  // somadas (SEC-09 da auditoria de 2026-11-10). Antes das rotas, para valer em todas.
+  const limiteLeitura = x.limiteLeituraIp ?? new LimiteTaxa(120, 60_000);
+  api.get(['/perfil/:id', '/ranking/:variante', '/salas', '/loja/catalogo'], (req, res, next) => {
+    if (limiteLeitura.permitir(chaveDeIp(req.ip))) return next();
+    res.status(429).json({ erro: 'muitos pedidos; tente de novo em um minuto' });
+  });
 
   api.get('/config', (_req, res) => {
     res.json({ google: s.google?.clientId ?? null, emailTeste: s.caixaTeste !== null });

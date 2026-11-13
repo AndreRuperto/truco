@@ -8,13 +8,15 @@ import { encerrarOrfas } from './repo/partidas';
 import { limparExpirados } from './repo/usuarios';
 import { criarServidor } from './servidor';
 import { servicosDoAmbiente } from './servicos';
-import { temposDoAmbiente } from './tempos';
+import { limiteMesasDoAmbiente, temposDoAmbiente } from './tempos';
+import { LimiteTaxa } from './auth/limite';
 
 const PASTA_WEB = fileURLToPath(new URL('../../web/dist/', import.meta.url));
 // Fora do repositório: o PGlite em disco falha em sistemas de arquivos como exFAT (errno 28).
 const PASTA_PGLITE = join(homedir(), '.truco', 'pglite');
 
 MesaRoom.tempos = temposDoAmbiente(process.env);
+MesaRoom.limiteCriacao = new LimiteTaxa(limiteMesasDoAmbiente(process.env), 10 * 60_000);
 const { servicos, config, fechar } = await servicosDoAmbiente(process.env, { pastaPglite: PASTA_PGLITE });
 for (const a of config.avisos) console.warn(`truco: aviso: ${a}`);
 // Partidas que o processo anterior não fechou (crash/SIGKILL): abandonadas, sem Elo nem bloqueio.
