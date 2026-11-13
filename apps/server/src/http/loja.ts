@@ -1,6 +1,7 @@
 import type { Request, Response, Router } from 'express';
 import type { CarteiraApi, CatalogoApi, PedidoAdmin, PedidoApi } from '../api/tipos';
 import { chaveDeIp, LimiteTaxa } from '../auth/limite';
+import { registrarAuditoria } from '../repo/auditoria';
 import { ITENS, PACOTES, pacotePorId } from '../loja/catalogo';
 import { MOEDAS, type Moeda } from '../loja/regras';
 import { carteiraDe, extrato, movimentar, SaldoInsuficiente } from '../repo/carteira';
@@ -175,7 +176,12 @@ export function rotasAdminLoja(admin: Router, s: Servicos): void {
     if (!motivo) return void res.status(400).json({ erro: 'diga o motivo do ajuste' });
     if (!(await usuarioPorId(s.banco, id))) return void res.status(404).json({ erro: 'usuário não encontrado' });
     try {
-      const saldo = await s.banco.transaction((tx) => movimentar(tx, id, moeda, delta, 'ajuste_admin', motivo));
+      const adminId = (res.locals.admin as Usuario).id;
+      const saldo = await s.banco.transaction(async (tx) => {
+        const novo = await movimentar(tx, id, moeda, delta, 'ajuste_admin', motivo);
+        await registrarAuditoria(tx, { adminId, acao: 'ajuste_saldo', alvoId: id, detalhe: { moeda, delta, motivo } }, s.agora());
+        return novo;
+      });
       console.log(`[admin] ${(res.locals.admin as Usuario).apelido} ajustou ${delta} ${moeda} de #${id}: ${motivo}`);
       res.json({ saldo });
     } catch (e) {

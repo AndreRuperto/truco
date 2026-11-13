@@ -203,3 +203,16 @@ export const pedidos = pgTable(
   },
   (t) => [index('pedidos_usuario_idx').on(t.usuarioId, t.criadoEm)],
 );
+
+/** Trilha do que os admins fizeram (banir, desbanir, ajuste de saldo, estorno). Sem e-mail de terceiros. */
+export const auditoria = pgTable('auditoria', {
+  id: serial('id').primaryKey(),
+  adminId: integer('admin_id')
+    .notNull()
+    .references(() => usuarios.id),
+  acao: text('acao').notNull(),
+  alvoId: integer('alvo_id'),
+  detalhe: jsonb('detalhe').$type<Record<string, unknown>>(),
+  criadoEm: quando('criado_em').notNull().defaultNow(),
+});
+

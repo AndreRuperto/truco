@@ -34,6 +34,7 @@ import { historico, perfil, ranking } from '../repo/partidas';
 import type { Servicos } from '../servicos';
 import { cabecalhosSeguranca, hashesDeScriptsInline } from './cabecalhos';
 import { rotasAdminLoja, rotasLoja } from './loja';
+import { auditoriaRecente, registrarAuditoria } from '../repo/auditoria';
 
 export interface ExtrasApp {
   /** Mesas casuais abertas (o servidor passa `listarSalasAbertas`). */
@@ -347,6 +348,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (!(await banirUsuario(s.banco, id, s.agora()))) return void res.status(409).json({ erro: 'já está banido' });
     // As sessões HTTP já foram apagadas; os WebSockets abertos (mesa, fila) também caem.
     x.derrubarConta?.(id);
+    await registrarAuditoria(s.banco, { adminId: (res.locals.admin as Usuario).id, acao: 'banir', alvoId: id }, s.agora());
     console.log(`[admin] ${(res.locals.admin as Usuario).apelido} baniu #${id} (${alvo.apelido})`);
     res.status(204).end();
   });
@@ -356,6 +358,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (!id) return void res.status(400).json({ erro: 'id inválido' });
     if (!(await usuarioPorId(s.banco, id))) return void res.status(404).json({ erro: 'usuário não encontrado' });
     if (!(await desbanirUsuario(s.banco, id))) return void res.status(409).json({ erro: 'não está banido' });
+    await registrarAuditoria(s.banco, { adminId: (res.locals.admin as Usuario).id, acao: 'desbanir', alvoId: id }, s.agora());
     console.log(`[admin] ${(res.locals.admin as Usuario).apelido} desbaniu #${id}`);
     x.liberarConta?.(id);
     res.status(204).end();
@@ -367,6 +370,10 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
 
   admin.get('/partidas', async (_req, res) => {
     res.json({ partidas: await partidasRecentesAdmin(s.banco) });
+  });
+
+  admin.get('/auditoria', async (_req, res) => {
+    res.json({ auditoria: await auditoriaRecente(s.banco) });
   });
   rotasAdminLoja(admin, s);
   api.use('/admin', admin);

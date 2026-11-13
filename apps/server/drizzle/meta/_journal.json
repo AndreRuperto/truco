@@ -57,6 +57,13 @@
       "when": 1794583929246,
       "tag": "0007_email_canonico",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794593989581,
+      "tag": "0008_auditoria",
+      "breakpoints": true
     }
   ]
 }
