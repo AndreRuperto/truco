@@ -5,7 +5,8 @@
 Fases 0 a 6 em produção. Deploy conferido nos dois domínios: `/saude` com `versao` 197f93e e banco ok,
 migração 0009 aplicada (`/api/perfil/1` 200), `DELETE /api/eu` 401 sem login, Privacidade/Termos no bundle, 5 cabeçalhos.
 **Achado no deploy:** `/assets` saía com 7 dias, sem `immutable`, porque em produção a pasta do build termina em `/`.
-Corrigido na branch `claude/mvp-f6-cache-assets` (PR à parte; precisa do "pode").
+Corrigido no PR #30 (merge f98cca6) e conferido em produção: `public, max-age=31536000, immutable` nos dois domínios.
+Contato das páginas legais: andrerupertodev@gmail.com (pedido do André); falta o nome do responsável e a vigência.
 Próximo: Fase 7 (beta com gente de verdade). Fase 6 (acessibilidade, carga e páginas legais):
 - [x] F6.1 E2E de teclado (`e2e/teclado.spec.ts`) e de contraste/nomes (`e2e/contraste.spec.ts`) nos dois temas; 4 anéis de foco
   e 3 contrastes corrigidos; balão do assento sem região viva. Relatório: `docs/qa-frontend/acessibilidade-2026-11.md`.
@@ -17,7 +18,7 @@ Próximo: Fase 7 (beta com gente de verdade). Fase 6 (acessibilidade, carga e p�
 - [x] Gate local: 1208 testes unitários; E2E 104 ok, 0 falhas.
 
 PARAR (precisam do André):
-- [ ] Aprovar o texto de Privacidade e Termos (D8); preencher `RESPONSAVEL` e `VIGENCIA` e trocar `RASCUNHO_LEGAL` para false.
+- [ ] Aprovar o texto de Privacidade e Termos (D8); preencher `RESPONSAVEL.nome` e `VIGENCIA` (o e-mail já está) e trocar `RASCUNHO_LEGAL` para false.
   Idade mínima (13 anos; Pila só 18+) foi proposta minha: decidir.
 - [ ] Leitor de tela real (TalkBack/VoiceOver) e zoom 200%: NAO_EXECUTADO.
 

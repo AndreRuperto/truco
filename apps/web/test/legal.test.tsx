@@ -16,6 +16,9 @@ describe('páginas legais (F6.4)', () => {
       expect(texto).toContain(termo);
     }
     expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('href', '#/perfil?editar');
+    // Contato do responsável (o nome e a vigência ainda são para preencher).
+    expect(texto).toContain('andrerupertodev@gmail.com');
+    expect(texto).not.toContain('[e-mail de contato]');
     expect(screen.getByRole('link', { name: 'Termos de uso' })).toHaveAttribute('href', '#/termos');
   });
 
@@ -27,6 +30,7 @@ describe('páginas legais (F6.4)', () => {
     }
     const texto = document.body.textContent ?? '';
     expect(texto).toContain('não têm valor em dinheiro');
+    expect(texto).toContain('andrerupertodev@gmail.com');
     // O mesmo texto dos termos da loja.
     expect(texto).toContain('Pila não vira Fichas, e Fichas não viram Pila.');
     expect(screen.getByRole('link', { name: 'Privacidade' })).toHaveAttribute('href', '#/privacidade');

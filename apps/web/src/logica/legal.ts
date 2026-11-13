@@ -7,7 +7,7 @@ export const RASCUNHO_LEGAL = true;
 /** Quem responde pelos dados (LGPD, art. 41). A preencher antes de publicar. */
 export const RESPONSAVEL = {
   nome: '[nome do responsável]',
-  email: '[e-mail de contato]',
+  email: 'andrerupertodev@gmail.com',
 };
 
 export const VIGENCIA = '[data de vigência]';
