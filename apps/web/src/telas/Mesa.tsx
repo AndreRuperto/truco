@@ -405,7 +405,6 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
       ) : (
         <div />
       )}
-      <p className="so-leitor" role="status" data-testid="anuncio-mesa">{anuncio}</p>
       <div className="rodape-mesa">
         {msg.janelaFamilia && (
           <JanelaFamilia
@@ -424,6 +423,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
           aoBater={acoes.enviarBatida}
         />
       </div>
+      {/* Depois do rodapé, e não entre a mão e ele: o desktop põe as ações ao lado da mão com
+          `.minha-mao + .rodape-mesa` (estilos.css), e um irmão no meio quebrava o seletor. */}
+      <p className="so-leitor" role="status" data-testid="anuncio-mesa">{anuncio}</p>
       {painel === 'sinais' && msg.sinais !== false && (
         <PainelSinais
           chanceInterceptar={msg.chanceInterceptarSinal}
