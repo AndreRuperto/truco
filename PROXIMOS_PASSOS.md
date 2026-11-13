@@ -1,5 +1,23 @@
 # Próximos passos — Truco
 
+## 2026-11-13 · branch `claude/mvp-f5-operacao` · Fase 5 pronta para o gate
+
+Fases 0 a 4 estão em produção. Fase 5 (operação):
+- [x] F5.1 cache do service worker com nome por build · [x] F5.2 reconexão: cadeira vencida, recarga no prazo, aviso honesto
+- [x] F5.3 log em JSON sem dado sensível; erros do navegador em `POST /api/erro-cliente`
+- [x] F5.4 `/saude` com versão, salas, jogadores e banco (503 se o banco cair); saúde no resumo do admin; guia de logs
+- [x] F5.5 guia de backup e restauração (`docs/operacao/backup.md`)
+- [x] F5.6 `pnpm audit --prod --audit-level high` no job de qualidade do CI. Actions sem minutos: o gate desta fase foi **local**
+  (o `docs/release/checklist-mvp.md` só existe na branch `claude/mvp-f0-checklist`, ainda sem PR).
+- [x] F5.7 só patches: @colyseus/core 0.18.28, ws-transport 0.18.5, @colyseus/sdk 0.18.10, pglite 0.5.16, google-auth-library 11.3.4, user-event 14.6.10. Audit: nenhuma vulnerabilidade.
+- [ ] Gate completo (E2E) e PR; merge só com o "pode".
+
+PARAR (precisam do André):
+- [ ] Teste real de restauração do banco (`docs/operacao/backup.md` seção 5): NAO_EXECUTADO.
+- [ ] Ligar backups diários/semanais e, se houver, PITR no painel do Railway; Healthcheck Path `/saude` nos dois serviços.
+- [ ] Lacuna conhecida: o token de reconexão fica no sessionStorage; reabrir o PWA instalado não devolve a cadeira.
+
+
 ## 2026-11-13 · branch `claude/mvp-f4-competitivo` · Fase 4 pronta para o gate
 
 Fases 0 a 3 estão em produção. Fase 4 (competitivo, integridade e segurança) com F4.1 a F4.9 feitos e testados:
