@@ -29,6 +29,7 @@ describe('Lobby', () => {
       chanceInterceptarSinal: 0.25,
       tempoFamiliaS: 20,
       sinais: false,
+      provocacoes: true,
       chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|lim:0|int:0.25|tf:20|sin:0',
       modo: 'desafio',
       cacife: 0,

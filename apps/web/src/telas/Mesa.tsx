@@ -9,6 +9,7 @@ import { BarraAcoes } from '../componentes/BarraAcoes';
 import { CentroMesa, useRodadaNaMesa } from '../componentes/CentroMesa';
 import { Chat } from '../componentes/Chat';
 import { Denunciar } from '../componentes/Denunciar';
+import { DURACAO_PROVOCACAO_MS, FRASE_EFEITO } from '../componentes/Provocacao';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { Cronometro } from '../componentes/Cronometro';
 import { FamiliasNaMesa } from '../componentes/FamiliasNaMesa';
@@ -50,7 +51,7 @@ interface Props {
   snap: EstadoLoja;
   /** Feltro em prévia gratuita para contas; não há cobrança. */
   temConta?: boolean;
-  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida' | 'enviarSemFamilia' | 'enviarRevanche' | 'denunciar'>>;
+  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida' | 'enviarSemFamilia' | 'enviarRevanche' | 'denunciar' | 'provocar'>>;
   aoChat?: (texto: string) => void;
   /** Começa outra partida com as mesmas opções (a App decide como). Sem ele, o fim só volta ao início. */
   aoJogarDeNovo?: () => void;
@@ -126,6 +127,20 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
     .filter((c) => c !== minha && msg.cadeiras[c]?.tipo === 'humano')
     .map((c) => ({ cadeira: c, nome: nome(c) }));
   const podeDenunciar = temConta && !!acoes.denunciar && outrosHumanos.length > 0;
+  // Provocações (moldura): a última que cada cadeira levou, enquanto o efeito dura.
+  const provocacaoEm = (c: Cadeira) => {
+    const p = (snap.provocacoes ?? []).filter((x) => x.para === c && agora - x.em < DURACAO_PROVOCACAO_MS).at(-1);
+    return p ? { id: p.id, efeito: p.efeito } : null;
+  };
+  const provocaveis = msg.provocacoes === true && !!acoes.provocar;
+  const [ultimaProvocacao, setUltimaProvocacao] = useState(-Infinity);
+  const recarregando = agora - ultimaProvocacao < 8_000;
+  const provocar = (c: Cadeira) => {
+    acoes.provocar?.(c);
+    setUltimaProvocacao(Date.now());
+  };
+  const provocacaoEmMim = (snap.provocacoes ?? []).filter((x) => x.para === minha && agora - x.em < DURACAO_PROVOCACAO_MS).at(-1);
+  const fraseProvocacao = provocacaoEmMim ? FRASE_EFEITO[provocacaoEmMim.efeito](nome(provocacaoEmMim.de)) : null;
   const agentes = quemDeveAgir(v);
   const daVez = (c: Cadeira) => agentes.includes(c);
 
@@ -185,7 +200,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
     </p>
   );
   // Uma região só para leitor de tela: o pedido com o valor em jogo, ou "Sua vez." (sem segundos).
-  const anuncio = pedido ?? (v.fase === 'jogando' && !msg.janelaFamilia && daVez(minha) ? 'Sua vez.' : '');
+  const anuncio = pedido ?? fraseProvocacao ?? (v.fase === 'jogando' && !msg.janelaFamilia && daVez(minha) ? 'Sua vez.' : '');
 
   return (
     <main
@@ -345,6 +360,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
               vira={vira}
               prazo={msg.prazo?.cadeiras.includes(c) ? msg.prazo : null}
               agora={agora}
+              provocacao={provocacaoEm(c)}
+              aoProvocar={provocaveis && msg.cadeiras[c]?.tipo !== 'vazia' ? () => provocar(c) : undefined}
+              recarregando={recarregando}
             />
           );
         })}
@@ -371,6 +389,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
           maoVisivel={null}
           variante={variante}
           vira={vira}
+          provocacao={provocacaoEm(minha)}
         />
         <div ref={camadaRitual} className="camada-voo" aria-hidden="true" />
       </Tampo>

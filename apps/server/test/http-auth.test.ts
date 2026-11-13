@@ -204,8 +204,9 @@ describe('preferências da mesa', () => {
     expect((await app.pedir('/api/preferencias', { cookie })).json).toEqual({ preferencias: null });
     const salvo = await app.pedir('/api/preferencias', { metodo: 'PUT', corpo: { preferencias: prefs }, cookie });
     expect(salvo.status).toBe(200);
-    expect(salvo.json.preferencias).toEqual(prefs);
-    expect((await app.pedir('/api/preferencias', { cookie })).json.preferencias).toEqual(prefs);
+    // Campo novo ausente na preferência antiga: volta com o padrão (provocações ligadas).
+    expect(salvo.json.preferencias).toEqual({ ...prefs, provocacoes: true });
+    expect((await app.pedir('/api/preferencias', { cookie })).json.preferencias).toEqual({ ...prefs, provocacoes: true });
     expect((await app.pedir('/api/preferencias', { metodo: 'PUT', corpo: { preferencias: 'x' }, cookie })).status).toBe(400);
   });
 

@@ -32,6 +32,8 @@ export interface PreferenciasMesa {
   chanceInterceptarSinal: number;
   tempoFamiliaS?: TempoFamiliaS;
   sinais?: boolean;
+  /** Provocações com a moldura (ausente = ligadas). */
+  provocacoes?: boolean;
 }
 
 export interface ConfigApi {
