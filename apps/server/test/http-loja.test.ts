@@ -34,6 +34,28 @@ async function cookieDeQuem(email: string) {
   return cookieDe((await app.pedir('/api/auth/link/confirmar', { corpo: { token: tokenDoLink(link) } })).setCookie);
 }
 
+describe('admin tem todos os itens (pedido do André)', () => {
+  test('admin vê todos os itens pagos no inventário e equipa qualquer um, sem comprar nem mexer no saldo', async () => {
+    const chefe = await cookieDeQuem('chefe@x.com');
+    const antes = (await app.pedir('/api/loja/eu', { cookie: chefe })).json;
+    const pagos = (await app.pedir('/api/loja/catalogo')).json.itens.filter((i: { preco: unknown }) => i.preco).map((i: { id: string }) => i.id);
+    expect(pagos.length).toBeGreaterThan(5);
+    expect([...antes.inventario].sort()).toEqual([...pagos].sort());
+    expect((await app.pedir('/api/loja/equipar', { cookie: chefe, metodo: 'PUT', corpo: { slot: 'moldura', itemId: 'moldura-neon' } })).status).toBe(204);
+    expect((await app.pedir('/api/loja/equipar', { cookie: chefe, metodo: 'PUT', corpo: { slot: 'verso', itemId: 'verso-chita' } })).status).toBe(204);
+    const depois = (await app.pedir('/api/loja/eu', { cookie: chefe })).json;
+    expect(depois.equipados).toMatchObject({ moldura: 'moldura-neon', verso: 'verso-chita' });
+    expect([depois.fichas, depois.pila]).toEqual([antes.fichas, antes.pila]);
+    expect(depois.extrato).toEqual(antes.extrato);
+  });
+
+  test('quem não é admin continua sem os itens que não comprou', async () => {
+    const ana = await cookieDeQuem('ana@x.com');
+    expect((await app.pedir('/api/loja/eu', { cookie: ana })).json.inventario).toEqual([]);
+    expect((await app.pedir('/api/loja/equipar', { cookie: ana, metodo: 'PUT', corpo: { slot: 'moldura', itemId: 'moldura-neon' } })).status).toBe(403);
+  });
+});
+
 describe('loja (HTTP)', () => {
   test('catálogo é público; carteira exige login e aplica cadastro + diário', async () => {
     const cat = await app.pedir('/api/loja/catalogo');

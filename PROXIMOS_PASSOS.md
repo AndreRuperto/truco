@@ -1,18 +1,12 @@
 # Próximos passos — Truco
 
-## 2026-11-13 · branch `wip/2026-11-13-admin-avatares` · retomar daqui (limite de uso)
+## 2026-11-13 · branch `claude/admin-itens-avatares` · avatares e admin prontos, provocações em design
 
 Fases 0–6 em produção (último merge: #31, 6f2ee1e, e-mail de contato nas páginas legais). Fase 7 **não** começou (André disse "ainda não").
 
 Pedidos do André em aberto, nesta ordem:
-- [ ] **Grade de avatares do Perfil ocupando a largura toda.** Causa: `max-width: 340px` em `.avatares-prontos`
-  (`apps/web/src/estilos.css` ~4185). Trocar por `grid-template-columns: repeat(auto-fit, minmax(52px, 1fr))`,
-  `justify-items: center`, sem max-width. Conferir 320×568 e desktop.
-- [ ] **Admin tem acesso a todos os itens da loja.** Admin = e-mail em `ADMIN_EMAILS` (`s.admins`). Plano: em
-  `apps/server/src/http/loja.ts`, `GET /loja/eu` devolve `inventario` com todos os itens pagos quando admin, e
-  `PUT /loja/equipar` libera qualquer item para admin (opção em `equipar()` de `repo/loja.ts`, que hoje devolve
-  'nao-tem'). Nada gravado no inventário nem no extrato. Testes em `apps/server/test/http-loja.test.ts`
-  (admin de teste: `chefe@x.com`).
+- [x] Grade de avatares do Perfil ocupando a largura (5 por fileira no celular, 10 com espaço; o painel do início fica em 5).
+- [x] Admin tem todos os itens da loja: inventário com todos os pagos e equipa qualquer um, sem comprar nem mexer no saldo.
 - [ ] **Provocação com a moldura na mesa** (brainstorm, parte 1 apresentada, falta o André validar):
   regra da mesa "Provocações" (liga/desliga, padrão ligado, entra na `chaveRegras`; nunca na ranqueada);
   clicar/Enter na foto de outro jogador abre botão "Provocar"; mensagem `provocar {alvo}` validada no servidor

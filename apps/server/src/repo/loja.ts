@@ -43,12 +43,22 @@ export async function equipadosDe(db: Exec, usuarioId: number): Promise<Equipado
 export type ResultadoEquipar = 'ok' | 'invalido' | 'nao-tem';
 
 /** Equipa um item do slot (de série ou do inventário); `null` volta ao de série. */
-export async function equipar(db: Banco, usuarioId: number, slot: unknown, itemId: unknown): Promise<ResultadoEquipar> {
+/**
+ * `liberarTudo`: admin equipa qualquer item sem comprar (pedido do André). Nada entra no inventário
+ * nem no extrato: o item fica só equipado.
+ */
+export async function equipar(
+  db: Banco,
+  usuarioId: number,
+  slot: unknown,
+  itemId: unknown,
+  o: { liberarTudo?: boolean } = {},
+): Promise<ResultadoEquipar> {
   if (!ehSlot(slot)) return 'invalido';
   if (itemId !== null) {
     const item = itemPorId(itemId);
     if (!item || item.slot !== slot) return 'invalido';
-    if (item.preco && !(await inventarioDe(db, usuarioId)).includes(item.id)) return 'nao-tem';
+    if (item.preco && !o.liberarTudo && !(await inventarioDe(db, usuarioId)).includes(item.id)) return 'nao-tem';
   }
   const id = itemId as string | null;
   if (slot === 'avatar') {
