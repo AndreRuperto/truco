@@ -5289,6 +5289,12 @@ body:has(.tela-mesa) {
 }
 
 /* ---------- Provocações com a moldura (só visual; some em 1,6 s) ---------- */
+.assento-alvo {
+  position: relative;
+  display: inline-flex;
+  justify-self: center;
+  max-width: 100%;
+}
 .assento-nome-botao {
   min-height: 0;
   border: 0;
@@ -5320,10 +5326,20 @@ body:has(.tela-mesa) {
   bottom: -4px;
   translate: -50% 100%;
 }
+/* Nas laterais o botão abre para dentro da mesa, sem passar da borda da tela. */
+.assento.pos-direita .assento-provocar {
+  left: auto;
+  right: 0;
+  translate: 0 4px;
+}
+.assento.pos-esquerda .assento-provocar {
+  left: 0;
+  translate: 0 4px;
+}
 .provocacao {
   position: absolute;
   z-index: 25;
-  inset: -6px;
+  inset: -14px -10px;
   display: grid;
   place-items: center;
   pointer-events: none;
@@ -5362,8 +5378,8 @@ body:has(.tela-mesa) {
 }
 /* Madeira: a farpa voa da direita e espeta, tremendo. */
 .provocacao-farpa {
-  width: 34px;
-  height: 7px;
+  width: 52px;
+  height: 10px;
   border-radius: 1px 40% 40% 1px;
   background: linear-gradient(90deg, #5e3a1f, #c58b52 70%, #f1d2a6);
   clip-path: polygon(0 50%, 25% 0, 100% 35%, 100% 65%, 25% 100%);

@@ -61,7 +61,9 @@ export function Assento({ posicao, info, qtdCartas, daVez, balao, maoVisivel, va
         if (e.key === 'Escape' && menu) setMenu(false);
       }}
     >
-      {/* Sem etiqueta "bot": o server reserva o prefixo "Bot " aos nomes dos bots. */}
+      {/* Sem etiqueta "bot": o server reserva o prefixo "Bot " aos nomes dos bots. O efeito da
+          provocação fica preso à etiqueta do nome (não ao assento, que no de cima é a mesa toda). */}
+      <span className="assento-alvo">
       {aoProvocar ? (
         <button
           type="button"
@@ -89,6 +91,7 @@ export function Assento({ posicao, info, qtdCartas, daVez, balao, maoVisivel, va
         </button>
       )}
       {provocacao && <Provocacao key={provocacao.id} efeito={provocacao.efeito} />}
+      </span>
       {prazo && <Cronometro prazo={prazo} agora={agora} rotulo={`Vez de ${info?.nome ?? 'jogador'}`} pequeno />}
       {maoVisivel ? (
         <div className="assento-cartas visivel">
