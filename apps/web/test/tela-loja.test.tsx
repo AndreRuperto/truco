@@ -78,6 +78,17 @@ describe('TelaLoja', () => {
   });
 });
 
+describe('TelaLoja sem catálogo', () => {
+  test('erro ao carregar mostra o motivo e "Tentar de novo"', async () => {
+    const user = userEvent.setup();
+    const tentar = vi.fn();
+    render(<TelaLoja aba="verso" api={apiFalsa()} usuario={null} catalogo={null} carteira={null} aoMudar={async () => {}} erroCatalogo="sem conexão com o servidor" aoTentarDeNovo={tentar} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('sem conexão com o servidor');
+    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+    expect(tentar).toHaveBeenCalled();
+  });
+});
+
 describe('tampos da loja', () => {
   test('mármore e fórmica só com o item; feltro só com conta', () => {
     expect(aparenciaPermitida('marmore', true, [])).toBe('madeira');

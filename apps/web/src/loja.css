@@ -37,18 +37,23 @@
   display: inline-grid;
   place-items: center;
   flex: none;
-  padding: 3px;
+  padding: 4px;
   border-radius: 50%;
   line-height: 0;
+}
+/* Anel escuro entre a moldura e a foto: a moldura nunca se confunde com o fundo do avatar. */
+.avatar-moldura > .avatar {
+  box-shadow: 0 0 0 2px var(--lousa);
 }
 .moldura-corda {
   background: repeating-conic-gradient(from 0deg, #c9a15e 0 12deg, #8a6a36 12deg 24deg);
 }
 .moldura-madeira {
+  /* Madeira clara entalhada (o fundo do avatar com inicial já é a madeira do tampo). */
   background:
-    repeating-linear-gradient(80deg, color-mix(in srgb, var(--madeira-funda) 45%, transparent) 0 1px, transparent 1px 5px),
-    var(--madeira);
-  box-shadow: inset 0 0 0 1px var(--madeira-funda);
+    repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--madeira-funda) 55%, transparent) 0 4deg, transparent 4deg 30deg),
+    #d9a066;
+  box-shadow: inset 0 0 0 1px var(--madeira-funda), 0 0 0 1px var(--madeira-funda);
 }
 .moldura-neon {
   background: var(--coringa-rosa);
@@ -215,6 +220,14 @@
   width: 100%;
   min-height: 44px;
   margin-top: auto;
+}
+/* Sem saldo: legível (sem transparência) e com cara de indisponível (tracejado, sem relevo). */
+.loja-cartao button:disabled {
+  border: 2px dashed var(--papel-borda);
+  background: color-mix(in srgb, var(--tinta) 6%, var(--papel));
+  box-shadow: none;
+  color: var(--tinta-suave);
+  opacity: 1;
 }
 .loja-preco {
   font-weight: 800;
