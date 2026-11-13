@@ -1,8 +1,10 @@
 # Próximos passos — Truco
 
-## 2026-11-13 · branch `claude/mvp-f5-operacao` · Fase 5 pronta para o gate
+## 2026-11-13 · Fase 5 em produção (PR #28, merge bbd5d56)
 
-Fases 0 a 4 estão em produção. Fase 5 (operação):
+Fases 0 a 5 estão em produção. Deploy conferido nos dois domínios: `/saude` com `versao` bbd5d56 e banco ok,
+5 cabeçalhos de segurança, `sw.js` com cache `truco-assets-fab6e922`, `POST /api/erro-cliente` 204, APIs com banco 200.
+Próximo: Fase 6 do plano. Fase 5 (operação):
 - [x] F5.1 cache do service worker com nome por build · [x] F5.2 reconexão: cadeira vencida, recarga no prazo, aviso honesto
 - [x] F5.3 log em JSON sem dado sensível; erros do navegador em `POST /api/erro-cliente`
 - [x] F5.4 `/saude` com versão, salas, jogadores e banco (503 se o banco cair); saúde no resumo do admin; guia de logs
@@ -10,7 +12,7 @@ Fases 0 a 4 estão em produção. Fase 5 (operação):
 - [x] F5.6 `pnpm audit --prod --audit-level high` no job de qualidade do CI. Actions sem minutos: o gate desta fase foi **local**
   (o `docs/release/checklist-mvp.md` só existe na branch `claude/mvp-f0-checklist`, ainda sem PR).
 - [x] F5.7 só patches: @colyseus/core 0.18.28, ws-transport 0.18.5, @colyseus/sdk 0.18.10, pglite 0.5.16, google-auth-library 11.3.4, user-event 14.6.10. Audit: nenhuma vulnerabilidade.
-- [ ] Gate completo (E2E) e PR; merge só com o "pode".
+- [x] Gate local: 1183 testes unitários; E2E 95 ok, 1 visual intermitente (320x568, passou 9/9 sozinho).
 
 PARAR (precisam do André):
 - [ ] Teste real de restauração do banco (`docs/operacao/backup.md` seção 5): NAO_EXECUTADO.
