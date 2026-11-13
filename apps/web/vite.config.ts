@@ -2,13 +2,14 @@ import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 import { temaManual } from './tema-css';
+import { cacheDoServiceWorker } from './sw-cache';
 
 const caminho = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 const alvoApi = process.env.TRUCO_PROXY_API ?? 'http://localhost:2567';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), cacheDoServiceWorker()],
   // Tema escolhido no cabeçalho vale por cima do tema do aparelho (ver tema-css.ts).
   css: { postcss: { plugins: [temaManual()] } },
   resolve: {
