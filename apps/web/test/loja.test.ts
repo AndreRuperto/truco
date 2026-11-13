@@ -47,12 +47,37 @@ describe('toque duplo (F3.4)', () => {
   });
 });
 
+describe('fotos fora do estado (F4.4)', () => {
+  const FOTO = 'data:image/webp;base64,AAAA';
+  const comFotoNaCadeira1 = () => {
+    const m = msgEstado(distribuida(PAULISTA));
+    return { ...m, cadeiras: m.cadeiras.map((c, i) => (i === 1 ? { ...c, avatar: null, avatarId: 'abc123abc123' } : c)) };
+  };
+
+  test('a foto chega em `avatares` e o estado a usa pelo id', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    sala.receber('avatares', { abc123abc123: FOTO });
+    sala.receber('estado', comFotoNaCadeira1());
+    expect(loja.getSnapshot().msg!.cadeiras[1].avatar).toBe(FOTO);
+  });
+
+  test('foto que chega depois do estado também aparece', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    sala.receber('estado', comFotoNaCadeira1());
+    expect(loja.getSnapshot().msg!.cadeiras[1].avatar ?? null).toBeNull();
+    sala.receber('avatares', { abc123abc123: FOTO });
+    expect(loja.getSnapshot().msg!.cadeiras[1].avatar).toBe(FOTO);
+  });
+});
+
 describe('loja', () => {
   test('registra todos os handlers antes de pedir sincronizar', () => {
     const { loja, sala, tokens } = montar();
     loja.conectar(sala);
     expect(sala.enviados).toEqual([['sincronizar', undefined]]);
-    expect(sala.ouvintesNoEnvio[0]).toEqual({ estado: 1, acao: 1, sinal: 1, fala: 1, erro: 1, chat: 1, batida: 1 });
+    expect(sala.ouvintesNoEnvio[0]).toEqual({ estado: 1, avatares: 1, acao: 1, sinal: 1, fala: 1, erro: 1, chat: 1, batida: 1 });
     expect(loja.getSnapshot().status).toBe('na-mesa');
     expect(tokens).toEqual(['r1:t1']);
   });

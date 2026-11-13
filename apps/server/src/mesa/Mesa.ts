@@ -1,5 +1,5 @@
 import type { VisualJogador } from '../api/tipos';
-import { webcrypto } from 'node:crypto';
+import { createHash, webcrypto } from 'node:crypto';
 import {
   type AcaoJogador,
   acoesValidas,
@@ -32,6 +32,7 @@ import {
   ehSinal,
   type CacifeMesa,
   type InfoCadeira,
+  type MsgAvatares,
   limparChat,
   limparNome,
   type ModoMesa,
@@ -133,6 +134,10 @@ interface Ocupante {
   ultimaMensagem: number;
   /** Já validado por quem senta (MesaRoom): ver `InfoCadeira.avatar`. */
   avatar?: string | null;
+  /** Id curto da foto `data:` (hash), ou null. */
+  avatarId?: string | null;
+  /** Ids de foto que este cliente já recebeu (zera ao reconectar ou sincronizar). */
+  avataresEnviados?: Set<string>;
   /** Ver `InfoCadeira.voz`. */
   voz?: string | null;
   /** Ver `InfoCadeira.visual`. */
@@ -140,6 +145,12 @@ interface Ocupante {
 }
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
+
+/** Id curto (12 hex) de uma foto `data:`; avatar pronto ou nenhum: null (vai inline no estado). */
+function idDoAvatar(avatar: string | null | undefined): string | null {
+  if (!avatar?.startsWith('data:')) return null;
+  return createHash('sha256').update(avatar).digest('hex').slice(0, 12);
+}
 /** Os dois primeiros humanos ficam parceiros. */
 const ORDEM_SENTAR: Cadeira[] = [0, 2, 1, 3];
 /** Valendo Fichas, os dois primeiros ficam adversários (senão apostariam juntos contra os bots). */
@@ -267,6 +278,8 @@ export class Mesa {
       conectado: true,
       ultimaMensagem: -Infinity,
       avatar,
+      avatarId: idDoAvatar(avatar),
+      avataresEnviados: new Set(),
       voz,
       visual,
     };
@@ -335,6 +348,7 @@ export class Mesa {
     const c = this.cadeiraDe(id);
     if (c === null) return;
     this.ocupantes[c].conectado = true;
+    this.ocupantes[c].avataresEnviados = new Set();
     if (this.iniciada) this.atualizar();
     else this.enviarEstados();
   }
@@ -355,7 +369,9 @@ export class Mesa {
   /** Reenvia o estado atual só para quem pediu (ex.: cliente perdeu mensagens). */
   sincronizar(id: string): void {
     const c = this.cadeiraDe(id);
-    if (c !== null && this.humanoAtivo(c)) this.enviarEstado(c);
+    if (c === null || !this.humanoAtivo(c)) return;
+    this.ocupantes[c].avataresEnviados = new Set();
+    this.enviarEstado(c);
   }
 
   dispose(): void {
@@ -756,7 +772,23 @@ export class Mesa {
     for (const c of CADEIRAS) if (this.humanoAtivo(c)) this.enviarEstado(c, cadeiras);
   }
 
+  /** Antes do `estado`: as fotos `data:` que esta cadeira ainda não recebeu, numa mensagem só. */
+  private enviarAvataresQueFaltam(c: Cadeira): void {
+    const destino = this.ocupantes[c];
+    if (!destino.id) return;
+    const enviados = (destino.avataresEnviados ??= new Set());
+    const faltam: MsgAvatares = {};
+    for (const o of this.ocupantes) {
+      if (o.avatarId && o.avatar && !enviados.has(o.avatarId)) faltam[o.avatarId] = o.avatar;
+    }
+    const ids = Object.keys(faltam);
+    if (ids.length === 0) return;
+    for (const id of ids) enviados.add(id);
+    this.o.enviar(destino.id, 'avatares', faltam);
+  }
+
   private enviarEstado(c: Cadeira, cadeiras: InfoCadeira[] = this.infoCadeiras()): void {
+    this.enviarAvataresQueFaltam(c);
     const s = this.estado;
     const msg: MsgEstado = {
       minhaCadeira: c,
@@ -786,7 +818,8 @@ export class Mesa {
       tipo: o.humano ? 'humano' : o.nome ? 'bot' : 'vazia',
       nome: o.nome,
       conectado: o.humano ? o.conectado : true,
-      avatar: o.avatar ?? null,
+      avatar: o.avatarId ? null : (o.avatar ?? null),
+      avatarId: o.avatarId ?? null,
       voz: o.voz ?? null,
       visual: o.humano ? (o.visual ?? null) : null,
     }));

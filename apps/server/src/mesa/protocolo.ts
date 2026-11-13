@@ -76,12 +76,17 @@ export function limparChat(cru: unknown): string {
     .trim();
 }
 
+/** Mensagem `avatares`: fotos enviadas (`data:`) por id, mandadas uma vez a cada cliente antes do `estado`. */
+export type MsgAvatares = Record<string, string>;
+
 export interface InfoCadeira {
   tipo: 'vazia' | 'humano' | 'bot';
   nome: string | null;
   conectado: boolean;
-  /** Foto: `pronto:<id>` ou imagem `data:` (da conta, ou escolhida por quem entrou sem conta); null = sem. */
+  /** Foto pronta (`pronto:<id>`); null = sem. Foto enviada (`data:`) vem por `avatarId` (SEC-09). */
   avatar?: string | null;
+  /** Foto enviada (`data:`, até 60 kB): só o id; a imagem chega uma vez na mensagem `avatares`. */
+  avatarId?: string | null;
   /** Voz pessoal da conta (ex.: 'andre'): as falas dessa cadeira saem com ela. Só para contas logadas. */
   voz?: string | null;
   /** Itens da loja equipados (verso, roupa, moldura). Ausente = visual padrão (convidado/bot). */
