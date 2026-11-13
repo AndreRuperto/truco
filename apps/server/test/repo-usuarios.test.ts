@@ -14,6 +14,8 @@ import {
   encerrarSessao,
   entrarComEmail,
   entrarComGoogle,
+  emailCanonico,
+  ErroEmailCanonico,
   ErroGoogleOutraConta,
   limparExpirados,
   normalizarEmail,
@@ -127,6 +129,55 @@ describe('usuários', () => {
     expect(await trocarApelido(b.db, a.id, 'ab')).toBe('invalido');
     expect(await trocarApelido(b.db, a.id, 'bia')).toBe('em-uso');
     expect(await trocarApelido(b.db, a.id, 'Aninha')).toBe('ok');
+  });
+});
+
+describe('e-mail canônico: sem conta nova com +tag (F4.2, D1b)', () => {
+  test('emailCanonico: minúsculas e sem o +tag da parte local; pontos ficam', () => {
+    expect(emailCanonico('Ana+Truco@Exemplo.com')).toBe('ana@exemplo.com');
+    expect(emailCanonico('a.n.a+1+2@x.com')).toBe('a.n.a@x.com');
+    expect(emailCanonico('ana@x.com')).toBe('ana@x.com');
+  });
+
+  test('a+1@x.com depois de a@x.com: criação recusada pelo link mágico', async () => {
+    await entrarComEmail(b.db, 'a@x.com');
+    await expect(entrarComEmail(b.db, 'a+1@x.com')).rejects.toBeInstanceOf(ErroEmailCanonico);
+    await expect(entrarComEmail(b.db, 'a+1@x.com')).rejects.toThrow('Já existe uma conta com este e-mail. Entre com o endereço original.');
+    expect(await b.db.select().from(usuarios)).toHaveLength(1);
+  });
+
+  test('conta antiga com +tag continua entrando; outra variação dela é recusada', async () => {
+    // Conta criada antes da regra (sem passar pelo filtro): entra normalmente.
+    await criarUsuario(b.db, { apelidoBase: 'velha', email: 'b+velha@x.com' });
+    const u = await entrarComEmail(b.db, 'b+velha@x.com');
+    expect(u.email).toBe('b+velha@x.com');
+    await expect(entrarComEmail(b.db, 'b@x.com')).rejects.toBeInstanceOf(ErroEmailCanonico);
+  });
+
+  test('Google com e-mail verificado também não cria conta paralela por +tag', async () => {
+    await entrarComEmail(b.db, 'c@x.com');
+    await expect(entrarComGoogle(b.db, { sub: 'g-1', email: 'c+g@x.com', emailVerificado: true, nome: 'C' })).rejects.toBeInstanceOf(ErroEmailCanonico);
+  });
+
+  test('a migração 0007 preenche o canônico das contas que já existiam (igual a emailCanonico)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { sql } = await import('drizzle-orm');
+    for (const email of ['Ana+x@Ex.com'.toLowerCase(), 'b.o.b@x.com', 'c+1+2@y.org']) {
+      await b.db.insert(usuarios).values({ apelido: email.replace(/[^a-z]/g, '').slice(0, 10), email, emailCanonico: null });
+    }
+    const arquivo = readFileSync(join(__dirname, '..', 'drizzle', '0007_email_canonico.sql'), 'utf8');
+    const update = arquivo.split('--> statement-breakpoint').map((x) => x.trim()).find((x) => x.includes('UPDATE'))!;
+    await b.db.execute(sql.raw(update.split(/\r?\n/).filter((l) => !l.startsWith('--')).join('\n')));
+    const linhas = await b.db.select().from(usuarios);
+    for (const l of linhas) expect(l.emailCanonico).toBe(emailCanonico(l.email!));
+    expect(linhas.map((l) => l.emailCanonico).sort()).toEqual(['ana@ex.com', 'b.o.b@x.com', 'c@y.org']);
+  });
+
+  test('criarUsuario grava o canônico', async () => {
+    const u = await criarUsuario(b.db, { apelidoBase: 'd', email: 'D+1@x.com'.toLowerCase() });
+    const [linha] = await b.db.select().from(usuarios).where(eq(usuarios.id, u.id));
+    expect(linha.emailCanonico).toBe('d@x.com');
   });
 });
 

@@ -50,6 +50,13 @@
       "when": 1794583760187,
       "tag": "0006_elo_congelado",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794583929246,
+      "tag": "0007_email_canonico",
+      "breakpoints": true
     }
   ]
 }

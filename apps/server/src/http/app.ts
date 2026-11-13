@@ -18,6 +18,7 @@ import {
   encerrarSessao,
   entrarComEmail,
   entrarComGoogle,
+  ErroEmailCanonico,
   ErroGoogleOutraConta,
   gravarPreferencias,
   lerPreferencias,
@@ -198,7 +199,14 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     const token = typeof req.body?.token === 'string' ? req.body.token : '';
     const email = await consumirLinkMagico(s.banco, token, s.agora());
     if (!email) return void res.status(400).json({ erro: 'link inválido ou expirado; peça outro' });
-    await entrar(res, await entrarComEmail(s.banco, email));
+    let u: Usuario;
+    try {
+      u = await entrarComEmail(s.banco, email);
+    } catch (e) {
+      if (e instanceof ErroEmailCanonico) return void res.status(409).json({ erro: e.message });
+      throw e;
+    }
+    await entrar(res, u);
   });
 
   api.post('/auth/google', async (req, res) => {
@@ -216,6 +224,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
       u = await entrarComGoogle(s.banco, perfilGoogle);
     } catch (e) {
       if (e instanceof ErroGoogleOutraConta) return void res.status(409).json({ erro: `${e.message}; entre pelo link mágico` });
+      if (e instanceof ErroEmailCanonico) return void res.status(409).json({ erro: e.message });
       throw e;
     }
     await entrar(res, u);
