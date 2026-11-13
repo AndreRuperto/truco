@@ -1,3 +1,4 @@
+import { RESPONSAVEL } from '../logica/legal';
 import type { CarteiraApi, CatalogoApi, ItemLoja, PacotePila, Slot, UsuarioApi, VisualRoupa, VisualTampo, VisualVerso } from '@truco/api';
 import { useEffect, useState } from 'react';
 import { Avatar } from '../componentes/Avatar';
@@ -301,7 +302,7 @@ export function ItensTermosLoja() {
       <li>Pila não vira Fichas, e Fichas não viram Pila. Pila não entra em mesa nem em aposta.</li>
       <li>Os itens são só de visual e não dão vantagem na partida.</li>
       <li>O pagamento é feito na página da InfinitePay (Pix ou cartão). O Pila entra na conta assim que o pagamento é confirmado.</li>
-      <li>Arrependimento: em até 7 dias da compra, o Pila que ainda não foi usado pode ser devolvido com reembolso (Código de Defesa do Consumidor, art. 49). Fale com a gente pelo e-mail do site.</li>
+      <li>Arrependimento: em até 7 dias da compra, o Pila que ainda não foi usado pode ser devolvido com reembolso (Código de Defesa do Consumidor, art. 49). Fale com a gente pelo e-mail {RESPONSAVEL.email}.</li>
       <li>Conta suspensa por violar as regras perde o acesso aos saldos.</li>
     </>
   );
