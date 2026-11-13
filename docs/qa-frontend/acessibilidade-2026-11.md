@@ -67,7 +67,8 @@ cartões ilustrados das mesas; precisam de medida por captura (amostrando pixels
 ## 4. Não testado
 
 - **Leitor de tela real** (TalkBack, VoiceOver, NVDA): NAO_EXECUTADO. Os testes conferem papéis e nomes, não a fala.
-- Tema escolhido na própria tela (se houver troca manual além do `prefers-color-scheme`): não coberto.
+- Tema escolhido no cabeçalho (`data-tema`): o plugin `apps/web/tema-css.ts` gera essas regras a partir das mesmas
+  `@media (prefers-color-scheme)`, então as correções valem lá também; mas não foi medido com o tema forçado.
 - Zoom de 200% e texto ampliado do sistema: NAO_EXECUTADO.
 - Contraste dentro da mesa (só o anel de foco e o placar/ícones de `e2e/temas.spec.ts`).
 - Mesa 3D com teclado: NAO_EXECUTADO.

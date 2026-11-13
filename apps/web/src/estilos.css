@@ -1065,7 +1065,7 @@ button:disabled {
   min-height: 100dvh;
   max-width: 900px;
   margin: 0 auto;
-  padding: var(--e2) var(--e2) calc(var(--e2) + env(safe-area-inset-bottom));
+  padding: calc(var(--e2) + env(safe-area-inset-top)) var(--e2) calc(var(--e2) + env(safe-area-inset-bottom));
 }
 
 /* Placar de giz */
@@ -3113,7 +3113,9 @@ body:has(.tela-mesa) {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--e1);
-  padding: var(--e1) var(--e2);
+  /* App instalado (viewport-fit=cover): o entalhe em cima e nas laterais (paisagem). F6.3. */
+  padding: calc(var(--e1) + env(safe-area-inset-top)) calc(var(--e2) + env(safe-area-inset-right)) var(--e1)
+    calc(var(--e2) + env(safe-area-inset-left));
   border-bottom: 4px solid var(--lousa-borda);
   background: var(--lousa);
   color: var(--giz);
