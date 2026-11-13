@@ -10,16 +10,45 @@ interface Props {
   nome: (c: Cadeira) => string;
 }
 
+/** Tempo que a família recém-conferida segura na mesa: a revelação das 3 (3 x 320 ms) e uma folga. */
+export const SEGURA_CONFERIDA_MS = 1_500;
+
 /** As 3 abertas no corte (ao lado do monte) e a última família de cada cadeira, na frente dela. */
 export function FamiliasNaMesa({ visao, nome }: Props) {
   const m = visao.mao;
   const abertas = m?.abertasNoCorte ?? visao.ritual?.abertas ?? [];
   const familias = m?.familias ?? [];
-  if (abertas.length === 0 && familias.length === 0) return null;
+  // A família só fica na mesa até cair a 1ª carta: depois a janela de pedir/conferir passou (os
+  // pontos já estão no placar) e as figuras ao redor da cruz cruzavam as cartas jogadas. Exceção: a
+  // conferida há pouco fica até terminar de revelar as 3 (no modo rápido o bot joga na hora).
+  const comecou = !!m && (m.rodadas.length > 0 || m.mesa.length > 0);
+  const conferidaEm = useRef(new Map<number, number>());
+  const [, redesenhar] = useState(0);
+  familias.forEach((f, i) => {
+    if (!f.conferida) conferidaEm.current.delete(i);
+    else if (!conferidaEm.current.has(i)) conferidaEm.current.set(i, Date.now());
+  });
+  const agora = Date.now();
+  const segura = (i: number) => {
+    const em = conferidaEm.current.get(i);
+    return em !== undefined && agora - em < SEGURA_CONFERIDA_MS;
+  };
+  // A espera vale só enquanto a 1ª rodada não fechou: fechada, a pilha das rodadas ocupa o canto.
+  const rodadaFechada = !!m && m.rodadas.length > 0;
+  const visiveis = familias.map((f, i) => ({ f, i })).filter(({ i }) => !comecou || (!rodadaFechada && segura(i)));
+  const proximaSaida = comecou && visiveis.length > 0
+    ? Math.min(...visiveis.map(({ i }) => conferidaEm.current.get(i)! + SEGURA_CONFERIDA_MS - agora))
+    : null;
+  useEffect(() => {
+    if (proximaSaida === null) return;
+    const t = setTimeout(() => redesenhar((n) => n + 1), Math.max(0, proximaSaida) + 10);
+    return () => clearTimeout(t);
+  }, [proximaSaida]);
+  if (abertas.length === 0 && visiveis.length === 0) return null;
   const variante = visao.regras.variante;
   const vira = m?.vira ?? null;
   const ultimas = new Map<Cadeira, number>();
-  familias.forEach((f, i) => ultimas.set(f.cadeira, i));
+  visiveis.forEach(({ f, i }) => ultimas.set(f.cadeira, i));
   return (
     <div className="familias">
       {abertas.length > 0 && (

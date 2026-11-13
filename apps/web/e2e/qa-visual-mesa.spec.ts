@@ -1,4 +1,4 @@
-import { devices, expect, test } from '@playwright/test';
+import { devices, expect, test, type Page } from '@playwright/test';
 import { agirNoRitual, ateMinhaVezComAcao } from './apoio';
 
 /**
@@ -398,3 +398,260 @@ test('anel de foco das cartas contrasta com o piso - 390x844', async ({ page }) 
   expect(contraste, 'Tab não chegou a uma carta').not.toBeNull();
   expect(contraste!, 'contraste do anel de foco da carta contra o piso').toBeGreaterThanOrEqual(3);
 });
+
+/* ───────────────────────── Fase 2 do plano MVP (P2/P3 do ciclo 1) ───────────────────────── */
+
+const RETRATOS = [[320, 568], [360, 640], [360, 740], [390, 844], [430, 932]] as const;
+
+/** Área de interseção (px²) entre duas caixas; 0 se só encostam. Serializável para page.evaluate. */
+type Caixa = { left: number; right: number; top: number; bottom: number };
+const cruza = (a: Caixa, b: Caixa) =>
+  Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+
+/** Mesa mineira com família fechada contra 3 bots fáceis (a janela de família abre em toda mão normal). */
+async function mesaComFamilia(page: Page, apelido: string) {
+  await page.goto('/');
+  await page.getByText('Regras da mesa', { exact: true }).click();
+  await page.getByLabel('Apelido').fill(apelido);
+  await page.getByLabel('Variante').selectOption('mineiro');
+  await page.getByLabel('Família', { exact: true }).selectOption('fechada');
+  await page.getByLabel('Humanos').selectOption('1');
+  await page.getByLabel('Bots').selectOption('facil');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+}
+
+/** Um passo da partida: pede família se puder; senão ritual, aceitar, jogar a mão, jogar de novo ou uma carta. */
+async function passoComFamilia(page: Page) {
+  const tentar = async (nome: string) => {
+    const b = page.getByRole('button', { name: nome, exact: true });
+    if (!(await b.isVisible())) return false;
+    return b.click({ timeout: 800 }).then(() => true).catch(() => false);
+  };
+  if (await tentar('Pedir família fechada')) return;
+  if (await agirNoRitual(page)) return;
+  if (await tentar('Aceitar')) return;
+  if (await tentar('Jogar a mão')) return;
+  if (await tentar('Jogar de novo')) return;
+  const carta = page.getByTestId('minha-mao').locator('button.carta-botao:enabled').first();
+  if (await carta.isVisible()) await carta.click({ timeout: 800 }).catch(() => {});
+}
+
+/**
+ * F2.1 (A2 do ciclo 1): a etiqueta da família ("Bot Tião: família fechada") começava fora da
+ * tela à esquerda em 360x740 e ficava sob balão, cartas do centro ou monte.
+ * Cartas do centro e monte: nenhuma interseção (nos dois sentidos). Balão: o balão de quem pediu
+ * é centrado no próprio assento e a etiqueta fica colada a ele, então em telas estreitas as caixas
+ * se cruzam por ~2 s; o que reprova é o balão pintado POR CIMA da etiqueta (elementFromPoint).
+ */
+for (const [largura, altura] of RETRATOS) {
+  test('etiqueta de família inteira na tela e livre - ' + largura + 'x' + altura, async ({ page }, testInfo) => {
+    test.setTimeout(150_000);
+    await page.setViewportSize({ width: largura, height: altura });
+    await mesaComFamilia(page, 'QA Familia');
+    const problemas = new Set<string>();
+    let medidas = 0;
+    const ate = Date.now() + 100_000;
+    while (Date.now() < ate && medidas < 80) {
+      await passoComFamilia(page);
+      const m = await page.evaluate(() => {
+        const cx = (el: Element) => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
+        const visiveis = (s: string) => Array.from(document.querySelectorAll(s)).filter((e) => e.getBoundingClientRect().width > 0)
+          .map((e) => ({ ...cx(e), texto: `${e.tagName.toLowerCase()}.${[...e.classList].join('.')} em ${e.parentElement?.className ?? ''}` }));
+        return {
+          w: innerWidth,
+          etiquetas: Array.from(document.querySelectorAll('figure.familia:not(.abertas-corte) figcaption'))
+            .filter((e) => e.getBoundingClientRect().width > 0)
+            .map((e) => {
+              // Balão por cima da etiqueta: o que está pintado em 5 pontos dela (centro e cantos recuados).
+              // .familias tem pointer-events: none, e elementFromPoint pula esses elementos: liga só durante a medição.
+              const r = e.getBoundingClientRect();
+              const antes = (e as HTMLElement).style.pointerEvents;
+              (e as HTMLElement).style.pointerEvents = 'auto';
+              const pontos = [[0.5, 0.5], [0.15, 0.25], [0.85, 0.25], [0.15, 0.75], [0.85, 0.75]];
+              const balaoPorCima = pontos.map(([fx, fy]) => document.elementFromPoint(r.left + r.width * fx, r.top + r.height * fy))
+                .find((el) => el && !e.contains(el) && el.closest('.balao'))?.closest('.balao')?.textContent ?? null;
+              (e as HTMLElement).style.pointerEvents = antes;
+              const fig = e.closest('figure')!;
+              const cs = getComputedStyle(fig);
+              const onde = `${[...fig.classList].join('.')} left=${cs.left} right=${cs.right} top=${cs.top} translate=${cs.translate}`;
+              return { texto: e.textContent ?? '', balaoPorCima, onde, ...cx(e) };
+            }),
+          obstaculos: {
+            monte: visiveis('[data-testid="monte"]'),
+            'carta do centro': visiveis('[data-testid="centro"] .carta, .jogada, .vira'),
+            'nome de assento': visiveis('.assento-nome'),
+          } as Record<string, Caixa[]>,
+          outras: Array.from(document.querySelectorAll('figure.familia figcaption')).filter((e) => e.getBoundingClientRect().width > 0).map(cx),
+        };
+      });
+      for (const e of m.etiquetas) {
+        medidas++;
+        if (e.balaoPorCima !== null) problemas.add(`"${e.texto}" encoberta pelo balão "${e.balaoPorCima}"`);
+        if (e.left < -0.5 || e.right > m.w + 0.5) problemas.add(`"${e.texto}" fora da tela (${Math.round(e.left)}..${Math.round(e.right)})`);
+        if (m.outras.some((o) => !(o.left === e.left && o.top === e.top) && cruza(e, o) > 4)) problemas.add(`"${e.texto}" sobre outra etiqueta de família`);
+        for (const [nome, caixas] of Object.entries(m.obstaculos)) {
+          const c = caixas.find((x) => cruza(e, x) > 4);
+          const r = (x: Caixa) => `${Math.round(x.left)},${Math.round(x.top)}..${Math.round(x.right)},${Math.round(x.bottom)}`;
+          if (c) problemas.add(`"${e.texto}" (${e.onde}) [${r(e)}] sob ${nome}${'texto' in c ? ` "${(c as Caixa & { texto: string }).texto}"` : ''} [${r(c)}]`);
+        }
+      }
+      if (problemas.size > 0) break;
+      await page.waitForTimeout(120);
+    }
+    const foto = testInfo.outputPath('familia-' + largura + 'x' + altura + '.png');
+    await page.screenshot({ path: foto });
+    await testInfo.attach('familia', { path: foto, contentType: 'image/png' });
+    expect(medidas, 'nenhuma etiqueta de família apareceu para medir').toBeGreaterThan(0);
+    expect([...problemas], 'etiqueta de família').toEqual([]);
+  });
+}
+
+/** Área (px²) da caixa `a` coberta pela caixa `b`, no navegador; null se alguma não existe. */
+const areaSob = (page: Page, a: string, b: string) => page.evaluate(([sa, sb]) => {
+  const x = document.querySelector(sa)?.getBoundingClientRect();
+  const y = document.querySelector(sb)?.getBoundingClientRect();
+  if (!x || !y || x.width === 0 || y.width === 0) return null;
+  return Math.max(0, Math.min(x.right, y.right) - Math.max(x.left, y.left)) * Math.max(0, Math.min(x.bottom, y.bottom) - Math.max(x.top, y.top));
+}, [a, b] as const);
+
+/**
+ * F2.2: em 320x568 a dica de 3 linhas cobria as cartas jogadas no centro; no zoom 200%
+ * (720x450), depois de rolar, a dica cobria o topo das cartas da mão (A3).
+ */
+test('dica não cobre o centro da mesa - 320x568', async ({ page }) => {
+  // Pendência P3 conhecida (Fase 2, 2026-11-12): em 320x568 a arena tem 243px, a cruz ocupa 128px no
+  // meio e sobram ~55px embaixo; a dica mais curta (3 linhas + botões) tem ~94px e não pode ir para
+  // placar, mão nem ações. Não há posição sem cobrir o centro: precisa de redesenho da dica (ex.:
+  // recolher quando houver carta na mesa). Falha esperada: quando alguém resolver, este teste avisa.
+  test.fail(true, 'P3 conhecida: dica não cabe sem cobrir o centro em 320x568');
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/');
+  await page.getByLabel('Apelido').fill('QA Dica Centro');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.getByRole('complementary', { name: 'Dica' })).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(400);
+  const area = await areaSob(page, '[data-testid="centro"]', '.dica-mesa');
+  expect(area, 'dica ou centro ausente').not.toBeNull();
+  expect(area!, 'área do centro da mesa sob a dica (px²)').toBeLessThanOrEqual(4);
+});
+
+test('dica não cobre a mão depois de rolar - zoom 200% 720x450', async ({ browser }) => {
+  test.setTimeout(150_000);
+  const ctx = await browser.newContext({ ...devices['Desktop Chrome'], viewport: { width: 720, height: 450 }, baseURL: test.info().project.use.baseURL });
+  const page = await ctx.newPage();
+  try {
+    await page.goto('/');
+    await page.getByLabel('Apelido').fill('QA Dica Zoom');
+    await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+    await expect(page.getByRole('complementary', { name: 'Dica' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('minha-mao').locator('.carta-botao').first()).toBeAttached({ timeout: 60_000 });
+    await page.getByTestId('minha-mao').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    const area = await areaSob(page, '[data-testid="minha-mao"]', '.dica-mesa');
+    expect(area ?? 0, 'área da mão sob a dica (px²)').toBeLessThanOrEqual(4);
+  } finally {
+    await ctx.close();
+  }
+});
+
+/**
+ * F2.3 (A4 do ciclo 1): no desktop 1440x900, na sua vez, a página rolava 35px, o "Truco!"
+ * ficava cortado embaixo e a dica cobria o centro do placar.
+ */
+for (const [largura, altura] of [[1440, 900], [1280, 800], [1920, 1080]] as const) {
+  test('desktop na sua vez sem rolagem e com ações inteiras - ' + largura + 'x' + altura, async ({ browser }, testInfo) => {
+    test.setTimeout(150_000);
+    const ctx = await browser.newContext({ ...devices['Desktop Chrome'], viewport: { width: largura, height: altura }, baseURL: test.info().project.use.baseURL });
+    const page = await ctx.newPage();
+    try {
+      await page.goto('/');
+      await page.getByLabel('Apelido').fill('QA Desktop');
+      await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+      await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+      await ateMinhaVezComAcao(page);
+      await page.waitForTimeout(400);
+      const foto = testInfo.outputPath('desktop-vez-' + largura + 'x' + altura + '.png');
+      await page.screenshot({ path: foto });
+      await testInfo.attach('desktop-vez', { path: foto, contentType: 'image/png' });
+      const g = await page.evaluate(() => ({
+        sobraY: document.documentElement.scrollHeight - innerHeight,
+        fundoAcoes: document.querySelector('.barra-acoes')!.getBoundingClientRect().bottom,
+        h: innerHeight,
+      }));
+      expect(g.sobraY, 'a mesa obriga a rolar').toBeLessThanOrEqual(1);
+      expect(g.fundoAcoes, 'ações cortadas embaixo').toBeLessThanOrEqual(g.h);
+      expect((await areaSob(page, '.tela-mesa > .placar', '.dica-mesa')) ?? 0, 'área do placar sob a dica (px²)').toBeLessThanOrEqual(4);
+    } finally {
+      await ctx.close();
+    }
+  });
+}
+
+/**
+ * F2.4: com a janela de família aberta, o rodapé tem duas linhas e passa da reserva de 62px
+ * da --reserva-mesa. Nada da mão pode ficar sob ele.
+ */
+for (const [largura, altura] of RETRATOS) {
+  test('rodapé com janela de família não cobre a mão - ' + largura + 'x' + altura, async ({ page }, testInfo) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: largura, height: altura });
+    await mesaComFamilia(page, 'QA Janela');
+    const janela = page.locator('.rodape-mesa .janela-familia');
+    await expect(async () => {
+      if (!(await janela.isVisible())) await agirNoRitual(page).catch(() => false);
+      await expect(janela).toBeVisible({ timeout: 300 });
+    }).toPass({ timeout: 60_000, intervals: [300] });
+    // No modo rápido do E2E a janela dura 1 a 2 s e fecha antes de as cartas pousarem: mede as caixas
+    // do layout da mão (que já existem durante o voo) com a janela aberta, e confere que ela ainda estava.
+    const foto = testInfo.outputPath('janela-familia-' + largura + 'x' + altura + '.png');
+    const g = await page.evaluate(() => {
+      scrollTo(0, 0);
+      const rodape = document.querySelector('.rodape-mesa')!.getBoundingClientRect();
+      const cartas = Array.from(document.querySelectorAll('[data-testid="minha-mao"] .carta-botao .carta'))
+        .map((c) => c.getBoundingClientRect()).filter((r) => r.height > 0);
+      return {
+        janelaAberta: !!document.querySelector('.rodape-mesa .janela-familia'),
+        topoRodape: rodape.top, alturaRodape: rodape.height, cartas: cartas.length, fundoCartas: Math.max(0, ...cartas.map((r) => r.bottom)),
+      };
+    });
+    await page.screenshot({ path: foto });
+    await testInfo.attach('janela-familia', { path: foto, contentType: 'image/png' });
+    expect(g.janelaAberta, 'a janela de família fechou antes da medição').toBe(true);
+    // A janela abre com a mão já distribuída (é antes da 1ª carta).
+    expect(g.cartas, 'a mão não está na tela com a janela de família').toBeGreaterThan(0);
+    expect(g.fundoCartas, `cartas sob o rodapé de ${Math.round(g.alturaRodape)}px`).toBeLessThanOrEqual(g.topoRodape + 1);
+  });
+}
+
+/** F2.5 (O5 do ciclo 1): o nome do assento de cima ficava atrás do monte. */
+for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
+  test('nome do assento de cima livre do monte, personagens e cadeiras - ' + largura + 'x' + altura, async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: largura, height: altura });
+    await page.goto('/');
+    await page.getByLabel('Apelido').fill('QA Monte');
+    await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+    await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+    for (const vista of ['personagens', 'cadeiras'] as const) {
+      if (vista === 'cadeiras') {
+        await page.getByRole('button', { name: 'Visual da mesa' }).click();
+        await page.getByRole('button', { name: 'Cadeiras (vista de cima)' }).click();
+        await expect(page.locator('.tela-mesa')).toHaveAttribute('data-visualizacao', 'cadeiras');
+      }
+      // O monte troca de lugar com o pé: amostra o ritual e o começo das mãos.
+      let pior = 0;
+      let amostras = 0;
+      const ate = Date.now() + 25_000;
+      while (Date.now() < ate) {
+        await agirNoRitual(page).catch(() => false);
+        const a = await areaSob(page, '[data-testid="assento-cima"] .assento-nome', '[data-testid="monte"]');
+        if (a !== null) { amostras++; pior = Math.max(pior, a); }
+        await page.waitForTimeout(150);
+      }
+      expect(amostras, `${vista}: monte e nome de cima não apareceram juntos`).toBeGreaterThan(0);
+      expect(pior, `${vista}: área do nome de cima sob o monte (px²)`).toBeLessThanOrEqual(4);
+    }
+  });
+}

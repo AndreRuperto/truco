@@ -56,4 +56,19 @@ describe('baloesAtivos', () => {
     expect(baloesAtivos(eventos, 3_600)).toEqual(new Map([[2, 'Bora!']]));
     expect(baloesAtivos(eventos, 3_400).get(1)).toBe('Boa!');
   });
+
+  test('com limite (telas de até 340 px): só os N balões mais recentes, de cadeiras diferentes', () => {
+    const eventos: Evento[] = [
+      { id: 1, em: 1_000, tipo: 'acao', de: 0, texto: 'Pode dar.' },
+      { id: 2, em: 1_200, tipo: 'fala', de: 1, texto: 'Boa!' },
+      { id: 3, em: 1_400, tipo: 'fala', de: 3, texto: 'Vixe!' },
+      { id: 4, em: 1_600, tipo: 'fala', de: 2, texto: 'Bora!' },
+      // A cadeira 1 fala de novo: passa a ser a mais recente.
+      { id: 5, em: 1_800, tipo: 'fala', de: 1, texto: 'TRUCO!' },
+    ];
+    expect(baloesAtivos(eventos, 2_000, undefined, 2)).toEqual(new Map([[2, 'Bora!'], [1, 'TRUCO!']]));
+    expect(baloesAtivos(eventos, 2_000, undefined, 2).size).toBe(2);
+    // Sem limite, continua um por cadeira.
+    expect(baloesAtivos(eventos, 2_000).size).toBe(4);
+  });
 });

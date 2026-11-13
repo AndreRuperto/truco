@@ -135,8 +135,13 @@ export function useRodadaNaMesa(mao: VisaoMao | null, ultimaMao: VisaoResultadoM
   }, [chaveCangada]);
   useEffect(() => () => timersRevelacao.current.forEach(clearTimeout), []);
   const nova = !!chaveCangada && revelacao?.chave !== chaveCangada;
+  // Mão nova sem nenhuma rodada jogada não tem cangada: a lateral que ainda revelava a mão anterior
+  // sai (no modo rápido a mão seguinte chegava antes de MOSTRA_RODADA_MS e a lateral ficava por cima
+  // da janela de família; QA da fase 2).
+  const maoNova = !!mao && mao.rodadasJogadas.length === 0;
   const cangadaLateral: DadosCangadaLateral | null =
-    nova ? { jogadas: completa.jogadas, abertas: 0 }
+    maoNova ? null
+    : nova ? { jogadas: completa.jogadas, abertas: 0 }
     : revelacao && !revelacao.terminou ? { jogadas: revelacao.jogadas, abertas: revelacao.abertas }
     : null;
   const limpou = chaveRodada !== null && limpa === chaveRodada;

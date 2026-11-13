@@ -1,5 +1,21 @@
 # Próximos passos — Truco
 
+## 2026-11-16 · branch `claude/mvp-f2-visual` · Fase 2 pronta para revisão
+
+Fases 0 e 1 estão em produção. Fase 2 (acabamento visual e temas) concluída, com o gate local verde e um PR aberto esperando o "pode" do André (o merge dispara o deploy). Critérios, resultado do QA independente e resposta a cada achado: `docs/qa-frontend/qa-fase2-2026-11.md`.
+
+Pendências registradas (não bloqueiam a fase):
+- [ ] P3: em 320×568 e 360×640, a dica de 3 linhas cobre o centro da mesa. Precisa redesenho (por exemplo, recolher quando houver carta na mesa). O teste está como `test.fail`.
+- [ ] P2: no desktop, o painel "Ordem" aberto cobre "Nós" e o placar (A3, anterior à branch).
+- [ ] P2: na vista 3D, os balões das cadeiras laterais saem do quadro (A5, anterior à branch).
+- [ ] P3: no desktop, a dica cobre o nome de cima; em 320×568, o botão "Ordem" encosta na etiqueta de cima (A4, A10).
+- [ ] Reteste pelo QA independente depois das correções (não foi feito).
+- [ ] PR da branch `claude/mvp-f0-checklist` (checklist da F0).
+
+Próximo: Fase 3 (animações e sensação de jogo), na branch `claude/mvp-f3-animacoes`, depois do merge da F2.
+
+---
+
 Atualizado em 2026-11-10.
 
 ## Branches e PRs em aberto

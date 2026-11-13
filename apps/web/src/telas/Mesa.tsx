@@ -115,7 +115,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   const variante = v.regras.variante;
   const vira = m?.vira ?? null;
   const ui = agruparAcoes(msg.minhasAcoes, v);
-  const baloes = baloesAtivos(snap.eventos, agora);
+  // Em até 340 px de largura, três balões ao mesmo tempo se encobriam: mostra só os 2 mais recentes.
+  const estreita = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 340px)').matches ?? false);
+  const baloes = baloesAtivos(snap.eventos, agora, undefined, estreita ? 2 : Infinity);
   const { nos, eles } = placarRelativo(v);
   const nome = (c: Cadeira) => msg.cadeiras[c]?.nome ?? `Cadeira ${c + 1}`;
   const agentes = quemDeveAgir(v);

@@ -42,6 +42,7 @@ export function estadoMesa3D(e: EntradaMesa3D): Estado3D {
       fala,
       gritando: fala !== null && GRITOS.has(fala),
       caiu: !!info && !info.conectado,
+      roupa: info?.visual?.roupa ?? null,
     };
   });
   const dono = donoDoMonte(v);
@@ -56,6 +57,8 @@ export function estadoMesa3D(e: EntradaMesa3D): Estado3D {
     vira: m?.vira ?? null,
     monte: v.qtdMonte > 0 && dono !== null ? { qtd: v.qtdMonte, pos: posicaoRelativa(minha, dono) } : null,
     plastico: e.mesaFisica?.tipo === 'plastico',
+    // Como no 2D (telas/Mesa.tsx): o baralho é de quem dá as cartas, o pé.
+    verso: (() => { const vv = e.cadeiras[v.pe]?.visual?.verso; return vv ? { cor: vv.cor, linha: vv.linha } : null; })(),
     variante: v.regras.variante,
   };
 }

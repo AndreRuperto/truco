@@ -32,7 +32,7 @@
 .instalar-truco-texto strong { font-size: .88rem; }
 .instalar-truco-texto small { color: var(--giz-suave); line-height: 1.35; }
 .instalar-truco-botao {
-  min-height: 42px;
+  min-height: 44px;
   padding: 8px 13px;
   border: 1px solid var(--grito);
   border-radius: 9px;
@@ -205,6 +205,24 @@
     right: 0;
     translate: 50% 0;
   }
+  /* Etiquetas de família das laterais: estreitas (quebram em linhas) para não chegar ao meio da
+     cruz, onde fica o monte quando quem deu está embaixo (de 360 a 430px a etiqueta de 42vw
+     chegava nele; QA da fase 2). */
+  .tela-mesa .familia.pos-esquerda figcaption,
+  .tela-mesa .familia.pos-direita figcaption { max-width: 24vw; }
+  /* Em até 380px a figura lateral (3 cartinhas + texto em 3 linhas) descia até o meu nome: fica só
+     o texto, que já diz tudo ("Bot Dita: família fechada", "conferiu: era blefe! +2 pra eles"). */
+  @media (max-width: 380px) {
+    .tela-mesa .familia.pos-esquerda .familia-cartas,
+    .tela-mesa .familia.pos-direita .familia-cartas { display: none; }
+  }
+  /* Em até 340px, dois balões de cadeiras vizinhas ("Corta aí!" de quem dá e "Toma 3, parceiro!"
+     de quem corta) ainda se encostavam (9x38px, 1 em 30 execuções): mais estreitos, quebram linha. */
+  @media (max-width: 340px) {
+    .tela-mesa .balao { max-width: 38vw; }
+    .tela-mesa .assento.pos-esquerda .balao,
+    .tela-mesa .assento.pos-direita .balao { max-width: 28vw; }
+  }
   /* Dica da partida: sobre a metade de baixo da arena, nunca no placar, no botão "Ordem"
      (que a dica cita), na mão ou nas ações. 120px ≈ padding + barra + placar + gaps, os
      mesmos valores da --reserva-mesa. `main` vence a regra de topo de polimento-v2.css. */
@@ -315,6 +333,68 @@
     overflow-wrap: anywhere;
   }
   .tela-mesa .barra-acoes .acao.grito { font-size: 1.2rem; }
+
+  /* Hora da família: a janela ("Tem família? 3s", "0/3", "Sem família") e a ação ("Pedir família
+     fechada") dividem UMA linha, em vez de três empilhadas (o rodapé chegava a 144px e cobria até
+     40px da mão, que é justamente o que a pessoa olha para decidir). Cabe na linha de 62px da
+     --reserva-mesa: a janela com 46px de altura e a ação quebrando em até 2 linhas. */
+  .tela-mesa .rodape-mesa:has(> .janela-familia) {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: stretch;
+    column-gap: 5px;
+  }
+  .tela-mesa .rodape-mesa:has(> .janela-familia) > :only-child { grid-column: 1 / -1; }
+  .tela-mesa .rodape-mesa > .janela-familia {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    align-content: center;
+    width: auto;
+    min-height: 46px;
+    gap: 0 6px;
+    padding: 1px 6px;
+  }
+  .tela-mesa .rodape-mesa > .janela-familia .janela-familia-texto {
+    grid-column: 1;
+    font-size: .9rem;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .tela-mesa .rodape-mesa > .janela-familia .familia-limite {
+    grid-column: 1;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .tela-mesa .rodape-mesa > .janela-familia button {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    min-height: 44px;
+    padding: 4px 9px;
+    font-size: .85rem;
+  }
+  .tela-mesa .rodape-mesa:has(> .janela-familia) .barra-acoes .acao {
+    padding: 4px 8px;
+    font-size: .92rem;
+    line-height: 1.1;
+    /* Quebra entre palavras ("Pedir família / fechada"), nunca letra por letra. */
+    overflow-wrap: normal;
+  }
+  @media (max-width: 340px) {
+    /* Em 320px não cabe tudo numa linha: "Fechadas usadas: 0/3" sai da vista (continua para leitor
+       de tela; o limite é do motor e o botão muda sozinho) e a janela encolhe a fonte. */
+    .tela-mesa .rodape-mesa > .janela-familia .familia-limite {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .tela-mesa .rodape-mesa > .janela-familia .janela-familia-texto { grid-row: 1 / span 2; align-self: center; font-size: .8rem; }
+    .tela-mesa .rodape-mesa > .janela-familia button { padding: 4px 7px; font-size: .8rem; }
+    .tela-mesa .rodape-mesa:has(> .janela-familia) .barra-acoes .acao { padding: 4px 6px; font-size: .85rem; }
+  }
 
   /* Durante o ritual, o baralho de floreios ocupa só a arena compactada.
      O botão real de embaralhar continua acessível abaixo dela. */
