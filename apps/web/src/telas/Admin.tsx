@@ -1,4 +1,5 @@
-import type { DiaAdmin, MesaAdmin, PartidaAdmin, UsuarioAdmin } from '@truco/api';
+import type { DiaAdmin, LinhaAuditoria, MesaAdmin, PartidaAdmin, PedidoAdmin, UsuarioAdmin } from '@truco/api';
+import { formatarReais } from '../logica/lojaItens';
 import { type FormEvent, useState } from 'react';
 import { Avatar } from '../componentes/Avatar';
 import { NOME_MODO, NOME_VARIANTE } from '../logica/conta';
@@ -8,7 +9,7 @@ import { useCarregar } from '../rede/hooks';
 
 type ApiAdmin = Pick<Api, 'admin'>;
 
-const NOME_ABA: Record<AbaAdmin, string> = { resumo: 'Resumo', usuarios: 'Usuários', mesas: 'Mesas agora', partidas: 'Partidas' };
+const NOME_ABA: Record<AbaAdmin, string> = { resumo: 'Resumo', usuarios: 'Usuários', pedidos: 'Pedidos', auditoria: 'Auditoria', mesas: 'Mesas agora', partidas: 'Partidas' };
 
 const DATA = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 const DATA_HORA = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -27,6 +28,8 @@ export function TelaAdmin({ aba, api }: { aba: AbaAdmin; api: ApiAdmin }) {
       </nav>
       {aba === 'resumo' && <Resumo api={api} />}
       {aba === 'usuarios' && <Usuarios api={api} />}
+      {aba === 'pedidos' && <Pedidos api={api} />}
+      {aba === 'auditoria' && <Auditoria api={api} />}
       {aba === 'mesas' && <Mesas api={api} />}
       {aba === 'partidas' && <Partidas api={api} />}
     </main>
@@ -147,7 +150,10 @@ function Usuarios({ api }: { api: ApiAdmin }) {
 }
 
 function CartaoUsuario({ u, api, aoMudar }: { u: UsuarioAdmin; api: ApiAdmin; aoMudar: () => void }) {
-  const [modo, setModo] = useState<'ver' | 'apelido' | 'banir'>('ver');
+  const [modo, setModo] = useState<'ver' | 'apelido' | 'banir' | 'ajuste' | 'confirmar-ajuste'>('ver');
+  const [moeda, setMoeda] = useState<'fichas' | 'pila'>('fichas');
+  const [delta, setDelta] = useState('');
+  const [motivo, setMotivo] = useState('');
   const [apelido, setApelido] = useState(u.apelido);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -201,6 +207,49 @@ function CartaoUsuario({ u, api, aoMudar }: { u: UsuarioAdmin; api: ApiAdmin; ao
           </button>
         </form>
       )}
+      {modo === 'ajuste' && (
+        <form
+          className="admin-form-apelido"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const n = Number(delta);
+            if (!Number.isInteger(n) || n === 0) return setErro('Diga um valor inteiro diferente de zero.');
+            if (!motivo.trim()) return setErro('Diga o motivo do ajuste.');
+            setErro(null);
+            setModo('confirmar-ajuste');
+          }}
+        >
+          <label htmlFor={`admin-moeda-${u.id}`}>Moeda</label>
+          <select id={`admin-moeda-${u.id}`} value={moeda} onChange={(e) => setMoeda(e.target.value as 'fichas' | 'pila')}>
+            <option value="fichas">Fichas</option>
+            <option value="pila">Pila</option>
+          </select>
+          <label htmlFor={`admin-delta-${u.id}`}>Quanto (use - para tirar)</label>
+          <input id={`admin-delta-${u.id}`} inputMode="numeric" value={delta} onChange={(e) => setDelta(e.target.value)} autoFocus />
+          <label htmlFor={`admin-motivo-${u.id}`}>Motivo</label>
+          <input id={`admin-motivo-${u.id}`} value={motivo} maxLength={120} onChange={(e) => setMotivo(e.target.value)} />
+          <button type="submit" className="admin-botao">
+            Revisar
+          </button>
+          <button type="button" className="admin-botao secundario" onClick={() => setModo('ver')}>
+            Cancelar
+          </button>
+        </form>
+      )}
+      {modo === 'confirmar-ajuste' && (
+        <div className="admin-confirmar" role="group" aria-label={`Ajustar saldo de ${u.apelido}`}>
+          <p>
+            {Number(delta) > 0 ? '+' : ''}
+            {Number(delta)} {moeda === 'fichas' ? 'Fichas' : 'Pila'} para {u.apelido}. Motivo: {motivo.trim()}. Fica no extrato e na auditoria.
+          </p>
+          <button type="button" className="admin-botao" disabled={ocupado} onClick={() => void agir(() => api.admin.ajuste(u.id, moeda, Number(delta), motivo.trim()))}>
+            Confirmar ajuste
+          </button>
+          <button type="button" className="admin-botao secundario" onClick={() => setModo('ajuste')}>
+            Voltar
+          </button>
+        </div>
+      )}
       {modo === 'banir' && (
         <div className="admin-confirmar" role="group" aria-label={`Banir ${u.apelido}`}>
           <p>
@@ -226,6 +275,18 @@ function CartaoUsuario({ u, api, aoMudar }: { u: UsuarioAdmin; api: ApiAdmin; ao
           >
             Trocar apelido
           </button>
+          <button
+            type="button"
+            className="admin-botao secundario"
+            onClick={() => {
+              setDelta('');
+              setMotivo('');
+              setErro(null);
+              setModo('ajuste');
+            }}
+          >
+            Ajustar saldo…
+          </button>
           {u.banidoEm ? (
             <button type="button" className="admin-botao secundario" disabled={ocupado} onClick={() => void agir(() => api.admin.desbanir(u.id))}>
               Desbanir
@@ -245,6 +306,137 @@ function CartaoUsuario({ u, api, aoMudar }: { u: UsuarioAdmin; api: ApiAdmin; ao
         </p>
       )}
     </li>
+  );
+}
+
+// ---------- pedidos de Pila ----------
+
+const NOME_STATUS: Record<PedidoAdmin['status'], string> = { criado: 'criado', pago: 'pago', estornado: 'estornado' };
+
+function Pedidos({ api }: { api: ApiAdmin }) {
+  const { dados, erro, carregando, recarregar } = useCarregar(() => api.admin.pedidos(), []);
+  const [confirmando, setConfirmando] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [erroAcao, setErroAcao] = useState<string | null>(null);
+  const estornar = async (id: string) => {
+    setErroAcao(null);
+    try {
+      const r = await api.admin.estorno(id);
+      const faltou = r.faltou ? ` Faltaram ${r.faltou} (já tinham sido gastos).` : '';
+      setAviso(`Estornado: ${r.debitado} Pila tirados.${faltou}`);
+      setConfirmando(null);
+      recarregar();
+    } catch (e) {
+      setErroAcao(e instanceof Error ? e.message : String(e));
+    }
+  };
+  return (
+    <section aria-label="Pedidos de Pila">
+      <Estado carregando={carregando} erro={erro} temDados={!!dados} />
+      {aviso && <p role="status">{aviso}</p>}
+      {erroAcao && (
+        <p className="erro-form" role="alert">
+          {erroAcao}
+        </p>
+      )}
+      {dados && dados.pedidos.length === 0 && <p className="admin-vazio">Nenhum pedido ainda.</p>}
+      {dados && dados.pedidos.length > 0 && (
+        <div className="admin-tabela-rolagem">
+        <table className="admin-tabela">
+          <caption>Pedidos de Pila</caption>
+          <thead>
+            <tr>
+              <th scope="col">Data</th>
+              <th scope="col">Usuário</th>
+              <th scope="col">Pacote</th>
+              <th scope="col">Valor</th>
+              <th scope="col">Status</th>
+              <th scope="col">
+                <span className="so-leitor">Ações</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {dados.pedidos.map((p) => (
+              <tr key={p.id}>
+                <td>{fmt(DATA_HORA, p.criadoEm)}</td>
+                <td>
+                  <a href={hrefDe({ tela: 'perfil', id: p.usuarioId })}>{p.apelido}</a>
+                </td>
+                <td>
+                  {p.pacoteId} ({p.pila} Pila)
+                </td>
+                <td>{formatarReais(p.valorCentavos)}</td>
+                <td>{NOME_STATUS[p.status]}</td>
+                <td>
+                  {p.status === 'pago' &&
+                    (confirmando === p.id ? (
+                      <span role="group" aria-label={`Estornar o pedido de ${p.apelido}`}>
+                        <button type="button" className="admin-botao perigo" onClick={() => void estornar(p.id)}>
+                          Confirmar estorno
+                        </button>
+                        <button type="button" className="admin-botao secundario" onClick={() => setConfirmando(null)}>
+                          Cancelar
+                        </button>
+                      </span>
+                    ) : (
+                      <button type="button" className="admin-botao perigo-leve" onClick={() => setConfirmando(p.id)}>
+                        Marcar estornado…
+                      </button>
+                    ))}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------- auditoria ----------
+
+function textoAuditoria(l: LinhaAuditoria): string {
+  const d = (l.detalhe ?? {}) as Record<string, unknown>;
+  switch (l.acao) {
+    case 'banir':
+      return `baniu #${l.alvoId}`;
+    case 'desbanir':
+      return `desbaniu #${l.alvoId}`;
+    case 'ajuste_saldo': {
+      const delta = Number(d.delta);
+      const sinal = delta > 0 ? '+' : '';
+      const moeda = d.moeda === 'pila' ? 'Pila' : 'Fichas';
+      return `ajustou o saldo de #${l.alvoId}: ${sinal}${delta} ${moeda} (${String(d.motivo ?? '')})`;
+    }
+    case 'estorno_pila': {
+      const faltou = Number(d.faltou) ? `, faltaram ${Number(d.faltou)}` : '';
+      return `estornou o pedido ${String(d.pedido)} de #${l.alvoId}: -${Number(d.debitado)} Pila${faltou}`;
+    }
+    default:
+      return l.alvoId ? `${l.acao} #${l.alvoId}` : l.acao;
+  }
+}
+
+function Auditoria({ api }: { api: ApiAdmin }) {
+  const { dados, erro, carregando } = useCarregar(() => api.admin.auditoria(), []);
+  return (
+    <section aria-label="Auditoria">
+      <Estado carregando={carregando} erro={erro} temDados={!!dados} />
+      {dados && dados.auditoria.length === 0 && <p className="admin-vazio">Nada registrado ainda.</p>}
+      {dados && dados.auditoria.length > 0 && (
+        <ul className="admin-lista">
+          {dados.auditoria.map((l) => (
+            <li key={l.id} className="admin-cartao">
+              <p className="admin-cartao-meta">
+                {fmt(DATA_HORA, l.criadoEm)} · <strong>{l.admin}</strong> {textoAuditoria(l)}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

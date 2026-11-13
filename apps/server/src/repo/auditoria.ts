@@ -1,4 +1,5 @@
 import { desc, eq } from 'drizzle-orm';
+import type { LinhaAuditoria } from '../api/tipos';
 import type { Banco } from '../banco/banco';
 import { auditoria, usuarios } from '../banco/schema';
 
@@ -21,15 +22,6 @@ export async function registrarAuditoria(db: Exec, r: RegistroAuditoria, agora: 
   await db.insert(auditoria).values({ adminId: r.adminId, acao: r.acao, alvoId: r.alvoId ?? null, detalhe: r.detalhe ?? null, criadoEm: agora });
 }
 
-export interface LinhaAuditoria {
-  id: number;
-  adminId: number;
-  admin: string;
-  acao: string;
-  alvoId: number | null;
-  detalhe: unknown;
-  criadoEm: string;
-}
 
 /** As últimas `limite` linhas, mais nova primeiro, com o apelido de quem fez. */
 export async function auditoriaRecente(db: Banco, limite = 100): Promise<LinhaAuditoria[]> {

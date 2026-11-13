@@ -75,3 +75,66 @@ describe('TelaAdmin', () => {
     expect(api.admin.trocarApelido).toHaveBeenCalledWith(2, 'ana2');
   });
 });
+
+describe('admin da loja e auditoria (F4.7)', () => {
+  const PEDIDOS = [
+    { id: 'p-pago', pacoteId: 'bolso', pila: 220, valorCentavos: 990, status: 'pago', usuarioId: 2, apelido: 'ana', captureMethod: 'pix', criadoEm: '2026-11-10T12:00:00Z', pagoEm: '2026-11-10T12:01:00Z' },
+    { id: 'p-criado', pacoteId: 'punhado', pila: 90, valorCentavos: 490, status: 'criado', usuarioId: 3, apelido: 'bia', captureMethod: null, criadoEm: '2026-11-10T13:00:00Z', pagoEm: null },
+  ];
+
+  test('pedidos: tabela com data, usuário, pacote, valor e status; estorno só no pago e com confirmação', async () => {
+    const user = userEvent.setup();
+    const estorno = vi.fn(async () => ({ resultado: 'estornado', debitado: 220, faltou: 0 }));
+    const api = apiFalsa({ pedidos: vi.fn(async () => ({ pedidos: PEDIDOS })), estorno });
+    render(<TelaAdmin aba="pedidos" api={api} />);
+    const tabela = await screen.findByRole('table', { name: 'Pedidos de Pila' });
+    const linhas = within(tabela).getAllByRole('row');
+    expect(linhas).toHaveLength(3);
+    expect(linhas[1]).toHaveTextContent('ana');
+    expect(linhas[1]).toHaveTextContent('bolso');
+    expect(linhas[1]).toHaveTextContent('R$ 9,90');
+    expect(linhas[1]).toHaveTextContent('pago');
+    expect(within(linhas[2]).queryByRole('button', { name: /estornado/ })).toBeNull();
+    await user.click(within(linhas[1]).getByRole('button', { name: 'Marcar estornado…' }));
+    expect(estorno).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Confirmar estorno' }));
+    expect(estorno).toHaveBeenCalledWith('p-pago');
+    expect(await screen.findByRole('status')).toHaveTextContent('Estornado: 220 Pila tirados.');
+  });
+
+  test('usuários: ajuste de saldo exige motivo e confirmação antes de enviar', async () => {
+    const user = userEvent.setup();
+    const ajuste = vi.fn(async () => ({ saldo: 1050 }));
+    render(<TelaAdmin aba="usuarios" api={apiFalsa({ ajuste })} />);
+    const cartao = await screen.findByRole('listitem', { name: 'ana' });
+    await user.click(within(cartao).getByRole('button', { name: 'Ajustar saldo…' }));
+    await user.selectOptions(within(cartao).getByLabelText('Moeda'), 'fichas');
+    await user.type(within(cartao).getByLabelText('Quanto (use - para tirar)'), '50');
+    await user.click(within(cartao).getByRole('button', { name: 'Revisar' }));
+    expect(within(cartao).getByRole('alert')).toHaveTextContent('Diga o motivo');
+    await user.type(within(cartao).getByLabelText('Motivo'), 'compensação');
+    await user.click(within(cartao).getByRole('button', { name: 'Revisar' }));
+    expect(ajuste).not.toHaveBeenCalled();
+    expect(within(cartao).getByText(/\+50 Fichas para ana/)).toBeInTheDocument();
+    await user.click(within(cartao).getByRole('button', { name: 'Confirmar ajuste' }));
+    expect(ajuste).toHaveBeenCalledWith(2, 'fichas', 50, 'compensação');
+  });
+
+  test('auditoria: lista o que os admins fizeram, mais nova primeiro', async () => {
+    const auditoria = vi.fn(async () => ({
+      auditoria: [
+        { id: 2, adminId: 1, admin: 'chefe', acao: 'ajuste_saldo', alvoId: 2, detalhe: { moeda: 'fichas', delta: 50, motivo: 'compensação' }, criadoEm: '2026-11-10T12:00:00Z' },
+        { id: 1, adminId: 1, admin: 'chefe', acao: 'banir', alvoId: 3, detalhe: null, criadoEm: '2026-11-10T11:00:00Z' },
+      ],
+    }));
+    render(<TelaAdmin aba="auditoria" api={apiFalsa({ auditoria })} />);
+    const itens = await screen.findAllByRole('listitem');
+    expect(itens).toHaveLength(2);
+    expect(itens[0]).toHaveTextContent('chefe');
+    expect(itens[0]).toHaveTextContent('ajustou o saldo de #2');
+    expect(itens[0]).toHaveTextContent('+50 Fichas');
+    expect(itens[0]).toHaveTextContent('compensação');
+    expect(itens[1]).toHaveTextContent('baniu #3');
+  });
+});
+

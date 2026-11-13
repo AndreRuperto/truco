@@ -21,6 +21,8 @@ describe('rotas por hash', () => {
     expect(lerRota('#/como-jogar')).toEqual({ tela: 'manual' });
     expect(lerRota('#/admin')).toEqual({ tela: 'admin', aba: 'resumo' });
     expect(lerRota('#/admin/usuarios')).toEqual({ tela: 'admin', aba: 'usuarios' });
+    expect(lerRota('#/admin/pedidos')).toEqual({ tela: 'admin', aba: 'pedidos' });
+    expect(lerRota('#/admin/auditoria')).toEqual({ tela: 'admin', aba: 'auditoria' });
     expect(lerRota('#/admin/xyz')).toEqual({ tela: 'admin', aba: 'resumo' });
     expect(lerRota('#/nada')).toEqual({ tela: 'inicio' });
     expect(lerRota('#/loja')).toEqual({ tela: 'loja', aba: 'verso' });

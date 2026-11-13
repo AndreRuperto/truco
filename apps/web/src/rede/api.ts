@@ -4,7 +4,9 @@ import type {
   CatalogoApi,
   ConfigApi,
   Moeda,
+  LinhaAuditoria,
   PedidoAdmin,
+  ResultadoEstornoApi,
   PedidoApi,
   Slot,
   ItemHistorico,
@@ -92,6 +94,8 @@ export function criarApi(f: typeof fetch = (...a) => fetch(...a), base = '', aoN
       desbanir: (id: number) => pedir<void>('POST', `/api/admin/usuarios/${id}/desbanir`, {}, true),
       mesas: () => pedir<{ mesas: MesaAdmin[] }>('GET', '/api/admin/mesas', undefined, true),
       partidas: () => pedir<{ partidas: PartidaAdmin[] }>('GET', '/api/admin/partidas', undefined, true),
+      estorno: (pedidoId: string) => pedir<ResultadoEstornoApi>('POST', `/api/admin/pedidos/${encodeURIComponent(pedidoId)}/estorno`, {}, true),
+      auditoria: () => pedir<{ auditoria: LinhaAuditoria[] }>('GET', '/api/admin/auditoria', undefined, true),
     },
   };
 }
