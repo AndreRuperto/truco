@@ -47,6 +47,32 @@ export class ErroGoogleOutraConta extends Error {
   }
 }
 
+/**
+ * Já existe outra conta com o mesmo e-mail canônico (só difere por `+tag`): não cria a nova
+ * (SEC-03, decisão D1b do plano MVP). Quem já tinha conta continua entrando pelo endereço dela.
+ */
+export class ErroEmailCanonico extends Error {
+  constructor() {
+    super('Já existe uma conta com este e-mail. Entre com o endereço original.');
+    this.name = 'ErroEmailCanonico';
+  }
+}
+
+/** E-mail sem o `+tag` da parte local, em minúsculas (os pontos ficam: ana.b e anab são outros). */
+export function emailCanonico(email: string): string {
+  const e = email.trim().toLowerCase();
+  const arroba = e.lastIndexOf('@');
+  if (arroba < 0) return e;
+  const local = e.slice(0, arroba).replace(/\+.*$/, '');
+  return `${local}${e.slice(arroba)}`;
+}
+
+/** Recusa criar conta se outra já tem o mesmo e-mail canônico. */
+async function exigirCanonicoLivre(db: Banco, email: string): Promise<void> {
+  const [outra] = await db.select({ id: usuarios.id }).from(usuarios).where(eq(usuarios.emailCanonico, emailCanonico(email))).limit(1);
+  if (outra) throw new ErroEmailCanonico();
+}
+
 function emailOuErro(cru: string): string {
   const e = normalizarEmail(cru);
   if (!e) throw new Error('e-mail inválido');
@@ -100,7 +126,7 @@ export async function criarUsuario(
     try {
       const [u] = await db
         .insert(usuarios)
-        .values({ apelido, email: o.email ?? null, googleSub: o.googleSub ?? null })
+        .values({ apelido, email: o.email ?? null, emailCanonico: o.email ? emailCanonico(o.email) : null, googleSub: o.googleSub ?? null })
         .returning(COLUNAS);
       return u;
     } catch (e) {
@@ -125,6 +151,7 @@ export async function entrarComEmail(db: Banco, emailCru: string): Promise<Usuar
   const email = emailOuErro(emailCru);
   const existente = await usuarioPorEmail(db, email);
   if (existente) return existente;
+  await exigirCanonicoLivre(db, email);
   try {
     return await criarUsuario(db, { apelidoBase: baseDeApelido(email), email });
   } catch (e) {
@@ -165,6 +192,7 @@ export async function entrarComGoogle(db: Banco, g: PerfilGoogle): Promise<Usuar
   if (email) {
     const u = await usuarioPorEmail(db, email);
     if (u) return ligarGoogle(db, u, g.sub);
+    await exigirCanonicoLivre(db, email);
   }
   try {
     return await criarUsuario(db, { apelidoBase: baseDeApelido(g.nome ?? email ?? 'jogador'), email, googleSub: g.sub });

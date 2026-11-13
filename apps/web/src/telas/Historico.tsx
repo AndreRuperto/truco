@@ -81,6 +81,7 @@ export function TelaHistorico({ api }: { api: Pick<Api, 'historico'> }) {
                       {NOME_VARIANTE[p.variante]} · {NOME_MODO[p.modo]}
                     </span>
                     <span className="historico-data">{quando(p)}</span>
+                    {p.eloCongelado && <span className="historico-congelado">não contou para o ranking (mesmo grupo 5 vezes em 24 h)</span>}
                   </div>
                   <div className="historico-placar" aria-label={`Placar: nós ${p.nos}, eles ${p.eles}`}>
                     <span aria-hidden="true">

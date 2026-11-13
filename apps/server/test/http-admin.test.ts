@@ -44,7 +44,7 @@ async function entrarPorLink(email: string) {
 }
 const cookieDeQuem = async (email: string) => cookieDe((await entrarPorLink(email)).setCookie);
 
-const ROTAS_GET = ['/api/admin/resumo', '/api/admin/usuarios', '/api/admin/mesas', '/api/admin/partidas'];
+const ROTAS_GET = ['/api/admin/resumo', '/api/admin/usuarios', '/api/admin/mesas', '/api/admin/partidas', '/api/admin/auditoria'];
 
 describe('porteiro do admin', () => {
   test('sem sessão: 401 em todas as rotas', async () => {
@@ -129,6 +129,26 @@ describe('painel', () => {
     expect(liberadas).toEqual([id]);
     expect((await app.pedir(`/api/admin/usuarios/${id}/desbanir`, { corpo: {}, cookie })).status).toBe(409);
     expect((await entrarPorLink('ana@x.com')).status).toBe(200);
+  });
+
+  test('trilha de auditoria (F4.6): banir, desbanir e ajuste de saldo, mais nova primeiro, sem e-mail de terceiros', async () => {
+    const cookie = await cookieDeQuem('chefe@x.com');
+    const chefe = (await app.pedir('/api/eu', { cookie })).json.usuario;
+    const ana = await entrarPorLink('ana@x.com');
+    const id = ana.json.usuario.id;
+    expect((await app.pedir(`/api/admin/usuarios/${id}/banir`, { corpo: {}, cookie })).status).toBe(204);
+    expect((await app.pedir(`/api/admin/usuarios/${id}/desbanir`, { corpo: {}, cookie })).status).toBe(204);
+    expect((await app.pedir(`/api/admin/usuarios/${id}/ajuste`, { corpo: { moeda: 'fichas', delta: 50, motivo: 'compensação' }, cookie })).status).toBe(200);
+    // Ação recusada não entra na trilha.
+    expect((await app.pedir(`/api/admin/usuarios/${id}/desbanir`, { corpo: {}, cookie })).status).toBe(409);
+
+    const r = await app.pedir('/api/admin/auditoria', { cookie });
+    expect(r.status).toBe(200);
+    const linhas = r.json.auditoria as { acao: string; adminId: number; admin: string; alvoId: number; detalhe: unknown; criadoEm: string }[];
+    expect(linhas.map((l) => l.acao)).toEqual(['ajuste_saldo', 'desbanir', 'banir']);
+    for (const l of linhas) expect(l).toMatchObject({ adminId: chefe.id, admin: chefe.apelido, alvoId: id, criadoEm: AGORA.toISOString() });
+    expect(linhas[0].detalhe).toEqual({ moeda: 'fichas', delta: 50, motivo: 'compensação' });
+    expect(JSON.stringify(r.json)).not.toContain('ana@x.com');
   });
 
   test('admin não pode ser banido; id inválido e inexistente', async () => {

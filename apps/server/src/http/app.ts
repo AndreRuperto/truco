@@ -18,6 +18,7 @@ import {
   encerrarSessao,
   entrarComEmail,
   entrarComGoogle,
+  ErroEmailCanonico,
   ErroGoogleOutraConta,
   gravarPreferencias,
   lerPreferencias,
@@ -33,6 +34,7 @@ import { historico, perfil, ranking } from '../repo/partidas';
 import type { Servicos } from '../servicos';
 import { cabecalhosSeguranca, hashesDeScriptsInline } from './cabecalhos';
 import { rotasAdminLoja, rotasLoja } from './loja';
+import { auditoriaRecente, registrarAuditoria } from '../repo/auditoria';
 
 export interface ExtrasApp {
   /** Mesas casuais abertas (o servidor passa `listarSalasAbertas`). */
@@ -45,6 +47,8 @@ export interface ExtrasApp {
   limiteLinkEmail?: LimiteTaxa;
   /** Por IP, em confirmar link e login com Google (padrão: 30 a cada 15 min). */
   limiteAuthIp?: LimiteTaxa;
+  /** Por IP, somando perfil público, ranking, salas e catálogo (padrão: 120 por minuto). */
+  limiteLeituraIp?: LimiteTaxa;
   /** Banimento: derruba a conta das salas em tempo real (o servidor passa MesaRoom/FilaRoom). */
   derrubarConta?: (usuarioId: number) => void;
   /** Desbanimento: a conta volta a poder reconectar. */
@@ -141,6 +145,14 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
   });
   api.use(express.json({ limit: '16kb' }));
 
+  // Leituras públicas (perfil de qualquer um, ranking, salas, catálogo): 120 por IP por minuto,
+  // somadas (SEC-09 da auditoria de 2026-11-10). Antes das rotas, para valer em todas.
+  const limiteLeitura = x.limiteLeituraIp ?? new LimiteTaxa(120, 60_000);
+  api.get(['/perfil/:id', '/ranking/:variante', '/salas', '/loja/catalogo'], (req, res, next) => {
+    if (limiteLeitura.permitir(chaveDeIp(req.ip))) return next();
+    res.status(429).json({ erro: 'muitos pedidos; tente de novo em um minuto' });
+  });
+
   api.get('/config', (_req, res) => {
     res.json({ google: s.google?.clientId ?? null, emailTeste: s.caixaTeste !== null });
   });
@@ -198,7 +210,14 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     const token = typeof req.body?.token === 'string' ? req.body.token : '';
     const email = await consumirLinkMagico(s.banco, token, s.agora());
     if (!email) return void res.status(400).json({ erro: 'link inválido ou expirado; peça outro' });
-    await entrar(res, await entrarComEmail(s.banco, email));
+    let u: Usuario;
+    try {
+      u = await entrarComEmail(s.banco, email);
+    } catch (e) {
+      if (e instanceof ErroEmailCanonico) return void res.status(409).json({ erro: e.message });
+      throw e;
+    }
+    await entrar(res, u);
   });
 
   api.post('/auth/google', async (req, res) => {
@@ -216,6 +235,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
       u = await entrarComGoogle(s.banco, perfilGoogle);
     } catch (e) {
       if (e instanceof ErroGoogleOutraConta) return void res.status(409).json({ erro: `${e.message}; entre pelo link mágico` });
+      if (e instanceof ErroEmailCanonico) return void res.status(409).json({ erro: e.message });
       throw e;
     }
     await entrar(res, u);
@@ -328,6 +348,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (!(await banirUsuario(s.banco, id, s.agora()))) return void res.status(409).json({ erro: 'já está banido' });
     // As sessões HTTP já foram apagadas; os WebSockets abertos (mesa, fila) também caem.
     x.derrubarConta?.(id);
+    await registrarAuditoria(s.banco, { adminId: (res.locals.admin as Usuario).id, acao: 'banir', alvoId: id }, s.agora());
     console.log(`[admin] ${(res.locals.admin as Usuario).apelido} baniu #${id} (${alvo.apelido})`);
     res.status(204).end();
   });
@@ -337,6 +358,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (!id) return void res.status(400).json({ erro: 'id inválido' });
     if (!(await usuarioPorId(s.banco, id))) return void res.status(404).json({ erro: 'usuário não encontrado' });
     if (!(await desbanirUsuario(s.banco, id))) return void res.status(409).json({ erro: 'não está banido' });
+    await registrarAuditoria(s.banco, { adminId: (res.locals.admin as Usuario).id, acao: 'desbanir', alvoId: id }, s.agora());
     console.log(`[admin] ${(res.locals.admin as Usuario).apelido} desbaniu #${id}`);
     x.liberarConta?.(id);
     res.status(204).end();
@@ -348,6 +370,10 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
 
   admin.get('/partidas', async (_req, res) => {
     res.json({ partidas: await partidasRecentesAdmin(s.banco) });
+  });
+
+  admin.get('/auditoria', async (_req, res) => {
+    res.json({ auditoria: await auditoriaRecente(s.banco) });
   });
   rotasAdminLoja(admin, s);
   api.use('/admin', admin);

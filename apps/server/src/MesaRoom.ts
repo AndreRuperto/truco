@@ -10,6 +10,7 @@ import { avatarValido } from './repo/usuarios';
 import { vozDaConta } from './mesa/vozes';
 import type { Servicos } from './servicos';
 import { type UsuarioConexao, usuarioDaConexao } from './sessaoSala';
+import { chaveDeIp, LimiteTaxa } from './auth/limite';
 
 const randCripto = () => randomInt(0, 2 ** 32) / 2 ** 32;
 
@@ -43,6 +44,19 @@ function metodoDoPedido(context: AuthContext | undefined): string | null {
   }
 }
 
+/**
+ * IP de quem pediu a sala. Atrás do proxy confiável (produção/Railway), o último do
+ * X-Forwarded-For, igual ao `trust proxy` 1 do Express (http/app.ts); senão, o da conexão.
+ */
+function ipDaConexao(context: AuthContext | undefined, confiarProxy: boolean): string | null {
+  if (confiarProxy) {
+    const xff = (context?.headers as Headers | undefined)?.get?.('x-forwarded-for');
+    const ultimo = xff?.split(',').map((x) => x.trim()).filter(Boolean).at(-1);
+    if (ultimo) return ultimo;
+  }
+  return (context as { ip?: string } | undefined)?.ip ?? null;
+}
+
 function jogadoresReservados(cru: unknown): JogadorReservado[] {
   if (!Array.isArray(cru)) return [];
   return cru.filter((j): j is JogadorReservado => {
@@ -58,6 +72,8 @@ export class MesaRoom extends Room {
   static servicos: Servicos | null = null;
   /** Só a fila conhece: impede cliente de criar mesa ranqueada. */
   static readonly fichaInterna = randomUUID();
+  /** Criação de mesa (create/joinOrCreate) por IP: 20 a cada 10 min (SEC-09). Trocado nos testes. */
+  static limiteCriacao = new LimiteTaxa(20, 10 * 60_000);
   /** Ranqueada que não lota nesse tempo é cancelada. */
   static esperaRanqueadaMs = 30_000;
   /** Registros de salas vivas ou descartadas com gravação pendente (o desligamento espera). */
@@ -166,6 +182,14 @@ export class MesaRoom extends Room {
     if (metodo !== null && !METODOS_MATCHMAKE.has(metodo)) {
       throw new ServerError(ErrorCode.MATCHMAKE_UNHANDLED, 'método de matchmaking desconhecido');
     }
+    // `joinOrCreate` pode só entrar, mas aqui ainda não se sabe: conta os dois (20 em 10 min
+    // fica muito acima de quem joga). Chamada interna (fila, sem pedido HTTP) não conta.
+    if (metodo === 'create' || metodo === 'joinOrCreate') {
+      const ip = ipDaConexao(context, MesaRoom.servicos?.confiarProxy ?? false);
+      if (!MesaRoom.limiteCriacao.permitir(chaveDeIp(ip))) {
+        throw new ServerError(ErrorCode.AUTH_FAILED, 'muitas mesas criadas em pouco tempo; espere alguns minutos');
+      }
+    }
     // Privada nasce por `create` e se entra por `joinById`.
     if (o.modo === 'privada' && (metodo === 'join' || metodo === 'joinOrCreate')) {
       throw new ServerError(ErrorCode.MATCHMAKE_INVALID_CRITERIA, 'mesa privada: crie uma ou entre pelo código do convite');
@@ -242,6 +266,7 @@ export class MesaRoom extends Room {
 
     this.mesa.configurarCacife(opcoes.cacife);
     this.registro.aoCacife = (efetivo, pote) => this.mesa.definirCacife(efetivo, pote);
+    this.registro.aoEloCongelado = () => this.mesa.definirEloCongelado();
 
     this.onMessage('acao', (client, payload) => this.mesa.acao(client.sessionId, payload));
     this.onMessage('sinal', (client, payload) => this.mesa.sinal(client.sessionId, payload));

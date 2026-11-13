@@ -4013,6 +4013,12 @@ body:has(.tela-mesa) {
   font-size: var(--t-1);
   font-variant-numeric: tabular-nums;
 }
+/* Ranqueada com Elo congelado (mesmo grupo 5 vezes em 24 h): texto, não só o "0" do delta. */
+.historico-congelado {
+  color: var(--giz-suave);
+  font-size: var(--t-1);
+  font-style: italic;
+}
 .historico-placar {
   display: grid;
   justify-items: center;
@@ -4734,6 +4740,29 @@ body:has(.tela-mesa) {
 }
 .admin-barra-topo .admin-contagem {
   margin: 0;
+}
+/* Pedidos de Pila (admin): a tabela rola dentro da própria caixa em telas estreitas, nunca a página. */
+.admin-tabela-rolagem {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.admin-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-1);
+}
+.admin-tabela caption {
+  text-align: left;
+  font-weight: 700;
+  padding-bottom: var(--e2);
+}
+.admin-tabela th,
+.admin-tabela td {
+  padding: var(--e1) var(--e2);
+  border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 .admin-lista {
   display: grid;

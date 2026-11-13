@@ -5,6 +5,7 @@ import { REGRAS_RANQUEADA } from '@truco/engine';
 import { eq } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { bloqueiosFila, participacoes, partidas } from '../src/banco/schema';
+import { LimiteTaxa } from '../src/auth/limite';
 import { FilaRoom } from '../src/FilaRoom';
 import { MesaRoom } from '../src/MesaRoom';
 import { chaveRegras, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA } from '../src/mesa/protocolo';
@@ -24,6 +25,8 @@ let servicos: Servicos;
 beforeAll(async () => {
   MesaRoom.tempos = { botMs: 20, pausaMaoMs: 50, jogadaMs: 2_000, ritualMs: 300, conferirMs: 200, janelaFamiliaMs: 20, distribuicaoMs: 20 };
   FilaRoom.intervaloMs = 100;
+  // A suíte cria dezenas de mesas de 127.0.0.1; o limite de 20 em 10 min (SEC-09) é testado em mesaroom-auth.test.ts.
+  MesaRoom.limiteCriacao = new LimiteTaxa(10_000, 10 * 60_000);
   banco = await bancoDeTeste();
   servicos = servicosDeTeste(banco.db);
   colyseus = await boot(criarServidor(servicos));
@@ -712,6 +715,30 @@ describe('fila ranqueada', () => {
 
     for (const m of mesas) await m.leave(true);
     await esperarAsync(async () => (await banco.db.select().from(bloqueiosFila)).length === 4);
+  });
+});
+
+describe('queda e volta (F4.3)', () => {
+  test('cair e reconectar dentro do prazo não vira abandono: a cadeira e a partida continuam', async () => {
+    const ana = await logado('ana-cai@x.com');
+    const sala = await ana.cliente.create('mesa', { variante: 'mineiro', humanos: 1, nome: 'Ana' });
+    const msgs = coletor(sala);
+    await esperar(() => !!msgs.estado?.some((m) => m.visao));
+    await esperarAsync(async () => (await banco.db.select().from(participacoes).where(eq(participacoes.usuarioId, ana.u.id))).length === 1);
+    const token = sala.reconnectionToken;
+    // Queda (não consentida): o servidor guarda a cadeira por 300 s (onDrop + allowReconnection).
+    sala.connection.close(4010, 'queda simulada');
+    await new Promise((r) => setTimeout(r, 300));
+    const volta = await new Client(URL_TESTE).reconnect(token);
+    const msgsVolta = coletor(volta);
+    await esperar(() => !!msgsVolta.estado?.some((m) => m.visao && m.minhaCadeira === 0));
+    const [eu] = await banco.db.select().from(participacoes).where(eq(participacoes.usuarioId, ana.u.id));
+    expect(eu.abandonou).toBe(false);
+    const [p] = await banco.db.select().from(partidas).where(eq(partidas.id, eu.partidaId));
+    expect(p.terminadaEm).toBeNull();
+    // Contraprova: a saída consentida, essa sim, vira abandono (o teste distingue as duas).
+    await volta.leave(true);
+    await esperarAsync(async () => (await banco.db.select().from(participacoes).where(eq(participacoes.usuarioId, ana.u.id)))[0].abandonou);
   });
 });
 

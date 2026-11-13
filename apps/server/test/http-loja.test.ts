@@ -116,4 +116,22 @@ describe('loja (HTTP)', () => {
     const ok = await app.pedir(`/api/admin/usuarios/${anaId}/ajuste`, { cookie: chefe, corpo: { moeda: 'fichas', delta: 5000, motivo: 'teste E2E' } });
     expect(ok.json).toEqual({ saldo: 5000 });
   });
+
+  test('admin marca estornado (F4.8): tira o Pila uma vez; repetir é 409; não pago é 409; não admin 403', async () => {
+    const ana = await cookieDeQuem('ana@x.com');
+    const id = (await app.pedir('/api/loja/pedidos', { cookie: ana, corpo: { pacoteId: 'bolso' } })).json.pedido.id as string;
+    gateway.pagar('tx-est', 990);
+    await app.pedir('/api/loja/webhook/infinitepay', { corpo: { order_nsu: id, transaction_nsu: 'tx-est', invoice_slug: 's' } });
+    expect((await app.pedir('/api/loja/eu', { cookie: ana })).json.pila).toBe(220);
+    expect((await app.pedir(`/api/admin/pedidos/${id}/estorno`, { cookie: ana, corpo: {} })).status).toBe(403);
+    const chefe = await cookieDeQuem('chefe@x.com');
+    const r = await app.pedir(`/api/admin/pedidos/${id}/estorno`, { cookie: chefe, corpo: {} });
+    expect(r.status).toBe(200);
+    expect(r.json).toEqual({ resultado: 'estornado', debitado: 220, faltou: 0 });
+    expect((await app.pedir('/api/loja/eu', { cookie: ana })).json.pila).toBe(0);
+    expect((await app.pedir(`/api/admin/pedidos/${id}/estorno`, { cookie: chefe, corpo: {} })).status).toBe(409);
+    const naoPago = (await app.pedir('/api/loja/pedidos', { cookie: ana, corpo: { pacoteId: 'bolso' } })).json.pedido.id as string;
+    expect((await app.pedir(`/api/admin/pedidos/${naoPago}/estorno`, { cookie: chefe, corpo: {} })).status).toBe(409);
+    expect((await app.pedir('/api/admin/pedidos/nao-existe/estorno', { cookie: chefe, corpo: {} })).status).toBe(404);
+  });
 });

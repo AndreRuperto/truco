@@ -17,6 +17,8 @@ export const usuarios = pgTable(
     apelido: text('apelido').notNull().unique(),
     /** Sempre minúsculo (`normalizarEmail`). */
     email: text('email').unique(),
+    /** E-mail sem o `+tag` (`emailCanonico`): conta nova não pode repetir o de outra (SEC-03). */
+    emailCanonico: text('email_canonico'),
     googleSub: text('google_sub').unique(),
     /** Regras da mesa que o usuário deixou na tela inicial (ver `PreferenciasMesa`); null = nunca salvou. */
     /** Ver `UsuarioApi.avatar`. */
@@ -29,7 +31,10 @@ export const usuarios = pgTable(
     criadoEm: quando('criado_em').notNull().defaultNow(),
   },
   // "Ana" e "ana" são o mesmo apelido.
-  (t) => [uniqueIndex('usuarios_apelido_lower_idx').on(sql`lower(${t.apelido})`)],
+  (t) => [
+    uniqueIndex('usuarios_apelido_lower_idx').on(sql`lower(${t.apelido})`),
+    index('usuarios_email_canonico_idx').on(t.emailCanonico),
+  ],
 );
 
 export const sessoes = pgTable(
@@ -88,6 +93,8 @@ export const partidas = pgTable('partidas', {
   cacife: integer('cacife').notNull().default(0),
   /** Soma dos cacifes pagos. */
   pote: integer('pote').notNull().default(0),
+  /** Ranqueada repetida entre o mesmo grupo em 24 h (ranking/mesmoGrupo.ts): Elo e pontos não mudaram. */
+  eloCongelado: boolean('elo_congelado').notNull().default(false),
 });
 
 export const participacoes = pgTable(
@@ -196,3 +203,16 @@ export const pedidos = pgTable(
   },
   (t) => [index('pedidos_usuario_idx').on(t.usuarioId, t.criadoEm)],
 );
+
+/** Trilha do que os admins fizeram (banir, desbanir, ajuste de saldo, estorno). Sem e-mail de terceiros. */
+export const auditoria = pgTable('auditoria', {
+  id: serial('id').primaryKey(),
+  adminId: integer('admin_id')
+    .notNull()
+    .references(() => usuarios.id),
+  acao: text('acao').notNull(),
+  alvoId: integer('alvo_id'),
+  detalhe: jsonb('detalhe').$type<Record<string, unknown>>(),
+  criadoEm: quando('criado_em').notNull().defaultNow(),
+});
+

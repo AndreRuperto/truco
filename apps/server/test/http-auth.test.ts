@@ -232,6 +232,23 @@ describe('Google', () => {
     expect((await app.pedir('/api/auth/google', { corpo: { credencial: 'credencial-boa' } })).status).toBe(404);
   });
 
+  test('conta nova com +tag de um e-mail que já tem conta → 409 com a mensagem (F4.2)', async () => {
+    await criarUsuario(b.db, { apelidoBase: 'ana', email: 'ana@x.com' });
+    expect((await app.pedir('/api/auth/link', { corpo: { email: 'ana+2@x.com' } })).status).toBe(204);
+    const link = extrairLink(s.caixaTeste!.enviados.at(-1)!.texto)!;
+    const r = await app.pedir('/api/auth/link/confirmar', { corpo: { token: tokenDoLink(link) } });
+    expect(r.status).toBe(409);
+    expect(r.json.erro).toBe('Já existe uma conta com este e-mail. Entre com o endereço original.');
+    expect(r.setCookie).toBeFalsy();
+  });
+
+  test('Google com +tag de um e-mail que já tem conta → 409 com a mesma mensagem (F4.2)', async () => {
+    await criarUsuario(b.db, { apelidoBase: 'bia', email: 'bia+velha@x.com' });
+    const r = await app.pedir('/api/auth/google', { corpo: { credencial: 'credencial-boa' } });
+    expect(r.status).toBe(409);
+    expect(r.json.erro).toBe('Já existe uma conta com este e-mail. Entre com o endereço original.');
+  });
+
   test('e-mail já ligado a outro Google → 409', async () => {
     await criarUsuario(b.db, { apelidoBase: 'bia', email: 'bia@x.com', googleSub: 'g-outro' });
     const r = await app.pedir('/api/auth/google', { corpo: { credencial: 'credencial-boa' } });

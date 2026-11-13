@@ -1,11 +1,12 @@
 import type { Request, Response, Router } from 'express';
 import type { CarteiraApi, CatalogoApi, PedidoAdmin, PedidoApi } from '../api/tipos';
 import { chaveDeIp, LimiteTaxa } from '../auth/limite';
+import { registrarAuditoria } from '../repo/auditoria';
 import { ITENS, PACOTES, pacotePorId } from '../loja/catalogo';
 import { MOEDAS, type Moeda } from '../loja/regras';
 import { carteiraDe, extrato, movimentar, SaldoInsuficiente } from '../repo/carteira';
 import { comprarItem, equipadosDe, equipar, inventarioDe } from '../repo/loja';
-import { anexarCheckout, confirmarPedido, criarPedido, dadosDoRetorno, type Pedido, pedidoDe, pedidosAdmin } from '../repo/pedidos';
+import { anexarCheckout, confirmarPedido, criarPedido, dadosDoRetorno, estornarPedido, type Pedido, pedidoDe, pedidosAdmin } from '../repo/pedidos';
 import { type Usuario, usuarioPorId } from '../repo/usuarios';
 import type { Servicos } from '../servicos';
 
@@ -162,6 +163,16 @@ export function rotasAdminLoja(admin: Router, s: Servicos): void {
     res.json({ pedidos: ps });
   });
 
+  /** Estorno de Pila (o admin estornou no app da InfinitePay): tira o Pila e anota na auditoria. */
+  admin.post('/pedidos/:id/estorno', async (req, res) => {
+    const r = await estornarPedido(s.banco, String(req.params.id), (res.locals.admin as Usuario).id, s.agora());
+    if (r.resultado === 'desconhecido') return void res.status(404).json({ erro: 'pedido não encontrado' });
+    if (r.resultado === 'ja-estornado') return void res.status(409).json({ erro: 'este pedido já foi estornado' });
+    if (r.resultado === 'nao-pago') return void res.status(409).json({ erro: 'este pedido não foi pago' });
+    console.log(`[admin] ${(res.locals.admin as Usuario).apelido} estornou o pedido ${req.params.id}: -${r.debitado} Pila (faltou ${r.faltou})`);
+    res.json(r);
+  });
+
   /** Ajuste manual (ex.: estorno feito no app da InfinitePay). Fica no extrato como `ajuste_admin`. */
   admin.post('/usuarios/:id/ajuste', async (req, res) => {
     const id = Number(req.params.id);
@@ -175,7 +186,12 @@ export function rotasAdminLoja(admin: Router, s: Servicos): void {
     if (!motivo) return void res.status(400).json({ erro: 'diga o motivo do ajuste' });
     if (!(await usuarioPorId(s.banco, id))) return void res.status(404).json({ erro: 'usuário não encontrado' });
     try {
-      const saldo = await s.banco.transaction((tx) => movimentar(tx, id, moeda, delta, 'ajuste_admin', motivo));
+      const adminId = (res.locals.admin as Usuario).id;
+      const saldo = await s.banco.transaction(async (tx) => {
+        const novo = await movimentar(tx, id, moeda, delta, 'ajuste_admin', motivo);
+        await registrarAuditoria(tx, { adminId, acao: 'ajuste_saldo', alvoId: id, detalhe: { moeda, delta, motivo } }, s.agora());
+        return novo;
+      });
       console.log(`[admin] ${(res.locals.admin as Usuario).apelido} ajustou ${delta} ${moeda} de #${id}: ${motivo}`);
       res.json({ saldo });
     } catch (e) {

@@ -8,7 +8,8 @@ import { conquistasDe } from '../ranking/conquistas';
 import { ELO_INICIAL, novosPontos, patenteDe, proximaPatente } from '../ranking/elo';
 import { type Contadores, contadoresZerados, percentual } from '../ranking/estatisticas';
 import { deltaAbandono, deltasDoFim, type JogadorRanqueado } from '../ranking/resultado';
-import { cacifeEfetivo, dividirPote, LIMITE_PREMIO_MESMOS } from '../loja/regras';
+import { cacifeEfetivo, dividirPote } from '../loja/regras';
+import { LIMITE_MESMO_GRUPO_24H } from '../ranking/mesmoGrupo';
 import { movimentar, saldosDe } from './carteira';
 
 /** O que `Banco` e uma transação têm em comum (o que as funções abaixo usam). */
@@ -154,7 +155,9 @@ export async function registrarAbandono(
       await tx.update(participacoes).set({ abandonou: true }).where(eq(participacoes.id, eu.id));
       return null;
     }
-    const delta = deltaAbandono(jogadoresRanqueados(ps), usuarioId, o.k);
+    const congelado = await eloCongelado(tx, p.id, ps, o.agora);
+    if (congelado) await tx.update(partidas).set({ eloCongelado: true }).where(eq(partidas.id, p.id));
+    const delta = congelado ? 0 : deltaAbandono(jogadoresRanqueados(ps), usuarioId, o.k);
     await tx
       .update(participacoes)
       .set({ abandonou: true, venceu: false, eloDepois: eu.eloAntes + delta })
@@ -189,9 +192,14 @@ export async function terminarPartida(db: Banco, partidaId: number, fim: FimPart
       await tx.update(participacoes).set({ ...c, venceu }).where(eq(participacoes.id, x.id));
     }
     const abandonada = presentes.length === 0;
+    const congelado = p.ranqueada && !abandonada && (await eloCongelado(tx, p.id, ps, o.agora));
+    if (congelado) await tx.update(partidas).set({ eloCongelado: true }).where(eq(partidas.id, p.id));
     if (p.ranqueada && !abandonada && fim.vencedora !== null) {
       const alvos = presentes.filter((x) => x.usuarioId !== null && x.eloAntes !== null).map((x) => x.usuarioId!);
-      for (const [uid, d] of deltasDoFim(jogadoresRanqueados(ps), alvos, fim.vencedora, o.k)) {
+      const calculados = deltasDoFim(jogadoresRanqueados(ps), alvos, fim.vencedora, o.k);
+      // Mesmo grupo em 24 h (conluio/fazenda): a partida vale, o Elo e os pontos não mudam.
+      for (const [uid, calculado] of calculados) {
+        const d = congelado ? 0 : calculado;
         deltas.set(uid, d);
         const x = ps.find((y) => y.usuarioId === uid)!;
         await tx.update(participacoes).set({ eloDepois: x.eloAntes! + d }).where(eq(participacoes.id, x.id));
@@ -239,7 +247,7 @@ async function reembolsar(tx: Exec, partidaId: number, cacife: number): Promise<
  */
 async function pagarPote(tx: Exec, p: typeof partidas.$inferSelect, ps: readonly LinhaParticipacao[], vencedora: Dupla, agora: Date): Promise<void> {
   const quem = pagantes(ps);
-  if (p.ranqueada && (await partidasDoMesmoGrupo(tx, p.id, quem.map((x) => x.usuarioId), agora)) >= LIMITE_PREMIO_MESMOS) {
+  if (p.ranqueada && (await partidasDoMesmoGrupo(tx, p.id, quem.map((x) => x.usuarioId), agora)) >= LIMITE_MESMO_GRUPO_24H) {
     for (const x of quem.filter((y) => !y.abandonou)) await movimentar(tx, x.usuarioId, 'fichas', p.cacife, 'estorno_partida', String(p.id));
     return;
   }
@@ -248,6 +256,18 @@ async function pagarPote(tx: Exec, p: typeof partidas.$inferSelect, ps: readonly
   for (const [cadeira, valor] of dividirPote(p.pote, [...porCadeira.keys()])) {
     await movimentar(tx, porCadeira.get(cadeira)!, 'fichas', valor, 'premio', String(p.id));
   }
+}
+
+/** Esta ranqueada repete o mesmo grupo de contas humanas pela LIMITE_MESMO_GRUPO_24H-ésima vez em 24 h ou mais. */
+async function eloCongelado(tx: Exec, partidaId: number, ps: readonly LinhaParticipacao[], agora: Date): Promise<boolean> {
+  const ids = ps.filter((x) => x.humano && x.usuarioId !== null).map((x) => x.usuarioId!);
+  return ids.length > 0 && (await partidasDoMesmoGrupo(tx, partidaId, ids, agora)) >= LIMITE_MESMO_GRUPO_24H;
+}
+
+/** A partida foi gravada com o Elo congelado (mesmo grupo de contas em 24 h). */
+export async function partidaComEloCongelado(db: Banco, partidaId: number): Promise<boolean> {
+  const [p] = await db.select({ c: partidas.eloCongelado }).from(partidas).where(eq(partidas.id, partidaId));
+  return p?.c ?? false;
 }
 
 /** Ranqueadas terminadas nas últimas 24 h (fora esta) com exatamente o mesmo grupo de contas. */
@@ -361,6 +381,7 @@ export async function historico(db: Banco, usuarioId: number, limite = 20): Prom
       variante: partidas.variante,
       modo: partidas.modo,
       ranqueada: partidas.ranqueada,
+      eloCongelado: partidas.eloCongelado,
       placar0: partidas.placar0,
       placar1: partidas.placar1,
       iniciadaEm: partidas.iniciadaEm,
@@ -386,6 +407,7 @@ export async function historico(db: Banco, usuarioId: number, limite = 20): Prom
     venceu: l.venceu,
     abandonou: l.abandonou,
     deltaElo: l.eloAntes !== null && l.eloDepois !== null ? l.eloDepois - l.eloAntes : null,
+    eloCongelado: l.eloCongelado,
     iniciadaEm: l.iniciadaEm.toISOString(),
     terminadaEm: l.terminadaEm?.toISOString() ?? null,
   }));

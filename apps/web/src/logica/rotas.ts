@@ -18,7 +18,7 @@ export type Rota =
 export const ABAS_LOJA = ['verso', 'roupa', 'moldura', 'avatar', 'tampo', 'pila'] as const;
 export type AbaLoja = (typeof ABAS_LOJA)[number];
 
-export const ABAS_ADMIN = ['resumo', 'usuarios', 'mesas', 'partidas'] as const;
+export const ABAS_ADMIN = ['resumo', 'usuarios', 'pedidos', 'auditoria', 'mesas', 'partidas'] as const;
 export type AbaAdmin = (typeof ABAS_ADMIN)[number];
 
 export function lerRota(hash: string): Rota {

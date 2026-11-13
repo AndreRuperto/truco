@@ -10,7 +10,7 @@ export async function bancoDeTeste(): Promise<BancoDeTeste> {
     ...c,
     limpar: async () => {
       await c.db.execute(
-        sql`TRUNCATE usuarios, sessoes, links_magicos, ratings, partidas, participacoes, bloqueios_fila, carteiras, lancamentos, inventario, pedidos RESTART IDENTITY CASCADE`,
+        sql`TRUNCATE usuarios, sessoes, links_magicos, ratings, partidas, participacoes, bloqueios_fila, carteiras, lancamentos, inventario, pedidos, auditoria RESTART IDENTITY CASCADE`,
       );
     },
   };

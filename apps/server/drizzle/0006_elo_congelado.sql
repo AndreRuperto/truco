@@ -1,0 +1,1 @@
+ALTER TABLE "partidas" ADD COLUMN "elo_congelado" boolean DEFAULT false NOT NULL;

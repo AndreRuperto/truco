@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { TEMPOS_RAPIDOS, temposDoAmbiente } from '../src/tempos';
+import { limiteMesasDoAmbiente, TEMPOS_RAPIDOS, temposDoAmbiente } from '../src/tempos';
 
 describe('temposDoAmbiente', () => {
   test('TRUCO_TEMPOS=rapido acelera bots e pausas, mas mantém a jogada humana', () => {
@@ -23,3 +23,14 @@ describe('temposDoAmbiente em produção', () => {
     expect(temposDoAmbiente({ TRUCO_TEMPOS: 'rapido', NODE_ENV: 'production' })).toEqual({});
   });
 });
+
+describe('limiteMesasDoAmbiente (F4.5)', () => {
+  test('padrão 20; o E2E sobe com TRUCO_LIMITE_MESAS; produção ignora; valor inválido vira o padrão', () => {
+    expect(limiteMesasDoAmbiente({})).toBe(20);
+    expect(limiteMesasDoAmbiente({ TRUCO_LIMITE_MESAS: '10000' })).toBe(10_000);
+    expect(limiteMesasDoAmbiente({ TRUCO_LIMITE_MESAS: '10000', NODE_ENV: 'production' })).toBe(20);
+    expect(limiteMesasDoAmbiente({ TRUCO_LIMITE_MESAS: 'abc' })).toBe(20);
+    expect(limiteMesasDoAmbiente({ TRUCO_LIMITE_MESAS: '-3' })).toBe(20);
+  });
+});
+

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { cabecalhosCors } from '../src/http/cors';
 import { contadoresZerados } from '../src/ranking/estatisticas';
-import { iniciarPartida, terminarPartida } from '../src/repo/partidas';
+import { iniciarPartida, registrarAbandono, terminarPartida } from '../src/repo/partidas';
 import { criarSessao, criarUsuario } from '../src/repo/usuarios';
 import { type Servicos, servicosDeTeste } from '../src/servicos';
 import { type BancoDeTeste, bancoDeTeste } from './banco-helpers';
@@ -76,6 +76,59 @@ describe('dados', () => {
     expect(h.json.partidas).toEqual([expect.objectContaining({ variante: 'mineiro', nos: 12, eles: 4, venceu: true, deltaElo: 16 })]);
   });
 
+  test('histórico e perfil batem com as partidas gravadas: vitória, derrota e abandono (F4.9)', async () => {
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia' });
+    const assentos = [
+      { cadeira: 0 as const, usuarioId: ana.id, nome: 'ana', humano: true },
+      { cadeira: 1 as const, usuarioId: bia.id, nome: 'bia', humano: true },
+      { cadeira: 2 as const, usuarioId: null, nome: 'Bot', humano: false },
+      { cadeira: 3 as const, usuarioId: null, nome: 'Bot', humano: false },
+    ];
+    const em = (min: number) => new Date(Date.UTC(2026, 10, 12, 12, min));
+    const nova = (min: number) => iniciarPartida(b.db, { variante: 'mineiro', modo: 'ranqueada', formato: '1x1', assentos }, em(min));
+    const fim = (vencedora: 0 | 1) => ({ placar: (vencedora === 0 ? [12, 4] : [4, 12]) as [number, number], vencedora, contadores: [0, 1, 2, 3].map(contadoresZerados) });
+    await terminarPartida(b.db, await nova(0), fim(0), { k: 32, agora: em(1) });
+    await terminarPartida(b.db, await nova(10), fim(1), { k: 32, agora: em(11) });
+    const terceira = await nova(20);
+    await registrarAbandono(b.db, terceira, ana.id, { k: 32, agora: em(21), bloqueioMs: 60_000 });
+    await terminarPartida(b.db, terceira, fim(1), { k: 32, agora: em(22) });
+    const cookie = `truco_sessao=${await criarSessao(b.db, ana.id, new Date())}`;
+
+    const h = (await app.pedir('/api/historico', { cookie })).json.partidas as { venceu: boolean | null; abandonou: boolean; deltaElo: number | null; eloCongelado: boolean }[];
+    expect(h).toHaveLength(3);
+    // Mais nova primeiro: abandono, derrota, vitória.
+    expect(h.map((p) => [p.venceu, p.abandonou])).toEqual([[false, true], [false, false], [true, false]]);
+    expect(h[2].deltaElo).toBeGreaterThan(0);
+    expect(h[1].deltaElo).toBeLessThan(0);
+    expect(h[0].deltaElo).toBeLessThan(0);
+    expect(h.every((p) => p.eloCongelado === false)).toBe(true);
+
+    const perfil = (await app.pedir('/api/perfil', { cookie })).json;
+    const somaDeltas = h.reduce((s, p) => s + (p.deltaElo ?? 0), 0);
+    expect(perfil.variantes.mineiro).toMatchObject({ partidasRanqueadas: 3, vitorias: 1, elo: 1000 + somaDeltas });
+    expect(perfil.conquistas.find((c: { id: string }) => c.id === 'primeira-vitoria').alcancada).toBe(true);
+  });
+
+  test('partida com Elo congelado aparece no histórico com delta 0 e a marca (F4.9)', async () => {
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia' });
+    const assentos = [
+      { cadeira: 0 as const, usuarioId: ana.id, nome: 'ana', humano: true },
+      { cadeira: 1 as const, usuarioId: bia.id, nome: 'bia', humano: true },
+      { cadeira: 2 as const, usuarioId: null, nome: 'Bot', humano: false },
+      { cadeira: 3 as const, usuarioId: null, nome: 'Bot', humano: false },
+    ];
+    for (let i = 0; i < 6; i++) {
+      const quando = new Date(Date.UTC(2026, 10, 12, 12, i * 10));
+      const id = await iniciarPartida(b.db, { variante: 'mineiro', modo: 'ranqueada', formato: '1x1', assentos }, quando);
+      await terminarPartida(b.db, id, { placar: [12, 4], vencedora: 0, contadores: [0, 1, 2, 3].map(contadoresZerados) }, { k: 32, agora: quando });
+    }
+    const cookie = `truco_sessao=${await criarSessao(b.db, ana.id, new Date())}`;
+    const [maisNova] = (await app.pedir('/api/historico', { cookie })).json.partidas;
+    expect(maisNova).toMatchObject({ eloCongelado: true, deltaElo: 0, venceu: true });
+  });
+
   test('ranking por variante', async () => {
     await partidaRanqueada();
     const r = await app.pedir('/api/ranking/mineiro');
@@ -100,6 +153,29 @@ describe('dados', () => {
     const r = await app.pedir('/saude');
     expect(r.status).toBe(200);
     expect(r.json).toEqual({ ok: true });
+  });
+});
+
+describe('limite por IP nas leituras públicas (F4.5, SEC-09)', () => {
+  test('o 121º pedido no mesmo minuto volta 429 com mensagem curta', async () => {
+    for (let i = 0; i < 120; i++) expect((await app.pedir('/api/salas')).status).toBe(200);
+    const r = await app.pedir('/api/salas');
+    expect(r.status).toBe(429);
+    expect(r.json.erro).toMatch(/muitos pedidos/);
+  });
+
+  test('o limite vale para perfil, ranking, salas e catálogo da loja, juntos, por IP', async () => {
+    await app.fechar();
+    const { LimiteTaxa } = await import('../src/auth/limite');
+    app = await subirApp(s, { limiteLeituraIp: new LimiteTaxa(4, 60_000) });
+    const u = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    expect((await app.pedir(`/api/perfil/${u.id}`)).status).toBe(200);
+    expect((await app.pedir('/api/ranking/paulista')).status).toBe(200);
+    expect((await app.pedir('/api/salas')).status).toBe(200);
+    expect((await app.pedir('/api/loja/catalogo')).status).toBe(200);
+    for (const rota of [`/api/perfil/${u.id}`, '/api/ranking/paulista', '/api/salas', '/api/loja/catalogo']) {
+      expect((await app.pedir(rota)).status, rota).toBe(429);
+    }
   });
 });
 

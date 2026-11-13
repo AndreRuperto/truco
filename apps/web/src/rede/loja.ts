@@ -1,5 +1,5 @@
 import type { AcaoJogador } from '@truco/engine';
-import { type Fala, type MsgAcao, type MsgBatida, type MsgChat, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
+import { type Fala, type MsgAcao, type MsgAvatares, type MsgBatida, type MsgChat, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
 import { type Evento, FALA_TEXTO, type NovoEvento, textoDaAcao } from '../logica/eventos';
 import { resumoDaVolta } from '../logica/volta';
 
@@ -19,7 +19,7 @@ export interface SalaLike {
 }
 
 /** Todas as mensagens servidor → cliente; os handlers são registrados antes de `sincronizar`. */
-export const TIPOS_MENSAGEM = ['estado', 'acao', 'sinal', 'fala', 'erro', 'chat', 'batida'] as const;
+export const TIPOS_MENSAGEM = ['estado', 'avatares', 'acao', 'sinal', 'fala', 'erro', 'chat', 'batida'] as const;
 
 /** Uma mensagem `acao` recebida, para as animações (o `id` só cresce). */
 export interface Movimento {
@@ -84,6 +84,12 @@ export function criarLoja(o: OpcoesLoja = {}) {
   let aguardandoEstadoAposReconexao = false;
   /** Última ação enviada (JSON) e quando: a mesma de novo antes do estado novo é toque duplo. */
   let ultimaAcao: { chave: string; em: number } | null = null;
+  /** Fotos enviadas (`data:`) por id: chegam uma vez na mensagem `avatares` (o `estado` leva só o id). */
+  const fotos = new Map<string, string>();
+  const comFotos = (m: MsgEstado): MsgEstado =>
+    m.cadeiras.some((c) => c.avatarId && !c.avatar)
+      ? { ...m, cadeiras: m.cadeiras.map((c) => (c.avatarId && !c.avatar ? { ...c, avatar: fotos.get(c.avatarId) ?? null } : c)) }
+      : m;
   const ouvintes = new Set<() => void>();
 
   const mudar = (p: Partial<EstadoLoja>) => {
@@ -117,9 +123,15 @@ export function criarLoja(o: OpcoesLoja = {}) {
         ultimaAcao = null;
         // Volta de uma queda: conta o que aconteceu enquanto esteve fora (uma vez, se houve algo).
         const resumo = estado.estadoAnterior ? resumoDaVolta(estado.estadoAnterior, m) : null;
-        mudar({ msg: m, estadoAnterior: null });
+        mudar({ msg: comFotos(m), estadoAnterior: null });
         if (resumo) aviso(resumo);
       }
+    });
+    s.onMessage('avatares', (a: MsgAvatares) => {
+      if (sala !== s || !a || typeof a !== 'object') return;
+      for (const [id, foto] of Object.entries(a)) if (typeof foto === 'string' && foto.startsWith('data:')) fotos.set(id, foto);
+      // Chegou depois do estado (ex.: outra aba): preenche a mesa que já está na tela.
+      if (estado.msg) mudar({ msg: comFotos(estado.msg) });
     });
     s.onMessage('acao', (a: MsgAcao) => {
       if (sala !== s) return;

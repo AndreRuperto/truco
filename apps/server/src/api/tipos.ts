@@ -80,6 +80,8 @@ export interface ItemHistorico {
   venceu: boolean | null;
   abandonou: boolean;
   deltaElo: number | null;
+  /** Ranqueada repetida entre o mesmo grupo em 24 h: valeu, mas não mudou o ranking (delta 0). */
+  eloCongelado: boolean;
   iniciadaEm: string;
   terminadaEm: string | null;
 }
@@ -256,3 +258,23 @@ export interface PedidoAdmin extends PedidoApi {
   criadoEm: string;
   pagoEm: string | null;
 }
+
+/** `GET /api/admin/auditoria`: o que os admins fizeram, mais nova primeiro. */
+export interface LinhaAuditoria {
+  id: number;
+  adminId: number;
+  admin: string;
+  acao: string;
+  alvoId: number | null;
+  /** Só ids, valores e o texto do admin (nunca e-mail de terceiros). */
+  detalhe: unknown;
+  criadoEm: string;
+}
+
+/** `POST /api/admin/pedidos/:id/estorno`. */
+export interface ResultadoEstornoApi {
+  resultado: 'estornado' | 'ja-estornado' | 'nao-pago' | 'desconhecido';
+  debitado: number;
+  faltou: number;
+}
+

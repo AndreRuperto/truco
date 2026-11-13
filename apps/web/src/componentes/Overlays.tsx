@@ -28,9 +28,11 @@ interface PropsFim {
   revanche?: { aoPedir: () => void; jaPedi: boolean; quantos: [number, number] } | null;
   /** Mesa valendo Fichas: o que estava em jogo. */
   cacife?: { efetivo: number | null; pote: number } | null;
+  /** Ranqueada repetida entre o mesmo grupo de contas em 24 h: o Elo não mudou. */
+  eloCongelado?: boolean;
 }
 
-export function FimDePartida({ titulo, placar, venceu, aoJogarDeNovo, aoVoltar, revanche = null, cacife = null }: PropsFim) {
+export function FimDePartida({ titulo, placar, venceu, aoJogarDeNovo, aoVoltar, revanche = null, cacife = null, eloCongelado = false }: PropsFim) {
   const [pediram, total] = revanche?.quantos ?? [0, 0];
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-labelledby="titulo-fim" data-testid="fim-partida">
@@ -47,6 +49,11 @@ export function FimDePartida({ titulo, placar, venceu, aoJogarDeNovo, aoVoltar, 
               : `Valia ${cacife.efetivo} Fichas: o pote foi para os adversários.`}
           </p>
         ) : null}
+        {eloCongelado && (
+          <p className="resultado-fichas" data-testid="elo-congelado">
+            Vocês já se enfrentaram 5 vezes hoje. Esta partida não mudou o ranking.
+          </p>
+        )}
         {revanche ? (
           <>
             <button type="button" className="botao-principal" onClick={revanche.aoPedir} disabled={revanche.jaPedi} autoFocus>

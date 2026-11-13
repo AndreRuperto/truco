@@ -55,6 +55,25 @@ describe('RegistroMesa', () => {
     ]);
   });
 
+  test('ranqueada repetida no mesmo grupo: o fim avisa a mesa que o Elo ficou congelado (F4.1)', async () => {
+    let agora = T0;
+    const s = servicosDeTeste(b.db, { agora: () => agora });
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia' });
+    const avisos: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      agora = new Date(T0.getTime() + i * 10 * 60_000);
+      const r = new RegistroMesa(s, { variante: 'paulista', modo: 'ranqueada', formato: '1x1' });
+      r.aoEloCongelado = () => avisos.push(i);
+      r.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+      r.iniciou();
+      r.sentou({ cadeira: 1, usuarioId: bia.id, nome: 'bia' });
+      r.terminou(fimDe(0, [12, 3]));
+      await r.ocioso();
+    }
+    expect(avisos).toEqual([5]);
+  });
+
   test('revanche na mesma sala: a segunda partida é outra linha, com contadores do zero', async () => {
     const s = servicosDeTeste(b.db, { agora: () => T0 });
     const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });

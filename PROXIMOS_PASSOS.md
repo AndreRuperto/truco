@@ -1,5 +1,16 @@
 # Próximos passos — Truco
 
+## 2026-11-13 · branch `claude/mvp-f4-competitivo` · Fase 4 pronta para o gate
+
+Fases 0 a 3 estão em produção. Fase 4 (competitivo, integridade e segurança) com F4.1 a F4.9 feitos e testados:
+- [x] F4.1 Elo congelado no mesmo grupo em 24 h (0006) · [x] F4.2 e-mail canônico (0007) · [x] F4.3 integridade
+- [x] F4.4 avatar fora do estado (240 kB → < 8 kB) · [x] F4.5 limites por IP · [x] F4.6 auditoria (0008)
+- [x] F4.7 admin da loja na interface · [x] F4.8 estorno de Pila · [x] F4.9 histórico com a marca
+- [x] Migrações 0006–0008 testadas sobre um banco com dados · [x] relatório de segurança: SEC-03 e SEC-09 corrigidos
+- [ ] Gate completo (E2E) e PR; merge só com o "pode" (aplica 3 migrações em produção).
+
+Numeração das migrações diferente do plano: 0006 Elo congelado, 0007 e-mail canônico, 0008 auditoria.
+
 ## 2026-11-13 · branch `claude/mvp-f3-animacoes` · Fase 3 pronta para revisão
 
 Fases 0, 1 e 2 estão em produção. A Fase 3 (animações e sensação de jogo) está com o gate local verde e um PR aberto esperando o "pode" (o merge dispara o deploy). Detalhes e números: `docs/qa-frontend/animacoes-2026-11.md`.
