@@ -132,8 +132,21 @@ test.describe(`tema ${tema === 'light' ? 'claro' : 'escuro'}`, () => {
       await page.waitForTimeout(300);
     }
     await tabAte(page, truco, 'Truco!');
+    const nos = async () => Number(((await page.locator('header.placar').getAttribute('aria-label')) ?? '').match(/Nós (\d+)/)?.[1] ?? 0);
+    const nosAntes = await nos();
     await page.keyboard.press('Enter');
-    await expect(page.getByTestId('anuncio-mesa')).toHaveText(/truco/i, { timeout: 10_000 });
+    // O pedido valeu: ou ainda está no ar (anúncio/placar), ou os bots já responderam (mão vale 3+),
+    // ou correram e o nosso placar subiu. Com os tempos rápidos o anúncio pode sumir antes da checagem.
+    await expect
+      .poll(
+        async () => {
+          const anuncio = (await page.getByTestId('anuncio-mesa').textContent()) ?? '';
+          const placar = (await page.locator('header.placar').getAttribute('aria-label')) ?? '';
+          return /truco/i.test(anuncio) || /truco|vale (3|6|9|12)\b/i.test(placar) || (await nos()) > nosAntes ? 'ok' : placar;
+        },
+        { timeout: 10_000 },
+      )
+      .toBe('ok');
 
     // Sair da mesa: ícone Sair → confirmação → Sair da mesa.
     await tabAte(page, page.getByRole('button', { name: 'Sair', exact: true }), 'ícone Sair');
