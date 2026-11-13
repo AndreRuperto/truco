@@ -1,24 +1,18 @@
 # Próximos passos — Truco
 
-## 2026-11-12 (tarde) · branch `claude/mvp-f2-visual` — Fase 2 EM ANDAMENTO (wip, não testado por completo)
+## 2026-11-16 · branch `claude/mvp-f2-visual` · Fase 2 pronta para revisão
 
-Fases 0 e 1 do plano MVP (`docs/plans/2026-11-12-plano-mvp.md`) concluídas e em produção (PRs #18, #21, #22, #23).
-A branch `claude/mvp-f0-checklist` (checklist da F0 + plano versionado) ainda não tem PR.
+Fases 0 e 1 estão em produção. Fase 2 (acabamento visual e temas) concluída, com o gate local verde e um PR aberto esperando o "pode" do André (o merge dispara o deploy). Critérios, resultado do QA independente e resposta a cada achado: `docs/qa-frontend/qa-fase2-2026-11.md`.
 
-Feito na F2 (commit wip desta branch):
-- F2.1 etiqueta de família: z-index (etiqueta acima do balão, cartas abaixo da cruz), topo ancorado pela direita, laterais fora da faixa do meio, estreitas em ≤ 380px. E2E: 15/15 em --repeat-each 3.
-- F2.4 janela de família em UMA linha no rodapé (mesa-mobile.css). Provado: sem a correção 2/2 falham (rodapé 144px), com ela 10/10 passam.
-- F2.3 desktop: layout de notebook até 959px de altura (sem rolagem em 1440x900); dica em 146px só em telas > 520px de altura.
-- F2.6 no máximo 2 balões em ≤ 340px (`baloesAtivos(..., maximo)`, teste unitário).
-- Testes novos em `apps/web/e2e/qa-visual-mesa.spec.ts` (seção "Fase 2").
+Pendências registradas (não bloqueiam a fase):
+- [ ] P3: em 320×568 e 360×640, a dica de 3 linhas cobre o centro da mesa. Precisa redesenho (por exemplo, recolher quando houver carta na mesa). O teste está como `test.fail`.
+- [ ] P2: no desktop, o painel "Ordem" aberto cobre "Nós" e o placar (A3, anterior à branch).
+- [ ] P2: na vista 3D, os balões das cadeiras laterais saem do quadro (A5, anterior à branch).
+- [ ] P3: no desktop, a dica cobre o nome de cima; em 320×568, o botão "Ordem" encosta na etiqueta de cima (A4, A10).
+- [ ] Reteste pelo QA independente depois das correções (não foi feito).
+- [ ] PR da branch `claude/mvp-f0-checklist` (checklist da F0).
 
-Estado / pendente:
-- [ ] Última rodada: falhas a investigar — "dica não cobre placar... 430x932" (dica não encontrada, provável timing) e "desktop... 1280x800" (não chegou à vez a tempo). Rodar de novo isolado; podem ser instabilidade.
-- [ ] F2.2 em 320x568: a dica (~94px) não cabe sem cobrir o centro (sobra 55px). Decidir: marcar `test.fail` com justificativa P3 ou redesenhar a dica.
-- [ ] F2.5 (nome de cima x monte) e A3 (zoom 200%) não reproduzidos: registrar.
-- [ ] F2.6: rodar o teste de balões com --repeat-each 30 em 320px.
-- [ ] F2.7 temas, F2.8 telas fora da mesa, F2.9 itens da loja no 3D, F2.10 QA independente (subagente).
-- [ ] Gate completo, capturas depois (antes estão no scratchpad da sessão, não versionadas), PR.
+Próximo: Fase 3 (animações e sensação de jogo), na branch `claude/mvp-f3-animacoes`, depois do merge da F2.
 
 ---
 

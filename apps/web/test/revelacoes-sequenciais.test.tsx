@@ -41,6 +41,18 @@ describe('revelação das famílias fechadas', () => {
     expect(screen.queryByTestId('familia-conferida')).toBeNull();
   });
 
+  test('1ª rodada fechada logo depois de conferir: a família sai na hora (a pilha ocupa o canto)', () => {
+    const pendente = reduce(distribuida(MINEIRO, [['Qo', 'Jo', 'Ko']]), { tipo: 'familia', cadeira: 0 });
+    const conferida = reduce(pendente, { tipo: 'conferir', cadeira: 1, conferir: true });
+    let fechou = conferida;
+    for (let k = 0; k < 4; k++) fechou = jogar(fechou, [[fechou.mao!.vez, 0]]);
+    expect(fechou.fase, 'a 1ª rodada destas mãos não canga').not.toBe('empilhando');
+    expect(fechou.mao!.rodadas.length).toBe(1);
+    const { rerender } = render(<FamiliasNaMesa visao={visaoDoJogador(conferida, 1)} nome={nome} />);
+    rerender(<FamiliasNaMesa visao={visaoDoJogador(fechou, 1)} nome={nome} />);
+    expect(screen.queryByTestId('familia-conferida')).toBeNull();
+  });
+
   test('carta jogada muito depois de conferir: a família sai na hora', () => {
     const pendente = reduce(distribuida(MINEIRO, [['Qo', 'Jo', 'Ko']]), { tipo: 'familia', cadeira: 0 });
     const conferida = reduce(pendente, { tipo: 'conferir', cadeira: 1, conferir: true });

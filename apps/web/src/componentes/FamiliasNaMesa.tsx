@@ -33,7 +33,9 @@ export function FamiliasNaMesa({ visao, nome }: Props) {
     const em = conferidaEm.current.get(i);
     return em !== undefined && agora - em < SEGURA_CONFERIDA_MS;
   };
-  const visiveis = familias.map((f, i) => ({ f, i })).filter(({ i }) => !comecou || segura(i));
+  // A espera vale só enquanto a 1ª rodada não fechou: fechada, a pilha das rodadas ocupa o canto.
+  const rodadaFechada = !!m && m.rodadas.length > 0;
+  const visiveis = familias.map((f, i) => ({ f, i })).filter(({ i }) => !comecou || (!rodadaFechada && segura(i)));
   const proximaSaida = comecou && visiveis.length > 0
     ? Math.min(...visiveis.map(({ i }) => conferidaEm.current.get(i)! + SEGURA_CONFERIDA_MS - agora))
     : null;
