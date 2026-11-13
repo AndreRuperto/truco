@@ -105,7 +105,9 @@ describe('TelaMesa', () => {
     expect(screen.getByTestId('assento-direita')).toHaveTextContent('Bot Zé');
     expect(screen.getByTestId('assento-cima')).toHaveTextContent('Bot Tião');
     expect(screen.getByTestId('assento-esquerda')).toHaveTextContent('Bot Dita');
-    expect(within(screen.getByTestId('assento-direita')).getByRole('status')).toHaveTextContent('TRUCO!');
+    expect(within(screen.getByTestId('assento-direita')).getByText('TRUCO!')).toHaveClass('balao');
+    // F6.1: o balão não é região viva; quem anuncia é só a região da mesa (sem falar em dobro).
+    expect(within(screen.getByTestId('assento-direita')).queryByRole('status')).toBeNull();
   });
 
   test('vez: na resposta a truco marca a minha dupla inteira, mesmo com prazo só meu', () => {

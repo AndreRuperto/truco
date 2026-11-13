@@ -335,6 +335,12 @@
   color: var(--nos);
   font-weight: 700;
 }
+@media (prefers-color-scheme: light) {
+  /* No azulejo claro o verde puro dava 2,9:1; um verde mais fundo passa de 4,5:1 (F6.1). */
+  .loja-extrato .credito {
+    color: color-mix(in srgb, var(--nos) 60%, var(--tinta));
+  }
+}
 .loja-extrato .debito {
   color: var(--eles);
   font-weight: 700;

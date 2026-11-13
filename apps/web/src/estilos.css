@@ -46,6 +46,10 @@
   --link: var(--giz);
   --foco: var(--grito);
   --erro-texto: #ffb4a8;
+  /* Borda de campo de formulário (WCAG 1.4.11, ≥ 3:1; F6.1): na lousa, 3,9:1 com a lousa e 4,6:1
+     com o campo; no papel, 4,0:1 com o papel e 4,2:1 com o campo branco. */
+  --campo-borda-lousa: color-mix(in srgb, var(--giz-suave) 65%, var(--lousa));
+  --campo-borda-papel: color-mix(in srgb, var(--tinta-suave) 70%, var(--papel));
 
   --fonte-ui: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --fonte-giz: 'Caveat Brush', 'Bricolage Grotesque', cursive;
@@ -270,6 +274,7 @@ button:disabled {
 .formulario {
   --form-fundo: var(--lousa);
   --form-borda: #3e4d45;
+  --form-campo-borda: var(--campo-borda-lousa);
   --form-campo: var(--lousa-noite);
   --form-tinta: var(--giz);
   --form-tinta-suave: var(--giz-suave);
@@ -289,6 +294,7 @@ button:disabled {
   .formulario {
     --form-fundo: var(--papel);
     --form-borda: var(--papel-borda);
+    --form-campo-borda: var(--campo-borda-papel);
     --form-campo: var(--branco);
     --form-tinta: var(--tinta);
     --form-tinta-suave: var(--tinta-suave);
@@ -326,7 +332,7 @@ button:disabled {
 .chat-form input {
   min-height: 44px;
   padding: 0 var(--e3);
-  border: 2px solid var(--form-borda, var(--papel-borda));
+  border: 2px solid var(--form-campo-borda, var(--campo-borda-papel));
   border-radius: var(--raio-carta);
   background: var(--form-campo, var(--branco));
   color: var(--form-tinta, var(--tinta));
@@ -954,6 +960,7 @@ button:disabled {
   margin: 0;
   --form-campo: var(--lousa-noite);
   --form-borda: #3e4d45;
+  --form-campo-borda: var(--campo-borda-lousa);
   --form-tinta: var(--giz);
 }
 .sala-espera .chat input::placeholder,
@@ -4329,6 +4336,7 @@ body:has(.tela-mesa) {
   /* Dentro da lousa o formulário é sempre o escuro, nos dois temas. */
   --form-fundo: transparent;
   --form-borda: #3e4d45;
+  --form-campo-borda: var(--campo-borda-lousa);
   --form-campo: var(--lousa-noite);
   --form-tinta: var(--giz);
   --form-tinta-suave: var(--giz-suave);
@@ -4745,7 +4753,7 @@ body:has(.tela-mesa) {
   min-width: 0;
   min-height: 44px;
   padding: 0 var(--e3);
-  border: 1px solid #3e4d45;
+  border: 1px solid var(--campo-borda-lousa);
   border-radius: var(--raio-botao);
   background: var(--lousa-noite);
   color: var(--giz);
