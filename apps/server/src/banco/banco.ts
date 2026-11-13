@@ -8,6 +8,7 @@ import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import * as schema from './schema';
+import { log } from '../log';
 
 /** Tipo comum ao node-postgres e ao PGlite. */
 export type Banco = PgDatabase<PgQueryResultHKT, typeof schema>;
@@ -35,7 +36,7 @@ export async function abrirBanco(o: OpcoesBanco = {}): Promise<ConexaoBanco> {
   if (o.url) {
     const pool = new pg.Pool({ connectionString: o.url, max: 10 });
     // Sem ouvinte, um erro num cliente ocioso (Postgres reiniciou, rede caiu) derruba o processo.
-    pool.on('error', (e) => console.error('[banco]', e));
+    pool.on('error', (e) => log.erro('banco_erro_pool', e));
     const db = drizzlePg({ client: pool, schema });
     try {
       await migrarPg(db, { migrationsFolder });

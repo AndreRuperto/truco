@@ -35,6 +35,7 @@ import type { Servicos } from '../servicos';
 import { cabecalhosSeguranca, hashesDeScriptsInline } from './cabecalhos';
 import { rotasAdminLoja, rotasLoja } from './loja';
 import { auditoriaRecente, registrarAuditoria } from '../repo/auditoria';
+import { log } from '../log';
 
 export interface ExtrasApp {
   /** Mesas casuais abertas (o servidor passa `listarSalasAbertas`). */
@@ -47,6 +48,8 @@ export interface ExtrasApp {
   limiteLinkEmail?: LimiteTaxa;
   /** Por IP, em confirmar link e login com Google (padrão: 30 a cada 15 min). */
   limiteAuthIp?: LimiteTaxa;
+  /** Por IP, em POST /api/erro-cliente (padrão: 10 por minuto). */
+  limiteErroClienteIp?: LimiteTaxa;
   /** Por IP, somando perfil público, ranking, salas e catálogo (padrão: 120 por minuto). */
   limiteLeituraIp?: LimiteTaxa;
   /** Banimento: derruba a conta das salas em tempo real (o servidor passa MesaRoom/FilaRoom). */
@@ -153,6 +156,23 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     res.status(429).json({ erro: 'muitos pedidos; tente de novo em um minuto' });
   });
 
+  // Erros do navegador (window.onerror / unhandledrejection): só para o log do operador. 10 por IP por
+  // minuto, corpo de até 2 kB, só mensagem, pilha curta, rota sem query (pode ter token) e versão.
+  const limiteErroCliente = x.limiteErroClienteIp ?? new LimiteTaxa(10, 60_000);
+  api.post('/erro-cliente', (req, res) => {
+    if (Number(req.headers['content-length'] ?? 0) > 2_048) return void res.status(413).json({ erro: 'relato grande demais' });
+    if (!limiteErroCliente.permitir(chaveDeIp(req.ip))) return void res.status(429).json({ erro: 'muitos pedidos; tente de novo em um minuto' });
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const texto = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : null);
+    log.aviso('erro_cliente', {
+      mensagem: texto(b.mensagem, 300),
+      pilha: texto(b.pilha, 1_000),
+      rota: texto(b.rota, 100)?.split('?')[0] ?? null,
+      versao: texto(b.versao, 40),
+    });
+    res.status(204).end();
+  });
+
   api.get('/config', (_req, res) => {
     res.json({ google: s.google?.clientId ?? null, emailTeste: s.caixaTeste !== null });
   });
@@ -191,7 +211,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
       return void res.status(429).json({ erro: 'muitos pedidos; tente de novo em alguns minutos' });
     }
     if (s.producao && !s.urlPublica) {
-      console.error('[auth] produção sem URL pública: link mágico recusado');
+      log.erro('auth_sem_url_publica');
       return void res.status(500).json({ erro: 'servidor sem URL pública configurada' });
     }
     const token = await criarLinkMagico(s.banco, email, s.agora());
@@ -199,7 +219,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     try {
       await s.emails.enviar(emailDoLink(`${base}/#/entrar?token=${token}`, email));
     } catch (e) {
-      console.error('[auth] falha ao enviar o e-mail', e);
+      log.erro('auth_falha_envio', e);
       return void res.status(502).json({ erro: 'não foi possível enviar o e-mail agora' });
     }
     res.status(204).end();
@@ -349,7 +369,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     // As sessões HTTP já foram apagadas; os WebSockets abertos (mesa, fila) também caem.
     x.derrubarConta?.(id);
     await registrarAuditoria(s.banco, { adminId: (res.locals.admin as Usuario).id, acao: 'banir', alvoId: id }, s.agora());
-    console.log(`[admin] ${(res.locals.admin as Usuario).apelido} baniu #${id} (${alvo.apelido})`);
+    log.info('admin_baniu', { admin: (res.locals.admin as Usuario).apelido, alvoId: id });
     res.status(204).end();
   });
 
@@ -359,7 +379,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     if (!(await usuarioPorId(s.banco, id))) return void res.status(404).json({ erro: 'usuário não encontrado' });
     if (!(await desbanirUsuario(s.banco, id))) return void res.status(409).json({ erro: 'não está banido' });
     await registrarAuditoria(s.banco, { adminId: (res.locals.admin as Usuario).id, acao: 'desbanir', alvoId: id }, s.agora());
-    console.log(`[admin] ${(res.locals.admin as Usuario).apelido} desbaniu #${id}`);
+    log.info('admin_desbaniu', { admin: (res.locals.admin as Usuario).apelido, alvoId: id });
     x.liberarConta?.(id);
     res.status(204).end();
   });
@@ -425,7 +445,7 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     const tipo = (err as { type?: string } | null)?.type;
     if (tipo === 'entity.parse.failed') return void res.status(400).json({ erro: 'JSON inválido' });
     if (tipo === 'entity.too.large') return void res.status(413).json({ erro: 'pedido grande demais' });
-    console.error('[http]', err);
+    log.erro('http_erro', err);
     res.status(500).json({ erro: 'erro interno' });
   });
 }

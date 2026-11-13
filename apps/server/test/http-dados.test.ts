@@ -1,7 +1,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { cabecalhosCors } from '../src/http/cors';
 import { contadoresZerados } from '../src/ranking/estatisticas';
 import { iniciarPartida, registrarAbandono, terminarPartida } from '../src/repo/partidas';
@@ -176,6 +176,48 @@ describe('limite por IP nas leituras públicas (F4.5, SEC-09)', () => {
     for (const rota of [`/api/perfil/${u.id}`, '/api/ranking/paulista', '/api/salas', '/api/loja/catalogo']) {
       expect((await app.pedir(rota)).status, rota).toBe(429);
     }
+  });
+});
+
+describe('erros do cliente (F5.3)', () => {
+  const capturar = () => {
+    const linhas: string[] = [];
+    const espiao = vi.spyOn(process.stdout, 'write').mockImplementation((s) => {
+      linhas.push(String(s));
+      return true;
+    });
+    return { linhas: () => linhas.filter((l) => l.includes('"erro_cliente"')).map((l) => JSON.parse(l)), parar: () => espiao.mockRestore() };
+  };
+
+  test('aceita só mensagem, pilha curta, rota sem query e versão; o resto não vai para o log', async () => {
+    const c = capturar();
+    try {
+      const r = await app.pedir('/api/erro-cliente', {
+        corpo: { mensagem: 'x is undefined', pilha: 'at f (a.js:1)\n'.repeat(100), rota: '#/entrar?token=segredo', versao: 'index-abc123', email: 'ana@x.com', cookie: 'c' },
+      });
+      expect(r.status).toBe(204);
+      const [l] = c.linhas();
+      expect(l).toMatchObject({ nivel: 'aviso', evento: 'erro_cliente', mensagem: 'x is undefined', rota: '#/entrar', versao: 'index-abc123' });
+      expect(l.pilha.length).toBeLessThanOrEqual(1_000);
+      expect(JSON.stringify(l)).not.toContain('segredo');
+      expect(JSON.stringify(l)).not.toContain('ana@x.com');
+    } finally {
+      c.parar();
+    }
+  });
+
+  test('11º relato no mesmo minuto volta 429; corpo acima de 2 kB volta 413', async () => {
+    const c = capturar();
+    try {
+      for (let i = 0; i < 10; i++) expect((await app.pedir('/api/erro-cliente', { corpo: { mensagem: `e${i}` } })).status).toBe(204);
+      expect((await app.pedir('/api/erro-cliente', { corpo: { mensagem: 'demais' } })).status).toBe(429);
+      expect(c.linhas()).toHaveLength(10);
+    } finally {
+      c.parar();
+    }
+    await app.fechar();
+    app = await subirApp(s, {});
+    expect((await app.pedir('/api/erro-cliente', { corpo: { mensagem: 'x'.repeat(2_100) } })).status).toBe(413);
   });
 });
 

@@ -9,6 +9,7 @@ import { comprarItem, equipadosDe, equipar, inventarioDe } from '../repo/loja';
 import { anexarCheckout, confirmarPedido, criarPedido, dadosDoRetorno, estornarPedido, type Pedido, pedidoDe, pedidosAdmin } from '../repo/pedidos';
 import { type Usuario, usuarioPorId } from '../repo/usuarios';
 import type { Servicos } from '../servicos';
+import { log } from '../log';
 
 const paraPedidoApi = (p: Pedido): PedidoApi => ({ id: p.id, pacoteId: p.pacoteId, pila: p.pila, valorCentavos: p.valorCentavos, status: p.status });
 
@@ -101,7 +102,7 @@ export function rotasLoja(api: Router, d: DepsLoja): void {
       await anexarCheckout(s.banco, p.id, url);
       res.json({ pedido: paraPedidoApi(p), url });
     } catch (e) {
-      console.error(`[loja] falha ao criar o checkout do pedido ${p.id}: ${(e as Error).message}`);
+      log.erro('loja_falha_checkout', { pedido: p.id, erro: e });
       res.status(502).json({ erro: 'não foi possível abrir o pagamento agora; tente de novo' });
     }
   });
@@ -126,10 +127,10 @@ export function rotasLoja(api: Router, d: DepsLoja): void {
     if (!dados) return void res.status(400).json({ erro: 'campos faltando' });
     try {
       const r = await confirmarPedido(s.banco, s.pagamento.gateway, dados, s.agora());
-      if (r === 'pago') console.log(`[loja] pedido ${dados.orderNsu} pago (webhook)`);
+      if (r === 'pago') log.info('loja_pedido_pago', { pedido: dados.orderNsu, via: 'webhook' });
       res.status(200).json({ ok: true });
     } catch (e) {
-      console.error(`[loja] falha ao confirmar pelo webhook: ${(e as Error).message}`);
+      log.erro('loja_falha_webhook', e);
       res.status(500).json({ erro: 'tente de novo' });
     }
   });
@@ -142,10 +143,10 @@ export function rotasLoja(api: Router, d: DepsLoja): void {
     if (dados && s.pagamento) {
       try {
         const r = await confirmarPedido(s.banco, s.pagamento.gateway, dados, s.agora());
-        if (r === 'pago') console.log(`[loja] pedido ${dados.orderNsu} pago (retorno)`);
+        if (r === 'pago') log.info('loja_pedido_pago', { pedido: dados.orderNsu, via: 'retorno' });
       } catch (e) {
         // A tela de obrigado consulta de novo; o webhook também confirma.
-        console.error(`[loja] falha ao confirmar no retorno: ${(e as Error).message}`);
+        log.erro('loja_falha_retorno', e);
       }
     }
     res.redirect(302, pedido ? `/#/loja/obrigado?pedido=${pedido}` : '/#/loja');
@@ -169,7 +170,7 @@ export function rotasAdminLoja(admin: Router, s: Servicos): void {
     if (r.resultado === 'desconhecido') return void res.status(404).json({ erro: 'pedido não encontrado' });
     if (r.resultado === 'ja-estornado') return void res.status(409).json({ erro: 'este pedido já foi estornado' });
     if (r.resultado === 'nao-pago') return void res.status(409).json({ erro: 'este pedido não foi pago' });
-    console.log(`[admin] ${(res.locals.admin as Usuario).apelido} estornou o pedido ${req.params.id}: -${r.debitado} Pila (faltou ${r.faltou})`);
+    log.info('admin_estorno', { admin: (res.locals.admin as Usuario).apelido, pedido: String(req.params.id), debitado: r.debitado, faltou: r.faltou });
     res.json(r);
   });
 
@@ -192,7 +193,7 @@ export function rotasAdminLoja(admin: Router, s: Servicos): void {
         await registrarAuditoria(tx, { adminId, acao: 'ajuste_saldo', alvoId: id, detalhe: { moeda, delta, motivo } }, s.agora());
         return novo;
       });
-      console.log(`[admin] ${(res.locals.admin as Usuario).apelido} ajustou ${delta} ${moeda} de #${id}: ${motivo}`);
+      log.info('admin_ajuste', { admin: (res.locals.admin as Usuario).apelido, alvoId: id, moeda, delta, motivo });
       res.json({ saldo });
     } catch (e) {
       if (e instanceof SaldoInsuficiente) return void res.status(409).json({ erro: 'o saldo ficaria negativo' });

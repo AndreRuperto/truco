@@ -6,6 +6,7 @@ import { pacotePorId } from '../loja/catalogo';
 import type { GatewayPagamento } from '../pagamento/infinitepay';
 import { registrarAuditoria } from './auditoria';
 import { movimentar, saldosDe } from './carteira';
+import { log } from '../log';
 
 export const LIMITE_PEDIDOS_HORA = 5;
 
@@ -76,7 +77,7 @@ export async function confirmarPedido(db: Banco, gateway: GatewayPagamento, d: D
     // A mesma transação da InfinitePay já pagou outro pedido: não credita de novo.
     const x = e as { code?: string; cause?: { code?: string } };
     if (x?.code === '23505' || x?.cause?.code === '23505') {
-      console.error(`[loja] transação repetida em outro pedido (pedido ${p.id})`);
+      log.erro('loja_transacao_repetida', { pedido: p.id });
       return 'nao-pago';
     }
     throw e;

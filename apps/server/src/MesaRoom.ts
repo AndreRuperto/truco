@@ -11,6 +11,7 @@ import { vozDaConta } from './mesa/vozes';
 import type { Servicos } from './servicos';
 import { type UsuarioConexao, usuarioDaConexao } from './sessaoSala';
 import { chaveDeIp, LimiteTaxa } from './auth/limite';
+import { log } from './log';
 
 const randCripto = () => randomInt(0, 2 ** 32) / 2 ** 32;
 
@@ -231,7 +232,7 @@ export class MesaRoom extends Room {
     this.registro = new RegistroMesa(
       MesaRoom.servicos,
       { variante: regras.variante, modo, formato: modo === 'ranqueada' ? (humanos === 2 ? '1x1' : '2x2') : null, cacife: opcoes.cacife },
-      (e) => console.error(`[MesaRoom ${this.roomId}] falha ao gravar`, e),
+      (e) => log.erro('mesa_falha_gravar', { sala: this.roomId, erro: e }),
     );
     MesaRoom.registrosVivos.add(this.registro);
     this.mesa = new Mesa({
@@ -253,10 +254,10 @@ export class MesaRoom extends Room {
         agora: () => Date.now(),
       },
       enviar: (id, tipo, payload) => this.clients.get(id)?.send(tipo, payload),
-      aoErro: (e) => console.error(`[MesaRoom ${this.roomId}] erro na mesa`, e),
+      aoErro: (e) => log.erro('mesa_erro', { sala: this.roomId, erro: e }),
       aoAplicar: (a, porHumano) => this.registro.acao(a, porHumano),
       aoIniciar: () => {
-        this.lock().catch((e) => console.error('[MesaRoom] falha ao trancar a sala', e));
+        this.lock().catch((e) => log.erro('mesa_falha_trancar', { sala: this.roomId, erro: e }));
         if (this.reservados) MesaRoom.ranqueadasIniciadas.add(this.roomId);
         this.registro.iniciou();
       },
@@ -377,9 +378,9 @@ export class MesaRoom extends Room {
   onUncaughtException(err: RoomException, method: RoomMethodName) {
     // onJoin recusado ("mesa cheia ou já iniciada") é esperado e o erro já volta ao cliente.
     if (method === 'onJoin') {
-      console.warn(`[MesaRoom ${this.roomId}] entrada recusada: ${err.message}`);
+      log.aviso('mesa_entrada_recusada', { sala: this.roomId, motivo: err.message });
       return;
     }
-    console.error(`[MesaRoom ${this.roomId}] exceção em ${method}`, err.cause ?? err);
+    log.erro('mesa_excecao', { sala: this.roomId, metodo: method, erro: err.cause ?? err });
   }
 }

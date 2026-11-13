@@ -4,6 +4,7 @@ import type { ModoMesa } from './mesa/protocolo';
 import { type Contadores, contadoresZerados, contarAcao } from './ranking/estatisticas';
 import { type AssentoRegistro, encerrarAbandonada, iniciarPartidaComCacife, partidaComEloCongelado, registrarAbandono, terminarPartida } from './repo/partidas';
 import type { Servicos } from './servicos';
+import { log } from './log';
 
 export interface JogadorSala {
   cadeira: Cadeira;
@@ -41,7 +42,7 @@ export class RegistroMesa {
   constructor(
     private readonly s: Servicos | null,
     private readonly info: InfoRegistro,
-    private readonly aoErro: (e: unknown) => void = (e) => console.error('[registro]', e),
+    private readonly aoErro: (e: unknown) => void = (e) => log.erro('registro_erro', e),
   ) {}
 
   sentou(j: JogadorSala): void {
