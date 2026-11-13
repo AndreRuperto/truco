@@ -1840,7 +1840,8 @@ body:has(.tela-mesa) {
   position: relative;
 }
 .tela-mesa > .painel,
-.tela-mesa > .chat {
+.tela-mesa > .chat,
+.tela-mesa > .painel-denunciar {
   position: absolute;
   z-index: 50;
   top: 60px;
@@ -3382,6 +3383,24 @@ body:has(.tela-mesa) {
   background: var(--lousa);
   color: var(--giz);
   --foco: var(--grito);
+}
+/* Denunciar (F6.5): painel de lousa igual ao do chat. */
+.painel-denunciar {
+  margin: var(--e3) 0;
+  padding: var(--e3);
+  border: 4px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  --foco: var(--grito);
+}
+.painel-denunciar .linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+.painel-denunciar [role='status']:empty {
+  display: none;
 }
 .chat-mensagens {
   max-height: 30vh;

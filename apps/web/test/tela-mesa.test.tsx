@@ -368,3 +368,31 @@ describe('TelaMesa no ritual e na família', () => {
     expect(screen.queryByTestId('fim-mao')).toBeNull();
   });
 });
+
+describe('Denunciar na mesa (F6.5)', () => {
+  const comBia = () => {
+    const m = msgEstado(distribuida(PAULISTA), 0);
+    return { ...m, cadeiras: [m.cadeiras[0], { tipo: 'humano' as const, nome: 'Bia', conectado: true }, m.cadeiras[2], m.cadeiras[3]] };
+  };
+
+  test('com conta e outro humano: o botão abre o painel, lista só os humanos e envia', async () => {
+    const user = userEvent.setup();
+    const denunciar = vi.fn();
+    render(<TelaMesa temConta snap={snap(comBia())} acoes={{ ...acoesFalsas(), denunciar }} />);
+    await user.click(screen.getByRole('button', { name: 'Denunciar' }));
+    const painel = screen.getByRole('dialog', { name: 'Denunciar' });
+    expect(within(painel).getAllByRole('option').map((o) => o.textContent)).toEqual(['Bia']);
+    await user.type(within(painel).getByLabelText(/Motivo/), 'xingou');
+    await user.click(within(painel).getByRole('button', { name: 'Enviar denúncia' }));
+    expect(denunciar).toHaveBeenCalledWith(1, 'xingou');
+  });
+
+  test('convidado, ou mesa só com bots: sem botão', () => {
+    const { unmount } = render(<TelaMesa snap={snap(comBia())} acoes={{ ...acoesFalsas(), denunciar: vi.fn() }} />);
+    expect(screen.queryByRole('button', { name: 'Denunciar' })).toBeNull();
+    unmount();
+    render(<TelaMesa temConta snap={snap(msgEstado(distribuida(PAULISTA), 0))} acoes={{ ...acoesFalsas(), denunciar: vi.fn() }} />);
+    expect(screen.queryByRole('button', { name: 'Denunciar' })).toBeNull();
+  });
+});
+

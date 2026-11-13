@@ -8,6 +8,7 @@ import { Assento, GRITOS } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
 import { CentroMesa, useRodadaNaMesa } from '../componentes/CentroMesa';
 import { Chat } from '../componentes/Chat';
+import { Denunciar } from '../componentes/Denunciar';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { Cronometro } from '../componentes/Cronometro';
 import { FamiliasNaMesa } from '../componentes/FamiliasNaMesa';
@@ -49,7 +50,7 @@ interface Props {
   snap: EstadoLoja;
   /** Feltro em prévia gratuita para contas; não há cobrança. */
   temConta?: boolean;
-  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida' | 'enviarSemFamilia' | 'enviarRevanche'>>;
+  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida' | 'enviarSemFamilia' | 'enviarRevanche' | 'denunciar'>>;
   aoChat?: (texto: string) => void;
   /** Começa outra partida com as mesmas opções (a App decide como). Sem ele, o fim só volta ao início. */
   aoJogarDeNovo?: () => void;
@@ -69,7 +70,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   useEffect(() => {
     if (raiz.current) raiz.current.inert = desatualizada;
   }, [desatualizada]);
-  const [painel, setPainel] = useState<'sinais' | 'falas' | 'chat' | null>(null);
+  const [painel, setPainel] = useState<'sinais' | 'falas' | 'chat' | 'denunciar' | null>(null);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
   const [manual, setManual] = useState(false);
   const fecharManual = useCallback(() => setManual(false), []);
@@ -120,6 +121,11 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   const baloes = baloesAtivos(snap.eventos, agora, undefined, estreita ? 2 : Infinity);
   const { nos, eles } = placarRelativo(v);
   const nome = (c: Cadeira) => msg.cadeiras[c]?.nome ?? `Cadeira ${c + 1}`;
+  // Denúncia (F6.5): só quem tem conta, e só contra outro humano da mesa.
+  const outrosHumanos = ([0, 1, 2, 3] as Cadeira[])
+    .filter((c) => c !== minha && msg.cadeiras[c]?.tipo === 'humano')
+    .map((c) => ({ cadeira: c, nome: nome(c) }));
+  const podeDenunciar = temConta && !!acoes.denunciar && outrosHumanos.length > 0;
   const agentes = quemDeveAgir(v);
   const daVez = (c: Cadeira) => agentes.includes(c);
 
@@ -133,7 +139,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
       msg.minhasAcoes.find((x) => x.tipo === 'empilhar' && x.indice === indice);
     if (a) acoes.enviarAcao(a);
   };
-  const alternar = (p: 'sinais' | 'falas' | 'chat') => setPainel((atual) => (atual === p ? null : p));
+  const alternar = (p: 'sinais' | 'falas' | 'chat' | 'denunciar') => setPainel((atual) => (atual === p ? null : p));
 
   const emRitual = ehFaseRitual(v.fase) || v.fase === 'aguardandoMonte';
   const resumoMao = mostrarResumoMao(v) && v.ultimaMao ? resumoFimMao(v.ultimaMao, minha) : null;
@@ -234,6 +240,11 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
         <button type="button" className="icone-mesa botao-ajuda" aria-label="Como jogar" title="Como jogar" onClick={() => setManual(true)}>
           <IconeManual />
         </button>
+        {podeDenunciar && (
+          <button type="button" className="icone-mesa" aria-label="Denunciar" title="Denunciar alguém da mesa" aria-pressed={painel === 'denunciar'} onClick={() => alternar('denunciar')}>
+            <span aria-hidden="true">⚑</span>
+          </button>
+        )}
         <button type="button" className="icone-mesa" aria-label="Sair" title="Sair da mesa" onClick={() => setConfirmarSaida(true)}>
           <IconeSair />
         </button>
@@ -446,6 +457,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
         />
       )}
       {painel === 'chat' && aoChat && <Chat mensagens={snap.chat} aoEnviar={aoChat} />}
+      {painel === 'denunciar' && podeDenunciar && acoes.denunciar && (
+        <Denunciar pessoas={outrosHumanos} resposta={snap.denuncia ?? null} aoDenunciar={acoes.denunciar} aoFechar={() => setPainel(null)} />
+      )}
       {confirmarSaida && <ConfirmarSaida ranqueada={modo === 'ranqueada'} aoSair={() => void acoes.sair()} aoCancelar={() => setConfirmarSaida(false)} />}
       {painel !== 'sinais' && sinal && agora - sinal.em < DURACAO_SINAL_MS && (
         <div className="sinal-flutuante" role="status">

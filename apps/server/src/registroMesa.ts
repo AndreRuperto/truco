@@ -2,6 +2,8 @@ import type { AcaoJogador, Cadeira, EstadoPartida, Variante } from '@truco/engin
 import type { Formato } from './api/tipos';
 import type { ModoMesa } from './mesa/protocolo';
 import { type Contadores, contadoresZerados, contarAcao } from './ranking/estatisticas';
+import { limparChat } from './mesa/protocolo';
+import { registrarAuditoria } from './repo/auditoria';
 import { type AssentoRegistro, encerrarAbandonada, iniciarPartidaComCacife, partidaComEloCongelado, registrarAbandono, terminarPartida } from './repo/partidas';
 import type { Servicos } from './servicos';
 import { log } from './log';
@@ -31,6 +33,8 @@ export class RegistroMesa {
   private partidaId: number | null = null;
   private readonly humanos = new Map<Cadeira, JogadorSala>();
   private readonly contadores: Contadores[] = CADEIRAS.map(contadoresZerados);
+  /** Denúncias já feitas nesta sala, "de>alvo": uma por par, para não encher a auditoria. */
+  private readonly denuncias = new Set<string>();
   private cadeia: Promise<void> = Promise.resolve();
   /** Servidor desligando (redeploy): ninguém é punido pelas quedas que vêm a seguir. */
   private desligando = false;
@@ -138,6 +142,26 @@ export class RegistroMesa {
   /** Espera as gravações pendentes (testes e desligamento). */
   ocioso(): Promise<void> {
     return this.cadeia;
+  }
+
+  /**
+   * Denúncia (F6.5): quem tem conta denuncia outro humano da mesa. Vai para a auditoria (aba do admin)
+   * com a partida, a cadeira, o nome e um motivo curto. Convidado não denuncia (a trilha precisa de uma conta).
+   */
+  denunciar(de: Cadeira, alvo: Cadeira, motivoCru: unknown): 'ok' | 'repetida' | 'invalida' | 'sem-conta' {
+    const quem = this.humanos.get(de);
+    const outro = this.humanos.get(alvo);
+    if (!quem || !outro || de === alvo) return 'invalida';
+    if (quem.usuarioId === null) return 'sem-conta';
+    const chave = `${de}>${alvo}`;
+    if (this.denuncias.has(chave)) return 'repetida';
+    this.denuncias.add(chave);
+    const s = this.s;
+    if (!s) return 'ok';
+    const adminId = quem.usuarioId;
+    const detalhe = { partidaId: this.partidaId, cadeira: alvo, nome: outro.nome, motivo: limparChat(motivoCru).slice(0, 140) };
+    this.encadear(() => registrarAuditoria(s.banco, { adminId, acao: 'denuncia', alvoId: outro.usuarioId, detalhe }, s.agora()));
+    return 'ok';
   }
 
   private encadear(fn: () => Promise<void>): void {

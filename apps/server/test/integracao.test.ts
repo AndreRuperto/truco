@@ -4,7 +4,7 @@ import { boot, type ColyseusTestServer } from '@colyseus/testing';
 import { REGRAS_RANQUEADA } from '@truco/engine';
 import { eq } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
-import { bloqueiosFila, participacoes, partidas } from '../src/banco/schema';
+import { auditoria, bloqueiosFila, participacoes, partidas } from '../src/banco/schema';
 import { LimiteTaxa } from '../src/auth/limite';
 import { FilaRoom } from '../src/FilaRoom';
 import { MesaRoom } from '../src/MesaRoom';
@@ -451,6 +451,32 @@ describe('contas, privadas e HTTP no mesmo servidor', () => {
     a.send('chat', '  oi\u0007 pessoal ');
     await esperar(() => !!mb.chat?.length);
     expect(mb.chat[0]).toEqual({ de: 0, nome: 'Ana', texto: 'oi pessoal' });
+  });
+
+  test('denunciar (F6.5): logado denuncia outro humano; vai para a auditoria e a resposta volta só para quem denunciou', async () => {
+    const ana = await logado('ana-denuncia@x.com');
+    const bia = await logado('bia-denuncia@x.com');
+    const a = await ana.cliente.create('mesa', { modo: 'privada', humanos: 2 });
+    const ma = coletor(a);
+    await esperar(() => !!ma.estado?.length);
+    const b = await bia.cliente.joinById(a.roomId, {});
+    const mb = coletor(b);
+    await esperar(() => !!mb.estado?.length);
+    await esperar(() => ma.estado.at(-1).cadeiras.some((c: { nome?: string }) => c?.nome === bia.u.apelido));
+    const cadeiraBia = ma.estado.at(-1).cadeiras.findIndex((c: { nome?: string }) => c?.nome === bia.u.apelido);
+    a.send('denunciar', { cadeira: cadeiraBia, motivo: 'xingou' });
+    await esperar(() => !!ma.denuncia?.length);
+    expect(ma.denuncia[0]).toEqual({ resultado: 'ok' });
+    a.send('denunciar', { cadeira: cadeiraBia, motivo: 'de novo' });
+    await esperar(() => ma.denuncia.length >= 2);
+    expect(ma.denuncia[1]).toEqual({ resultado: 'repetida' });
+    a.send('denunciar', { cadeira: 'x' });
+    await esperar(() => ma.denuncia.length >= 3);
+    expect(ma.denuncia[2]).toEqual({ resultado: 'invalida' });
+    expect(mb.denuncia).toBeUndefined();
+    await esperarAsync(async () => (await banco.db.select().from(auditoria).where(eq(auditoria.adminId, ana.u.id))).length === 1);
+    const [linha] = await banco.db.select().from(auditoria).where(eq(auditoria.adminId, ana.u.id));
+    expect(linha).toMatchObject({ acao: 'denuncia', alvoId: bia.u.id, detalhe: { cadeira: cadeiraBia, motivo: 'xingou' } });
   });
 
   test('mesa casual esperando gente aparece em /api/salas', async () => {
