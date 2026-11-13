@@ -144,7 +144,7 @@ describe('tentarReconectar', () => {
     expect(await tentarReconectar(loja, cliente)).toBe(false);
     expect(lerToken()).toBeNull();
     expect(loja.getSnapshot().status).toBe('fora');
-    expect(loja.getSnapshot().erro?.mensagem).toBe('A mesa foi encerrada (o servidor reiniciou ou a partida acabou). Entre de novo para jogar.');
+    expect(loja.getSnapshot().erro?.mensagem).toBe('A mesa foi encerrada (você ficou fora por muito tempo, o servidor reiniciou ou a partida acabou). Entre de novo para jogar.');
   });
 
   test('cadeira expirada (código 524): apaga o token e avisa que a sessão expirou', async () => {

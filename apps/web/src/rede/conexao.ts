@@ -92,7 +92,7 @@ function fimDaReconexao(e: unknown): string | null {
   const code = (e as { code?: unknown } | null)?.code;
   const texto = mensagem(e);
   if (code === SALA_DESCARTADA || /disposed|not found/i.test(texto)) {
-    return 'A mesa foi encerrada (o servidor reiniciou ou a partida acabou). Entre de novo para jogar.';
+    return 'A mesa foi encerrada (você ficou fora por muito tempo, o servidor reiniciou ou a partida acabou). Entre de novo para jogar.';
   }
   if (code === RESERVA_EXPIRADA || /expired|expir|invalid|seat reservation/i.test(texto)) {
     return 'A sessão da mesa expirou. Entre novamente para jogar.';

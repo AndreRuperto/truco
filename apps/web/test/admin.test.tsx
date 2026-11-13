@@ -47,6 +47,15 @@ describe('TelaAdmin', () => {
     expect(screen.getByText('Partidas por dia')).toBeInTheDocument();
   });
 
+  test('resumo mostra a saúde do servidor: jogadores conectados, versão e tempo do banco (F5.4)', async () => {
+    const resumo = vi.fn(async () => ({ usuarios: 7, banidos: 1, partidas: 40, mesasAtivas: 2, jogadoresConectados: 5, versao: 'abc1234', bancoMs: 3, porDia: [] }));
+    render(<TelaAdmin aba="resumo" api={apiFalsa({ resumo })} />);
+    const numeros = await screen.findByRole('group', { name: 'Saúde do servidor' });
+    expect(numeros).toHaveTextContent('Jogadores conectados5');
+    expect(numeros).toHaveTextContent('Versãoabc1234');
+    expect(numeros).toHaveTextContent('Banco3 ms');
+  });
+
   test('quem não é admin vê o recado do 403', async () => {
     const api = apiFalsa({ resumo: vi.fn(async () => Promise.reject(new ErroApi(403, 'só para admin'))) });
     render(<TelaAdmin aba="resumo" api={api} />);

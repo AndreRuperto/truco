@@ -26,13 +26,14 @@ describe('agendarLimpeza', () => {
     espiao.mockRestore();
   });
 
-  test('falha na limpeza só vai para o log', async () => {
-    const erro = vi.spyOn(console, 'error').mockImplementation(() => {});
+  test('falha na limpeza só vai para o log (JSON de uma linha no stderr)', async () => {
+    const erro = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     const parar = agendarLimpeza(async () => {
       throw new Error('banco fora');
     });
     await new Promise((r) => setTimeout(r, 0));
-    expect(erro).toHaveBeenCalled();
+    const linha = JSON.parse(String(erro.mock.calls[0][0]));
+    expect(linha).toMatchObject({ nivel: 'erro', evento: 'limpeza_falhou', erro: { mensagem: 'banco fora' } });
     parar();
     erro.mockRestore();
   });

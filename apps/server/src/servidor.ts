@@ -4,7 +4,7 @@ import { FilaRoom } from './FilaRoom';
 import { configurarApp } from './http/app';
 import { instalarCors } from './http/cors';
 import { MesaRoom } from './MesaRoom';
-import { listarMesasAdmin, listarSalasAbertas } from './salas';
+import { contarSalas, listarMesasAdmin, listarSalasAbertas } from './salas';
 import type { Servicos } from './servicos';
 
 export interface ExtrasServidor {
@@ -32,6 +32,8 @@ export function criarServidor(servicos: Servicos, extras: ExtrasServidor = {}) {
       configurarApp(app, servicos, {
         listarSalas: listarSalasAbertas,
         listarMesas: listarMesasAdmin,
+        contarSalas,
+        versao: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
         pastaWeb: extras.pastaWeb ?? null,
         derrubarConta: (id) => {
           MesaRoom.derrubarConta(id);

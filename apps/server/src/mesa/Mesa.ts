@@ -44,6 +44,7 @@ import {
 } from './protocolo';
 import { aplicarBatida, decidirBatidaBot, forcaDaBatida, JANELA_BATIDA_MS, mesaFisicaInicial, type MsgBatida, pedidoQueBate } from './mesaFisica';
 import { cartaDoSinal, falaDaRodada, rodadaFechada, sinalDaMao } from './social';
+import { log } from '../log';
 
 export interface Relogio {
   /** Agenda `fn` e devolve uma função que cancela. */
@@ -761,7 +762,7 @@ export class Mesa {
   private falha(e: unknown): void {
     try {
       if (this.o.aoErro) this.o.aoErro(e);
-      else console.error('[Mesa]', e);
+      else log.erro('mesa_erro', e);
     } catch {
       // registrar nunca pode derrubar a mesa
     }

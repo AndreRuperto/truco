@@ -11,23 +11,23 @@ importers:
   apps/server:
     dependencies:
       '@colyseus/core':
-        specifier: ^0.18.26
-        version: 0.18.26(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.4)(@pm2/io@6.1.0)(express@5.3.0)
+        specifier: ^0.18.28
+        version: 0.18.28(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.5)(@pm2/io@6.1.0)(express@5.3.0)
       '@colyseus/ws-transport':
-        specifier: ^0.18.4
-        version: 0.18.4(@colyseus/core@0.18.26)(express@5.3.0)
+        specifier: ^0.18.5
+        version: 0.18.5(@colyseus/core@0.18.28)(express@5.3.0)
       '@electric-sql/pglite':
-        specifier: 0.5.10
-        version: 0.5.10
+        specifier: 0.5.16
+        version: 0.5.16
       drizzle-orm:
         specifier: 0.45.4
-        version: 0.45.4(@electric-sql/pglite@0.5.10)(@types/pg@8.23.1)(pg@8.23.1)
+        version: 0.45.4(@electric-sql/pglite@0.5.16)(@types/pg@8.23.1)(pg@8.23.1)
       express:
         specifier: 5.3.0
         version: 5.3.0
       google-auth-library:
-        specifier: 11.3.1
-        version: 11.3.1
+        specifier: 11.3.4
+        version: 11.3.4
       pg:
         specifier: 8.23.1
         version: 8.23.1
@@ -36,11 +36,11 @@ importers:
         version: 4.23.15
     devDependencies:
       '@colyseus/sdk':
-        specifier: ^0.18.9
-        version: 0.18.9(@colyseus/core@0.18.26)(typescript@5.9.3)
+        specifier: ^0.18.10
+        version: 0.18.10(@colyseus/core@0.18.28)(typescript@5.9.3)
       '@colyseus/testing':
         specifier: ^0.18.6
-        version: 0.18.6(@colyseus/core@0.18.26)(@colyseus/sdk@0.18.9(@colyseus/core@0.18.26)(typescript@5.9.3))(@colyseus/tools@0.18.11(@colyseus/core@0.18.26)(@colyseus/ws-transport@0.18.4))
+        version: 0.18.6(@colyseus/core@0.18.28)(@colyseus/sdk@0.18.10(@colyseus/core@0.18.28)(typescript@5.9.3))(@colyseus/tools@0.18.11(@colyseus/core@0.18.28)(@colyseus/ws-transport@0.18.5))
       '@types/express':
         specifier: 5.0.6
         version: 5.0.6
@@ -63,8 +63,8 @@ importers:
   apps/web:
     dependencies:
       '@colyseus/sdk':
-        specifier: ^0.18.9
-        version: 0.18.9(@colyseus/core@0.18.26)(typescript@5.9.3)
+        specifier: ^0.18.10
+        version: 0.18.10(@colyseus/core@0.18.28)(typescript@5.9.3)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -88,8 +88,8 @@ importers:
         specifier: ^16.3.0
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@testing-library/user-event':
-        specifier: ^14.6.1
-        version: 14.6.8(@testing-library/dom@10.4.2)
+        specifier: ^14.6.10
+        version: 14.6.10(@testing-library/dom@10.4.2)
       '@types/node':
         specifier: ^20.16.0
         version: 20.19.43
@@ -248,8 +248,8 @@ packages:
   '@colyseus/clock@2.0.3':
     resolution: {integrity: sha512-kziqG0dcGsvSfcerHLZTY1V2PmGnZAdG5DM0T5BKQDAiYBXYoMqfzA1Wxfe3KSnyeZuP99isffkUQLEwpFYF7A==}
 
-  '@colyseus/core@0.18.26':
-    resolution: {integrity: sha512-v2SgrXBUku8k3ACmDhZhRPxYUDNYFRJBnafxnmXuXbD2L2DNxOH9+iXiXQk8vLYln7+Bh7VMVq5GlTDsrTtFAA==}
+  '@colyseus/core@0.18.28':
+    resolution: {integrity: sha512-WBBmcY9dymkJhuVea1IWctydSG13BOT3DKNIYe288FEGpG8TZRM2wbwSI7RjBuQ5mHLzX3ArfeVBn5WwauIEtg==}
     engines: {node: '>= 22.x'}
     peerDependencies:
       '@colyseus/auth': 0.18.x
@@ -284,8 +284,8 @@ packages:
       typescript:
         optional: true
 
-  '@colyseus/sdk@0.18.9':
-    resolution: {integrity: sha512-TZ5ltDW9rQJ6VhEE8AACMxlwLK9FFQJW2kJY3rNPpTD/VOtHH5tBCis1KKFhOQBL/DokYYbLSzVEe+M1Zj7NHw==}
+  '@colyseus/sdk@0.18.10':
+    resolution: {integrity: sha512-9pjLukU2tqKRqcHSijrK/n3VJdeCnm1W/pNGWgc8HSecJkjnv+YKqf6dpYRkF2PPmv0sltxmGfXpIM2viJafvg==}
     engines: {node: '>= 12.x'}
     peerDependencies:
       '@colyseus/core': 0.18.x
@@ -316,8 +316,8 @@ packages:
       '@colyseus/core': 0.18.x
       '@colyseus/ws-transport': 0.18.x
 
-  '@colyseus/ws-transport@0.18.4':
-    resolution: {integrity: sha512-gSPEkhV9cX8QjJWJiXfkRF38ZIiWq7DbDvzkgGqa1zmdOSZBP1aaM9tnZyvcjc1OpG+AFggeehrs/QMDBEzz2g==}
+  '@colyseus/ws-transport@0.18.5':
+    resolution: {integrity: sha512-3VKf71E8lElsuhSH2PmYpN2au2waGEEtcWYdIJbKHS64aPEcWQze9Kw/LHI7JIB8j4VkOdPLjWdaR+v8Y/9enQ==}
     engines: {node: '>= 22.x'}
     peerDependencies:
       '@colyseus/core': ^0.18.5
@@ -354,8 +354,8 @@ packages:
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
 
-  '@electric-sql/pglite@0.5.10':
-    resolution: {integrity: sha512-tXc/25U3ulOkiRQuTFdwIv+JhBqtMdAF7Gvo6CfZZWtSB4+hgC4Wr2vwK5ngvvN5PJfAAEGIsfyCVy1JhCOBYw==}
+  '@electric-sql/pglite@0.5.16':
+    resolution: {integrity: sha512-Nj8KcIsJL748W408U2N8q4+9IlONdpRIU8MJypIAAINMJ5nqKyqpX7Mgg/5XKkXiAib3AoZGR6hnJFlrlLBrcg==}
 
   '@esbuild-kit/core-utils@3.3.2':
     resolution: {integrity: sha512-sPRAnw9CdSsRmEtnsl2WXWdyquogVpB3yZ3dgwJfe8zrOzTsV7cJvmwrKVa+0ma5BoiGJ+BoqkMvawbayKUsqQ==}
@@ -1164,8 +1164,8 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@testing-library/user-event@14.6.8':
-    resolution: {integrity: sha512-vgSSqnANMnkcYR/vUNDbwS7aM3OErRLNUG8vCVVlj4oc6cKffUrccX7UAS5AmJQQNZTSibi9z5GvvRZ0aYgUCQ==}
+  '@testing-library/user-event@14.6.10':
+    resolution: {integrity: sha512-tA4stGNp3mLGOGO+lh87UA56Tz4c8NVGBSkyIF58O+W/bs2Re9BCI9xihnL70+DsThncFznE0skS88SM1D2hyg==}
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
@@ -1707,8 +1707,8 @@ packages:
   get-tsconfig@4.14.3:
     resolution: {integrity: sha512-++QEw4DIY7WGoukz+/+A/8dGYPT9l9yIadnmSgZ8Rjr3YVSVDipQSO9CdnJo9ePqFqUUqh+wk9uIaoiAwsiPkA==}
 
-  google-auth-library@11.3.1:
-    resolution: {integrity: sha512-mQS0R2Ev/DKkzuWSYtDeq15uhDeaWuT2qzLYqJ41LmooxVKHmn5ut3pc6dlHY6wfHW/D7FBmOYjAtkjaD1A7qA==}
+  google-auth-library@11.3.4:
+    resolution: {integrity: sha512-RaYCDoeYIIFTRgH8hesSxqLrmtC2l+DB3cSCS/SN1TPGjI2VpPdJmF3bfRLUn8VvP/4I2Af9fsktw2f9SvVSVg==}
     engines: {node: '>=22'}
 
   google-logging-utils@2.1.1:
@@ -2526,7 +2526,7 @@ snapshots:
 
   '@colyseus/clock@2.0.3': {}
 
-  '@colyseus/core@0.18.26(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.4)(@pm2/io@6.1.0)(express@5.3.0)':
+  '@colyseus/core@0.18.28(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.5)(@pm2/io@6.1.0)(express@5.3.0)':
     dependencies:
       '@colyseus/better-call': 1.3.3
       '@colyseus/greeting-banner': 4.0.3
@@ -2538,7 +2538,7 @@ snapshots:
       msgpackr: 2.1.4
       nanoid: 3.3.20
     optionalDependencies:
-      '@colyseus/ws-transport': 0.18.4(@colyseus/core@0.18.26)(express@5.3.0)
+      '@colyseus/ws-transport': 0.18.5(@colyseus/core@0.18.28)(express@5.3.0)
       '@pm2/io': 6.1.0
       express: 5.3.0
     transitivePeerDependencies:
@@ -2550,7 +2550,7 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
-  '@colyseus/sdk@0.18.9(@colyseus/core@0.18.26)(typescript@5.9.3)':
+  '@colyseus/sdk@0.18.10(@colyseus/core@0.18.28)(typescript@5.9.3)':
     dependencies:
       '@colyseus/better-call': 1.3.3
       '@colyseus/schema': 5.0.45(typescript@5.9.3)
@@ -2559,7 +2559,7 @@ snapshots:
       tslib: 2.9.1
       ws: 8.22.1
     optionalDependencies:
-      '@colyseus/core': 0.18.26(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.4)(@pm2/io@6.1.0)(express@5.3.0)
+      '@colyseus/core': 0.18.28(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.5)(@pm2/io@6.1.0)(express@5.3.0)
     transitivePeerDependencies:
       - bufferutil
       - typescript
@@ -2570,29 +2570,29 @@ snapshots:
     dependencies:
       '@standard-schema/spec': 1.1.0
 
-  '@colyseus/testing@0.18.6(@colyseus/core@0.18.26)(@colyseus/sdk@0.18.9(@colyseus/core@0.18.26)(typescript@5.9.3))(@colyseus/tools@0.18.11(@colyseus/core@0.18.26)(@colyseus/ws-transport@0.18.4))':
+  '@colyseus/testing@0.18.6(@colyseus/core@0.18.28)(@colyseus/sdk@0.18.10(@colyseus/core@0.18.28)(typescript@5.9.3))(@colyseus/tools@0.18.11(@colyseus/core@0.18.28)(@colyseus/ws-transport@0.18.5))':
     dependencies:
-      '@colyseus/core': 0.18.26(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.4)(@pm2/io@6.1.0)(express@5.3.0)
-      '@colyseus/sdk': 0.18.9(@colyseus/core@0.18.26)(typescript@5.9.3)
-      '@colyseus/tools': 0.18.11(@colyseus/core@0.18.26)(@colyseus/ws-transport@0.18.4)
+      '@colyseus/core': 0.18.28(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.5)(@pm2/io@6.1.0)(express@5.3.0)
+      '@colyseus/sdk': 0.18.10(@colyseus/core@0.18.28)(typescript@5.9.3)
+      '@colyseus/tools': 0.18.11(@colyseus/core@0.18.28)(@colyseus/ws-transport@0.18.5)
       httpie: 2.0.0-next.13
 
   '@colyseus/timer@2.0.3':
     dependencies:
       '@colyseus/clock': 2.0.3
 
-  '@colyseus/tools@0.18.11(@colyseus/core@0.18.26)(@colyseus/ws-transport@0.18.4)':
+  '@colyseus/tools@0.18.11(@colyseus/core@0.18.28)(@colyseus/ws-transport@0.18.5)':
     dependencies:
-      '@colyseus/core': 0.18.26(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.4)(@pm2/io@6.1.0)(express@5.3.0)
-      '@colyseus/ws-transport': 0.18.4(@colyseus/core@0.18.26)(express@5.3.0)
+      '@colyseus/core': 0.18.28(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.5)(@pm2/io@6.1.0)(express@5.3.0)
+      '@colyseus/ws-transport': 0.18.5(@colyseus/core@0.18.28)(express@5.3.0)
       '@pm2/io': 6.1.0
       dotenv: 18.0.9
     transitivePeerDependencies:
       - supports-color
 
-  '@colyseus/ws-transport@0.18.4(@colyseus/core@0.18.26)(express@5.3.0)':
+  '@colyseus/ws-transport@0.18.5(@colyseus/core@0.18.28)(express@5.3.0)':
     dependencies:
-      '@colyseus/core': 0.18.26(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.4)(@pm2/io@6.1.0)(express@5.3.0)
+      '@colyseus/core': 0.18.28(@colyseus/better-call@1.3.3)(@colyseus/schema@5.0.45(typescript@5.9.3))(@colyseus/ws-transport@0.18.5)(@pm2/io@6.1.0)(express@5.3.0)
       '@types/ws': 8.18.2
       express: 5.3.0
       ws: 8.22.1
@@ -2622,7 +2622,7 @@ snapshots:
 
   '@drizzle-team/brocli@0.10.2': {}
 
-  '@electric-sql/pglite@0.5.10': {}
+  '@electric-sql/pglite@0.5.16': {}
 
   '@esbuild-kit/core-utils@3.3.2':
     dependencies:
@@ -3092,7 +3092,7 @@ snapshots:
       '@types/react': 18.3.31
       '@types/react-dom': 18.3.7(@types/react@18.3.31)
 
-  '@testing-library/user-event@14.6.8(@testing-library/dom@10.4.2)':
+  '@testing-library/user-event@14.6.10(@testing-library/dom@10.4.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
 
@@ -3393,9 +3393,9 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.4(@electric-sql/pglite@0.5.10)(@types/pg@8.23.1)(pg@8.23.1):
+  drizzle-orm@0.45.4(@electric-sql/pglite@0.5.16)(@types/pg@8.23.1)(pg@8.23.1):
     optionalDependencies:
-      '@electric-sql/pglite': 0.5.10
+      '@electric-sql/pglite': 0.5.16
       '@types/pg': 8.23.1
       pg: 8.23.1
 
@@ -3675,7 +3675,7 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
-  google-auth-library@11.3.1:
+  google-auth-library@11.3.4:
     dependencies:
       base64-js: 1.5.1
       ecdsa-sig-formatter: 1.0.11

@@ -8,6 +8,7 @@ import { cacifeDaRanqueada } from './loja/regras';
 import { bloqueioAte, ratingDe } from './repo/partidas';
 import type { Servicos } from './servicos';
 import { type UsuarioConexao, usuarioDaConexao } from './sessaoSala';
+import { log } from './log';
 
 
 /**
@@ -104,7 +105,7 @@ export class FilaRoom extends Room {
         try {
           await this.criarMesa(p);
         } catch (e) {
-          console.error('[FilaRoom] falha ao criar mesa ranqueada', e);
+          log.erro('fila_falha_criar_mesa', e);
           this.devolverPresentes(p);
         }
       }
@@ -157,7 +158,7 @@ export class FilaRoom extends Room {
     } catch (e) {
       // `disconnect` resolve depois do descarte (onDispose libera as contas da mesa).
       await matchMaker.remoteRoomCall(sala.roomId, 'disconnect', [SAIDA_PARTIDA_CANCELADA]).catch((x: unknown) => {
-        console.error('[FilaRoom] falha ao descartar a mesa sem reservas', x);
+        log.erro('fila_falha_descartar_mesa', x);
       });
       throw e;
     }

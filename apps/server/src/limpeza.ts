@@ -1,3 +1,4 @@
+import { log } from './log';
 export const UMA_HORA_MS = 60 * 60_000;
 
 /**
@@ -6,7 +7,7 @@ export const UMA_HORA_MS = 60 * 60_000;
  */
 export function agendarLimpeza(limpar: () => Promise<unknown>, intervaloMs = UMA_HORA_MS): () => void {
   const rodar = () => {
-    limpar().catch((e) => console.error('[limpeza] falhou', e));
+    limpar().catch((e) => log.erro('limpeza_falhou', e));
   };
   rodar();
   const t = setInterval(rodar, intervaloMs);

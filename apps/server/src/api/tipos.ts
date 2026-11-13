@@ -137,6 +137,12 @@ export interface ResumoAdmin {
   partidas: number;
   /** Salas abertas agora no Colyseus (qualquer modo). */
   mesasAtivas: number;
+  /** Clientes conectados nas mesas agora; null se o servidor não contou. */
+  jogadoresConectados?: number | null;
+  /** Commit em produção (7 letras); null fora do Railway. */
+  versao?: string | null;
+  /** Quanto o banco levou para responder ao `select 1` (ms); null se não respondeu. */
+  bancoMs?: number | null;
   /** Últimos 14 dias, do mais antigo ao de hoje (dias sem nada vêm com zero). */
   porDia: DiaAdmin[];
 }

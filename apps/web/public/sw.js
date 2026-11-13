@@ -1,7 +1,8 @@
 /* Truco PWA: cache apenas dos arquivos estáticos versionados do Vite.
  * Partidas, sessões, login, API e WebSocket são SEMPRE online e nunca armazenados.
  */
-const CACHE_ATIVOS = 'truco-assets-v1';
+// Trocado no build pelo nome com o hash dos assets (sw-cache.ts): cada deploy tem o seu cache.
+const CACHE_ATIVOS = 'truco-assets-dev';
 const PREFIXO = 'truco-assets-';
 
 self.addEventListener('install', (evento) => {
