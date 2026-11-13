@@ -5262,7 +5262,14 @@ body:has(.tela-mesa) {
   border-radius: var(--raio-painel);
 }
 .rodape-legal {
-  margin-top: var(--e4);
+  /* Fica por cima das cartas decorativas do fundo do início, num fundo da cor da página. */
+  position: relative;
+  z-index: 1;
+  width: fit-content;
+  margin: var(--e4) auto 0;
+  padding: var(--e1) var(--e3);
+  border-radius: 100px;
+  background: var(--fundo);
   text-align: center;
   font-size: 0.9rem;
 }
