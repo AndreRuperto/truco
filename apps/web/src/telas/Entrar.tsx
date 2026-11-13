@@ -113,6 +113,9 @@ export function TelaEntrar({ token, config, api, aoEntrar, carregarGoogle }: Pro
         </p>
       )}
       <p className="nota">Sem conta você joga Clássica e Desafio como convidado. Ranqueada, histórico e perfil pedem login.</p>
+      <p className="nota">
+        Ao entrar, você concorda com os <a href="#/termos">Termos de uso</a> e a <a href="#/privacidade">Privacidade</a>.
+      </p>
     </main>
   );
 }

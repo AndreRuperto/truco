@@ -1,6 +1,8 @@
+import { eq } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { extrairLink } from '../src/auth/emails';
 import { LimiteTaxa } from '../src/auth/limite';
+import { carteiras, lancamentos, linksMagicos, participacoes, partidas, ratings, sessoes, usuarios } from '../src/banco/schema';
 import { criarUsuario } from '../src/repo/usuarios';
 import { type Servicos, servicosDeTeste } from '../src/servicos';
 import { type BancoDeTeste, bancoDeTeste } from './banco-helpers';
@@ -300,5 +302,60 @@ describe('limite por IP no login', () => {
     } finally {
       await outro.fechar();
     }
+  });
+});
+
+describe('excluir a conta (F6.4)', () => {
+  test('401 sem login; 400 sem digitar o apelido certo; nada muda', async () => {
+    expect((await app.pedir('/api/eu', { metodo: 'DELETE', corpo: { apelido: 'ana' } })).status).toBe(401);
+    const cookie = await entrarPorLink('ana@x.com');
+    expect((await app.pedir('/api/eu', { metodo: 'DELETE', corpo: { apelido: 'outra' }, cookie })).status).toBe(400);
+    expect((await app.pedir('/api/eu', { metodo: 'DELETE', corpo: {}, cookie })).status).toBe(400);
+    expect((await app.pedir('/api/eu', { cookie })).json.usuario.apelido).toBe('ana');
+  });
+
+  test('anonimiza a conta, apaga sessões, links e ranking, e mantém as partidas e o extrato', async () => {
+    const cookie = await entrarPorLink('ana@x.com');
+    const eu = (await app.pedir('/api/eu', { cookie })).json.usuario;
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia', email: 'bia@x.com' });
+    await b.db.update(usuarios).set({ googleSub: 'g-ana', avatar: 'av:1' }).where(eq(usuarios.id, eu.id));
+    await b.db.insert(ratings).values({ usuarioId: eu.id, variante: 'paulista', elo: 1100, pontos: 30, partidas: 3 });
+    await b.db.insert(linksMagicos).values({ tokenHash: 'h-ana', email: 'ana@x.com', expiraEm: new Date(Date.now() + 60_000) });
+    const [p] = await b.db.insert(partidas).values({ variante: 'paulista', modo: 'classica', vencedora: 0 }).returning();
+    await b.db.insert(participacoes).values([
+      { partidaId: p.id, usuarioId: eu.id, nome: 'ana', humano: true, cadeira: 0, dupla: 0, venceu: true },
+      { partidaId: p.id, usuarioId: bia.id, nome: 'bia', humano: true, cadeira: 1, dupla: 1, venceu: false },
+    ]);
+    await b.db.insert(carteiras).values({ usuarioId: eu.id, fichas: 100 });
+    await b.db.insert(lancamentos).values({ usuarioId: eu.id, moeda: 'fichas', delta: 100, saldoDepois: 100, motivo: 'cadastro' });
+
+    const r = await app.pedir('/api/eu', { metodo: 'DELETE', corpo: { apelido: 'ANA' }, cookie });
+    expect(r.status).toBe(204);
+    expect(r.setCookie).toMatch(/Max-Age=0|Expires=Thu, 01 Jan 1970/i);
+
+    const [u] = await b.db.select().from(usuarios).where(eq(usuarios.id, eu.id));
+    expect(u.apelido).toBe(`Jogador removido ${eu.id}`);
+    expect([u.email, u.emailCanonico, u.googleSub, u.avatar, u.preferencias, u.equipados]).toEqual([null, null, null, null, null, null]);
+    expect(u.removidoEm).toBeInstanceOf(Date);
+    expect(await b.db.select().from(sessoes).where(eq(sessoes.usuarioId, eu.id))).toHaveLength(0);
+    expect(await b.db.select().from(linksMagicos).where(eq(linksMagicos.email, 'ana@x.com'))).toHaveLength(0);
+    expect(await b.db.select().from(ratings).where(eq(ratings.usuarioId, eu.id))).toHaveLength(0);
+
+    // O histórico da Bia continua inteiro, sem o apelido antigo da Ana.
+    const nomes = (await b.db.select().from(participacoes).where(eq(participacoes.partidaId, p.id))).map((x) => x.nome).sort();
+    expect(nomes).toEqual(['Jogador removido', 'bia']);
+    expect(await b.db.select().from(lancamentos).where(eq(lancamentos.usuarioId, eu.id))).toHaveLength(1);
+
+    expect((await app.pedir('/api/eu', { cookie })).json.usuario).toBeNull();
+    expect((await app.pedir(`/api/perfil/${eu.id}`)).status).toBe(404);
+    // Entrar de novo com o mesmo e-mail cria uma conta nova, sem nada da antiga.
+    await entrarPorLink('ana@x.com');
+    const nova = (await b.db.select().from(usuarios).where(eq(usuarios.email, 'ana@x.com')))[0];
+    expect(nova.id).not.toBe(eu.id);
+  });
+
+  test('ninguém pode escolher um apelido de conta removida', async () => {
+    const cookie = await entrarPorLink('ana@x.com');
+    expect((await app.pedir('/api/eu', { metodo: 'PATCH', corpo: { apelido: 'Jogador removido 7' }, cookie })).status).toBe(400);
   });
 });

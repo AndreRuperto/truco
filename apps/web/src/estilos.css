@@ -4254,6 +4254,38 @@ body:has(.tela-mesa) {
   }
 }
 
+/* Excluir conta (F6.4): bloco de lousa no fim do perfil; o botão vermelho é o mesmo do admin (4,7:1 com branco). */
+.excluir-conta-abrir {
+  margin: var(--e5) 0 0;
+  text-align: center;
+}
+.excluir-conta {
+  margin: var(--e5) 0 0;
+  padding: var(--e4);
+  border: 3px solid var(--lousa-borda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  --foco: var(--grito);
+}
+.excluir-conta h2 {
+  margin-top: 0;
+}
+.excluir-conta .linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e3);
+}
+.botao-perigo {
+  border-color: #c9473e;
+  background: #c9473e;
+  color: var(--branco);
+}
+.botao-perigo:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* Próprio perfil: bloco de edição em lousa. */
 .editar-perfil {
   margin: 0 0 var(--e5);
@@ -5178,4 +5210,25 @@ body:has(.tela-mesa) {
   .sala-truques-botoes button {
     transition: none;
   }
+}
+
+/* Páginas legais (F6.4): texto corrido, largura de leitura; aviso de rascunho enquanto não aprovado (D8). */
+.tela-legal {
+  max-width: 72ch;
+}
+.tela-legal h2 {
+  margin-top: var(--e5);
+}
+.tela-legal li + li {
+  margin-top: var(--e2);
+}
+.aviso-rascunho {
+  padding: var(--e3) var(--e4);
+  border: 2px dashed currentColor;
+  border-radius: var(--raio-painel);
+}
+.rodape-legal {
+  margin-top: var(--e4);
+  text-align: center;
+  font-size: 0.9rem;
 }

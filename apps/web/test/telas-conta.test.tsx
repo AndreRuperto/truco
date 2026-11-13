@@ -80,6 +80,39 @@ describe('TelaPerfil', () => {
     expect(trocarAvatar).toHaveBeenLastCalledWith(null);
   });
 
+  test('excluir a conta: explica o que acontece, só libera com o apelido digitado e chama a API (F6.4)', async () => {
+    const user = userEvent.setup();
+    const usuario = { id: 1, apelido: 'ana', email: 'ana@x.com', google: false };
+    const excluirConta = vi.fn(async () => undefined);
+    const aoExcluir = vi.fn();
+    render(<TelaPerfil id={null} usuario={usuario} api={{ perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn(), excluirConta }} aoExcluir={aoExcluir} />);
+    await user.click(await screen.findByRole('button', { name: 'Excluir minha conta…' }));
+    const bloco = screen.getByRole('region', { name: 'Excluir conta' });
+    expect(bloco).toHaveTextContent(/e-mail, Google, foto e apelido são apagados/);
+    const confirmar = within(bloco).getByRole('button', { name: 'Excluir para sempre' });
+    expect(confirmar).toBeDisabled();
+    await user.type(within(bloco).getByLabelText(/Digite o seu apelido/), 'an');
+    expect(confirmar).toBeDisabled();
+    await user.type(within(bloco).getByLabelText(/Digite o seu apelido/), 'a');
+    expect(confirmar).toBeEnabled();
+    await user.click(confirmar);
+    expect(excluirConta).toHaveBeenCalledWith('ana');
+    expect(aoExcluir).toHaveBeenCalled();
+  });
+
+  test('excluir a conta: erro do servidor aparece e a conta continua', async () => {
+    const user = userEvent.setup();
+    const usuario = { id: 1, apelido: 'ana', email: 'ana@x.com', google: false };
+    const excluirConta = vi.fn(async () => Promise.reject(new ErroApi(500, 'deu ruim')));
+    const aoExcluir = vi.fn();
+    render(<TelaPerfil id={null} usuario={usuario} api={{ perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn(), excluirConta }} aoExcluir={aoExcluir} />);
+    await user.click(await screen.findByRole('button', { name: 'Excluir minha conta…' }));
+    await user.type(screen.getByLabelText(/Digite o seu apelido/), 'ana');
+    await user.click(screen.getByRole('button', { name: 'Excluir para sempre' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('deu ruim');
+    expect(aoExcluir).not.toHaveBeenCalled();
+  });
+
   test('conquistas: as feitas primeiro, contagem e progresso das que faltam', async () => {
     const conquistas = [
       { id: 'frequentador', nome: 'Freguês da casa', descricao: 'Termine 10 partidas.', alcancada: false, progresso: { atual: 7, meta: 10 } },

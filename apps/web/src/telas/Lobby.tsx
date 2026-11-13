@@ -237,6 +237,9 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
       </form>
       <InstalarTruco />
       <p className="lobby-dica-cartas">Duplo clique nas cartas do fundo para fazê-las girar.</p>
+      <nav className="rodape-legal" aria-label="Documentos">
+        <a href="#/termos">Termos de uso</a> · <a href="#/privacidade">Privacidade</a>
+      </nav>
     </main>
   );
 }

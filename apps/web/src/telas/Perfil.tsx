@@ -10,7 +10,7 @@ import type { Api } from '../rede/api';
 import { useCarregar } from '../rede/hooks';
 
 interface Props {
-  api: Pick<Api, 'perfil' | 'trocarApelido'> & Partial<Pick<Api, 'conectarGoogle' | 'trocarAvatar'>>;
+  api: Pick<Api, 'perfil' | 'trocarApelido'> & Partial<Pick<Api, 'conectarGoogle' | 'trocarAvatar' | 'excluirConta'>>;
   /** null = o próprio perfil (exige login). */
   id: number | null;
   /** Veio de "Editar perfil": rola até o bloco de edição e põe o foco no apelido. */
@@ -20,9 +20,11 @@ interface Props {
   /** Client ID do Google, se o login com Google estiver ligado no servidor. */
   googleClientId?: string | null;
   aoTrocarApelido?: (u: UsuarioApi) => void;
+  /** A conta foi excluída: a sessão acabou. */
+  aoExcluir?: () => void;
 }
 
-export function TelaPerfil({ api, id, editar = false, usuario = null, googleClientId = null, aoTrocarApelido }: Props) {
+export function TelaPerfil({ api, id, editar = false, usuario = null, googleClientId = null, aoTrocarApelido, aoExcluir }: Props) {
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.perfil(id ?? undefined), [id]);
   return (
     <main className="tela-conta pagina-perfil">
@@ -58,6 +60,9 @@ export function TelaPerfil({ api, id, editar = false, usuario = null, googleClie
             <CartaoVariante key={v} variante={v} r={dados.variantes[v]} />
           ))}
           {dados.conquistas && dados.conquistas.length > 0 && <Conquistas lista={dados.conquistas} />}
+          {id === null && usuario && api.excluirConta && (
+            <ExcluirConta apelido={usuario.apelido} excluir={api.excluirConta} aoExcluir={() => aoExcluir?.()} />
+          )}
         </>
       )}
     </main>
@@ -274,6 +279,67 @@ function FormApelido({ atual, api, aoSalvar }: { atual: string; api: Pick<Api, '
         </p>
       )}
     </form>
+  );
+}
+
+/** Exclusão da conta (F6.4): explica o que some e o que fica; só libera com o apelido digitado. */
+function ExcluirConta({ apelido, excluir, aoExcluir }: { apelido: string; excluir: (apelido: string) => Promise<void>; aoExcluir: () => void }) {
+  const [aberto, setAberto] = useState(false);
+  const [digitado, setDigitado] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  if (!aberto) {
+    return (
+      <p className="excluir-conta-abrir">
+        <button type="button" className="botao-perigo" onClick={() => setAberto(true)}>
+          Excluir minha conta…
+        </button>
+      </p>
+    );
+  }
+  const confere = digitado.trim().toLowerCase() === apelido.toLowerCase();
+  const enviar = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!confere) return;
+    setErro(null);
+    setEnviando(true);
+    try {
+      await excluir(digitado.trim());
+      aoExcluir();
+    } catch (x) {
+      setErro(x instanceof Error ? x.message : String(x));
+      setEnviando(false);
+    }
+  };
+  return (
+    <section className="excluir-conta" aria-labelledby="titulo-excluir-conta">
+      <h2 id="titulo-excluir-conta">Excluir conta</h2>
+      <p>
+        Não dá para desfazer. Seu e-mail, Google, foto e apelido são apagados, você sai do ranking e perde Fichas, Pila e
+        itens. As partidas ficam no histórico de quem jogou com você, como “Jogador removido”.
+      </p>
+      <form className="formulario" onSubmit={enviar}>
+        <div className="campo">
+          <label htmlFor="confirmar-exclusao">
+            Digite o seu apelido (<strong>{apelido}</strong>) para confirmar
+          </label>
+          <input id="confirmar-exclusao" type="text" autoComplete="off" value={digitado} onChange={(e) => setDigitado(e.target.value)} />
+        </div>
+        <div className="linha">
+          <button type="submit" className="botao-perigo" disabled={!confere || enviando}>
+            Excluir para sempre
+          </button>
+          <button type="button" onClick={() => setAberto(false)} disabled={enviando}>
+            Cancelar
+          </button>
+        </div>
+        {erro && (
+          <p className="erro-form" role="alert">
+            {erro}
+          </p>
+        )}
+      </form>
+    </section>
   );
 }
 
