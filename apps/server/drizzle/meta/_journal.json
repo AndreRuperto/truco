@@ -43,6 +43,13 @@
       "when": 1794369583509,
       "tag": "0005_loja",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794583760187,
+      "tag": "0006_elo_congelado",
+      "breakpoints": true
     }
   ]
 }

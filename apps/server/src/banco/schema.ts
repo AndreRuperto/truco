@@ -88,6 +88,8 @@ export const partidas = pgTable('partidas', {
   cacife: integer('cacife').notNull().default(0),
   /** Soma dos cacifes pagos. */
   pote: integer('pote').notNull().default(0),
+  /** Ranqueada repetida entre o mesmo grupo em 24 h (ranking/mesmoGrupo.ts): Elo e pontos não mudaram. */
+  eloCongelado: boolean('elo_congelado').notNull().default(false),
 });
 
 export const participacoes = pgTable(

@@ -11,9 +11,11 @@ import {
   perfil,
   ranking,
   ratingDe,
+  partidaComEloCongelado,
   registrarAbandono,
   terminarPartida,
 } from '../src/repo/partidas';
+import { LIMITE_MESMO_GRUPO_24H } from '../src/ranking/mesmoGrupo';
 import { criarUsuario } from '../src/repo/usuarios';
 import { type BancoDeTeste, bancoDeTeste } from './banco-helpers';
 
@@ -133,6 +135,70 @@ describe('partida ranqueada', () => {
     const [p] = await b.db.select().from(partidas).where(eq(partidas.id, id));
     expect(p.abandonada).toBe(true);
     expect((await ratingDe(b.db, bia.id, 'paulista')).elo).toBe(984);
+  });
+});
+
+describe('conluio na ranqueada: Elo congelado no mesmo grupo (F4.1)', () => {
+  const MIN = 60_000;
+  const em = (min: number) => new Date(T0.getTime() + min * MIN);
+  async function ranqueada(assentos: AssentoRegistro[], formato: '1x1' | '2x2', quando: Date, vencedora: 0 | 1 = 0) {
+    const id = await iniciarPartida(b.db, { variante: 'paulista', modo: 'ranqueada', formato, assentos }, quando);
+    const deltas = await terminarPartida(b.db, id, fim(vencedora, [12, 5]), { k: 32, agora: quando });
+    return { id, deltas };
+  }
+
+  test(`a ${LIMITE_MESMO_GRUPO_24H}ª entre o mesmo par muda o Elo; a seguinte não, e fica marcada`, async () => {
+    expect(LIMITE_MESMO_GRUPO_24H).toBe(5);
+    const { ana, bia } = await doisJogadores();
+    const a = assentos1x1(ana.id, bia.id);
+    for (let i = 0; i < 4; i++) await ranqueada(a, '1x1', em(i * 10));
+    const quinta = await ranqueada(a, '1x1', em(40));
+    expect(quinta.deltas.get(ana.id)).not.toBe(0);
+    expect(await partidaComEloCongelado(b.db, quinta.id)).toBe(false);
+    const antes = await ratingDe(b.db, ana.id, 'paulista');
+    const sexta = await ranqueada(a, '1x1', em(50));
+    expect(sexta.deltas).toEqual(new Map([[ana.id, 0], [bia.id, 0]]));
+    expect(await partidaComEloCongelado(b.db, sexta.id)).toBe(true);
+    const depois = await ratingDe(b.db, ana.id, 'paulista');
+    expect(depois).toEqual({ ...antes, partidas: antes.partidas + 1 });
+    const [pa] = await b.db.select().from(participacoes).where(eq(participacoes.partidaId, sexta.id));
+    expect(pa.eloDepois).toBe(pa.eloAntes);
+    // A partida em si vale: placar e vitória gravados.
+    const [p] = await b.db.select().from(partidas).where(eq(partidas.id, sexta.id));
+    expect(p).toMatchObject({ placar0: 12, placar1: 5, vencedora: 0 });
+  });
+
+  test('depois de 24 h volta a valer', async () => {
+    const { ana, bia } = await doisJogadores();
+    const a = assentos1x1(ana.id, bia.id);
+    for (let i = 0; i < 6; i++) await ranqueada(a, '1x1', em(i * 10));
+    const depois = await ranqueada(a, '1x1', em(25 * 60));
+    expect(depois.deltas.get(ana.id)).not.toBe(0);
+    expect(await partidaComEloCongelado(b.db, depois.id)).toBe(false);
+  });
+
+  test('em 2x2 conta o mesmo conjunto de 4 contas; trocar uma conta quebra o grupo', async () => {
+    const [u1, u2, u3, u4, u5] = await Promise.all(['a', 'b', 'c', 'd', 'e'].map((n) => criarUsuario(b.db, { apelidoBase: n })));
+    const quatro = (x: number[]): AssentoRegistro[] => x.map((id, cadeira) => ({ cadeira: cadeira as 0 | 1 | 2 | 3, usuarioId: id, nome: `u${id}`, humano: true }));
+    // As mesmas 4 contas em cadeiras diferentes continuam o mesmo grupo.
+    for (let i = 0; i < 5; i++) await ranqueada(quatro(i % 2 ? [u1.id, u2.id, u3.id, u4.id] : [u2.id, u1.id, u4.id, u3.id]), '2x2', em(i * 10));
+    const outroGrupo = await ranqueada(quatro([u1.id, u2.id, u3.id, u5.id]), '2x2', em(60));
+    expect(await partidaComEloCongelado(b.db, outroGrupo.id)).toBe(false);
+    const mesmo = await ranqueada(quatro([u1.id, u2.id, u3.id, u4.id]), '2x2', em(70));
+    expect(await partidaComEloCongelado(b.db, mesmo.id)).toBe(true);
+    expect([...mesmo.deltas.values()].every((d) => d === 0)).toBe(true);
+  });
+
+  test('abandono numa partida congelada: sem Elo, mas o bloqueio de fila continua', async () => {
+    const { ana, bia } = await doisJogadores();
+    const a = assentos1x1(ana.id, bia.id);
+    for (let i = 0; i < 5; i++) await ranqueada(a, '1x1', em(i * 10));
+    const id = await iniciarPartida(b.db, { variante: 'paulista', modo: 'ranqueada', formato: '1x1', assentos: a }, em(60));
+    const antes = await ratingDe(b.db, ana.id, 'paulista');
+    const delta = await registrarAbandono(b.db, id, ana.id, { k: 32, agora: em(61), bloqueioMs: 5 * MIN });
+    expect(delta).toBe(0);
+    expect((await ratingDe(b.db, ana.id, 'paulista')).elo).toBe(antes.elo);
+    expect(await bloqueioAte(b.db, ana.id, em(61))).toEqual(em(66));
   });
 });
 

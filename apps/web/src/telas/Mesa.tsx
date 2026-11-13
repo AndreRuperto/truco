@@ -460,6 +460,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
           placar={fim.placar}
           venceu={fim.venceu}
           cacife={msg.cacife}
+          eloCongelado={msg.eloCongelado ?? false}
           aoJogarDeNovo={aoJogarDeNovo}
           aoVoltar={() => void acoes.sair()}
           revanche={

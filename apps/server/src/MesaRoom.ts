@@ -242,6 +242,7 @@ export class MesaRoom extends Room {
 
     this.mesa.configurarCacife(opcoes.cacife);
     this.registro.aoCacife = (efetivo, pote) => this.mesa.definirCacife(efetivo, pote);
+    this.registro.aoEloCongelado = () => this.mesa.definirEloCongelado();
 
     this.onMessage('acao', (client, payload) => this.mesa.acao(client.sessionId, payload));
     this.onMessage('sinal', (client, payload) => this.mesa.sinal(client.sessionId, payload));

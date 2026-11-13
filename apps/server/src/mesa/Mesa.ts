@@ -281,6 +281,7 @@ export class Mesa {
     if (id !== undefined && this.cadeiraDe(id) !== this.dono()) return;
     for (const c of CADEIRAS) if (this.ocupantes[c].id === null) this.virarBot(c);
     this.estado = novaPartida(this.o.regras, Math.floor(this.rand() * 4) as Cadeira);
+    this.eloCongelado = false;
     this.versao++;
     this.o.aoIniciar?.();
     this.atualizar();
@@ -308,6 +309,7 @@ export class Mesa {
     this.pedidoBatida = null;
     this.fisica = mesaFisicaInicial();
     this.estado = novaPartida(this.o.regras, Math.floor(this.rand() * 4) as Cadeira);
+    this.eloCongelado = false;
     this.versao++;
     this.o.aoIniciar?.();
     this.atualizar(true);
@@ -774,6 +776,7 @@ export class Mesa {
       ) : [],
       mesaFisica: this.fisica,
       cacife: this.cacife,
+      eloCongelado: this.eloCongelado || undefined,
     };
     this.o.enviar(this.ocupantes[c].id!, 'estado', msg);
   }
@@ -794,6 +797,14 @@ export class Mesa {
 
   configurarCacife(pedido: number): void {
     this.cacife = pedido > 0 ? { pedido, efetivo: null, pote: 0 } : null;
+  }
+
+  /** Ranqueada gravada com o Elo congelado (mesmo grupo de contas em 24 h): a tela de fim avisa. */
+  private eloCongelado = false;
+
+  definirEloCongelado(): void {
+    this.eloCongelado = true;
+    this.enviarEstados();
   }
 
   /** O início foi gravado: quanto cada um pagou e o pote (efetivo 0 = a partida corre sem Fichas). */

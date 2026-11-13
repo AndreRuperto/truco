@@ -218,6 +218,20 @@ describe('TelaMesa', () => {
     expect(acoes.sair).toHaveBeenCalledTimes(1);
   });
 
+  test('fim de ranqueada com Elo congelado: avisa que a partida não mudou o ranking (F4.1)', () => {
+    const base = msgEstado(distribuida(PAULISTA));
+    const fimMsg = (eloCongelado?: boolean) => ({
+      ...base,
+      minhasAcoes: [],
+      eloCongelado,
+      visao: { ...base.visao!, fase: 'fimPartida' as const, mao: null, vencedor: 0 as const, placar: [12, 4] as [number, number] },
+    });
+    const { rerender } = render(<TelaMesa snap={snap(fimMsg())} acoes={acoesFalsas()} />);
+    expect(screen.queryByTestId('elo-congelado')).toBeNull();
+    rerender(<TelaMesa snap={snap(fimMsg(true))} acoes={acoesFalsas()} />);
+    expect(screen.getByTestId('elo-congelado')).toHaveTextContent('Vocês já se enfrentaram 5 vezes hoje. Esta partida não mudou o ranking.');
+  });
+
   test('fim de partida com revanche: pede na mesma mesa, mostra quantos querem e espera os outros', async () => {
     const user = userEvent.setup();
     const acoes = { ...acoesFalsas(), enviarRevanche: vi.fn() };

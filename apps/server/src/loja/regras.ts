@@ -41,8 +41,6 @@ export const CACIFE_PATENTE: Record<Patente, number> = {
   'Grão-Mestre': 1500,
 };
 
-/** Ranqueada: a partir desta partida entre o mesmo grupo em 24 h, o pote volta para cada um. */
-export const LIMITE_PREMIO_MESMOS = 5;
 
 const FORMATO_DIA = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' });
 

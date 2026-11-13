@@ -126,6 +126,8 @@ export interface MsgEstado {
   mesaFisica?: MesaFisica;
   /** Mesa valendo Fichas; null/ausente = sem cacife. */
   cacife?: CacifeMesa | null;
+  /** Ranqueada repetida entre o mesmo grupo de contas em 24 h: a partida não mudou o ranking. */
+  eloCongelado?: boolean;
 }
 
 export interface MsgAcao {

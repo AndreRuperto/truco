@@ -2,7 +2,7 @@ import type { AcaoJogador, Cadeira, EstadoPartida, Variante } from '@truco/engin
 import type { Formato } from './api/tipos';
 import type { ModoMesa } from './mesa/protocolo';
 import { type Contadores, contadoresZerados, contarAcao } from './ranking/estatisticas';
-import { type AssentoRegistro, encerrarAbandonada, iniciarPartidaComCacife, registrarAbandono, terminarPartida } from './repo/partidas';
+import { type AssentoRegistro, encerrarAbandonada, iniciarPartidaComCacife, partidaComEloCongelado, registrarAbandono, terminarPartida } from './repo/partidas';
 import type { Servicos } from './servicos';
 
 export interface JogadorSala {
@@ -35,6 +35,8 @@ export class RegistroMesa {
   private desligando = false;
   /** Avisado com o cacife efetivo e o pote depois que o início foi gravado. */
   aoCacife: (cacife: number, pote: number) => void = () => {};
+  /** A partida terminou com o Elo congelado (mesmo grupo de contas em 24 h). */
+  aoEloCongelado: () => void = () => {};
 
   constructor(
     private readonly s: Servicos | null,
@@ -105,6 +107,7 @@ export class RegistroMesa {
     this.encadear(async () => {
       if (this.partidaId === null) return;
       await terminarPartida(s.banco, this.partidaId, fim, { k: s.kElo, agora: s.agora() });
+      if (await partidaComEloCongelado(s.banco, this.partidaId)) this.aoEloCongelado();
     });
   }
 
