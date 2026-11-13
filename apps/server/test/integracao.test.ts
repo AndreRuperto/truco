@@ -715,6 +715,30 @@ describe('fila ranqueada', () => {
   });
 });
 
+describe('queda e volta (F4.3)', () => {
+  test('cair e reconectar dentro do prazo não vira abandono: a cadeira e a partida continuam', async () => {
+    const ana = await logado('ana-cai@x.com');
+    const sala = await ana.cliente.create('mesa', { variante: 'mineiro', humanos: 1, nome: 'Ana' });
+    const msgs = coletor(sala);
+    await esperar(() => !!msgs.estado?.some((m) => m.visao));
+    await esperarAsync(async () => (await banco.db.select().from(participacoes).where(eq(participacoes.usuarioId, ana.u.id))).length === 1);
+    const token = sala.reconnectionToken;
+    // Queda (não consentida): o servidor guarda a cadeira por 300 s (onDrop + allowReconnection).
+    sala.connection.close(4010, 'queda simulada');
+    await new Promise((r) => setTimeout(r, 300));
+    const volta = await new Client(URL_TESTE).reconnect(token);
+    const msgsVolta = coletor(volta);
+    await esperar(() => !!msgsVolta.estado?.some((m) => m.visao && m.minhaCadeira === 0));
+    const [eu] = await banco.db.select().from(participacoes).where(eq(participacoes.usuarioId, ana.u.id));
+    expect(eu.abandonou).toBe(false);
+    const [p] = await banco.db.select().from(partidas).where(eq(partidas.id, eu.partidaId));
+    expect(p.terminadaEm).toBeNull();
+    // Contraprova: a saída consentida, essa sim, vira abandono (o teste distingue as duas).
+    await volta.leave(true);
+    await esperarAsync(async () => (await banco.db.select().from(participacoes).where(eq(participacoes.usuarioId, ana.u.id)))[0].abandonou);
+  });
+});
+
 describe('conta suspensa (auditoria de segurança 2026-11-10)', () => {
   afterEach(() => MesaRoom.readmitirConta(-1));
 
