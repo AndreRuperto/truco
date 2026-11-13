@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { limiteMesasDoAmbiente, TEMPOS_RAPIDOS, temposDoAmbiente } from '../src/tempos';
+import { limiteMesasDoAmbiente, reconexaoDoAmbiente, TEMPOS_RAPIDOS, temposDoAmbiente } from '../src/tempos';
 
 describe('temposDoAmbiente', () => {
   test('TRUCO_TEMPOS=rapido acelera bots e pausas, mas mantém a jogada humana', () => {
@@ -31,6 +31,16 @@ describe('limiteMesasDoAmbiente (F4.5)', () => {
     expect(limiteMesasDoAmbiente({ TRUCO_LIMITE_MESAS: '10000', NODE_ENV: 'production' })).toBe(20);
     expect(limiteMesasDoAmbiente({ TRUCO_LIMITE_MESAS: 'abc' })).toBe(20);
     expect(limiteMesasDoAmbiente({ TRUCO_LIMITE_MESAS: '-3' })).toBe(20);
+  });
+});
+
+describe('reconexaoDoAmbiente (F5.2)', () => {
+  test('padrão 300 s; o E2E encurta com TRUCO_RECONEXAO_S; produção ignora; inválido vira o padrão', () => {
+    expect(reconexaoDoAmbiente({})).toBe(300);
+    expect(reconexaoDoAmbiente({ TRUCO_RECONEXAO_S: '30' })).toBe(30);
+    expect(reconexaoDoAmbiente({ TRUCO_RECONEXAO_S: '30', NODE_ENV: 'production' })).toBe(300);
+    expect(reconexaoDoAmbiente({ TRUCO_RECONEXAO_S: '0' })).toBe(300);
+    expect(reconexaoDoAmbiente({ TRUCO_RECONEXAO_S: 'x' })).toBe(300);
   });
 });
 

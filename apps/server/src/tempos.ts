@@ -19,3 +19,15 @@ export function limiteMesasDoAmbiente(env: Record<string, string | undefined>): 
   const n = Number(env.TRUCO_LIMITE_MESAS);
   return Number.isInteger(n) && n > 0 ? n : PADRAO;
 }
+
+/**
+ * Quanto tempo (s) a cadeira de quem caiu fica guardada (`allowReconnection`). Padrão 300 s (5 min,
+ * trocar de app no celular). O E2E encurta com `TRUCO_RECONEXAO_S` para testar a cadeira vencida
+ * sem esperar 5 min; em produção a variável é ignorada.
+ */
+export function reconexaoDoAmbiente(env: Record<string, string | undefined>): number {
+  const PADRAO = 300;
+  if (env.NODE_ENV === 'production') return PADRAO;
+  const n = Number(env.TRUCO_RECONEXAO_S);
+  return Number.isInteger(n) && n > 0 ? n : PADRAO;
+}

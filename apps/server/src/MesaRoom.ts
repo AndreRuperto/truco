@@ -72,6 +72,8 @@ export class MesaRoom extends Room {
   static servicos: Servicos | null = null;
   /** Só a fila conhece: impede cliente de criar mesa ranqueada. */
   static readonly fichaInterna = randomUUID();
+  /** Segundos que a cadeira de quem caiu fica guardada (padrão 300; o E2E encurta, ver tempos.ts). */
+  static reconexaoS = 300;
   /** Criação de mesa (create/joinOrCreate) por IP: 20 a cada 10 min (SEC-09). Trocado nos testes. */
   static limiteCriacao = new LimiteTaxa(20, 10 * 60_000);
   /** Ranqueada que não lota nesse tempo é cancelada. */
@@ -330,7 +332,7 @@ export class MesaRoom extends Room {
     // Navegadores móveis suspendem abas em segundo plano por vários minutos.
     // Preserve a cadeira durante esse intervalo em vez de tratar a troca de app
     // (por exemplo, compartilhar o convite) como abandono imediato.
-    this.allowReconnection(client, 300).catch(() => {});
+    this.allowReconnection(client, MesaRoom.reconexaoS).catch(() => {});
   }
 
   onReconnect(client: Client) {

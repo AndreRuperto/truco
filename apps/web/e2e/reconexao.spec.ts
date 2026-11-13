@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { devices, expect, type Page, test } from '@playwright/test';
 import { agirNoRitual } from './apoio';
 
 /**
@@ -114,7 +114,7 @@ test('voltar com o token de uma sala encerrada: sai da recuperação, apaga o to
   await page.goto('/');
   await page.evaluate(() => sessionStorage.setItem('truco:reconexao', 'salaQueNaoExiste:tokenVelho'));
   await page.reload();
-  await expect(page.getByText('A mesa foi encerrada (o servidor reiniciou ou a partida acabou). Entre de novo para jogar.')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('A mesa foi encerrada (você ficou fora por muito tempo, o servidor reiniciou ou a partida acabou). Entre de novo para jogar.')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole('button', { name: 'Jogar agora', exact: true })).toBeVisible();
   await expect(page.getByText('Recuperando sua mesa e sua cadeira…')).toBeHidden();
   expect(await page.evaluate(() => sessionStorage.getItem('truco:reconexao'))).toBeNull();
@@ -156,4 +156,75 @@ test('fora por mais que o prazo: na volta, um aviso conta o que aconteceu', asyn
     expect(cruza, `aviso cobre ${nome}`).toBe(false);
   }
   await page.screenshot({ path: test.info().outputPath('aviso-volta.png') });
+});
+
+/**
+ * F5.2 do plano MVP. O servidor do E2E guarda a cadeira por 30 s (TRUCO_RECONEXAO_S; em produção,
+ * 300 s). (a) Fora por mais que isso: a cadeira venceu, a recuperação para e explica. (b) Recarregar
+ * dentro do prazo devolve a mesma cadeira e as mesmas cartas. Fechar o app instalado e abrir pelo
+ * ícone NÃO devolve a cadeira hoje: o token fica em sessionStorage (pendência registrada).
+ */
+/** Mesa casual com 2 humanos (mesmas regras nos dois: o matchmaking junta). */
+async function entrarDupla(page: Page, nome: string) {
+  await page.goto('/');
+  await page.getByText('Regras da mesa', { exact: true }).click();
+  await page.getByLabel('Apelido').fill(nome);
+  await page.getByLabel('Variante').selectOption('paulista');
+  await page.getByLabel('Humanos').selectOption('2');
+  await page.getByLabel('Bots').selectOption('facil');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+}
+
+test('cadeira vencida numa mesa com outra pessoa: a mesa segue, e quem volta depois do prazo recebe o aviso', async ({ browser }) => {
+  test.setTimeout(180_000);
+  const novo = async () => (await browser.newContext({ ...devices['Pixel 7'], baseURL: test.info().project.use.baseURL })).newPage();
+  const ana = await novo();
+  const bia = await novo();
+  try {
+    await entrarDupla(ana, 'QA Ana');
+    await entrarDupla(bia, 'QA Bia');
+    await expect(ana.getByTestId('centro')).toBeVisible({ timeout: 20_000 });
+    await expect(bia.getByTestId('centro')).toBeVisible({ timeout: 20_000 });
+
+    await ana.context().setOffline(true);
+    await ana.waitForTimeout(36_000); // prazo de 30 s + folga; Bia continua na mesa
+    await ana.context().setOffline(false);
+
+    await expect(ana.getByText('A sessão da mesa expirou. Entre novamente para jogar.')).toBeVisible({ timeout: 25_000 });
+    await expect(ana.getByRole('button', { name: 'Jogar agora', exact: true })).toBeVisible();
+    expect(await ana.evaluate(() => sessionStorage.getItem('truco:reconexao'))).toBeNull();
+    // A mesa da Bia continuou (um bot ficou no lugar da Ana).
+    await expect(bia.getByTestId('centro')).toBeVisible();
+  } finally {
+    await ana.context().close();
+    await bia.context().close();
+  }
+});
+
+test('sozinho com bots e fora por mais que o prazo: a mesa foi encerrada, e o aviso diz o motivo provável', async ({ page, context }) => {
+  test.setTimeout(150_000);
+  await page.goto('/');
+  await page.getByLabel('Apelido').fill('QA Vencida');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.getByTestId('centro')).toBeVisible({ timeout: 15_000 });
+  await context.setOffline(true);
+  await page.waitForTimeout(36_000);
+  await context.setOffline(false);
+  // Sem outra pessoa, a sala some quando a cadeira vence: o aviso é o da mesa encerrada, com o motivo.
+  await expect(page.getByText('A mesa foi encerrada (você ficou fora por muito tempo, o servidor reiniciou ou a partida acabou). Entre de novo para jogar.')).toBeVisible({ timeout: 25_000 });
+  expect(await page.evaluate(() => sessionStorage.getItem('truco:reconexao'))).toBeNull();
+});
+
+test('recarregar dentro do prazo devolve a mesma cadeira e as mesmas cartas', async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.goto('/');
+  await page.getByLabel('Apelido').fill('QA Recarga');
+  await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+  await expect(page.getByTestId('centro')).toBeVisible({ timeout: 15_000 });
+  await ateMinhaVez(page);
+  const antes = await minhaMao(page);
+  await page.reload();
+  await expect(page.getByTestId('centro')).toBeVisible({ timeout: 20_000 });
+  await expect.poll(() => minhaMao(page), { timeout: 15_000 }).toEqual(antes);
+  await expect(page.getByText('A sessão da mesa expirou')).toBeHidden();
 });

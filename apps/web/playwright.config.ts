@@ -34,6 +34,9 @@ export default defineConfig({
         // O E2E cria dezenas de mesas do mesmo IP; o limite de 20 em 10 min é testado em
         // apps/server/test/mesaroom-auth.test.ts. Ignorado em produção (limiteMesasDoAmbiente).
         TRUCO_LIMITE_MESAS: '10000',
+        // Cadeira de quem caiu guardada por 30 s (e não 300) para testar a vencida (reconexao.spec.ts).
+        // Maior que os 24 s do teste "fora por mais que o prazo". Ignorado em produção.
+        TRUCO_RECONEXAO_S: '30',
         // Admin só para o E2E das telas (responsividade.spec.ts); conta de teste da caixa de saída.
         ADMIN_EMAILS: 'admin.qa@teste.dev',
         // Loja: o checkout volta pago na hora (nunca cobra; ignorado em produção).

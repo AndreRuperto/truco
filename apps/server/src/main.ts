@@ -8,7 +8,7 @@ import { encerrarOrfas } from './repo/partidas';
 import { limparExpirados } from './repo/usuarios';
 import { criarServidor } from './servidor';
 import { servicosDoAmbiente } from './servicos';
-import { limiteMesasDoAmbiente, temposDoAmbiente } from './tempos';
+import { limiteMesasDoAmbiente, reconexaoDoAmbiente, temposDoAmbiente } from './tempos';
 import { LimiteTaxa } from './auth/limite';
 
 const PASTA_WEB = fileURLToPath(new URL('../../web/dist/', import.meta.url));
@@ -16,6 +16,7 @@ const PASTA_WEB = fileURLToPath(new URL('../../web/dist/', import.meta.url));
 const PASTA_PGLITE = join(homedir(), '.truco', 'pglite');
 
 MesaRoom.tempos = temposDoAmbiente(process.env);
+MesaRoom.reconexaoS = reconexaoDoAmbiente(process.env);
 MesaRoom.limiteCriacao = new LimiteTaxa(limiteMesasDoAmbiente(process.env), 10 * 60_000);
 const { servicos, config, fechar } = await servicosDoAmbiente(process.env, { pastaPglite: PASTA_PGLITE });
 for (const a of config.avisos) console.warn(`truco: aviso: ${a}`);
