@@ -204,6 +204,8 @@
   background: var(--papel);
   color: var(--tinta);
   text-align: center;
+  /* Cartão de papel nos dois temas: foco cor de tinta (o giz amarelo dava 1,8:1 no papel, F6.1). */
+  --foco: var(--tinta);
 }
 .loja-cartao[data-estado='equipado'] {
   border-color: var(--nos);

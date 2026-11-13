@@ -1817,6 +1817,11 @@ body:has(.tela-mesa) {
   gap: 6px;
   --foco: var(--grito);
 }
+/* F6.1: o anel por fora caía sobre o azulejo bege (1,3:1) e a barra (que rola na horizontal no
+   celular) cortava o anel em cima e embaixo. Por dentro, ele fica sobre o verde escuro do ícone. */
+.barra-mesa .icone-mesa:focus-visible {
+  outline-offset: -6px;
+}
 .icone-mesa {
   display: grid;
   place-items: center;
