@@ -1,5 +1,27 @@
 # Próximos passos — Truco
 
+## 2026-11-13 · branch `wip/2026-11-13-admin-avatares` · retomar daqui (limite de uso)
+
+Fases 0–6 em produção (último merge: #31, 6f2ee1e, e-mail de contato nas páginas legais). Fase 7 **não** começou (André disse "ainda não").
+
+Pedidos do André em aberto, nesta ordem:
+- [ ] **Grade de avatares do Perfil ocupando a largura toda.** Causa: `max-width: 340px` em `.avatares-prontos`
+  (`apps/web/src/estilos.css` ~4185). Trocar por `grid-template-columns: repeat(auto-fit, minmax(52px, 1fr))`,
+  `justify-items: center`, sem max-width. Conferir 320×568 e desktop.
+- [ ] **Admin tem acesso a todos os itens da loja.** Admin = e-mail em `ADMIN_EMAILS` (`s.admins`). Plano: em
+  `apps/server/src/http/loja.ts`, `GET /loja/eu` devolve `inventario` com todos os itens pagos quando admin, e
+  `PUT /loja/equipar` libera qualquer item para admin (opção em `equipar()` de `repo/loja.ts`, que hoje devolve
+  'nao-tem'). Nada gravado no inventário nem no extrato. Testes em `apps/server/test/http-loja.test.ts`
+  (admin de teste: `chefe@x.com`).
+- [ ] **Provocação com a moldura na mesa** (brainstorm, parte 1 apresentada, falta o André validar):
+  regra da mesa "Provocações" (liga/desliga, padrão ligado, entra na `chaveRegras`; nunca na ranqueada);
+  clicar/Enter na foto de outro jogador abre botão "Provocar"; mensagem `provocar {alvo}` validada no servidor
+  (modo, regra, moldura equipada lida da conta, limite 1 a cada 8 s e 3/min no mesmo alvo); efeito por moldura:
+  sem moldura = bolinha de guardanapo, corda = laço, madeira = farpa, neon = ofusca, giz = pó de giz; ~1,5 s,
+  todos veem; movimento reduzido = ícone + texto; 3D = selo curto. Depois: escrever
+  `docs/plans/2026-11-13-provocacoes-design.md` e o plano. "Especiais que atrapalham" = modo futuro, fora disso.
+
+
 ## 2026-11-13 · Fase 6 em produção (PR #29, merge 197f93e)
 
 Fases 0 a 6 em produção. Deploy conferido nos dois domínios: `/saude` com `versao` 197f93e e banco ok,
