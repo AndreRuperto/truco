@@ -1,15 +1,14 @@
 import { RESPONSAVEL } from '../logica/legal';
-import type { CarteiraApi, CatalogoApi, ItemLoja, PacotePila, Slot, UsuarioApi, VisualRoupa, VisualTampo, VisualVerso } from '@truco/api';
+import type { CarteiraApi, CatalogoApi, ItemLoja, PacotePila, UsuarioApi } from '@truco/api';
 import { useEffect, useState } from 'react';
-import { Avatar } from '../componentes/Avatar';
 import { IconeMoeda } from '../componentes/IconeMoeda';
-import { Personagem } from '../componentes/Personagem';
-import { salvarAparenciaMesa, type AparenciaMesa } from '../logica/aparenciaMesa';
-import { estadoDoItem, estiloVerso, formatarReais, formatarSaldo, MOTIVO_LANCAMENTO, NOME_MOEDA, rotuloPreco } from '../logica/lojaItens';
+import { PreviaItem } from '../componentes/PreviaItem';
+import { equiparNaConta } from '../logica/equipar';
+import { estadoDoItem, formatarReais, formatarSaldo, MOTIVO_LANCAMENTO, NOME_MOEDA, rotuloPreco } from '../logica/lojaItens';
 import { ABAS_LOJA, type AbaLoja, hrefDe } from '../logica/rotas';
 import type { Api } from '../rede/api';
 
-const NOME_ABA: Record<AbaLoja, string> = {
+export const NOME_ABA: Record<AbaLoja, string> = {
   verso: 'Baralho',
   roupa: 'Roupa',
   moldura: 'Moldura',
@@ -56,11 +55,7 @@ export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrP
   const equiparItem = (item: ItemLoja) =>
     executar(
       item.id,
-      async () => {
-        await api.loja.equipar(item.slot, item.preco === null && item.slot !== 'tampo' ? null : item.id);
-        // O tampo é desenhado só na sua tela: guarda também no aparelho.
-        if (item.slot === 'tampo') salvarAparenciaMesa((item.visual as VisualTampo).superficie as AparenciaMesa);
-      },
+      () => equiparNaConta(api, item),
       `${item.nome} equipado.`,
     );
   const comprar = (item: ItemLoja) =>
@@ -68,8 +63,7 @@ export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrP
       item.id,
       async () => {
         await api.loja.comprarItem(item.id);
-        await api.loja.equipar(item.slot, item.id);
-        if (item.slot === 'tampo') salvarAparenciaMesa((item.visual as VisualTampo).superficie as AparenciaMesa);
+        await equiparNaConta(api, item);
       },
       `${item.nome} é seu e já está equipado.`,
     );
@@ -184,7 +178,7 @@ export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrP
                 const estado = usuario ? estadoDoItem(item, carteira, itens) : null;
                 return (
                   <li key={item.id} className="loja-cartao" data-estado={estado ?? 'visitante'} data-testid={`item-${item.id}`}>
-                    <Previa item={item} usuario={usuario} />
+                    <PreviaItem item={item} usuario={usuario} />
                     <h3>{item.nome}</h3>
                     <p className={`loja-preco${item.preco ? ` preco-${item.preco.moeda}` : ''}`}>{rotuloPreco(item)}</p>
                     {estado === 'equipado' ? (
@@ -255,48 +249,6 @@ export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrP
         </details>
       )}
     </main>
-  );
-}
-
-function Previa({ item, usuario }: { item: ItemLoja; usuario: UsuarioApi | null }) {
-  const slot: Slot = item.slot;
-  if (slot === 'verso') {
-    const v = estiloVerso(item.visual as VisualVerso)!;
-    return (
-      <span className="loja-previa previa-verso" data-verso={v.estampa} style={v.style} aria-hidden="true">
-        <span className="carta verso" />
-        <span className="carta verso" />
-      </span>
-    );
-  }
-  if (slot === 'roupa') {
-    return (
-      <span className="loja-previa previa-roupa" aria-hidden="true">
-        <Personagem tipo={5} lado="cima" daVez={false} gritando={false} roupa={item.visual as VisualRoupa} />
-      </span>
-    );
-  }
-  if (slot === 'moldura') {
-    return (
-      <span className="loja-previa previa-moldura" aria-hidden="true">
-        <Avatar apelido={usuario?.apelido ?? 'Você'} avatar={usuario?.avatar} tamanho={56} moldura={(item.visual as { estilo: string }).estilo} />
-      </span>
-    );
-  }
-  if (slot === 'avatar') {
-    return (
-      <span className="loja-previa previa-avatar" aria-hidden="true">
-        <Avatar apelido={item.nome} avatar={`loja:${item.id}`} tamanho={64} />
-      </span>
-    );
-  }
-  const sup = (item.visual as VisualTampo).superficie;
-  return (
-    <span className="loja-previa previa-tampo" aria-hidden="true">
-      <span className={`amostra-mesa amostra-${sup}`}>
-        <span />
-      </span>
-    </span>
   );
 }
 
