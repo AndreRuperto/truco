@@ -655,3 +655,45 @@ for (const [largura, altura] of [[320, 568], [360, 740], [390, 844]] as const) {
     }
   });
 }
+
+/**
+ * No desktop o rodapé fica na coluna à direita da mão: a janela de família e o "Pedir família fechada"
+ * encostavam nas cartas (pedido do André, 1857x912). Agora há folga de pelo menos 32px, sem sair da tela.
+ */
+for (const [largura, altura] of [[1857, 912], [1440, 900], [1280, 800], [1024, 768]] as const) {
+  test('desktop: janela de família afastada da mão - ' + largura + 'x' + altura, async ({ browser }, testInfo) => {
+    test.setTimeout(120_000);
+    const ctx = await browser.newContext({ ...devices['Desktop Chrome'], viewport: { width: largura, height: altura }, baseURL: test.info().project.use.baseURL });
+    const page = await ctx.newPage();
+    try {
+      await mesaComFamilia(page, 'QA Folga');
+      const janela = page.locator('.rodape-mesa .janela-familia');
+      await expect(async () => {
+        if (!(await janela.isVisible())) await agirNoRitual(page).catch(() => false);
+        await expect(janela).toBeVisible({ timeout: 300 });
+      }).toPass({ timeout: 60_000, intervals: [300] });
+      const g = await page.evaluate(() => {
+        const rodape = document.querySelector('.rodape-mesa')!;
+        const filhos = Array.from(rodape.querySelectorAll('.janela-familia, .acao')).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+        // A caixa de layout da mão (as cartas podem estar em voo/giradas na distribuição).
+        const mao = document.querySelector('.tela-mesa > .minha-mao')!.getBoundingClientRect();
+        return {
+          janelaAberta: !!rodape.querySelector('.janela-familia'),
+          folga: Math.min(...filhos.map((r) => r.left)) - mao.right,
+          direita: Math.max(...filhos.map((r) => r.right)),
+          largura: innerWidth,
+          sobraX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+      const foto = testInfo.outputPath('familia-folga-' + largura + 'x' + altura + '.png');
+      await page.screenshot({ path: foto });
+      await testInfo.attach('familia-folga', { path: foto, contentType: 'image/png' });
+      expect(g.janelaAberta, 'a janela de família fechou antes da medição').toBe(true);
+      expect(g.folga, 'folga entre a mão e a janela de família (px)').toBeGreaterThanOrEqual(32);
+      expect(g.direita, 'janela de família saiu da tela').toBeLessThanOrEqual(g.largura);
+      expect(g.sobraX, 'rolagem horizontal').toBeLessThanOrEqual(0);
+    } finally {
+      await ctx.close();
+    }
+  });
+}
