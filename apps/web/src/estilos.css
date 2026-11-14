@@ -2914,6 +2914,8 @@ body:has(.tela-mesa) {
     grid-column: 3;
     flex-direction: column;
     align-items: flex-start;
+    /* Folga da mão: a janela de família e as ações não encostam nas cartas. */
+    padding-inline-start: clamp(32px, 4vw, 88px);
   }
 }
 
