@@ -37,4 +37,12 @@ describe('usuarioDaConexao', () => {
     expect(await usuarioDaConexao(s, 'inventado', comCookie('outro'))).toBeNull();
     expect(await usuarioDaConexao(null, t, undefined)).toBeNull();
   });
+
+  test('conta em ADMIN_EMAILS vem marcada como admin (pausa da mesa privada)', async () => {
+    const s = servicosDeTeste(b.db, { admins: ['chefe@x.com'] });
+    const chefe = await entrarComEmail(b.db, 'chefe@x.com');
+    const ana = await entrarComEmail(b.db, 'ana@x.com');
+    expect(await usuarioDaConexao(s, await criarSessao(b.db, chefe.id, new Date()), undefined)).toEqual({ usuarioId: chefe.id, apelido: 'chefe', avatar: null, admin: true });
+    expect(await usuarioDaConexao(s, await criarSessao(b.db, ana.id, new Date()), undefined)).toEqual({ usuarioId: ana.id, apelido: 'ana', avatar: null });
+  });
 });

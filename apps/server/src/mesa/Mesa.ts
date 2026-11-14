@@ -83,6 +83,8 @@ export interface Tempos {
   janelaFamiliaMs: number;
   /** Quanto o bot da vez espera antes da 1ª carta: dá tempo de a animação da distribuição terminar. */
   distribuicaoMs: number;
+  /** Pausa da mesa (ver `pausar`): volta sozinha depois disto. */
+  pausaMaxMs: number;
 }
 
 export const TEMPOS_PADRAO: Tempos = {
@@ -94,6 +96,7 @@ export const TEMPOS_PADRAO: Tempos = {
   conferirMs: 6_000,
   janelaFamiliaMs: 20_000,
   distribuicaoMs: 5_000,
+  pausaMaxMs: 10 * 60_000,
 };
 
 export interface OpcoesMesa {
@@ -147,6 +150,8 @@ interface Ocupante {
   voz?: string | null;
   /** Ver `InfoCadeira.visual`. */
   visual?: VisualJogador | null;
+  /** Conta em `ADMIN_EMAILS` (ver `definirAdmin`): pode pausar a mesa privada. */
+  admin?: boolean;
 }
 
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
@@ -229,6 +234,9 @@ export class Mesa {
   private fisica = mesaFisicaInicial();
   /** Último pedido de seis/nove/doze que ainda pode ser acompanhado de uma batida. */
   private pedidoBatida: { cadeira: Cadeira; ate: number } | null = null;
+  /** Mesa pausada: ninguém joga e nenhum prazo corre até `retomar` (ou até `ate`). */
+  private pausa: { por: Cadeira; desde: number; ate: number } | null = null;
+  private cancelarFimDaPausa: (() => void) | null = null;
   private readonly relogio: Relogio;
   private readonly rand: () => number;
   private readonly tempos: Tempos;
@@ -375,7 +383,68 @@ export class Mesa {
       return;
     }
     this.virarBot(c);
+    // Quem pausou foi embora: a mesa não fica parada esperando por ele.
+    if (this.pausa?.por === c) return void this.fimDaPausa();
     this.atualizar();
+  }
+
+  /** Marca a cadeira de `id` como admin (`ADMIN_EMAILS`); quem confere a conta é a MesaRoom. */
+  definirAdmin(id: string): void {
+    const c = this.cadeiraDe(id);
+    if (c === null) return;
+    this.ocupantes[c].admin = true;
+    if (this.iniciada) this.enviarEstados();
+  }
+
+  // ---------- pausa ----------
+
+  /**
+   * Pode pausar (e retomar): sozinho contra bots, quem joga; na mesa privada com mais gente, só o
+   * admin. Na ranqueada ninguém (vale ranking). Fora da partida (sala de espera, fim) também não.
+   */
+  private podePausar(c: Cadeira): boolean {
+    const s = this.estado;
+    if (!s || s.fase === 'fimPartida' || this.o.modo === 'ranqueada' || !this.humanoAtivo(c)) return false;
+    if (this.humanosSentados() === 1) return true;
+    return this.o.modo === 'privada' && this.ocupantes[c].admin === true;
+  }
+
+  /** Para o jogo: timers cancelados, prazo some, ações recusadas. Volta com `retomar` ou no limite. */
+  pausar(id: string): void {
+    const c = this.cadeiraDe(id);
+    if (c === null || this.pausa) return;
+    if (!this.podePausar(c)) return void this.erro(id, 'só quem pode pausar esta mesa');
+    const agora = this.relogio.agora();
+    this.pausa = { por: c, desde: agora, ate: agora + this.tempos.pausaMaxMs };
+    this.cancelarFimDaPausa = this.relogio.agendar(this.tempos.pausaMaxMs, () => this.fimDaPausa());
+    this.atualizar(true);
+  }
+
+  retomar(id: string): void {
+    const c = this.cadeiraDe(id);
+    if (c === null || !this.pausa) return;
+    if (!this.podePausar(c)) return void this.erro(id, 'só quem pode pausar esta mesa');
+    this.fimDaPausa();
+  }
+
+  /**
+   * Os prazos absolutos (janela de família, cangada, batida) andam o tempo que a mesa ficou parada;
+   * o prazo de quem está na vez recomeça inteiro.
+   */
+  private fimDaPausa(): void {
+    const p = this.pausa;
+    if (!p) return;
+    this.pausa = null;
+    this.cancelarFimDaPausa?.();
+    this.cancelarFimDaPausa = null;
+    const parada = this.relogio.agora() - p.desde;
+    if (this.janela) {
+      this.janela.ate += parada;
+      if (this.janela.pausadaEm !== null) this.janela.pausadaEm += parada;
+    }
+    if (this.ateEmpilhar !== null) this.ateEmpilhar += parada;
+    if (this.pedidoBatida) this.pedidoBatida.ate += parada;
+    this.atualizar(true);
   }
 
   /** Reenvia o estado atual só para quem pediu (ex.: cliente perdeu mensagens). */
@@ -388,6 +457,7 @@ export class Mesa {
 
   dispose(): void {
     this.cancelarTimers();
+    this.cancelarFimDaPausa?.();
   }
 
   // ---------- jogo ----------
@@ -405,6 +475,7 @@ export class Mesa {
       this.erro(id, 'ação inválida');
       return;
     }
+    if (this.pausa) return void this.erro(id, 'mesa pausada');
     this.aplicar(comCadeira, id);
   }
 
@@ -454,7 +525,7 @@ export class Mesa {
   /** "Sem família": o humano abre mão de pedir nesta janela; com todos decididos, o jogo segue. */
   semFamilia(id: string): void {
     const c = this.cadeiraDe(id);
-    if (c === null || !this.janelaAberta()) return;
+    if (c === null || this.pausa || !this.janelaAberta()) return;
     this.janela!.decidiram.add(c);
     this.conferirFimDaJanela();
   }
@@ -582,6 +653,11 @@ export class Mesa {
     this.chaveTurno = chave;
     this.cancelarTimers();
     this.prazo = null;
+    // Pausada: nenhum timer (nem dos bots) e nenhum prazo; `fimDaPausa` reagenda tudo.
+    if (this.pausa) {
+      this.enviarEstados();
+      return;
+    }
     if (!s) {
       this.enviarEstados();
       return;
@@ -661,7 +737,8 @@ export class Mesa {
   private janelaAberta(): boolean {
     const j = this.janela;
     if (!j || j.fechada || !this.estado || !janelaDeFamilia(this.estado)) return false;
-    if (this.relogio.agora() >= j.ate) return false;
+    // Pausada, o relógio da janela fica parado no instante da pausa.
+    if ((this.pausa?.desde ?? this.relogio.agora()) >= j.ate) return false;
     return CADEIRAS.some((c) => this.humanoAtivo(c) && !j.decidiram.has(c));
   }
 
@@ -840,6 +917,8 @@ export class Mesa {
       humanosEsperados: this.o.humanosEsperados,
       visao: s ? visaoDoJogador(s, c) : null,
       prazo: this.prazo,
+      pausa: this.pausa ? { por: this.pausa.por, ate: this.pausa.ate } : null,
+      podePausar: this.podePausar(c),
       janelaFamilia: this.janelaAberta() ? { ate: this.janela!.ate, decidiram: [...this.janela!.decidiram] } : null,
       revanche: this.podeRevanche() ? { votos: [...this.votosRevanche], faltam: this.faltamRevanche() } : null,
       minhasAcoes: s ? acoesValidas(s, c).filter((a) =>
