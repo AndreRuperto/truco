@@ -479,6 +479,28 @@ describe('contas, privadas e HTTP no mesmo servidor', () => {
     expect(linha).toMatchObject({ acao: 'denuncia', alvoId: bia.u.id, detalhe: { cadeira: cadeiraBia, motivo: 'xingou' } });
   });
 
+  test('provocar (moldura): os dois humanos recebem; mesa com provocações desligadas recusa', async () => {
+    const a = await colyseus.sdk.create('mesa', { modo: 'privada', humanos: 2, nome: 'Ana' });
+    const ma = coletor(a);
+    await esperar(() => !!ma.estado?.length);
+    const b = await colyseus.sdk.joinById(a.roomId, { nome: 'Bia' });
+    const mb = coletor(b);
+    await esperar(() => !!mb.estado?.length && ma.estado.at(-1).cadeiras.some((c: { nome?: string }) => c?.nome === 'Bia'));
+    const bia = ma.estado.at(-1).cadeiras.findIndex((c: { nome?: string }) => c?.nome === 'Bia');
+    expect(ma.estado.at(-1).provocacoes).toBe(true);
+    a.send('provocar', { alvo: bia });
+    await esperar(() => !!mb.provocacao?.length && !!ma.provocacao?.length);
+    expect(mb.provocacao[0]).toMatchObject({ de: ma.estado.at(-1).minhaCadeira, para: bia, efeito: 'guardanapo' });
+
+    const c = await colyseus.sdk.create('mesa', { modo: 'privada', humanos: 2, nome: 'Cid', provocacoes: false });
+    const mc = coletor(c);
+    await esperar(() => !!mc.estado?.length);
+    expect(mc.estado.at(-1).provocacoes).toBe(false);
+    c.send('provocar', { alvo: 1 });
+    await esperar(() => !!mc.erro?.length);
+    expect(mc.erro.at(-1)).toEqual({ mensagem: 'provocações desligadas nesta mesa' });
+  });
+
   test('mesa casual esperando gente aparece em /api/salas', async () => {
     const a = await colyseus.sdk.joinOrCreate('mesa', { humanos: 2, nivelBot: 'dificil', nome: 'Ana' });
     coletor(a);

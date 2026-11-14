@@ -1,19 +1,16 @@
 # Próximos passos — Truco
 
-## 2026-11-13 · branch `claude/admin-itens-avatares` · avatares e admin prontos, provocações em design
+## 2026-11-13 · branch `claude/provocacoes` · provocações prontas (PR); avatares e admin em produção (#32)
 
 Fases 0–6 em produção (último merge: #31, 6f2ee1e, e-mail de contato nas páginas legais). Fase 7 **não** começou (André disse "ainda não").
 
 Pedidos do André em aberto, nesta ordem:
 - [x] Grade de avatares do Perfil ocupando a largura (5 por fileira no celular, 10 com espaço; o painel do início fica em 5).
 - [x] Admin tem todos os itens da loja: inventário com todos os pagos e equipa qualquer um, sem comprar nem mexer no saldo.
-- [ ] **Provocação com a moldura na mesa** (brainstorm, parte 1 apresentada, falta o André validar):
-  regra da mesa "Provocações" (liga/desliga, padrão ligado, entra na `chaveRegras`; nunca na ranqueada);
-  clicar/Enter na foto de outro jogador abre botão "Provocar"; mensagem `provocar {alvo}` validada no servidor
-  (modo, regra, moldura equipada lida da conta, limite 1 a cada 8 s e 3/min no mesmo alvo); efeito por moldura:
-  sem moldura = bolinha de guardanapo, corda = laço, madeira = farpa, neon = ofusca, giz = pó de giz; ~1,5 s,
-  todos veem; movimento reduzido = ícone + texto; 3D = selo curto. Depois: escrever
-  `docs/plans/2026-11-13-provocacoes-design.md` e o plano. "Especiais que atrapalham" = modo futuro, fora disso.
+- [x] **Provocações com a moldura** (branch `claude/provocacoes`, design em `docs/plans/2026-11-13-provocacoes-design.md`):
+  regra "Provocações" (padrão ligada, nunca na ranqueada), botão no nome de outro jogador, 5 efeitos, limites no servidor.
+  Fora desta versão: botão na sala de espera e selo na vista 3D; leitor de tela real NAO_EXECUTADO.
+- [ ] Modo futuro com "especiais que atrapalham o jogo" (ideia do André): precisa de regras no motor; não começado.
 
 
 ## 2026-11-13 · Fase 6 em produção (PR #29, merge 197f93e)

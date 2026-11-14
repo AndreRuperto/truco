@@ -201,6 +201,10 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
               <input type="checkbox" checked={f.sinais} onChange={(e) => mudar('sinais', e.target.checked)} />
               Sinais entre parceiros
             </label>
+            <label className="campo-check largo">
+              <input type="checkbox" checked={f.provocacoes} onChange={(e) => mudar('provocacoes', e.target.checked)} />
+              Provocações (tocar no nome de alguém e usar a sua moldura)
+            </label>
             {f.sinais && (
               <div className="campo largo">
                 <label htmlFor="interceptar">Adversários podem interceptar sinais</label>
@@ -260,6 +264,7 @@ function resumoLobby(f: FormLobby): string {
     f.variante === 'mineiro' && f.maoLimpa ? 'mão limpa' : null,
     bots > 0 ? `${bots} ${bots === 1 ? 'bot' : 'bots'} ${nivel}` : 'só humanos',
     !f.sinais ? 'sem sinais' : f.chanceInterceptarSinal > 0 ? 'sinais interceptáveis' : null,
+    !f.provocacoes ? 'sem provocações' : null,
     f.cacife && (f.humanos >= 2 || f.privada) ? `valendo ${f.cacife} Fichas` : null,
   ];
   return partes.filter(Boolean).join(', ');

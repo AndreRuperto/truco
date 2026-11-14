@@ -77,9 +77,21 @@ describe('loja', () => {
     const { loja, sala, tokens } = montar();
     loja.conectar(sala);
     expect(sala.enviados).toEqual([['sincronizar', undefined]]);
-    expect(sala.ouvintesNoEnvio[0]).toEqual({ estado: 1, avatares: 1, acao: 1, sinal: 1, fala: 1, erro: 1, chat: 1, batida: 1, denuncia: 1 });
+    expect(sala.ouvintesNoEnvio[0]).toEqual({ estado: 1, avatares: 1, acao: 1, sinal: 1, fala: 1, erro: 1, chat: 1, batida: 1, denuncia: 1, provocacao: 1 });
     expect(loja.getSnapshot().status).toBe('na-mesa');
     expect(tokens).toEqual(['r1:t1']);
+  });
+
+  test('provocar: manda o alvo; as provocações recebidas ficam no snapshot (as 8 últimas)', () => {
+    const { loja, sala } = montar();
+    loja.conectar(sala);
+    loja.provocar(2);
+    expect(sala.enviados.at(-1)).toEqual(['provocar', { alvo: 2 }]);
+    for (let i = 1; i <= 10; i++) sala.receber('provocacao', { id: i, de: 1, para: 0, efeito: 'laco' });
+    const p = loja.getSnapshot().provocacoes!;
+    expect(p).toHaveLength(8);
+    expect(p.at(-1)).toMatchObject({ id: 10, de: 1, para: 0, efeito: 'laco' });
+    expect(typeof p.at(-1)!.em).toBe('number');
   });
 
   test('denunciar (F6.5): manda cadeira e motivo; a resposta do servidor fica no snapshot com id novo', () => {

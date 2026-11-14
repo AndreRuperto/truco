@@ -17,6 +17,7 @@ describe('formulário do lobby', () => {
       chanceInterceptarSinal: 0,
       tempoFamiliaS: 20,
       sinais: true,
+      provocacoes: true,
       privada: false,
     });
     expect(formPadrao('mineiro')).toMatchObject({ pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'off', familia: 'fechada', maoLimpa: false });
@@ -37,11 +38,14 @@ describe('formulário do lobby', () => {
       chanceInterceptarSinal: 0,
       tempoFamiliaS: 20,
       sinais: true,
+      provocacoes: true,
       chaveRegras: '1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|lim:0|int:0|sin:1',
       modo: 'desafio',
       cacife: 0,
     });
     expect(opcoesDeEntrada({ ...formPadrao('paulista'), nome: '   ', humanos: 9 })).toMatchObject({ nome: 'Jogador', humanos: 4 });
+    // Provocações desligadas entram na chave (só nesse caso), para não juntar com quem quer.
+    expect(opcoesDeEntrada({ ...formPadrao('paulista'), provocacoes: false }).chaveRegras).toMatch(/\|prov:0$/);
   });
 
   test('o servidor entende as opções sem trocar nada', () => {

@@ -19,6 +19,8 @@ export interface FormLobby {
   tempoFamiliaS: TempoFamiliaS;
   /** Sinais entre parceiros (padrão: desligados no mineiro, ligados no paulista). */
   sinais: boolean;
+  /** Provocações com a moldura (padrão: ligadas). */
+  provocacoes: boolean;
   /** Mesa privada (link de convite). */
   privada: boolean;
   /** Fichas por cabeça (0 = sem cacife). Não fica nas preferências: cada mesa escolhe. */
@@ -42,8 +44,9 @@ export interface OpcoesEntrada {
   chanceInterceptarSinal: number;
   tempoFamiliaS: TempoFamiliaS;
   sinais: boolean;
+  provocacoes: boolean;
   /**
-   * `chaveRegras(regras, chance, tempoFamiliaS, sinais)`: o servidor só junta numa sala quem manda a mesma chave
+   * `chaveRegras(regras, chance, tempoFamiliaS, sinais, provocacoes)`: o servidor só junta numa sala quem manda a mesma chave
    * (quem omite aceita qualquer sala), então o cliente oficial sempre manda.
    */
   chaveRegras: string;
@@ -96,7 +99,7 @@ export const PREFERENCIAS_PADRAO: Readonly<PreferenciasMesa> = Object.freeze({
 export function formInicial(nome: string, salvas: Partial<PreferenciasMesa> | null = null): FormLobby {
   const f = { tempoFamiliaS: 20 as TempoFamiliaS, ...PREFERENCIAS_PADRAO, ...(salvas ?? {}), nome, privada: false };
   // Preferência antiga (sem o campo): o padrão da variante salva.
-  return { ...f, sinais: salvas?.sinais ?? sinaisPadrao(f.variante) };
+  return { ...f, sinais: salvas?.sinais ?? sinaisPadrao(f.variante), provocacoes: salvas?.provocacoes ?? true };
 }
 
 /** O que do formulário vale lembrar (sem apelido e sem "mesa privada", que é por partida). */
@@ -113,6 +116,7 @@ export function preferenciasDe(f: FormLobby): PreferenciasMesa {
     chanceInterceptarSinal: f.chanceInterceptarSinal,
     tempoFamiliaS: f.tempoFamiliaS,
     sinais: f.sinais,
+    provocacoes: f.provocacoes,
   };
 }
 
@@ -134,6 +138,7 @@ export function limparPreferencias(cru: unknown): Partial<PreferenciasMesa> | nu
   if (umDe(o.chanceInterceptarSinal, OPCOES_INTERCEPTACAO.map((x) => x.valor))) p.chanceInterceptarSinal = o.chanceInterceptarSinal;
   if (umDe(o.tempoFamiliaS, TEMPOS_FAMILIA_S)) p.tempoFamiliaS = o.tempoFamiliaS;
   if (typeof o.sinais === 'boolean') p.sinais = o.sinais;
+  if (typeof o.provocacoes === 'boolean') p.provocacoes = o.provocacoes;
   return Object.keys(p).length ? p : null;
 }
 
@@ -170,6 +175,7 @@ export function formPadrao(variante: Variante = 'paulista', nome = ''): FormLobb
     chanceInterceptarSinal: 0,
     tempoFamiliaS: 20,
     sinais: sinaisPadrao(variante),
+    provocacoes: true,
     privada: false,
   };
 }
@@ -181,6 +187,7 @@ export function trocarVariante(f: FormLobby, variante: Variante): FormLobby {
     nivelBot: f.nivelBot,
     chanceInterceptarSinal: f.chanceInterceptarSinal,
     tempoFamiliaS: f.tempoFamiliaS,
+    provocacoes: f.provocacoes,
     privada: f.privada,
   };
 }
@@ -204,7 +211,8 @@ export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
     chanceInterceptarSinal: chance,
     tempoFamiliaS: f.tempoFamiliaS,
     sinais: f.sinais,
-    chaveRegras: chaveRegras({ variante: f.variante, ...regras }, chance, f.tempoFamiliaS, f.sinais),
+    provocacoes: f.provocacoes,
+    chaveRegras: chaveRegras({ variante: f.variante, ...regras }, chance, f.tempoFamiliaS, f.sinais, f.provocacoes),
     modo: f.privada ? 'privada' : f.nivelBot === 'dificil' ? 'desafio' : 'classica',
     // Sozinho contra bots não há aposta.
     cacife: f.privada || f.humanos >= 2 ? (f.cacife ?? 0) : 0,

@@ -211,7 +211,7 @@ export class MesaRoom extends Room {
     MesaRoom.salasVivas.add(this);
     const cru = (options && typeof options === 'object' ? options : {}) as Record<string, unknown>;
     const opcoes = opcoesDaSala(cru);
-    const { modo, regras, humanos, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais } = opcoes;
+    const { modo, regras, humanos, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, provocacoes } = opcoes;
     if (modo === 'ranqueada') {
       if (cru.fichaInterna !== MesaRoom.fichaInterna) throw new Error('mesa ranqueada só pela fila');
       this.reservados = jogadoresReservados(cru.jogadores);
@@ -242,6 +242,7 @@ export class MesaRoom extends Room {
       humanosEsperados: humanos,
       chanceInterceptarSinal,
       sinais,
+      provocacoes,
       chanceFalaBot: 0.2,
       // O tempo de família vem da mesa; `MesaRoom.tempos` (testes, E2E) pode encurtar.
       tempos: { janelaFamiliaMs: tempoFamiliaS * 1000, ...MesaRoom.tempos },
@@ -278,6 +279,7 @@ export class MesaRoom extends Room {
     this.onMessage('revanche', (client) => this.mesa.revanche(client.sessionId));
     this.onMessage('batida', (client, payload) => this.mesa.batida(client.sessionId, (payload as { forca?: unknown } | null)?.forca));
     this.onMessage('chat', (client, payload) => this.mesa.chat(client.sessionId, payload));
+    this.onMessage('provocar', (client, payload) => this.mesa.provocar(client.sessionId, (payload as { alvo?: unknown } | null)?.alvo));
     // Denúncia (F6.5): só a resposta volta, e só para quem denunciou.
     this.onMessage('denunciar', (client, payload) => {
       const de = this.mesa.cadeiraDe(client.sessionId);

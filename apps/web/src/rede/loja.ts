@@ -1,6 +1,6 @@
 import type { AcaoJogador, Cadeira } from '@truco/engine';
 import type { ResultadoDenuncia } from '../componentes/Denunciar';
-import { type Fala, type MsgAcao, type MsgAvatares, type MsgBatida, type MsgChat, type MsgErro, type MsgEstado, type MsgFala, type MsgSinal, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
+import { type Fala, type MsgAcao, type MsgAvatares, type MsgBatida, type MsgChat, type MsgErro, type MsgEstado, type MsgFala, type MsgProvocacao, type MsgSinal, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA, type Sinal } from '@truco/protocolo';
 import { type Evento, FALA_TEXTO, type NovoEvento, textoDaAcao } from '../logica/eventos';
 import { resumoDaVolta } from '../logica/volta';
 
@@ -20,7 +20,7 @@ export interface SalaLike {
 }
 
 /** Todas as mensagens servidor → cliente; os handlers são registrados antes de `sincronizar`. */
-export const TIPOS_MENSAGEM = ['estado', 'avatares', 'acao', 'sinal', 'fala', 'erro', 'chat', 'batida', 'denuncia'] as const;
+export const TIPOS_MENSAGEM = ['estado', 'avatares', 'acao', 'sinal', 'fala', 'erro', 'chat', 'batida', 'denuncia', 'provocacao'] as const;
 
 /** Uma mensagem `acao` recebida, para as animações (o `id` só cresce). */
 export interface Movimento {
@@ -48,6 +48,8 @@ export interface EstadoLoja {
   erro: { id: number; mensagem: string; tipo?: 'aviso' } | null;
   /** Chat da mesa privada (últimas 50). */
   chat: MsgChat[];
+  /** Provocações recebidas (as últimas), com a hora em que chegaram, para a animação. */
+  provocacoes?: (MsgProvocacao & { em: number })[];
   /** Resposta da última denúncia (F6.5); o `id` muda a cada uma. */
   denuncia?: { id: number; resultado: ResultadoDenuncia } | null;
   /** `roomId` da sala atual (código do convite da mesa privada). */
@@ -108,7 +110,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
     sala = null;
     aguardandoEstadoAposReconexao = false;
     if (esquecerToken) persistir(null);
-    mudar({ status: 'fora', msg: null, estadoAnterior: null, eventos: [], chat: [], salaId: null, batida: null, movimentos: [], denuncia: null });
+    mudar({ status: 'fora', msg: null, estadoAnterior: null, eventos: [], chat: [], salaId: null, batida: null, movimentos: [], denuncia: null, provocacoes: [] });
   };
   /** O que continua na tela durante a queda: o estado atual, ou o anterior se já estava caído. */
   const guardarAnterior = () => estado.msg ?? estado.estadoAnterior ?? null;
@@ -156,6 +158,9 @@ export function criarLoja(o: OpcoesLoja = {}) {
     });
     s.onMessage('chat', (m: MsgChat) => {
       if (sala === s) mudar({ chat: [...estado.chat, m].slice(-50) });
+    });
+    s.onMessage('provocacao', (p: MsgProvocacao) => {
+      if (sala === s) mudar({ provocacoes: [...(estado.provocacoes ?? []), { ...p, em: agora() }].slice(-8) });
     });
     s.onMessage('denuncia', (d: { resultado: ResultadoDenuncia }) => {
       if (sala === s) mudar({ denuncia: { id: ++seq, resultado: d.resultado } });
@@ -215,7 +220,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
     // Nova tentativa na MESMA sala (retry do app depois da queda): a mesa antiga fica na tela
     // até o estado novo chegar. Outra sala começa limpa.
     const anterior = s.roomId === estado.salaId ? guardarAnterior() : null;
-    mudar({ status: 'na-mesa', msg: null, estadoAnterior: anterior, eventos: [], chat: [], salaId: s.roomId, batida: null, movimentos: [], denuncia: null });
+    mudar({ status: 'na-mesa', msg: null, estadoAnterior: anterior, eventos: [], chat: [], salaId: s.roomId, batida: null, movimentos: [], denuncia: null, provocacoes: [] });
     s.send('sincronizar');
   }
 
@@ -256,6 +261,7 @@ export function criarLoja(o: OpcoesLoja = {}) {
     enviarRevanche: () => enviarSeConectado('revanche'),
     enviarChat: (texto: string) => enviarSeConectado('chat', texto),
     denunciar: (cadeira: Cadeira, motivo: string) => enviarSeConectado('denunciar', { cadeira, motivo }),
+    provocar: (alvo: Cadeira) => enviarSeConectado('provocar', { alvo }),
     /** Logo depois do pedido de seis/nove/doze (o servidor só aceita nessa janela). */
     enviarBatida: (forca: number) => enviarSeConectado('batida', { forca }),
     iniciar: () => enviarSeConectado('iniciar'),
