@@ -442,31 +442,184 @@
   }
 }
 
-/* Aviso do bônus do dia: no fluxo da página, logo abaixo do cabeçalho (não cobre nada). */
-.faixa-bonus {
+/* ---------- Aviso dos bônus (componentes/AvisoBonus.tsx) ----------
+   Pendurado no saldo do cabeçalho, por cima da página (não empurra nada). Some sozinho quando a barra
+   de tempo acaba; a barra para com o mouse em cima ou o foco dentro. Cartão de lousa no dia a dia,
+   vale de papel nas boas-vindas. */
+.topo-pagina {
   position: relative;
-  z-index: 1;
+  z-index: 36;
+}
+.aviso-bonus {
+  --aviso-borda: color-mix(in srgb, var(--grito) 60%, transparent);
+  --aviso-fundo: var(--lousa);
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 12px;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: var(--e2) var(--e3);
-  max-width: 960px;
-  margin: var(--e2) auto 0;
-  padding: var(--e2) var(--e3);
-  border: 3px solid var(--lousa-borda);
-  border-radius: var(--raio-botao);
-  background: var(--lousa);
+  gap: var(--e3);
+  width: min(330px, calc(100% - 24px));
+  box-sizing: border-box;
+  padding: 12px 4px 16px 14px;
+  border: 2px solid var(--aviso-borda);
+  border-radius: var(--raio-painel);
+  background: var(--aviso-fundo);
+  color: var(--giz);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--sombra) 55%, transparent);
+}
+/* A pontinha que liga o aviso ao saldo (posição medida em AvisoBonus). */
+.aviso-bonus::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: calc(var(--ponta-x, 75%) - 7px);
+  width: 14px;
+  height: 14px;
+  border-left: 2px solid var(--aviso-borda);
+  border-top: 2px solid var(--aviso-borda);
+  background: var(--aviso-fundo);
+  transform: rotate(45deg);
+}
+.aviso-bonus-ficha {
+  display: grid;
+  flex: none;
   color: var(--grito);
-  font-weight: 800;
-  text-align: center;
+  font-size: 34px;
+  transform: rotate(-12deg);
 }
-.faixa-bonus button {
+.aviso-bonus-textos {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.aviso-bonus-titulo {
+  color: var(--giz-suave);
+  font-size: var(--t-1);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.aviso-bonus-valor {
+  color: var(--grito);
+  font-family: var(--fonte-giz);
+  font-size: 1.9rem;
+  line-height: 1.05;
+}
+.aviso-bonus-detalhe {
+  color: var(--giz-suave);
+  font-size: var(--t-1);
+}
+.aviso-bonus-fechar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  align-self: flex-start;
+  width: 44px;
+  height: 44px;
   min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio-botao);
+  background: transparent;
+  color: var(--giz-suave);
+  cursor: pointer;
 }
-@media (max-width: 620px) {
-  .faixa-bonus {
-    margin-inline: 12px;
+.aviso-bonus-fechar:hover {
+  background: color-mix(in srgb, var(--giz) 10%, transparent);
+  color: var(--giz);
+}
+.aviso-bonus-fechar svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.aviso-bonus-tempo {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  border-radius: 0 0 0 var(--raio-painel);
+  background: var(--grito);
+  transform-origin: left;
+  animation: aviso-tempo 6s linear forwards;
+}
+.aviso-bonus:hover .aviso-bonus-tempo,
+.aviso-bonus:focus-within .aviso-bonus-tempo {
+  animation-play-state: paused;
+}
+@keyframes aviso-tempo {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Boas-vindas: vale de papel com fita, picote ao lado da ficha e um pouco torto. Fica 9 s (tem mais o que ler). */
+.aviso-vale {
+  --aviso-borda: var(--papel-borda);
+  --aviso-fundo: var(--papel);
+  --foco: var(--tinta);
+  /* A inclinação levanta um canto ~6 px: desce um pouco mais para não encostar no cabeçalho. */
+  top: calc(100% + 18px);
+  padding-left: 0;
+  border-radius: 6px;
+  color: var(--tinta);
+  rotate: -2deg;
+}
+.aviso-vale::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: calc(50% - 32px);
+  width: 64px;
+  height: 22px;
+  background: color-mix(in srgb, var(--giz) 60%, transparent);
+  rotate: 4deg;
+}
+.aviso-vale .aviso-bonus-ficha {
+  align-self: stretch;
+  align-items: center;
+  width: 58px;
+  justify-content: center;
+  border-right: 2px dashed var(--papel-borda);
+}
+.aviso-vale .aviso-bonus-titulo,
+.aviso-vale .aviso-bonus-detalhe {
+  color: var(--tinta-suave);
+}
+.aviso-vale .aviso-bonus-titulo {
+  font-weight: 800;
+}
+.aviso-vale .aviso-bonus-valor {
+  color: var(--tinta);
+}
+.aviso-vale .aviso-bonus-fechar {
+  color: var(--tinta-suave);
+}
+.aviso-vale .aviso-bonus-fechar:hover {
+  background: color-mix(in srgb, var(--tinta) 8%, transparent);
+  color: var(--tinta);
+}
+.aviso-vale .aviso-bonus-tempo {
+  border-radius: 0 0 0 6px;
+  background: var(--tinta-suave);
+  animation-duration: 9s;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .aviso-bonus {
+    animation: aviso-entra 220ms ease-out;
+  }
+  @keyframes aviso-entra {
+    from {
+      opacity: 0;
+      translate: 0 -8px;
+    }
   }
 }
 

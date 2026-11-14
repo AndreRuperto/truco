@@ -1,5 +1,6 @@
 import type { PreferenciasMesa, UsuarioApi } from '@truco/api';
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { AvisoBonus } from './componentes/AvisoBonus';
 import { Cabecalho } from './componentes/Cabecalho';
 import { FundoCartas } from './componentes/FundoCartas';
 import { Toast } from './componentes/Toast';
@@ -8,7 +9,7 @@ import { criarMesaAberta, criarMesaPrivada, entrarNaMesa, entrarPorCodigo, lerTo
 import { useCarteira, useFila, useLoja, useSessao } from './rede/hooks';
 import { api, carteira, loja, lojaFila, sessao } from './rede/instancia';
 import { TelaLoja, TelaLojaObrigado } from './telas/Loja';
-import { itemPorIdDoCatalogo, textoDosBonus } from './logica/lojaApp';
+import { type AvisoBonusDados, avisoDosBonus, itemPorIdDoCatalogo } from './logica/lojaApp';
 import { navegar, useRota } from './rede/rota';
 import { TelaEntrar } from './telas/Entrar';
 import { TelaEntrarPrivada } from './telas/EntrarPrivada';
@@ -68,7 +69,7 @@ export function App() {
   const rota = useRota();
   const fila = useFila(lojaFila);
   const cart = useCarteira(carteira);
-  const [avisoBonus, setAvisoBonus] = useState<string | null>(null);
+  const [avisoBonus, setAvisoBonus] = useState<AvisoBonusDados | null>(null);
   // Regras da tela inicial guardadas na conta: undefined = sem conta ou carregando.
   const [prefsConta, setPrefsConta] = useState<PreferenciasMesa | null | undefined>(undefined);
   const idUsuario = ses.usuario?.id;
@@ -79,7 +80,7 @@ export function App() {
       return;
     }
     void carteira.carregar().then((c) => {
-      const t = c ? textoDosBonus(c.bonus) : null;
+      const t = c ? avisoDosBonus(c.bonus) : null;
       if (t) setAvisoBonus(t);
     });
   }, [idUsuario, snap.status === 'fora']);
@@ -352,25 +353,21 @@ export function App() {
     }
     tela = (
       <>
-        <Cabecalho
-          pronta={ses.pronta}
-          usuario={ses.usuario}
-          atual={rota.tela === 'perfil' && rota.id !== null ? undefined : rota.tela === 'lojaObrigado' ? 'loja' : rota.tela}
-          saldos={cart.carteira}
-          moldura={itemPorIdDoCatalogo(cart.catalogo, cart.carteira?.equipados.moldura)}
-          aoSair={() => {
-            navegar({ tela: 'inicio' });
-            void sessao.sair();
-          }}
-        />
-        {avisoBonus && snap.status === 'fora' && (
-          <div className="faixa-bonus" role="status">
-            <span>{avisoBonus}</span>
-            <button type="button" className="botao-discreto" onClick={() => setAvisoBonus(null)}>
-              Fechar
-            </button>
-          </div>
-        )}
+        {/* O aviso do bônus fica por cima da página, pendurado no saldo: não empurra o conteúdo. */}
+        <div className="topo-pagina">
+          <Cabecalho
+            pronta={ses.pronta}
+            usuario={ses.usuario}
+            atual={rota.tela === 'perfil' && rota.id !== null ? undefined : rota.tela === 'lojaObrigado' ? 'loja' : rota.tela}
+            saldos={cart.carteira}
+            moldura={itemPorIdDoCatalogo(cart.catalogo, cart.carteira?.equipados.moldura)}
+            aoSair={() => {
+              navegar({ tela: 'inicio' });
+              void sessao.sair();
+            }}
+          />
+          {avisoBonus && snap.status === 'fora' && <AvisoBonus aviso={avisoBonus} aoFechar={() => setAvisoBonus(null)} />}
+        </div>
         {/* A tela inicial tem o fundo de cartas inteiro (com mouse); as outras, a versão discreta. */}
         {rota.tela !== 'inicio' && <FundoCartas discreto />}
         {/* trocar de conta remonta a tela: nada do usuário anterior sobrevive em estado local */}
