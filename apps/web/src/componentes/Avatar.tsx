@@ -114,32 +114,167 @@ export function DesenhoAvatar({ id }: { id: AvatarPronto }) {
   );
 }
 
-/** Avatares exclusivos da loja (`loja:<id do item>`), no mesmo traço dos prontos. */
+/*
+ * Avatares exclusivos da loja (`loja:<id do item>`), desenhados na prancha "Avatares do boteco"
+ * (https://claude.ai/artifact/X63TgRg4WVK55nLiuaLEdx). Regras do traço:
+ * - cabeça, pescoço e tronco são uma peça só (nunca fundo entre eles);
+ * - o fundo é um quadrado cheio e o corpo passa da borda: o `.avatar` (raio 50%, overflow hidden) corta;
+ * - a mesma luz em todos: pele #d9a47a, sombra #c48a62, traço #3a2618;
+ * - uma silhueta forte e um detalhe só, para ler em 28 px.
+ */
+const PELE = '#d9a47a';
+const SOMBRA = '#c48a62';
+const TRACO = '#3a2618';
+
 export const DESENHOS_LOJA: Record<string, ReactNode> = {
   'avatar-violeiro': (
     <>
-      <circle cx="32" cy="32" r="32" fill="#2d6a45" />
-      <ellipse cx="32" cy="18" rx="17" ry="4.5" fill="#e8c35e" />
-      <path d="M22 18c0-7 4-11 10-11s10 4 10 11Z" fill="#e8c35e" />
-      <circle cx="32" cy="26" r="8" fill="#d9a47a" />
-      <path d="M24 30c2 3 5 4 8 4s6-1 8-4" stroke="#3a2618" strokeWidth="2" fill="none" />
-      <path d="M14 64c0-14 8-22 18-22s18 8 18 22Z" fill="#b8202a" />
-      <g transform="rotate(-30 32 50)">
-        <ellipse cx="32" cy="52" rx="9" ry="7" fill="#e3a35b" />
-        <circle cx="32" cy="52" r="2.4" fill="#5e3a1f" />
-        <rect x="30.6" y="30" width="2.8" height="18" fill="#5e3a1f" />
+      <rect width="64" height="64" fill="#2d6a45" />
+      <path data-parte="camisa" data-topo="42" d="M8 66c1-15 10-24 24-24s23 9 24 24Z" fill="#b8202a" />
+      <path d="M17 52v14M47 52v14M24 44v22M40 44v22" stroke="#8f1820" strokeWidth="1.6" />
+      <rect data-parte="pescoco" x="28.2" y="31" width="7.6" height="13" fill={SOMBRA} />
+      <path d="M25.5 42h13L32 49.5Z" fill="#e9b02c" />
+      <circle data-parte="cabeca" cx="32" cy="27" r="8.6" fill={PELE} />
+      <circle cx="23.6" cy="28" r="1.9" fill={SOMBRA} />
+      <circle cx="40.4" cy="28" r="1.9" fill={SOMBRA} />
+      <circle cx="28.8" cy="27.2" r="1.15" fill={TRACO} />
+      <circle cx="35.2" cy="27.2" r="1.15" fill={TRACO} />
+      <path d="M28 31.6c1.6 1.1 2.8 1.1 4 0 1.2 1.1 2.4 1.1 4 0" stroke={TRACO} strokeWidth="1.7" strokeLinecap="round" fill="none" />
+      <ellipse cx="32" cy="21" rx="16.5" ry="3.8" fill="#e8c35e" />
+      <path d="M23.6 21c0-6.4 3.6-9.8 8.4-9.8s8.4 3.4 8.4 9.8Z" fill="#e8c35e" />
+      <path d="M23.9 17.6h16.2v2.8H23.9Z" fill="#b8202a" />
+      <path d="M18 21.6c4 1.4 24 1.4 28 0" stroke="#c99b3a" strokeWidth="1" fill="none" />
+      <g transform="rotate(-40 36 50)">
+        <rect x="34.8" y="28" width="2.4" height="14" fill="#5e3a1f" />
+        <rect x="34" y="25.5" width="4" height="4.5" rx="1" fill={TRACO} />
+        <circle cx="36" cy="45.6" r="5.4" fill="#e3a35b" />
+        <circle cx="36" cy="53" r="7.4" fill="#e3a35b" />
+        <circle cx="36" cy="50.2" r="2.1" fill="#5e3a1f" />
+        <rect x="32.5" y="56" width="7" height="1.8" rx=".8" fill="#5e3a1f" />
       </g>
+      <circle cx="27" cy="39.4" r="2.5" fill={PELE} />
+      <circle cx="41.5" cy="50" r="2.7" fill={PELE} />
     </>
   ),
   'avatar-garrafa': (
     <>
-      <circle cx="32" cy="32" r="32" fill="#24304a" />
-      <rect x="10" y="46" width="44" height="8" rx="2" fill="#9a6337" />
-      <path d="M28 10h8v8c0 2 4 4 4 9v19H24V27c0-5 4-7 4-9Z" fill="#3f9b66" />
-      <rect x="27" y="8" width="10" height="4" rx="1" fill="#e9b02c" />
-      <rect x="26" y="30" width="12" height="9" rx="1.5" fill="#fbf3dc" />
-      <path d="M44 40h7v6h-7Z" fill="#e9b02c" />
-      <path d="M43 36h9" stroke="#fbf3dc" strokeWidth="3" strokeLinecap="round" />
+      <rect width="64" height="64" fill="#24304a" />
+      <circle cx="50" cy="15" r="1.2" fill="#e9b02c" />
+      <circle cx="14" cy="22" r=".9" fill="#e9b02c" />
+      <rect x="0" y="52" width="64" height="12" fill="#6e4424" />
+      <rect x="0" y="47" width="64" height="5.5" fill="#9a6337" />
+      <path d="M0 49.2h64" stroke="#b47a4a" strokeWidth=".8" />
+      <path d="M25.5 10h7v7c0 2 5 4 5 10v20H20.5V27c0-6 5-8 5-10Z" fill="#3f9b66" />
+      <rect x="24.8" y="7.6" width="8.4" height="4" rx="1" fill="#e9b02c" />
+      <rect x="22.6" y="27" width="2" height="18" rx="1" fill="#7cc79a" />
+      <rect x="21.8" y="31" width="14.4" height="9.4" rx="1.5" fill="#fbf3dc" />
+      <rect x="24" y="33.6" width="10" height="1.8" fill="#b8202a" />
+      <rect x="25.2" y="36.6" width="7.6" height="1.2" fill="#b8202a" />
+      <path d="M40.5 31h11l-1.3 16h-8.4Z" fill="#e9b02c" />
+      <path d="M44.2 33.5v12M47.8 33.5v12" stroke="#c98d17" strokeWidth="1" />
+      <path d="M40 31.4c0-2.6 2-3.7 3.6-2.9.8-1.7 3.7-1.9 4.7 0 1.6-.6 3.6.4 3.6 2.9Z" fill="#fbf3dc" />
+    </>
+  ),
+  'avatar-caramelo': (
+    <>
+      <rect width="64" height="64" fill="#4a76a8" />
+      <ellipse cx="32" cy="66" rx="21" ry="16" fill="#c98040" />
+      <ellipse cx="32" cy="59" rx="7" ry="8" fill="#fbf3dc" />
+      <rect x="25" y="37" width="14" height="17" fill="#c98040" />
+      <rect x="24.5" y="43" width="15" height="3.6" rx="1.6" fill="#b8202a" />
+      <circle cx="32" cy="48.6" r="2.4" fill="#e9b02c" />
+      <path d="M18.5 27 20 10.5l9.5 9.5Z" fill="#b06a30" />
+      <path d="M41 18.5c6.5-2.4 10.6 2 9.6 9.2-.6 4-2.8 6.1-5 6.1Z" fill="#8a5326" />
+      <ellipse cx="32" cy="30" rx="13" ry="12" fill="#d08a3e" />
+      <ellipse cx="26.6" cy="23.6" rx="1.8" ry="1.1" fill="#f0d2a2" />
+      <ellipse cx="37.4" cy="23.6" rx="1.8" ry="1.1" fill="#f0d2a2" />
+      <circle cx="27" cy="27.4" r="1.9" fill="#1c1916" />
+      <circle cx="37" cy="27.4" r="1.9" fill="#1c1916" />
+      <circle cx="27.6" cy="26.8" r=".6" fill="#fbf8f1" />
+      <circle cx="37.6" cy="26.8" r=".6" fill="#fbf8f1" />
+      <ellipse cx="32" cy="36" rx="7.2" ry="5.6" fill="#f0d2a2" />
+      <ellipse cx="32" cy="33.2" rx="2.7" ry="1.9" fill="#1c1916" />
+      <path d="M31 38.3h2.4v2.4a1.2 1.2 0 0 1-2.4 0Z" fill="#d0626a" />
+      <path d="M28.8 37.4c1.6 1.5 4.8 1.5 6.4 0" stroke={TRACO} strokeWidth="1.2" strokeLinecap="round" fill="none" />
+    </>
+  ),
+  'avatar-mao': (
+    <>
+      <rect width="64" height="64" fill="#2f6d6a" />
+      <g transform="rotate(-24 32 46)">
+        <rect x="24" y="13" width="16" height="25" rx="2.4" fill="#fbf3dc" stroke="#1c1916" strokeWidth=".8" />
+        <text x="27" y="19.5" fontSize="6" fontWeight="800" fill="#1c1916" fontFamily="var(--fonte-ui)">
+          4
+        </text>
+        <circle cx="32" cy="23.6" r="2" fill="#1c1916" />
+        <circle cx="29.9" cy="26.8" r="2" fill="#1c1916" />
+        <circle cx="34.1" cy="26.8" r="2" fill="#1c1916" />
+        <rect x="31.3" y="26.5" width="1.4" height="4" fill="#1c1916" />
+      </g>
+      <g transform="rotate(24 32 46)">
+        <rect x="24" y="13" width="16" height="25" rx="2.4" fill="#fbf3dc" stroke="#1c1916" strokeWidth=".8" />
+        <text x="27" y="19.5" fontSize="6" fontWeight="800" fill="#1c1916" fontFamily="var(--fonte-ui)">
+          A
+        </text>
+        <path d="M32 21c-2.5 2.8-5 4.3-5 6.5 0 1.5 1.2 2.5 2.5 2.5.9 0 1.6-.4 2-1-.1 1-.6 1.7-1.3 2.2h3.6c-.7-.5-1.2-1.2-1.3-2.2.4.6 1.1 1 2 1 1.3 0 2.5-1 2.5-2.5 0-2.2-2.5-3.7-5-6.5Z" fill="#1c1916" />
+      </g>
+      <rect x="24" y="12" width="16" height="25" rx="2.4" fill="#fbf3dc" stroke="#1c1916" strokeWidth=".8" />
+      <text x="27" y="18.5" fontSize="6" fontWeight="800" fill="#b8202a" fontFamily="var(--fonte-ui)">
+        7
+      </text>
+      <path d="M32 30c-3-2.2-4.5-3.8-4.5-5.6 0-1.4 1-2.4 2.3-2.4 1 0 1.7.6 2.2 1.5.5-.9 1.2-1.5 2.2-1.5 1.3 0 2.3 1 2.3 2.4 0 1.8-1.5 3.4-4.5 5.6Z" fill="#b8202a" />
+      <path d="M20 47c0-4 3-6.5 6-6.5h12c3 0 6 2.5 6 6.5v6c0 2-1 3-3 3H23c-2 0-3-1-3-3Z" fill={PELE} />
+      <path d="M24 40.5v4M29 40.5v4.5M34 40.5v4.5M39 40.5v4" stroke={SOMBRA} strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M21.5 45c-1.6-3.4.6-6 3.6-5.2l6.2 3.8c1 .7.7 2.2-.5 2.3Z" fill={SOMBRA} />
+      <rect x="17" y="55" width="30" height="12" rx="3" fill="#b8202a" />
+      <rect x="18.5" y="54" width="27" height="3.2" rx="1.5" fill="#fbf3dc" />
+    </>
+  ),
+  'avatar-dono': (
+    <>
+      <rect width="64" height="64" fill="#9a6337" />
+      <path d="M7 66c1-14 10-22 25-22s24 8 25 22Z" fill="#4a76a8" />
+      <path d="M26.5 44.4 32 51l5.5-6.6" fill="none" stroke="#2f5a86" strokeWidth="1.6" />
+      <path d="M40.5 44.6l10 3.6-2.6 10-9.4-3.6Z" fill="#fbf3dc" />
+      <path d="M41.6 48l8.6 3.1M40.8 51.2l8.4 3" stroke="#b8202a" strokeWidth="1.3" />
+      <rect x="27.5" y="31" width="9" height="14.5" fill={SOMBRA} />
+      <circle cx="22" cy="28" r="2.6" fill={SOMBRA} />
+      <circle cx="42" cy="28" r="2.6" fill={SOMBRA} />
+      <circle cx="32" cy="27" r="10" fill={PELE} />
+      <path d="M22.4 29.5c-1.2-6 .6-9.4 3-10.6l1.2 10Z" fill="#7d776f" />
+      <path d="M41.6 29.5c1.2-6-.6-9.4-3-10.6l-1.2 10Z" fill="#7d776f" />
+      <ellipse cx="28.4" cy="20.4" rx="2.6" ry="1.4" fill="#ecc39d" />
+      <path d="M26.6 23.8h3.8M33.6 23.8h3.8" stroke="#5a544d" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="28.6" cy="26.6" r="1.15" fill={TRACO} />
+      <circle cx="35.4" cy="26.6" r="1.15" fill={TRACO} />
+      <ellipse cx="32" cy="29.6" rx="1.9" ry="1.5" fill={SOMBRA} />
+      <path d="M24.4 33.4c2-3.8 5.2-3.8 7.6-1.9 2.4-1.9 5.6-1.9 7.6 1.9-2.6.7-5.3.2-7.6-1.2-2.3 1.4-5 1.9-7.6 1.2Z" fill="#4a4038" />
+    </>
+  ),
+  'avatar-vo': (
+    <>
+      <rect width="64" height="64" fill="#7a1a22" />
+      <path d="M9 66c1-14 10-21 23-21s22 7 23 21Z" fill="#3f9b66" />
+      <path d="M18 52l2 14M46 52l-2 14" stroke="#2d7a4f" strokeWidth="1.4" />
+      <path d="M25.6 45 32 51.6 38.4 45Z" fill="#fbf3dc" />
+      <rect x="28.2" y="33" width="7.6" height="13" fill={SOMBRA} />
+      <circle cx="32" cy="13.6" r="5" fill="#d7d2c8" />
+      <circle cx="32" cy="26" r="11" fill="#d7d2c8" />
+      <ellipse cx="32" cy="28.6" rx="8.6" ry="9.2" fill={PELE} />
+      <path d="M23.5 26.4c1-6 5-8.6 8.5-8.6s7.5 2.6 8.5 8.6c-3-2-5.5-3.6-8.5-3.6s-5.5 1.6-8.5 3.6Z" fill="#d7d2c8" />
+      <circle cx="26" cy="32.4" r="1.7" fill="#e07a6a" opacity=".6" />
+      <circle cx="38" cy="32.4" r="1.7" fill="#e07a6a" opacity=".6" />
+      <circle cx="28.3" cy="28.6" r=".95" fill={TRACO} />
+      <circle cx="35.7" cy="28.6" r=".95" fill={TRACO} />
+      <circle cx="28.3" cy="28.6" r="3" fill="none" stroke={TRACO} strokeWidth="1.1" />
+      <circle cx="35.7" cy="28.6" r="3" fill="none" stroke={TRACO} strokeWidth="1.1" />
+      <path d="M31.3 28.4h1.4" stroke={TRACO} strokeWidth="1.1" />
+      <path d="M29.4 34.2c1.6 1.2 3.6 1.2 5.2 0" stroke={TRACO} strokeWidth="1.2" strokeLinecap="round" fill="none" />
+      <g transform="rotate(14 45 54)">
+        <rect x="40.5" y="46" width="10" height="14" rx="1.6" fill="#fbf3dc" stroke="#1c1916" strokeWidth=".7" />
+        <path d="M45.5 56c-2.2-1.6-3.3-2.8-3.3-4.1 0-1 .8-1.8 1.7-1.8.7 0 1.3.4 1.6 1.1.3-.7.9-1.1 1.6-1.1.9 0 1.7.8 1.7 1.8 0 1.3-1.1 2.5-3.3 4.1Z" fill="#b8202a" />
+      </g>
+      <circle cx="42" cy="59" r="2.6" fill={PELE} />
     </>
   ),
 };

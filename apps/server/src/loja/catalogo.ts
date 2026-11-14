@@ -30,7 +30,7 @@ export interface VisualMoldura {
   estilo: EstiloMoldura;
 }
 export interface VisualAvatar {
-  desenho: 'violeiro' | 'garrafa';
+  desenho: 'violeiro' | 'garrafa' | 'caramelo' | 'mao' | 'dono' | 'vo';
 }
 export interface VisualTampo {
   superficie: SuperficieTampo;
@@ -72,6 +72,10 @@ export const ITENS: readonly ItemLoja[] = [
   // Avatares exclusivos (os prontos continuam grátis, em `AVATARES_PRONTOS`)
   { id: 'avatar-violeiro', slot: 'avatar', nome: 'Violeiro', preco: pila(120), visual: { desenho: 'violeiro' } },
   { id: 'avatar-garrafa', slot: 'avatar', nome: 'Garrafa na Mesa', preco: pila(120), visual: { desenho: 'garrafa' } },
+  { id: 'avatar-caramelo', slot: 'avatar', nome: 'Caramelo', preco: pila(120), visual: { desenho: 'caramelo' } },
+  { id: 'avatar-mao', slot: 'avatar', nome: 'Mão de Truco', preco: pila(120), visual: { desenho: 'mao' } },
+  { id: 'avatar-dono', slot: 'avatar', nome: 'Seu Dono', preco: pila(120), visual: { desenho: 'dono' } },
+  { id: 'avatar-vo', slot: 'avatar', nome: 'Vó do Truco', preco: pila(120), visual: { desenho: 'vo' } },
   // Tampo da mesa (só quem escolheu vê)
   { id: 'tampo-madeira', slot: 'tampo', nome: 'Madeira', preco: null, visual: { superficie: 'madeira' } },
   { id: 'tampo-feltro', slot: 'tampo', nome: 'Feltro', preco: null, visual: { superficie: 'feltro' } },
