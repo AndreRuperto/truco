@@ -82,7 +82,7 @@ export function agruparAcoes(acoes: AcaoJogador[], v: Pick<Visao, 'mao' | 'regra
         empilhaveis.push(a.indice);
         break;
       case 'mostrar':
-        botao('mostrar', m?.cangada?.etapa === 'baixo' ? 'Abrir as de baixo' : 'Mostrar as de cima', a, 'principal');
+        botao('mostrar', m?.cangada?.etapa === 'baixo' ? 'Abrir a de baixo' : 'Mostrar a sua', a, 'principal');
         break;
       case 'truco':
         botao('truco', `${nomePedido((m?.nivel ?? 0) + 1)}!`, a, 'principal');
