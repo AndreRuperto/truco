@@ -358,16 +358,64 @@
 .cabecalho-saldo {
   display: inline-flex;
   align-items: center;
-  gap: var(--e2);
+  gap: var(--e3);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   text-decoration: none;
   white-space: nowrap;
+}
+/* Saldo e conta ficam juntos no canto direito: o saldo empurra, a conta encosta nele. */
+/* :not(.cabecalho-ajuda) iguala a força da regra do celular em tema-perfil.css, que deixa as abas encolherem. */
+.cabecalho > a.cabecalho-saldo:not(.cabecalho-ajuda) {
+  flex: none;
+  margin-left: auto;
+}
+.cabecalho > .cabecalho-saldo + .menu-conta {
+  margin-left: 0;
+}
+.cabecalho-saldo .ficha,
+.cabecalho-saldo .pila {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .cabecalho-saldo .ficha {
   color: var(--grito);
 }
 .cabecalho-saldo .pila {
   color: var(--nos);
+}
+
+/* Ícones das moedas (componentes/IconeMoeda.tsx): a cor vem do texto (currentColor). */
+.icone-moeda {
+  flex: none;
+  width: 1.25em;
+  height: 1.25em;
+}
+.icone-moeda .corpo,
+.icone-moeda .verso {
+  fill: currentColor;
+}
+.icone-moeda .verso {
+  opacity: .55;
+}
+.icone-moeda .marcas {
+  fill: none;
+  stroke: var(--papel);
+  stroke-width: 2.6;
+  /* 2πr ≈ 56,5: oito marcas de 3,4 com 3,66 de folga */
+  stroke-dasharray: 3.4 3.66;
+}
+.icone-moeda .traco,
+.icone-moeda .miolo {
+  fill: none;
+  stroke: color-mix(in srgb, #000 45%, currentColor);
+  stroke-width: 1.4;
+}
+.loja-saldos dt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
 }
 .chip-cacife {
   display: inline-flex;
@@ -386,6 +434,9 @@
     flex: 1 1 120px;
     min-width: 0;
   }
+}
+/* No celular só cabem as Fichas (o Pila aparece na loja e no menu a partir de 541 px). */
+@media (max-width: 540px) {
   .cabecalho-saldo .pila {
     display: none;
   }
@@ -416,5 +467,28 @@
 @media (max-width: 620px) {
   .faixa-bonus {
     margin-inline: 12px;
+  }
+}
+
+/* Ícone do cartão de saldo da loja na cor da moeda (o rótulo continua giz). */
+.saldo-fichas .icone-moeda {
+  color: var(--grito);
+}
+.saldo-pila .icone-moeda {
+  color: var(--nos);
+}
+
+/* Até 400 px: as quatro abas, as Fichas, o avatar e a ajuda só cabem sem a setinha do menu da conta
+   (o avatar continua sendo o botão, com aria-expanded). */
+@media (max-width: 400px) {
+  .cabecalho .menu-conta-seta {
+    display: none;
+  }
+  .cabecalho > a.cabecalho-saldo:not(.cabecalho-ajuda) {
+    gap: 4px;
+    padding-inline: 2px;
+  }
+  .cabecalho-saldo .ficha {
+    gap: 3px;
   }
 }

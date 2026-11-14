@@ -2,6 +2,7 @@ import { RESPONSAVEL } from '../logica/legal';
 import type { CarteiraApi, CatalogoApi, ItemLoja, PacotePila, Slot, UsuarioApi, VisualRoupa, VisualTampo, VisualVerso } from '@truco/api';
 import { useEffect, useState } from 'react';
 import { Avatar } from '../componentes/Avatar';
+import { IconeMoeda } from '../componentes/IconeMoeda';
 import { Personagem } from '../componentes/Personagem';
 import { salvarAparenciaMesa, type AparenciaMesa } from '../logica/aparenciaMesa';
 import { estadoDoItem, estiloVerso, formatarReais, formatarSaldo, MOTIVO_LANCAMENTO, NOME_MOEDA, rotuloPreco } from '../logica/lojaItens';
@@ -94,11 +95,17 @@ export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrP
       {usuario && carteira ? (
         <dl className="loja-saldos" aria-label="Seus saldos">
           <div className="saldo saldo-fichas">
-            <dt>Fichas</dt>
+            <dt>
+              <IconeMoeda moeda="fichas" />
+              Fichas
+            </dt>
             <dd data-testid="saldo-fichas">{formatarSaldo(carteira.fichas)}</dd>
           </div>
           <div className="saldo saldo-pila">
-            <dt>Pila</dt>
+            <dt>
+              <IconeMoeda moeda="pila" />
+              Pila
+            </dt>
             <dd data-testid="saldo-pila">{formatarSaldo(carteira.pila)}</dd>
           </div>
         </dl>
