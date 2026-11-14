@@ -131,7 +131,7 @@ describe('quando pode', () => {
     expect(dez.fase).toBe('decisaoMao10');
     expect(() => pedir(dez, 0)).toThrow(ErroJogada);
     expect(() => pedir(reduce(dez, { tipo: 'mao10', cadeira: 0, jogar: true }), 0)).toThrow(ErroJogada);
-    const ferro = distribuida({ ...MINEIRO, maoDe11: 'qualquerDupla' }, MAOS, undefined, [11, 0]);
+    const ferro = distribuida({ ...MINEIRO, maoDe11: 'onzeAOnze' }, MAOS, undefined, [10, 10]);
     expect(ferro.mao!.tipo).toBe('mao11');
     expect(() => pedir(ferro, 0)).toThrow(ErroJogada);
     // Truco só a partir da 2ª rodada (a cadeira 2 vence a 1ª com o zap); depois do truco aceito, nada de família.

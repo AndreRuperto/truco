@@ -296,7 +296,7 @@ describe('MesaRoom', () => {
   });
 
   test('matchmaking separa por regras (chaveRegras) e a sala guarda a chave recalculada', async () => {
-    const regras = { pontuacao: '1-3-6-9-12', maoDe10: false, maoDe11: 'qualquerDupla', familia: 'off', maoLimpa: false } as const;
+    const regras = { pontuacao: '1-3-6-9-12', maoDe10: false, maoDe11: 'onzeAOnze', familia: 'off', maoLimpa: false } as const;
     const chave = chaveRegras({ variante: 'paulista', ...regras }, 0);
     const a = await colyseus.sdk.joinOrCreate('mesa', { variante: 'paulista', humanos: 2, nivelBot: 'facil', regras, chaveRegras: chave, nome: 'Ana' });
     coletor(a);

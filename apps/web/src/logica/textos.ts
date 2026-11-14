@@ -2,6 +2,7 @@ import {
   type Cadeira,
   duplaDe,
   ESCADAS,
+  limiteMaoEspecial,
   type RegrasMesa,
   type ResultadoRodada,
   type Visao,
@@ -61,9 +62,13 @@ export function resumoFimMao(u: VisaoResultadoMao, minha: Cadeira): ResumoMao {
           ? nos
             ? 'eles correram'
             : 'nós corremos'
-          : nos
-            ? 'eles correram na mão de 10'
-            : 'corremos na mão de 10';
+          : u.motivo === 'trucoNaMaoEspecial'
+            ? nos
+              ? 'eles pediram truco numa mão já trucada'
+              : 'pedimos truco numa mão já trucada'
+            : nos
+              ? 'eles correram da mão'
+              : 'corremos da mão';
   return { titulo: nos ? 'Nós levamos!' : 'Eles levaram!', detalhe: `${pontos} — ${motivo}`, nos };
 }
 
@@ -73,11 +78,7 @@ export function resumoFimPartida(v: Visao): { titulo: string; placar: string; ve
   return { titulo: venceu ? 'Vitória!' : 'Derrota', placar: `Nós ${nos} × ${eles} Eles`, venceu };
 }
 
-const TEXTO_MAO11: Record<RegrasMesa['maoDe11'], string> = {
-  off: 'Mão de 11 desligada',
-  qualquerDupla: 'Mão de 11 para qualquer dupla',
-  onzeAOnze: 'Mão de 11 só no 11 a 11',
-};
+
 const TEXTO_FAMILIA: Record<RegrasMesa['familia'], string> = {
   off: 'Sem família',
   aberta: 'Família aberta',
@@ -94,8 +95,8 @@ export function resumoRegras(r: RegrasMesa, chanceInterceptarSinal: number, sina
   return [
     r.variante === 'paulista' ? 'Paulista (com vira)' : 'Mineiro (manilhas fixas)',
     `Pontos ${r.pontuacao.split('-').join(' · ')}`,
-    r.maoDe10 ? 'Mão de 10 ligada' : 'Mão de 10 desligada',
-    TEXTO_MAO11[r.maoDe11],
+    r.maoDe10 ? `Mão de ${limiteMaoEspecial(r.pontuacao)} ligada` : `Mão de ${limiteMaoEspecial(r.pontuacao)} desligada`,
+    r.maoDe11 === 'onzeAOnze' ? `Mão de ferro no ${limiteMaoEspecial(r.pontuacao)} a ${limiteMaoEspecial(r.pontuacao)}` : 'Sem mão de ferro',
     TEXTO_FAMILIA[r.familia],
     ...(r.variante === 'mineiro' && r.maoLimpa === true ? ['Mão limpa (sem 4 a 7, com 2 coringas)'] : []),
     sinais ? textoInterceptacao(chanceInterceptarSinal) : 'Sem sinais entre parceiros',

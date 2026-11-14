@@ -169,7 +169,9 @@ export function botDificil(v: Visao, rand: () => number, opcoes: OpcoesBotDifici
 
   const primeiro = amostrarMundo(v, rand, dica);
   // Família é decidida pela política acima, não pela simulação.
-  const candidatas = acoesValidas(primeiro, v.cadeira).filter((a) => a.tipo !== 'familia');
+  // Na mão de 11/de ferro pedir truco é falta (o adversário leva a mão): o bot nunca pede.
+  const especial = primeiro.mao !== null && primeiro.mao.tipo !== 'normal';
+  const candidatas = acoesValidas(primeiro, v.cadeira).filter((a) => a.tipo !== 'familia' && !(especial && a.tipo === 'truco'));
   if (candidatas.length <= 1) return candidatas[0] ?? null;
 
   const truco = candidatas.find((a) => a.tipo === 'truco');

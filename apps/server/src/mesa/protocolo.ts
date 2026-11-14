@@ -291,7 +291,8 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
     variante,
     pontuacao: um(r.pontuacao, ['1-3-6-9-12', '2-4-8-10-12'] as const, base.pontuacao),
     maoDe10: typeof r.maoDe10 === 'boolean' ? r.maoDe10 : base.maoDe10,
-    maoDe11: um(r.maoDe11, ['off', 'qualquerDupla', 'onzeAOnze'] as const, base.maoDe11),
+    // 'qualquerDupla' (todos às cegas com só uma dupla no 11) saiu: cliente antigo cai no 11 a 11.
+    maoDe11: r.maoDe11 === 'qualquerDupla' ? 'onzeAOnze' : um(r.maoDe11, ['off', 'onzeAOnze'] as const, base.maoDe11),
     familia: um(r.familia, ['off', 'aberta', 'fechada'] as const, base.familia),
     // Mão limpa só existe no mineiro.
     maoLimpa: variante === 'mineiro' && r.maoLimpa === true,

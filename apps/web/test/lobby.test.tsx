@@ -16,7 +16,7 @@ describe('Lobby', () => {
     expect(screen.getByLabelText('Pontuação')).toHaveValue('2-4-8-10-12');
     expect(screen.getByLabelText('Mão de 10')).toBeChecked();
     expect(screen.getByLabelText('Família')).toHaveValue('fechada');
-    await user.selectOptions(screen.getByLabelText('Mão de 11'), 'onzeAOnze');
+    await user.selectOptions(screen.getByLabelText('Mão de ferro'), 'off');
     await user.selectOptions(screen.getByLabelText('Humanos'), '2');
     await user.selectOptions(screen.getByLabelText('Bots'), 'dificil');
     await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
@@ -25,31 +25,35 @@ describe('Lobby', () => {
       variante: 'mineiro',
       humanos: 2,
       nivelBot: 'dificil',
-      regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada', maoLimpa: false },
+      regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'off', familia: 'fechada', maoLimpa: false },
       chanceInterceptarSinal: 0.25,
       tempoFamiliaS: 20,
       sinais: false,
       provocacoes: true,
-      chaveRegras: '2-4-8-10-12|m10:1|m11:onzeAOnze|fam:fechada|lim:0|int:0.25|tf:20|sin:0',
+      chaveRegras: '2-4-8-10-12|m10:1|m11:off|fam:fechada|lim:0|int:0.25|tf:20|sin:0',
       modo: 'desafio',
       cacife: 0,
     });
     expect(localStorage.getItem(CHAVE_APELIDO)).toBe('Ana');
   });
 
-  test('ligar mão de 10 e trocar pontuação/família', async () => {
+  test('o rótulo segue a pontuação (mão de 11 / de 10); desligar e trocar pontuação/família', async () => {
     const user = userEvent.setup();
     const aoJogar = vi.fn();
     render(<Lobby aoJogar={aoJogar} />);
     await user.selectOptions(screen.getByLabelText('Variante'), 'paulista');
-    await user.click(screen.getByLabelText('Mão de 10'));
+    expect(screen.getByLabelText('Mão de 11')).toBeChecked();
+    expect(screen.getByRole('option', { name: 'Só no 11 a 11' })).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Mão de 11'));
     await user.selectOptions(screen.getByLabelText('Pontuação'), '2-4-8-10-12');
+    expect(screen.getByLabelText('Mão de 10')).not.toBeChecked();
+    expect(screen.getByRole('option', { name: 'Só no 10 a 10' })).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText('Família'), 'aberta');
     await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
     expect(aoJogar.mock.calls[0][0]).toMatchObject({
       nome: 'Jogador',
       variante: 'paulista',
-      regras: { pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'qualquerDupla', familia: 'aberta' },
+      regras: { pontuacao: '2-4-8-10-12', maoDe10: false, maoDe11: 'onzeAOnze', familia: 'aberta' },
     });
   });
 
@@ -118,7 +122,7 @@ describe('Lobby', () => {
     const resumo = screen.getByText('Regras da mesa').closest('summary')!;
     expect(resumo.closest('details')).not.toHaveAttribute('open');
     expect(resumo).toHaveTextContent(
-      'Mineiro, 1-3-6-9-12, mão de 10, mão de 11, família fechada, mão limpa, 3 bots difíceis, sem sinais',
+      'Mineiro, 1-3-6-9-12, mão de 11, mão de ferro, família fechada, mão limpa, 3 bots difíceis, sem sinais',
     );
     await user.selectOptions(screen.getByLabelText('Humanos'), '2');
     expect(resumo).toHaveTextContent('2 bots difíceis');

@@ -22,10 +22,11 @@ describe('mão de 10', () => {
     expect(s.ultimaMao!.motivo).toBe('mao10Correu');
   });
 
-  test('jogar vale o truco (4 no mineiro), sem pedir truco', () => {
+  test('jogar vale o truco (4 no mineiro); pedir truco nela é falta', () => {
     let s = reduce(s0(), { tipo: 'mao10', cadeira: 0, jogar: true });
     expect(s.mao!.nivel).toBe(1);
-    expect(() => reduce(s, { tipo: 'truco', cadeira: 0 })).toThrow(ErroJogada);
+    // Já é trucada: pedir truco é falta (ver mao-de-onze.test.ts), não um pedido.
+    expect(reduce(s, { tipo: 'truco', cadeira: 0 }).ultimaMao).toMatchObject({ vencedor: 1, motivo: 'trucoNaMaoEspecial' });
     s = jogarSeq(s, DUAS_RODADAS);
     expect(s.placar).toEqual([14, 4]);
     expect(s.fase).toBe('fimPartida');
@@ -53,38 +54,34 @@ function jogarDuasRodadasNaVez(s: ReturnType<typeof distribuida>) {
   return s;
 }
 
-describe('mão de 11 (ferro)', () => {
-  test('qualquer dupla com 11: sem truco e sem coberta', () => {
-    let s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p', [11, 3]);
+describe('mão de ferro (11 a 11)', () => {
+  test('às cegas: sem coberta, e pedir truco é falta', () => {
+    let s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p', [11, 11]);
     expect(s.mao!.tipo).toBe('mao11');
     expect(s.fase).toBe('jogando');
-    expect(() => reduce(s, { tipo: 'truco', cadeira: 0 })).toThrow(ErroJogada);
+    expect(reduce(s, { tipo: 'truco', cadeira: 0 }).ultimaMao).toMatchObject({ vencedor: 1, motivo: 'trucoNaMaoEspecial' });
     s = jogarSeq(s, [[0, 0], [1, 0], [2, 0], [3, 0]]);
     expect(() => reduce(s, { tipo: 'jogar', cadeira: s.mao!.vez, indice: 0, coberta: true })).toThrow(ErroJogada);
   });
 
-  test('mão de 11 já vale 3 e vitória de quem tem 10 encerra a partida', () => {
-    let s = distribuida(PAULISTA, MAOS_FERRO_DUPLA0_VENCE, '5p', [10, 11]);
-    expect(s.mao!.tipo).toBe('mao11');
+  test('vale 3 e quem vence leva a partida', () => {
+    let s = distribuida(PAULISTA, MAOS_FERRO_DUPLA0_VENCE, '5p', [11, 11]);
     expect(s.mao!.nivel).toBe(1);
     s = jogarDuasRodadasNaVez(s);
     expect(s.ultimaMao).toMatchObject({ vencedor: 0, pontos: 3 });
-    expect(s.placar).toEqual([13, 11]);
+    expect(s.placar).toEqual([14, 11]);
     expect(s.fase).toBe('fimPartida');
     expect(s.vencedor).toBe(0);
   });
 
-  test('mão de 11 também vale 3 para a dupla que já tem 11', () => {
-    let s = distribuida(PAULISTA, MAOS_FERRO_DUPLA0_VENCE, '5p', [11, 10]);
-    s = jogarDuasRodadasNaVez(s);
+  test('só uma dupla com 11 não é mão de ferro: é a mão de 11 (decisão), se ligada', () => {
+    expect(distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p', [11, 3]).mao!.tipo).toBe('normal');
+    let s = distribuida({ ...PAULISTA, maoDe10: true }, MAOS_FERRO_DUPLA0_VENCE, '5p', [11, 10]);
+    expect(s.fase).toBe('decisaoMao10');
+    s = jogarDuasRodadasNaVez(reduce(s, { tipo: 'mao10', cadeira: 0, jogar: true }));
     expect(s.ultimaMao?.pontos).toBe(3);
+    expect(s.placar).toEqual([14, 10]);
     expect(s.fase).toBe('fimPartida');
-  });
-
-  test('opção onzeAOnze só ativa no 11 a 11', () => {
-    const regras = { ...PAULISTA, maoDe11: 'onzeAOnze' as const };
-    expect(distribuida(regras, MAOS_DUPLA0_VENCE, '5p', [11, 3]).mao!.tipo).toBe('normal');
-    expect(distribuida(regras, MAOS_DUPLA0_VENCE, '5p', [11, 11]).mao!.tipo).toBe('mao11');
   });
 
   test('maoDe11 off nunca ativa', () => {
@@ -93,39 +90,25 @@ describe('mão de 11 (ferro)', () => {
   });
 });
 
-/**
- * Item 7 da auditoria: mão de ferro na escada 2-4-8-10-12 (mineiro com mão de 11 ligada).
- * Vale o 1º nível de truco (4), e a mão de ferro tem precedência sobre a mão de 10 no 10 a 11.
- */
-describe('mão de 11 (ferro) na escada 2-4-8-10-12', () => {
-  const FERRO_MINEIRO = { ...MINEIRO, maoDe11: 'qualquerDupla' as const };
+/** Mão de ferro na escada 2-4-8-10-12: o limite é 10 (10 a 10) e vale o 1º nível de truco (4). */
+describe('mão de ferro na escada 2-4-8-10-12', () => {
+  const FERRO_MINEIRO = { ...MINEIRO, maoDe11: 'onzeAOnze' as const };
 
-  test('10 a 11: é mão de ferro (não de 10), vale 4, e a vitória de quem tem 10 encerra a partida', () => {
-    const s = distribuida(FERRO_MINEIRO, MAOS_DUPLA0_VENCE, undefined, [10, 11]);
+  test('10 a 10: mão de ferro, vale 4, e a vitória encerra a partida', () => {
+    const s = distribuida(FERRO_MINEIRO, MAOS_DUPLA0_VENCE, undefined, [10, 10]);
     expect(s.mao!.tipo).toBe('mao11');
     expect(s.fase).toBe('jogando');
     expect(s.mao!.nivel).toBe(1);
-    expect(() => reduce(s, { tipo: 'truco', cadeira: 0 })).toThrow(ErroJogada);
     const fim = jogarAteOFimDaMao(s);
     expect(fim.ultimaMao).toMatchObject({ vencedor: 0, pontos: 4, motivo: 'rodadas' });
-    expect(fim.placar).toEqual([14, 11]);
+    expect(fim.placar).toEqual([14, 10]);
     expect(fim.fase).toBe('fimPartida');
     expect(fim.vencedor).toBe(0);
   });
 
-  test('11 a 3: quem tem 11 também ganha 4', () => {
-    const fim = jogarAteOFimDaMao(distribuida(FERRO_MINEIRO, MAOS_DUPLA0_VENCE, undefined, [11, 3]));
-    expect(fim.ultimaMao).toMatchObject({ vencedor: 0, pontos: 4 });
-    expect(fim.placar).toEqual([15, 3]);
-  });
-
-  test('onzeAOnze só ativa no 11 a 11 (no 11 a 3 vale a mão normal: 2)', () => {
-    const regras = { ...MINEIRO, maoDe11: 'onzeAOnze' as const };
-    const normal = distribuida(regras, MAOS_DUPLA0_VENCE, undefined, [11, 3]);
+  test('11 a 3 (só com pontos de família) é mão normal: vale 2', () => {
+    const normal = distribuida(FERRO_MINEIRO, MAOS_DUPLA0_VENCE, undefined, [11, 3]);
     expect(normal.mao!.tipo).toBe('normal');
     expect(jogarAteOFimDaMao(normal).ultimaMao).toMatchObject({ vencedor: 0, pontos: 2 });
-    const ferro = distribuida(regras, MAOS_DUPLA0_VENCE, undefined, [11, 11]);
-    expect(ferro.mao!.tipo).toBe('mao11');
-    expect(jogarAteOFimDaMao(ferro).ultimaMao).toMatchObject({ vencedor: 0, pontos: 4 });
   });
 });

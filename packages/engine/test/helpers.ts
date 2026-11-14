@@ -13,7 +13,7 @@ export const PAULISTA: RegrasMesa = {
   variante: 'paulista',
   pontuacao: '1-3-6-9-12',
   maoDe10: false,
-  maoDe11: 'qualquerDupla',
+  maoDe11: 'onzeAOnze',
   familia: 'off',
   maoLimpa: false,
 };

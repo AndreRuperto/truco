@@ -65,13 +65,15 @@ describe('manual de como jogar', () => {
     const secao = (titulo: string) => screen.getByRole('heading', { level: 2, name: titulo }).closest('section')!;
     // D2: truco só da 2ª rodada é regra desta casa.
     expect(within(secao('Truco: aumentando a aposta')).getByText(/Regra desta casa/)).toHaveTextContent(/1ª rodada/);
-    // D3: mão de 11 às cegas valendo o 1º nível de truco é regra desta casa.
-    const ferro = secao('Mão de 11 (mão de ferro)');
-    expect(within(ferro).getByText(/Regra desta casa/)).toHaveTextContent(/às cegas/);
-    // Na mão de ferro o empate da 1ª não vira cangada (packages/engine: fecharRodada).
+    // Mão de ferro: só com as duas duplas no limite (tipoPeloPlacar), às cegas, sem cangada (fecharRodada).
+    const ferro = secao('Mão de ferro');
+    expect(ferro).toHaveTextContent(/as duas duplas/);
+    expect(ferro).toHaveTextContent(/11 a 11/);
     expect(ferro).toHaveTextContent(/não tem cangada/);
-    // 10 a 11 com as duas opções ligadas: vale a mão de 11 (tipoPeloPlacar).
-    expect(secao('Mão de 10')).toHaveTextContent(/a outra dupla estiver com 11 e a mão de 11 estiver ligada, vale a mão de 11/);
+    // Mão de 11 (de 10 na escala 2 em 2): decisão; já é trucada, e pedir truco entrega a mão.
+    const onze = secao('Mão de 11 (ou de 10)');
+    expect(onze).toHaveTextContent(/só uma dupla/);
+    expect(onze).toHaveTextContent(/a dupla adversária leva a mão/);
     // Pontos de família no meio da mão (familia-placar.test.ts no engine).
     const familia = secao('Família');
     expect(familia).toHaveTextContent(/levarem a dupla a 12, a partida acaba na hora/);

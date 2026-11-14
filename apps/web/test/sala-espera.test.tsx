@@ -33,7 +33,7 @@ describe('SalaEspera', () => {
     expect(lista).toHaveTextContent('Mineiro');
     expect(lista).toHaveTextContent('Pontos 2 · 4 · 8 · 10 · 12');
     expect(lista).toHaveTextContent('Mão de 10 ligada');
-    expect(lista).toHaveTextContent('Mão de 11 só no 11 a 11');
+    expect(lista).toHaveTextContent('Mão de ferro no 10 a 10');
     expect(lista).toHaveTextContent('Família aberta');
     expect(lista).toHaveTextContent('Adversários às vezes interceptam sinais');
   });

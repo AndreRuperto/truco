@@ -15,12 +15,12 @@ beforeEach(() => localStorage.clear());
 afterEach(() => vi.useRealTimers());
 
 describe('preferências da tela inicial (lógica)', () => {
-  test('padrão da casa: mineiro, 1-3-6-9-12, mãos de 10 e 11, família fechada, mão limpa, bots difíceis, sinais às vezes', () => {
+  test('padrão da casa: mineiro, 1-3-6-9-12, mão de 11 e de ferro, família fechada, mão limpa, bots difíceis, sinais às vezes', () => {
     expect(PREFERENCIAS_PADRAO).toEqual({
       variante: 'mineiro',
       pontuacao: '1-3-6-9-12',
       maoDe10: true,
-      maoDe11: 'qualquerDupla',
+      maoDe11: 'onzeAOnze',
       familia: 'fechada',
       maoLimpa: true,
       humanos: 1,
@@ -46,6 +46,11 @@ describe('preferências da tela inicial (lógica)', () => {
       variante: 'paulista',
       nivelBot: 'facil',
     });
+  });
+
+  test('preferência antiga com mão de ferro "qualquer dupla" (opção removida) vira o 11 a 11', () => {
+    expect(limparPreferencias({ maoDe11: 'qualquerDupla' })).toEqual({ maoDe11: 'onzeAOnze' });
+    expect(limparPreferencias({ maoDe11: 'off' })).toEqual({ maoDe11: 'off' });
   });
 
   test('localStorage quebrado não derruba a leitura', () => {

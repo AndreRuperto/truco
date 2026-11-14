@@ -448,37 +448,13 @@ function secoesDe(v: Variante): SecaoInfo[] {
     ),
   },
   {
-    id: 'mao11',
-    titulo: 'Mão de 11 (mão de ferro)',
-    corpo: (
-      <>
-        <p>
-          Quando liga, a mão de 11 muda a mão em que alguém está a um ponto de ganhar. Você escolhe na mesa quando ela vale:
-          com <strong>qualquer dupla com 11</strong> (padrão do paulista), <strong>só no 11 a 11</strong>, ou desligada.
-        </p>
-        <ul>
-          <li>
-            <strong>Todo mundo joga às cegas</strong>: as cartas vêm viradas e ninguém vê nem as próprias. Você escolhe a carta
-            só pela posição.
-          </li>
-          <li>
-            <strong>Não se pede truco</strong> e <strong>não se joga coberta</strong>.
-          </li>
-          <li>A mão já começa valendo o primeiro nível de truco: <strong>3 pontos</strong> na escada 1–3–6–9–12, ou <strong>4 pontos</strong> na escada 2–4–8–10–12. Quem atingir 12 pontos vence a partida.</li>
-          <li>Como ninguém vê as cartas, a mão de 11 não tem cangada: se a 1ª rodada empatar, o jogo segue carta a carta.</li>
-        </ul>
-        <p>Regra desta casa: a mão de 11 é sempre às cegas e já vale o primeiro nível de truco; em outras mesas ela funciona de outro jeito.</p>
-      </>
-    ),
-  },
-  {
     id: 'mao10',
-    titulo: 'Mão de 10',
+    titulo: 'Mão de 11 (ou de 10)',
     corpo: (
       <>
         <p>
-          Padrão no mineiro. Quando <strong>só uma dupla está com 10 pontos</strong>, antes de jogar ela{' '}
-          <strong>vê as cartas do parceiro</strong> e decide:
+          Quando <strong>só uma dupla</strong> está a uma mão de ganhar (com <strong>11</strong> na pontuação 1–3–6–9–12, ou com{' '}
+          <strong>10</strong> na 2–4–8–10–12), antes de jogar ela <strong>vê as cartas do parceiro</strong> e decide:
         </p>
         <ul>
           <li>
@@ -489,10 +465,32 @@ function secoesDe(v: Variante): SecaoInfo[] {
           </li>
         </ul>
         <p>
-          Nessa mão <strong>ninguém pede truco</strong>: ela já é trucada. Na mesa de verdade, quem pede truco na mão de 10
-          dá tento para os adversários (o valor da mão); aqui o botão de truco nem aparece. Se as duas duplas estiverem com
-          10, a mão é normal. Se a outra dupla estiver com 11 e a mão de 11 estiver ligada, vale a mão de 11.
+          Essa mão <strong>já é trucada</strong>. O botão de truco continua lá, como na mesa de verdade: quem pedir truco nela
+          dá tento, e <strong>a dupla adversária leva a mão</strong> (o valor que ela já vale).
         </p>
+      </>
+    ),
+  },
+  {
+    id: 'mao11',
+    titulo: 'Mão de ferro',
+    corpo: (
+      <>
+        <p>
+          Quando <strong>as duas duplas</strong> estão a uma mão de ganhar (<strong>11 a 11</strong>, ou 10 a 10 na pontuação
+          2–4–8–10–12), quem vencer a mão ganha a partida.
+        </p>
+        <ul>
+          <li>
+            <strong>Todo mundo joga às cegas</strong>: as cartas vêm viradas e ninguém vê nem as próprias. Você escolhe a carta
+            só pela posição.
+          </li>
+          <li>
+            <strong>Não se joga coberta</strong>, e pedir truco é falta: a dupla adversária leva a mão.
+          </li>
+          <li>A mão vale o primeiro nível de truco: <strong>3 pontos</strong> na escada 1–3–6–9–12, ou <strong>4 pontos</strong> na 2–4–8–10–12.</li>
+          <li>Como ninguém vê as cartas, a mão de ferro não tem cangada: se a 1ª rodada empatar, o jogo segue carta a carta.</li>
+        </ul>
       </>
     ),
   },

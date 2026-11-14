@@ -41,8 +41,8 @@ describe('visaoDoJogador', () => {
     expect(visaoDoJogador(s, 1).mao!.maoParceiro).toBeNull();
   });
 
-  test('mão de 11: ninguém vê a própria mão', () => {
-    const s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p', [11, 0]);
+  test('mão de ferro (11 a 11): ninguém vê a própria mão', () => {
+    const s = distribuida(PAULISTA, MAOS_DUPLA0_VENCE, '5p', [11, 11]);
     expect(visaoDoJogador(s, 0).mao!.minhaMao).toEqual([null, null, null]);
   });
 });
