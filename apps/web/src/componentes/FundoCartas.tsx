@@ -125,6 +125,31 @@ interface Props {
   verso?: { style: CSSProperties; estampa: string } | null;
 }
 
+/**
+ * A carta desenhada no ponto (a de cima, se várias). Pergunta ao navegador: ele já conta a inclinação,
+ * o empurrão do mouse, a flutuação e a ordem de empilhamento. As cartas não recebem o ponteiro (não
+ * atrapalham o formulário), então só durante a medição a camada ganha `medindo`.
+ * Sem `elementsFromPoint` (navegador antigo): caixa de cada carta, a mais próxima primeiro.
+ */
+function cartaNoPonto(raiz: HTMLElement, x: number, y: number): HTMLElement | null {
+  if (typeof document.elementsFromPoint === 'function') {
+    raiz.classList.add('medindo');
+    try {
+      const no = document.elementsFromPoint(x, y).find((el) => raiz.contains(el) && el.closest('[data-solta]'));
+      return (no?.closest<HTMLElement>('[data-solta]') as HTMLElement | null) ?? null;
+    } finally {
+      raiz.classList.remove('medindo');
+    }
+  }
+  const soltas = [...raiz.querySelectorAll<HTMLElement>('[data-solta]')].sort((a, b) => Number(b.dataset.d) - Number(a.dataset.d));
+  return (
+    soltas.find((el) => {
+      const r = (el.querySelector('.carta-solta-flutua') ?? el).getBoundingClientRect();
+      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    }) ?? null
+  );
+}
+
 export function FundoCartas({ discreto = false, verso = null }: Props) {
   const camada = useRef<HTMLDivElement>(null);
   const cartas = discreto ? CARTAS_DAS_BORDAS : CARTAS_SOLTAS;
@@ -213,26 +238,26 @@ export function FundoCartas({ discreto = false, verso = null }: Props) {
   // na janela e verificamos se ele ocorreu sobre uma carta, sem bloquear o formulário.
   useEffect(() => {
     const raiz = camada.current;
-    if (!raiz || discreto || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    if (!raiz || discreto) return;
+    const reduzido = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
     const aoDuploClique = (e: MouseEvent) => {
       if (!(e.target instanceof Element)) return;
       if (e.target.closest('form, button, a, input, select, textarea, summary, label, [role="button"]')) return;
 
-      // Quando se sobrepõem, vence a carta visualmente mais próxima.
-      const soltas = [...raiz.querySelectorAll<HTMLElement>('[data-solta]')]
-        .sort((a, b) => Number(b.dataset.d) - Number(a.dataset.d));
-      const escolhida = soltas.find((el) => {
-        const r = el.getBoundingClientRect();
-        return e.clientX >= r.left && e.clientX <= r.right &&
-          e.clientY >= r.top && e.clientY <= r.bottom;
-      });
+      const escolhida = cartaNoPonto(raiz, e.clientX, e.clientY);
       const giratoria = escolhida?.querySelector<HTMLElement>('.carta-solta-gira');
       if (!giratoria) return;
 
+      // Movimento reduzido: a carta ainda responde, mas vira na hora (sem girar) e desvira no próximo.
+      if (reduzido()) {
+        giratoria.classList.toggle('outro-lado');
+        return;
+      }
       // Reinicia o movimento a cada duplo clique, inclusive durante outro giro.
       giratoria.getAnimations().forEach((a) => a.cancel());
-      const base = giratoria.classList.contains('virada') ? 180 : 0;
+      const deCostas = giratoria.classList.contains('virada') !== giratoria.classList.contains('outro-lado');
+      const base = deCostas ? 180 : 0;
       giratoria.animate(
         [{ transform: `rotateY(${base}deg)` }, { transform: `rotateY(${base + 360}deg)` }],
         { duration: 850, easing: 'cubic-bezier(0.22, 0.8, 0.2, 1)' },

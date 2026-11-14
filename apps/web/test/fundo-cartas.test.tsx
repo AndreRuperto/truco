@@ -98,7 +98,8 @@ describe('giro 3D no lobby', () => {
     Element.prototype.getAnimations = animacoes;
     const rectOriginal = Element.prototype.getBoundingClientRect;
     Element.prototype.getBoundingClientRect = function () {
-      if ((this as Element).hasAttribute('data-solta')) {
+      // A carta desenhada (camada da flutuação) cobre o ponto do clique.
+      if ((this as Element).classList.contains('carta-solta-flutua')) {
         return { x: 0, y: 0, left: 0, top: 0, right: 200, bottom: 200, width: 200, height: 200, toJSON: () => ({}) };
       }
       return rectOriginal.call(this);
@@ -115,6 +116,118 @@ describe('giro 3D no lobby', () => {
       window.matchMedia = matchMediaOriginal;
       Element.prototype.animate = animateOriginal;
       Element.prototype.getAnimations = getAnimationsOriginal;
+      Element.prototype.getBoundingClientRect = rectOriginal;
+    }
+  });
+});
+
+describe('duplo clique segue a carta onde ela está na tela', () => {
+  test('vale o lugar visível (empurrada pelo mouse, flutuando), não a posição de origem', () => {
+    const matchMediaOriginal = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as typeof window.matchMedia;
+    const animar = vi.fn().mockReturnValue({ cancel: vi.fn() });
+    const animateOriginal = Element.prototype.animate;
+    const getAnimationsOriginal = Element.prototype.getAnimations;
+    Element.prototype.animate = animar;
+    Element.prototype.getAnimations = vi.fn().mockReturnValue([]);
+    const rectOriginal = Element.prototype.getBoundingClientRect;
+    const caixa = (l: number, t: number) => ({ x: l, y: t, left: l, top: t, right: l + 100, bottom: t + 145, width: 100, height: 145, toJSON: () => ({}) });
+    const longe = { x: -999, y: -999, left: -999, top: -999, right: -990, bottom: -990, width: 9, height: 9, toJSON: () => ({}) };
+    Element.prototype.getBoundingClientRect = function () {
+      const el = this as Element;
+      const solta = el.closest('[data-solta]');
+      // Só a primeira carta está na tela: origem em (0,0), mas desenhada em (60,0) pela mexida do mouse.
+      if (!solta || solta !== document.querySelector('[data-solta]')) return el.hasAttribute('data-solta') || solta ? longe : rectOriginal.call(el);
+      if (el.hasAttribute('data-solta')) return caixa(0, 0);
+      return caixa(60, 0);
+    };
+    try {
+      const { container } = render(<FundoCartas />);
+      const camada = container.querySelector('.fundo-cartas')!;
+      const antes = animar.mock.calls.length;
+      // Na ponta direita da carta como ela aparece (fora da posição de origem): gira.
+      fireEvent.dblClick(camada, { clientX: 150, clientY: 70 });
+      expect(animar).toHaveBeenCalledTimes(antes + 1);
+      // No espaço vazio de onde ela saiu: não gira.
+      fireEvent.dblClick(camada, { clientX: 20, clientY: 70 });
+      expect(animar).toHaveBeenCalledTimes(antes + 1);
+    } finally {
+      window.matchMedia = matchMediaOriginal;
+      Element.prototype.animate = animateOriginal;
+      Element.prototype.getAnimations = getAnimationsOriginal;
+      Element.prototype.getBoundingClientRect = rectOriginal;
+    }
+  });
+});
+
+describe('duplo clique pergunta ao navegador qual carta está desenhada no ponto', () => {
+  test('gira a carta que o navegador diz estar no ponto (inclinada, empurrada), mesmo com outra na frente pela caixa', () => {
+    const matchMediaOriginal = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as typeof window.matchMedia;
+    const animateOriginal = Element.prototype.animate;
+    const getAnimationsOriginal = Element.prototype.getAnimations;
+    const animados: Element[] = [];
+    Element.prototype.animate = function (this: Element) {
+      animados.push(this);
+      return { cancel: vi.fn() } as unknown as Animation;
+    };
+    Element.prototype.getAnimations = vi.fn().mockReturnValue([]);
+    const doc = document as Document & { elementsFromPoint?: Document['elementsFromPoint'] };
+    const original = doc.elementsFromPoint;
+    let medindo: boolean[] = [];
+    try {
+      const { container } = render(<FundoCartas />);
+      const camada = container.querySelector('.fundo-cartas')!;
+      const soltas = container.querySelectorAll('[data-solta]');
+      const terceira = soltas[2];
+      doc.elementsFromPoint = vi.fn(() => {
+        // Só durante a medição as cartas recebem o ponteiro (classe `medindo` na camada).
+        medindo.push(camada.classList.contains('medindo'));
+        return [document.body, terceira.querySelector('.carta')!];
+      }) as Document['elementsFromPoint'];
+      animados.length = 0;
+      medindo = [];
+      fireEvent.dblClick(camada, { clientX: 10, clientY: 10 });
+      expect(animados).toEqual([terceira.querySelector('.carta-solta-gira')]);
+      expect(medindo).toEqual([true]);
+      expect(camada).not.toHaveClass('medindo');
+      // Nada do fundo no ponto: nenhuma gira.
+      doc.elementsFromPoint = vi.fn(() => [document.body]) as Document['elementsFromPoint'];
+      fireEvent.dblClick(camada, { clientX: 10, clientY: 10 });
+      expect(animados).toHaveLength(1);
+    } finally {
+      doc.elementsFromPoint = original as Document['elementsFromPoint'];
+      window.matchMedia = matchMediaOriginal;
+      Element.prototype.animate = animateOriginal;
+      Element.prototype.getAnimations = getAnimationsOriginal;
+    }
+  });
+});
+
+describe('duplo clique com movimento reduzido', () => {
+  test('vira a carta na hora (sem animação) e desvira no próximo duplo clique', () => {
+    const matchMediaOriginal = window.matchMedia;
+    window.matchMedia = vi.fn((q: string) => ({ matches: q.includes('reduce') })) as unknown as typeof window.matchMedia;
+    const animateOriginal = Element.prototype.animate;
+    const animar = vi.fn();
+    Element.prototype.animate = animar;
+    const rectOriginal = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () {
+      if ((this as Element).classList.contains('carta-solta-flutua') && (this as Element).closest('[data-solta]') === document.querySelector('[data-solta]'))
+        return { x: 0, y: 0, left: 0, top: 0, right: 200, bottom: 200, width: 200, height: 200, toJSON: () => ({}) };
+      return { x: -999, y: -999, left: -999, top: -999, right: -990, bottom: -990, width: 9, height: 9, toJSON: () => ({}) };
+    };
+    try {
+      const { container } = render(<FundoCartas />);
+      const gira = container.querySelector('[data-solta] .carta-solta-gira')!;
+      fireEvent.dblClick(container.querySelector('.fundo-cartas')!, { clientX: 100, clientY: 100 });
+      expect(gira).toHaveClass('outro-lado');
+      fireEvent.dblClick(container.querySelector('.fundo-cartas')!, { clientX: 100, clientY: 100 });
+      expect(gira).not.toHaveClass('outro-lado');
+      expect(animar).not.toHaveBeenCalled();
+    } finally {
+      window.matchMedia = matchMediaOriginal;
+      Element.prototype.animate = animateOriginal;
       Element.prototype.getBoundingClientRect = rectOriginal;
     }
   });
