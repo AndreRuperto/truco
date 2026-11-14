@@ -5,23 +5,29 @@ import { msgEstado } from './fixtures';
 
 const privada = () => msgEstado(null, 0, { modo: 'privada' });
 const renderizar = (aoIniciar = vi.fn()) =>
-  render(<SalaEspera msg={privada()} aoIniciar={aoIniciar} aoSair={vi.fn()} />);
+  render(<SalaEspera msg={privada()} aoIniciar={aoIniciar} aoSair={vi.fn()} floreios />);
 
 afterEach(() => vi.useRealTimers());
 
 describe('Baralho de treino na sala privada', () => {
-  test('aparece apenas em mesa privada e oferece quatro truques', () => {
+  test('sem a habilidade Floreios, a sala privada não mostra os truques', () => {
+    render(<SalaEspera msg={privada()} aoIniciar={vi.fn()} aoSair={vi.fn()} />);
+    expect(screen.queryByTestId('baralho-treino')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Truques de embaralhamento' })).toBeNull();
+  });
+
+  test('com Floreios: aparece apenas em mesa privada e oferece quatro truques', () => {
     const { rerender } = renderizar();
     const grupo = screen.getByRole('group', { name: 'Truques de embaralhamento' });
     expect(grupo.querySelectorAll('button')).toHaveLength(4);
     expect(screen.getByTestId('baralho-treino').querySelectorAll('.baralho-treino-carta')).toHaveLength(24);
     expect(screen.getByText(/não mexe nas cartas da partida/i)).toBeInTheDocument();
 
-    rerender(<SalaEspera msg={msgEstado(null, 0, { modo: 'ranqueada' })} aoIniciar={vi.fn()} aoSair={vi.fn()} />);
+    rerender(<SalaEspera msg={msgEstado(null, 0, { modo: 'ranqueada' })} aoIniciar={vi.fn()} aoSair={vi.fn()} floreios />);
     expect(screen.queryByTestId('baralho-treino')).toBeNull();
     expect(screen.queryByRole('group', { name: 'Truques de embaralhamento' })).toBeNull();
 
-    rerender(<SalaEspera msg={msgEstado(null, 0, { modo: 'classica' })} aoIniciar={vi.fn()} aoSair={vi.fn()} />);
+    rerender(<SalaEspera msg={msgEstado(null, 0, { modo: 'classica' })} aoIniciar={vi.fn()} aoSair={vi.fn()} floreios />);
     expect(screen.queryByTestId('baralho-treino')).toBeNull();
   });
 
@@ -61,7 +67,7 @@ describe('Baralho de treino na sala privada', () => {
     expect(baralho.querySelector('.baralho-treino-pilha')).not.toBe(pilhaPrimeira);
     expect(screen.getByText('Cascata com ponte · 2 movimentos')).toBeInTheDocument();
 
-    rerender(<SalaEspera msg={msgEstado(null, 0, { modo: 'privada', humanosEsperados: 3 })} aoIniciar={aoIniciar} aoSair={vi.fn()} />);
+    rerender(<SalaEspera msg={msgEstado(null, 0, { modo: 'privada', humanosEsperados: 3 })} aoIniciar={aoIniciar} aoSair={vi.fn()} floreios />);
     expect(screen.getByText('Cascata com ponte · 2 movimentos')).toBeInTheDocument();
 
     act(() => vi.advanceTimersByTime(1800));

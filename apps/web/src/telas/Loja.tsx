@@ -14,6 +14,7 @@ export const NOME_ABA: Record<AbaLoja, string> = {
   moldura: 'Moldura',
   avatar: 'Avatar',
   tampo: 'Mesa',
+  habilidade: 'Habilidades',
   pila: 'Comprar Pila',
 };
 

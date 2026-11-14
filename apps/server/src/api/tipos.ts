@@ -205,6 +205,7 @@ export type {
   Slot,
   SuperficieTampo,
   VisualAvatar,
+  VisualHabilidade,
   VisualItem,
   VisualMoldura,
   VisualRoupa,
@@ -243,7 +244,7 @@ export interface CarteiraApi {
   fichas: number;
   pila: number;
   inventario: string[];
-  equipados: Partial<Record<'verso' | 'roupa' | 'moldura' | 'tampo', string>>;
+  equipados: Partial<Record<'verso' | 'roupa' | 'moldura' | 'tampo' | 'habilidade', string>>;
   /** Avatar da conta (`pronto:`, `loja:` ou imagem), para a loja saber qual está em uso. */
   avatar: string | null;
   /** Bônus aplicados nesta leitura (cadastro, diário, resgate), para o aviso na tela. */

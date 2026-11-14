@@ -17,7 +17,7 @@ export type Rota =
   | { tela: 'lojaObrigado'; pedido: string | null };
 
 /** Abas da loja: os slots de itens e os pacotes de Pila. */
-export const ABAS_LOJA = ['verso', 'roupa', 'moldura', 'avatar', 'tampo', 'pila'] as const;
+export const ABAS_LOJA = ['verso', 'roupa', 'moldura', 'avatar', 'tampo', 'habilidade', 'pila'] as const;
 export type AbaLoja = (typeof ABAS_LOJA)[number];
 
 export const ABAS_ADMIN = ['resumo', 'usuarios', 'pedidos', 'auditoria', 'mesas', 'partidas'] as const;

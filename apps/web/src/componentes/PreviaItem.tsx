@@ -1,4 +1,4 @@
-import type { ItemLoja, Slot, UsuarioApi, VisualRoupa, VisualTampo, VisualVerso } from '@truco/api';
+import type { ItemLoja, Slot, UsuarioApi, VisualHabilidade, VisualRoupa, VisualTampo, VisualVerso } from '@truco/api';
 import { estiloVerso } from '../logica/lojaItens';
 import { Avatar } from './Avatar';
 import { Personagem } from './Personagem';
@@ -33,6 +33,17 @@ export function PreviaItem({ item, usuario }: { item: ItemLoja; usuario: Usuario
     return (
       <span className="loja-previa previa-avatar" aria-hidden="true">
         <Avatar apelido={item.nome} avatar={`loja:${item.id}`} tamanho={64} />
+      </span>
+    );
+  }
+  if (slot === 'habilidade') {
+    // Floreios: o leque de cartas; o de série, o monte quieto.
+    const leque = (item.visual as VisualHabilidade).floreios;
+    return (
+      <span className={`loja-previa previa-habilidade${leque ? ' leque' : ''}`} aria-hidden="true">
+        <span className="carta verso" />
+        <span className="carta verso" />
+        <span className="carta verso" />
       </span>
     );
   }

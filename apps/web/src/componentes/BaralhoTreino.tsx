@@ -1,8 +1,8 @@
 import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 
 /**
- * Passatempo inteiramente local da sala privada ou durante o ritual da partida.
- * Não usa nem embaralha o monte real da partida, não envia ações ao servidor.
+ * Floreios de embaralhar (habilidade da loja). Na sala privada são só passatempo; na partida, na sua
+ * vez de embaralhar, cada truque também embaralha o monte de verdade (`aoTruque` manda a ação).
  */
 export type TruqueBaralho = 'cascata' | 'corte' | 'leque' | 'mola';
 
@@ -32,7 +32,7 @@ export interface TreinoBaralho {
 }
 
 /** Reinicia a animação até quando o mesmo botão é pressionado rapidamente. */
-export function useBaralhoTreino(): TreinoBaralho {
+export function useBaralhoTreino(aoTruque?: (truque: TruqueBaralho) => void): TreinoBaralho {
   const [animacao, setAnimacao] = useState<TreinoBaralho['animacao']>(null);
   const [total, setTotal] = useState(0);
   const [ultimoTruque, setUltimoTruque] = useState<TruqueBaralho | null>(null);
@@ -41,7 +41,8 @@ export function useBaralhoTreino(): TreinoBaralho {
     setAnimacao((anterior) => ({ truque, sequencia: (anterior?.sequencia ?? 0) + 1 }));
     setTotal((n) => n + 1);
     setUltimoTruque(truque);
-  }, []);
+    aoTruque?.(truque);
+  }, [aoTruque]);
 
   useEffect(() => {
     if (!animacao) return;
@@ -108,10 +109,10 @@ export function ComandosBaralhoTreino({ treino, contexto = 'espera' }: { treino:
   return (
     <section className="sala-truques" aria-label={contexto === 'partida' ? 'Floreios enquanto embaralha' : 'Brinque com o baralho'}>
       <div className="sala-truques-topo">
-        <h2>{contexto === 'partida' ? 'Seu baralho, seus floreios' : 'Brinque com o baralho'}</h2>
-        <span>Só de treino</span>
+        <h2>{contexto === 'partida' ? 'Seus floreios' : 'Brinque com o baralho'}</h2>
+        {contexto === 'espera' && <span>Só de treino</span>}
       </div>
-      <p>{contexto === 'partida' ? 'Experimente os quatro movimentos. Eles são visuais: para avançar, use a ação de embaralhar da partida.' : 'Enquanto a turma não chega, faça uns floreios. Isso não mexe nas cartas da partida.'}</p>
+      <p>{contexto === 'partida' ? 'Cada floreio embaralha o monte de verdade. Toque no baralho ou escolha um truque.' : 'Enquanto a turma não chega, faça uns floreios. Isso não mexe nas cartas da partida.'}</p>
       <div className="sala-truques-botoes" role="group" aria-label="Truques de embaralhamento">
         {MOVIMENTOS.map((truque) => (
           <button

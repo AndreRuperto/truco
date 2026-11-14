@@ -79,6 +79,16 @@ describe('loja: equipar e visual', () => {
     expect((await visualDe(b.db, [id])).get(id)!.verso).toEqual(itemPorId('verso-classico')!.visual);
   });
 
+  test('Floreios: só equipa depois de comprar; equipado entra em equipados.habilidade', async () => {
+    const id = await jogador(6000, 0);
+    expect(await equipar(b.db, id, 'habilidade', 'habilidade-floreios')).toBe('nao-tem');
+    await comprarItem(b.db, id, 'habilidade-floreios');
+    expect(await equipar(b.db, id, 'habilidade', 'habilidade-floreios')).toBe('ok');
+    expect((await equipadosDe(b.db, id)).habilidade).toBe('habilidade-floreios');
+    expect(await equipar(b.db, id, 'habilidade', null)).toBe('ok');
+    expect((await equipadosDe(b.db, id)).habilidade).toBeUndefined();
+  });
+
   test('avatar da loja vai para usuarios.avatar', async () => {
     const id = await jogador(1000, 200);
     expect(await equipar(b.db, id, 'avatar', 'avatar-violeiro')).toBe('nao-tem');

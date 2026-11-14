@@ -57,18 +57,18 @@ describe('visualização da partida', () => {
   });
 });
 
-describe('floreios do baralho na partida', () => {
-  test('embaralhador usa os quatro movimentos sem alterar o baralho real', async () => {
+describe('floreios do baralho na partida (habilidade da loja)', () => {
+  test('com Floreios: cada truque embaralha de verdade (manda a ação) e anima o monte', async () => {
     const user = userEvent.setup();
     const s = noRitual(PAULISTA);
     const minha = s.ritual!.embaralhador;
     const a = acoes();
-    const { rerender } = render(<TelaMesa snap={snap(msgEstado(s, minha))} acoes={a} />);
-    const treino = screen.getByTestId('treino-na-partida');
-
-    expect(within(treino).getByTestId('baralho-treino').querySelectorAll('.baralho-treino-carta')).toHaveLength(24);
-    const opcoes = within(treino).getByRole('group', { name: 'Truques de embaralhamento' });
+    const { rerender } = render(<TelaMesa snap={snap(msgEstado(s, minha))} acoes={a} floreios />);
+    const painel = screen.getByTestId('treino-na-partida');
+    expect(within(painel).queryByText('Só de treino')).toBeNull();
+    const opcoes = within(painel).getByRole('group', { name: 'Truques de embaralhamento' });
     expect(within(opcoes).getAllByRole('button')).toHaveLength(4);
+    let n = 0;
     for (const [rotulo, movimento] of [
       ['Cascata com ponte', 'cascata'],
       ['Corte triplo', 'corte'],
@@ -76,20 +76,28 @@ describe('floreios do baralho na partida', () => {
       ['Mola de cartas', 'mola'],
     ] as const) {
       await user.click(within(opcoes).getByRole('button', { name: rotulo }));
-      expect(within(treino).getByTestId('baralho-treino')).toHaveAttribute('data-movimento', movimento);
+      n++;
+      expect(within(painel).getByTestId('baralho-treino')).toHaveAttribute('data-movimento', movimento);
+      expect(a.enviarAcao).toHaveBeenCalledTimes(n);
+      expect(a.enviarAcao).toHaveBeenLastCalledWith({ tipo: 'embaralhar', cadeira: minha });
     }
-    expect(a.enviarAcao).not.toHaveBeenCalled();
-    expect(within(treino).getByText(/4 movimentos/)).toBeInTheDocument();
 
-    // Na distribuição o passatempo sai sozinho, sem impedir ações do motor.
-    rerender(<TelaMesa snap={snap(msgEstado(distribuida(PAULISTA), minha))} acoes={a} />);
+    // Na distribuição o painel sai sozinho.
+    rerender(<TelaMesa snap={snap(msgEstado(distribuida(PAULISTA), minha))} acoes={a} floreios />);
     expect(screen.queryByTestId('treino-na-partida')).toBeNull();
+  });
+
+  test('sem a habilidade: nada de truques, embaralha pelo botão normal', () => {
+    const s = noRitual(PAULISTA);
+    render(<TelaMesa snap={snap(msgEstado(s, s.ritual!.embaralhador))} acoes={acoes()} />);
+    expect(screen.queryByTestId('treino-na-partida')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Embaralhar' })).toBeInTheDocument();
   });
 
   test('quem não está embaralhando não ganha controles que confundem a vez', () => {
     const s = noRitual(PAULISTA);
     const outra = ((s.ritual!.embaralhador + 1) % 4) as 0 | 1 | 2 | 3;
-    render(<TelaMesa snap={snap(msgEstado(s, outra))} acoes={acoes()} />);
+    render(<TelaMesa snap={snap(msgEstado(s, outra))} acoes={acoes()} floreios />);
     expect(screen.queryByTestId('treino-na-partida')).toBeNull();
     expect(screen.getByTestId('monte')).toBeInTheDocument();
   });
