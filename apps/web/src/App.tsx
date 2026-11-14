@@ -88,8 +88,14 @@ export function App() {
   // O catálogo diz as cores e a estampa de cada item: carrega na loja e quando há baralho equipado (fundo de cartas).
   const idVerso = cart.carteira?.equipados.verso;
   useEffect(() => {
-    if (rota.tela === 'loja' || idVerso) void carteira.carregarCatalogo();
+    if (rota.tela === 'loja' || rota.tela === 'perfil' || idVerso) void carteira.carregarCatalogo();
   }, [rota.tela, idVerso]);
+  // Depois de comprar/equipar (loja e perfil): relê a carteira e, se o avatar mudou, a sessão.
+  const recarregarConta = async () => {
+    await carteira.carregar();
+    const eu = await api.eu().catch(() => null);
+    if (eu?.usuario) sessao.definirUsuario(eu.usuario);
+  };
   const versoFundo = estiloVerso(versoEquipado(cart.catalogo, idVerso));
   // O aviso do bônus vale para a tela em que apareceu: ao trocar de tela ele some.
   const telaDoAviso = useRef<string | null>(null);
@@ -231,6 +237,7 @@ export function App() {
               usuario={ses.usuario}
               googleClientId={ses.config.google}
               aoTrocarApelido={(u) => sessao.definirUsuario(u)}
+              visual={ses.usuario ? { catalogo: cart.catalogo, carteira: cart.carteira, api, aoMudar: recarregarConta } : undefined}
               aoExcluir={() => {
                 sessao.definirUsuario(null);
                 navegar({ tela: 'inicio' });
@@ -301,12 +308,7 @@ export function App() {
             carteira={cart.carteira}
             erroCatalogo={cart.catalogo ? null : cart.erro}
             aoTentarDeNovo={() => void carteira.carregarCatalogo()}
-            aoMudar={async () => {
-              await carteira.carregar();
-              // O avatar da loja fica na conta: a sessão precisa da foto nova.
-              const eu = await api.eu().catch(() => null);
-              if (eu?.usuario) sessao.definirUsuario(eu.usuario);
-            }}
+            aoMudar={recarregarConta}
           />
         );
         break;

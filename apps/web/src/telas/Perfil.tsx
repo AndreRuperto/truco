@@ -1,10 +1,11 @@
-import type { Conquista, RatingVariante, UsuarioApi } from '@truco/api';
+import type { CarteiraApi, CatalogoApi, Conquista, RatingVariante, UsuarioApi } from '@truco/api';
 import type { Variante } from '@truco/engine';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { AVATARES_PRONTOS } from '@truco/api';
 import { Avatar, DesenhoAvatar, NOME_AVATAR, reduzirFoto } from '../componentes/Avatar';
 import { BotaoGoogle } from '../componentes/BotaoGoogle';
 import { PreferenciasTema } from '../componentes/PreferenciasTema';
+import { SeuVisual } from '../componentes/SeuVisual';
 import { NOME_VARIANTE } from '../logica/conta';
 import type { Api } from '../rede/api';
 import { useCarregar } from '../rede/hooks';
@@ -22,9 +23,11 @@ interface Props {
   aoTrocarApelido?: (u: UsuarioApi) => void;
   /** A conta foi excluída: a sessão acabou. */
   aoExcluir?: () => void;
+  /** Itens da conta para o "Seu visual" (moldura, baralho, roupa, mesa, avatar da loja). Sem eles, o bloco não aparece. */
+  visual?: { catalogo: CatalogoApi | null; carteira: CarteiraApi | null; api: Pick<Api, 'loja'>; aoMudar: () => Promise<void> };
 }
 
-export function TelaPerfil({ api, id, editar = false, usuario = null, googleClientId = null, aoTrocarApelido, aoExcluir }: Props) {
+export function TelaPerfil({ api, id, editar = false, usuario = null, googleClientId = null, aoTrocarApelido, aoExcluir, visual }: Props) {
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.perfil(id ?? undefined), [id]);
   return (
     <main className="tela-conta pagina-perfil">
@@ -50,6 +53,7 @@ export function TelaPerfil({ api, id, editar = false, usuario = null, googleClie
               editar={editar}
               api={api}
               googleClientId={googleClientId}
+              visual={visual}
               aoSalvar={(u) => {
                 aoTrocarApelido?.(u);
                 recarregar();
@@ -118,6 +122,7 @@ function EditarPerfil({
   editar,
   api,
   googleClientId,
+  visual,
   aoSalvar,
 }: {
   apelido: string;
@@ -125,6 +130,7 @@ function EditarPerfil({
   editar: boolean;
   api: Pick<Api, 'trocarApelido'> & Partial<Pick<Api, 'conectarGoogle' | 'trocarAvatar'>>;
   googleClientId: string | null;
+  visual?: Props['visual'];
   aoSalvar: (u: UsuarioApi) => void;
 }) {
   const bloco = useRef<HTMLElement>(null);
@@ -147,6 +153,7 @@ function EditarPerfil({
       <h2 id="titulo-editar-perfil">Editar perfil</h2>
       {usuario && api.trocarAvatar && <EscolherAvatar usuario={usuario} trocar={api.trocarAvatar} aoSalvar={aoSalvar} />}
       <FormApelido atual={apelido} api={api} aoSalvar={aoSalvar} />
+      {usuario && visual && <SeuVisual usuario={usuario} {...visual} />}
       <PreferenciasTema />
       {usuario && (
         <dl className="dados-conta">

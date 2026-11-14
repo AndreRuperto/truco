@@ -645,3 +645,112 @@
     gap: 3px;
   }
 }
+
+/* ---------- "Seu visual" no Editar perfil (componentes/SeuVisual.tsx) ----------
+   Cartões pequenos com a prévia da loja; o rádio fica invisível e o cartão marcado ganha borda de giz amarelo. */
+.seu-visual {
+  /* O Editar perfil é sempre lousa (nos dois temas): textos e links em giz. */
+  --texto: var(--giz);
+  --texto-suave: var(--giz-suave);
+  --link: var(--giz);
+  color: var(--giz);
+  display: grid;
+  gap: var(--e3);
+  margin-top: var(--e4);
+  padding: var(--e3) var(--e4) var(--e4);
+  border: 1px solid var(--form-borda, var(--lousa-borda));
+  border-radius: var(--raio-painel);
+}
+.seu-visual h3 {
+  margin: 0;
+}
+.seu-visual-dica {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: var(--t-1);
+}
+.seu-visual-grupo {
+  display: grid;
+  gap: var(--e1);
+}
+.seu-visual-opcoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: var(--e2);
+}
+.seu-visual-nome {
+  grid-column: 1 / -1;
+  font-size: var(--t-1);
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+.seu-visual-opcao {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 4px 4px 6px;
+  border: 2px solid transparent;
+  border-radius: var(--raio-botao);
+  background: color-mix(in srgb, var(--giz) 6%, transparent);
+  cursor: pointer;
+}
+.seu-visual-opcao:hover {
+  background: color-mix(in srgb, var(--giz) 12%, transparent);
+}
+.seu-visual-opcao input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.seu-visual-opcao:has(input:checked) {
+  border-color: var(--grito);
+  background: color-mix(in srgb, var(--grito) 14%, transparent);
+}
+.seu-visual-opcao:has(input:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+.seu-visual-opcao:has(input:disabled) {
+  cursor: progress;
+}
+.seu-visual-opcao .loja-previa {
+  height: 72px;
+}
+.seu-visual-opcao .previa-verso {
+  --carta-l: 36px;
+}
+.seu-visual-opcao .previa-roupa .personagem {
+  width: 72px;
+  height: 72px;
+}
+.seu-visual-opcao .previa-tampo .amostra-mesa {
+  width: 76px;
+  height: 46px;
+}
+.seu-visual-opcao .previa-moldura .avatar,
+.seu-visual-opcao .previa-avatar .avatar {
+  scale: .8;
+}
+.seu-visual-rotulo {
+  font-size: var(--t-1);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+.seu-visual-mais {
+  justify-self: start;
+  color: var(--giz);
+  font-size: var(--t-1);
+  font-weight: 700;
+}
+.seu-visual-ok {
+  margin: 0;
+  color: var(--texto);
+  font-weight: 700;
+}
