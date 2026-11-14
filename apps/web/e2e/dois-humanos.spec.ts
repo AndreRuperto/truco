@@ -188,10 +188,15 @@ test('quatro humanos completam partida até o placar final', async ({ browser })
         }
         const aceitar = page.getByRole('button', { name: 'Aceitar', exact: true });
         const jogarMao = page.getByRole('button', { name: 'Jogar a mão', exact: true });
+        // Cangada: cada um mostra a sua na vez dele (sem isso, cada carta espera o prazo de 20 s).
+        const mostrar = page.getByRole('button', { name: /^(Mostrar a sua|Abrir a de baixo)$/ });
         const carta = page.getByTestId('minha-mao').locator('button.carta-botao:enabled').first();
         try {
           if (await aceitar.isVisible()) {
             await aceitar.click({ timeout: 800 });
+            acoes++;
+          } else if (await mostrar.isVisible()) {
+            await mostrar.click({ timeout: 800 });
             acoes++;
           } else if (await jogarMao.isVisible()) {
             await jogarMao.click({ timeout: 800 });
