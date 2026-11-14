@@ -33,7 +33,7 @@ test('bônus de cadastro, Pila pelo checkout (simulado), verso comprado e loja s
   const ana = await entrar(browser, 'ana.loja@teste.dev');
   try {
     // Cadastro (1.000) + bônus do dia (100), avisados na faixa.
-    await expect(ana.getByTestId('cabecalho-saldo')).toContainText('1.100 F');
+    await expect(ana.getByTestId('cabecalho-saldo')).toHaveAttribute('aria-label', 'Saldo: 1.100 Fichas e 0 Pila');
     await expect(ana.getByText(/Bem-vindo ao boteco/)).toBeVisible();
 
     await ana.goto('/#/loja/moldura');
@@ -43,7 +43,7 @@ test('bônus de cadastro, Pila pelo checkout (simulado), verso comprado e loja s
     await ana.getByRole('button', { name: /Comprar Bolso/ }).click();
     // O checkout simulado volta pelo retorno do servidor, que confere o pagamento.
     await expect(ana.getByText(/Pagamento confirmado: 220 Pila/)).toBeVisible({ timeout: 15_000 });
-    await expect(ana.getByTestId('cabecalho-saldo')).toContainText('220 P');
+    await expect(ana.getByTestId('cabecalho-saldo')).toHaveAttribute('aria-label', 'Saldo: 1.100 Fichas e 220 Pila');
 
     await ana.goto('/#/loja');
     await ana.getByTestId('item-verso-boteco').getByRole('button', { name: 'Comprar' }).click();
@@ -81,9 +81,9 @@ test('mesa privada valendo 100 Fichas: convidado sem conta é barrado e os dois 
   const bia = await entrar(browser, 'bia.cacife@teste.dev');
   const visitante = await browser.newContext({ ...devices['Pixel 7'], baseURL: WEB });
   try {
-    await expect(bia.getByTestId('cabecalho-saldo')).toContainText('1.100 F');
+    await expect(bia.getByTestId('cabecalho-saldo')).toHaveAttribute('aria-label', 'Saldo: 1.100 Fichas e 0 Pila');
     await ana.goto('/#/');
-    await expect(ana.getByTestId('cabecalho-saldo')).toContainText('1.100 F');
+    await expect(ana.getByTestId('cabecalho-saldo')).toHaveAttribute('aria-label', 'Saldo: 1.100 Fichas e 0 Pila');
     await ana.getByLabel(/Mesa privada/).check();
     await ana.getByText('Regras da mesa').click();
     await ana.getByLabel('Valendo Fichas').selectOption('100');

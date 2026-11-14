@@ -2,6 +2,7 @@ import type { UsuarioApi } from '@truco/api';
 import { useEffect, useId, useRef, useState } from 'react';
 import { formatarSaldo } from '../logica/lojaItens';
 import { Avatar } from './Avatar';
+import { IconeMoeda } from './IconeMoeda';
 
 interface Props {
   /** A sessão já respondeu; antes disso a área da conta fica escondida (sem "Entrar" piscando). */
@@ -26,8 +27,14 @@ export function Cabecalho({ pronta, usuario, aoSair, atual, saldos, moldura }: P
       <a href="#/loja" aria-current={aba('loja')}>Loja</a>
       {usuario && saldos && (
         <a href="#/loja" className="cabecalho-saldo" aria-label={`Saldo: ${formatarSaldo(saldos.fichas)} Fichas e ${formatarSaldo(saldos.pila)} Pila`} data-testid="cabecalho-saldo">
-          <span className="ficha">{formatarSaldo(saldos.fichas)} F</span>
-          <span className="pila">{formatarSaldo(saldos.pila)} P</span>
+          <span className="ficha">
+            <IconeMoeda moeda="fichas" />
+            <span data-testid="saldo-cab-fichas">{formatarSaldo(saldos.fichas)}</span>
+          </span>
+          <span className="pila">
+            <IconeMoeda moeda="pila" />
+            <span data-testid="saldo-cab-pila">{formatarSaldo(saldos.pila)}</span>
+          </span>
         </a>
       )}
       {!pronta ? null : usuario ? (
