@@ -538,6 +538,10 @@ button:disabled {
   overflow: hidden;
   pointer-events: none;
 }
+/* Só durante a medição do duplo clique (FundoCartas, cartaNoPonto): as cartas respondem ao ponteiro. */
+.fundo-cartas.medindo .carta {
+  pointer-events: auto;
+}
 .carta-solta {
   --carta-l: calc(clamp(56px, 11vw, 112px) * (0.55 + var(--d) * 0.85));
   position: absolute;
@@ -576,6 +580,13 @@ button:disabled {
 /* Algumas ficam com o verso para cima: o baralho equipado aparece no fundo (FundoCartas, `virada`). */
 .carta-solta-gira.virada {
   transform: rotateY(180deg);
+}
+/* Duplo clique com movimento reduzido: troca o lado na hora, sem girar (FundoCartas). */
+.carta-solta-gira.outro-lado {
+  transform: rotateY(180deg);
+}
+.carta-solta-gira.virada.outro-lado {
+  transform: none;
 }
 .carta-solta .carta {
   box-shadow:
