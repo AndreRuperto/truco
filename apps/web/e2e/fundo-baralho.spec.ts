@@ -4,9 +4,11 @@ import { type Browser, devices, expect, type Page, test } from '@playwright/test
 const WEB = 'http://127.0.0.1:5180';
 const API = 'http://127.0.0.1:2570';
 
-async function entrar(browser: Browser, email: string, scheme: 'light' | 'dark'): Promise<Page> {
+async function entrar(browser: Browser, email: string, scheme: 'light' | 'dark', ip: string): Promise<Page> {
   const contexto = await browser.newContext({ ...devices['Pixel 7'], colorScheme: scheme, reducedMotion: 'reduce', baseURL: WEB });
   const page = await contexto.newPage();
+  // IP próprio para o limite de links mágicos por IP (5 a cada 15 min no servidor), como em contraste.spec.ts.
+  await page.route('**/api/auth/**', (r) => r.continue({ headers: { ...r.request().headers(), 'x-forwarded-for': ip } }));
   await page.goto('/#/entrar');
   await page.getByLabel('E-mail').fill(email);
   await page.getByRole('button', { name: 'Enviar link' }).click();
@@ -28,7 +30,7 @@ const fundoDoVerso = (page: Page) =>
 
 test('baralho equipado aparece no fundo da tela inicial e troca junto com a loja', async ({ browser }) => {
   // admin.baralho é admin no E2E (playwright.config.ts): tem todos os itens sem comprar.
-  const page = await entrar(browser, 'admin.baralho@teste.dev', 'dark');
+  const page = await entrar(browser, 'admin.baralho@teste.dev', 'dark', '192.0.2.87');
   try {
     const fundo = page.getByTestId('fundo-cartas');
     await page.goto('/#/');

@@ -12,9 +12,11 @@ const TAMANHOS = [
   { width: 1280, height: 800 },
 ];
 
-async function entrar(browser: Browser, email: string, scheme: 'light' | 'dark'): Promise<Page> {
+async function entrar(browser: Browser, email: string, scheme: 'light' | 'dark', ip: string): Promise<Page> {
   const contexto = await browser.newContext({ ...devices['Pixel 7'], colorScheme: scheme, baseURL: WEB });
   const page = await contexto.newPage();
+  // IP próprio para o limite de links mágicos por IP (5 a cada 15 min no servidor), como em contraste.spec.ts.
+  await page.route('**/api/auth/**', (r) => r.continue({ headers: { ...r.request().headers(), 'x-forwarded-for': ip } }));
   await page.goto('/#/entrar');
   await page.getByLabel('E-mail').fill(email);
   await page.getByRole('button', { name: 'Enviar link' }).click();
@@ -28,7 +30,7 @@ async function entrar(browser: Browser, email: string, scheme: 'light' | 'dark')
 
 for (const scheme of ['light', 'dark'] as const) {
   test(`saldo com ícones no canto direito, junto da conta (${scheme})`, async ({ browser }) => {
-    const page = await entrar(browser, `saldo.${scheme}@teste.dev`, scheme);
+    const page = await entrar(browser, `saldo.${scheme}@teste.dev`, scheme, scheme === 'light' ? '192.0.2.81' : '192.0.2.82');
     try {
       for (const t of TAMANHOS) {
         await page.setViewportSize(t);
