@@ -83,6 +83,11 @@ describe('catálogo', () => {
   it('todo slot tem um item grátis (menos avatar, que usa os prontos)', () => {
     for (const s of SLOTS) if (s !== 'avatar') expect(gratisDoSlot(s)?.preco).toBeNull();
   });
+  it('avatares da loja: os seis com desenho no web (apps/web/test/avatares-loja.test.tsx), todos pagos', () => {
+    const avatares = ITENS.filter((i) => i.slot === 'avatar');
+    expect(avatares.map((i) => i.id)).toEqual(['avatar-violeiro', 'avatar-garrafa', 'avatar-caramelo', 'avatar-mao', 'avatar-dono', 'avatar-vo']);
+    for (const a of avatares) expect(a.preco).not.toBeNull();
+  });
   it('itens de Fichas não estão à venda por Pila e vice-versa (um preço só)', () => {
     expect(ITENS.some((i) => i.preco?.moeda === 'fichas')).toBe(true);
     expect(ITENS.some((i) => i.preco?.moeda === 'pila')).toBe(true);
