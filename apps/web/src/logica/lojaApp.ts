@@ -1,5 +1,4 @@
 import type { CarteiraApi, CatalogoApi, VisualMoldura } from '@truco/api';
-import { formatarSaldo } from './lojaItens';
 
 /** Estilo da moldura equipada (o catálogo diz o `estilo` de cada item). */
 export function itemPorIdDoCatalogo(catalogo: CatalogoApi | null, id: string | undefined): string | null {
@@ -10,11 +9,20 @@ export function itemPorIdDoCatalogo(catalogo: CatalogoApi | null, id: string | u
   return id.startsWith('moldura-') ? id.slice('moldura-'.length) : null;
 }
 
+/** Aviso dos bônus (componentes/AvisoBonus.tsx): o tipo escolhe o título e o desenho; `fichas` é o número grande. */
+export interface AvisoBonusDados {
+  tipo: 'boas-vindas' | 'diario' | 'resgate';
+  fichas: number;
+}
+
+/** Saldo de Fichas para onde o resgate do dia devolve quem zerou. */
+const SALDO_RESGATE = 500;
+
 /** Aviso dos bônus que o servidor aplicou ao abrir a carteira. */
-export function textoDosBonus(bonus: CarteiraApi['bonus']): string | null {
+export function avisoDosBonus(bonus: CarteiraApi['bonus']): AvisoBonusDados | null {
   if (bonus.length === 0) return null;
   const total = bonus.reduce((s, b) => s + b.delta, 0);
-  if (bonus.some((b) => b.motivo === 'cadastro')) return `Bem-vindo ao boteco: você ganhou ${formatarSaldo(total)} Fichas para jogar valendo.`;
-  if (bonus.some((b) => b.motivo === 'resgate')) return `Resgate do dia: suas Fichas voltaram para ${formatarSaldo(500)}.`;
-  return `Bônus do dia: +${formatarSaldo(total)} Fichas.`;
+  if (bonus.some((b) => b.motivo === 'cadastro')) return { tipo: 'boas-vindas', fichas: total };
+  if (bonus.some((b) => b.motivo === 'resgate')) return { tipo: 'resgate', fichas: SALDO_RESGATE };
+  return { tipo: 'diario', fichas: total };
 }
