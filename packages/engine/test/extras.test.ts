@@ -25,6 +25,12 @@ import {
 
 const seq = (s: EstadoPartida, acoes: Acao[]) => acoes.reduce(reduce, s);
 const RODADA_IDX0: [Cadeira, number][] = [[0, 0], [1, 0], [2, 0], [3, 0]];
+/** Cangada: cada um, na sua vez, mostra a carta de cima da própria pilha, até fechar a rodada. */
+const mostrarRodada = (s: EstadoPartida) => {
+  const rodadas = s.mao!.rodadas.length;
+  while (s.mao && s.mao.rodadas.length === rodadas) s = reduce(s, { tipo: 'mostrar', cadeira: s.mao.vez });
+  return s;
+};
 
 describe('cangou dentro de uma mão real', () => {
   // Mineiro, sem manilhas em jogo. R1: 3o(10) x 3e(10) → empate entre duplas.
@@ -39,9 +45,9 @@ describe('cangou dentro de uma mão real', () => {
   test('1ª rodada empatada → todos empilham; quem vence a 2ª (as de cima) leva a mão', () => {
     let s = jogarSeq(distribuida(MINEIRO, MAOS), RODADA_IDX0);
     expect(s.mao!.rodadas).toEqual(['empate']);
-    expect(s.mao!.vez).toBe(0); // primeira carta mais forte da rodada empatada
+    expect(s.mao!.vez).toBe(1); // quem cangou (o 3e igualou o 3o) abre primeiro
     expect(s.fase).toBe('empilhando');
-    s = reduce(empilharTodos(s), { tipo: 'mostrar', cadeira: 0 });
+    s = mostrarRodada(empilharTodos(s));
     expect(s.placar).toEqual([0, 2]);
     expect(s.ultimaMao).toMatchObject({ vencedor: 1, pontos: 2, motivo: 'rodadas', rodadas: ['empate', 1] });
   });
@@ -58,9 +64,11 @@ describe('três rodadas empatadas', () => {
 
   test('ninguém pontua e o pé avança', () => {
     let s = empilharTodos(jogarSeq(distribuida(MINEIRO, MAOS), RODADA_IDX0));
-    s = reduce(s, { tipo: 'mostrar', cadeira: s.mao!.vez });
+    s = mostrarRodada(s);
     expect(s.mao!.cangada!.etapa).toBe('baixo');
-    s = reduce(s, { tipo: 'mostrar', cadeira: s.mao!.vez });
+    // Cangou de novo: a cadeira 1 abriu com o 2e e a 0, a última, igualou com o 2o. Ela abre as de baixo.
+    expect(s.mao!.vez).toBe(0);
+    s = mostrarRodada(s);
     expect(s.ultimaMao).toMatchObject({
       vencedor: null,
       pontos: 0,
@@ -224,18 +232,35 @@ describe('cangada: cartas empilhadas', () => {
     expect(visaoDoJogador(um, 0).mao!.cangada!.empilhou).toEqual([false, false, true, false]);
   });
 
-  test('empilhado: a vez pede truco ou manda mostrar; jogar carta não vale', () => {
+  test('empilhado: quem cangou abre; a vez pede truco ou mostra; jogar carta não vale', () => {
     const s = empilharTodos(cangou(), [0, 1, 0, 0]);
     expect(s.fase).toBe('jogando');
     expect(s.mao!.cangada!.etapa).toBe('cima');
-    expect(acoesValidas(s, 0).map((a) => a.tipo).sort()).toEqual(['mostrar', 'truco']);
-    expect(() => reduce(s, { tipo: 'jogar', cadeira: 0, indice: 0 })).toThrow(/empilhadas/);
-    expect(() => reduce(s, { tipo: 'mostrar', cadeira: 1 })).toThrow(/vez/);
-    const trucado = reduce(reduce(s, { tipo: 'truco', cadeira: 0 }), { tipo: 'aceitar', cadeira: 1 });
+    expect(s.mao!.vez).toBe(1);
+    expect(acoesValidas(s, 1).map((a) => a.tipo).sort()).toEqual(['mostrar', 'truco']);
+    expect(() => reduce(s, { tipo: 'jogar', cadeira: 1, indice: 0 })).toThrow(/empilhadas/);
+    expect(() => reduce(s, { tipo: 'mostrar', cadeira: 0 })).toThrow(/vez/);
+    const trucado = reduce(reduce(s, { tipo: 'truco', cadeira: 1 }), { tipo: 'aceitar', cadeira: 0 });
     expect(trucado.fase).toBe('jogando');
-    // A cadeira 1 pôs o 6e por cima: as de cima são 5o, 6e, 5e, 5c → a dupla 1 leva o truco (4 no mineiro).
-    const fim = reduce(trucado, { tipo: 'mostrar', cadeira: 0 });
+    // A cadeira 1 pôs o 6e por cima: as de cima são 6e, 5e, 5c, 5o → a dupla 1 leva o truco (4 no mineiro).
+    const fim = mostrarRodada(trucado);
     expect(fim.ultimaMao).toMatchObject({ vencedor: 1, pontos: 4, rodadas: ['empate', 1] });
-    expect(fim.ultimaMao!.rodadasJogadas[1].map((j) => idCarta(j.carta))).toEqual(['5o', '6e', '5e', '5c']);
+    expect(fim.ultimaMao!.rodadasJogadas[1].map((j) => idCarta(j.carta))).toEqual(['6e', '5e', '5c', '5o']);
+  });
+
+  test('uma carta por vez: cada um mostra só a sua, e o próximo pode trucar no blefe antes de mostrar', () => {
+    let s = empilharTodos(cangou(), [0, 1, 0, 0]);
+    s = reduce(s, { tipo: 'mostrar', cadeira: 1 });
+    // Só a carta de cima da cadeira 1 foi para a mesa; os outros ainda têm as duas na pilha.
+    expect(s.mao!.mesa.map((j) => [j.cadeira, idCarta(j.carta)])).toEqual([[1, '6e']]);
+    expect(s.mao!.rodadas).toEqual(['empate']);
+    expect(s.mao!.vez).toBe(2);
+    expect(s.mao!.maos.map((m) => m.length)).toEqual([2, 1, 2, 2]);
+    // A visão dos adversários não mostra a carta de cima de quem ainda não mostrou.
+    expect(visaoDoJogador(s, 1).mao!.mesa).toHaveLength(1);
+    // Cadeira 2 (com o 5e por cima, que perde) truca no blefe; a dupla 1 corre.
+    expect(acoesValidas(s, 2).map((a) => a.tipo).sort()).toEqual(['mostrar', 'truco']);
+    s = reduce(reduce(s, { tipo: 'truco', cadeira: 2 }), { tipo: 'correr', cadeira: 1 });
+    expect(s.ultimaMao).toMatchObject({ vencedor: 0, motivo: 'correu' });
   });
 });

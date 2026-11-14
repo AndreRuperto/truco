@@ -5065,71 +5065,12 @@ body:has(.tela-mesa) {
   font-variant-numeric: tabular-nums;
 }
 
-/* Quatro posições da cangada ficam numa faixa lateral, não aparecem todas
-   na cruz da mesa instantaneamente. A mesma faixa vale para 2D e vista 3D. */
-.cangada-lateral {
-  position: fixed;
-  top: 30%;
-  right: clamp(8px, 2vw, 28px);
-  z-index: 32;
-  display: grid;
-  gap: var(--e2);
-  width: min(228px, 48vw);
-  padding: var(--e3);
-  border: 2px solid var(--madeira);
-  border-radius: var(--raio-botao);
-  background: color-mix(in srgb, var(--lousa) 94%, transparent);
-  color: var(--giz);
-  text-align: center;
-  pointer-events: none;
-  box-shadow: 0 12px 30px color-mix(in srgb, var(--sombra) 55%, transparent);
-}
-.cangada-lateral > strong {
-  color: var(--grito);
-  font-family: var(--fonte-giz);
-  font-size: var(--t1);
-  font-weight: 400;
-}
-.cangada-lateral-cartas {
-  display: flex;
-  justify-content: center;
-  gap: var(--e1);
-}
-.cangada-lateral-item {
-  display: grid;
-  flex: 1 1 0;
-  min-width: 0;
-  justify-items: center;
-  align-content: start;
-  gap: 4px;
-}
-.cangada-lateral-item .carta.pequena {
-  --carta-p: clamp(23px, 3vw, 36px);
-}
-.cangada-lateral-item small {
-  font-size: 0.65rem;
-  color: var(--giz-suave);
-}
-.cangada-lateral-item.aberta .carta {
-  animation: carta-revelada 250ms ease-out both;
-}
+/* Revelação das cartas da família conferida (uma por vez). */
 @keyframes carta-revelada {
   from { transform: perspective(340px) rotateY(-65deg); opacity: 0.6; }
   to { transform: perspective(340px) rotateY(0); opacity: 1; }
 }
-@media (max-width: 600px) {
-  .cangada-lateral {
-    top: auto;
-    right: var(--e2);
-    bottom: 23%;
-    width: min(218px, 57vw);
-    padding: var(--e2);
-  }
-  .cangada-lateral > strong { font-size: var(--t0); }
-  .cangada-lateral-item small { font-size: 0.58rem; }
-}
 @media (prefers-reduced-motion: reduce) {
-  .cangada-lateral-item.aberta .carta,
   .familia-cartas .familia-carta-revelada {
     animation: none;
   }

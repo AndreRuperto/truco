@@ -369,7 +369,8 @@ function jogar(s: EstadoPartida, cadeira: Cadeira, indice: number, coberta: bool
 
 /** Rodada com as 4 cartas: resolve, e a mão segue, cangou na 1ª (todos empilham) ou acabou. */
 function fecharRodada(s: EstadoPartida, m: EstadoMao): void {
-  const { resultado, proximo } = resolverRodada(m.mesa);
+  const rodada = m.mesa;
+  const { resultado, proximo } = resolverRodada(rodada);
   m.rodadas.push(resultado);
   m.rodadasJogadas.push(m.mesa);
   m.mesa = [];
@@ -380,12 +381,16 @@ function fecharRodada(s: EstadoPartida, m: EstadoMao): void {
   }
   m.vez = proximo;
   if (m.cangada) {
+    // Cangou de novo nas de cima: abre as de baixo quem igualou agora.
     m.cangada.etapa = 'baixo';
+    m.vez = quemCangou(rodada);
     return;
   }
   // Cangou a 1ª: cada um junta as 2 que sobraram e escolhe a de cima (na mão de ferro ninguém vê as cartas: segue normal).
+  // Quem cangou (igualou a mais forte) abre primeiro.
   if (m.rodadas.length === 1 && resultado === 'empate' && m.tipo !== 'mao11') {
     m.cangada = { etapa: 'empilhando', empilhou: [false, false, false, false] };
+    m.vez = quemCangou(rodada);
     s.fase = 'empilhando';
   }
 }
@@ -405,17 +410,28 @@ function empilhar(s: EstadoPartida, cadeira: Cadeira, indice: number): void {
   }
 }
 
-/** Todos mostram a de cima (ou, cangada de novo, abrem a de baixo) de uma vez, a partir da vez. */
+/**
+ * Cangada: a vez mostra a carta de cima da própria pilha (ou, cangada de novo, a de baixo), uma
+ * de cada vez. Entre uma e outra, quem está na vez pode trucar antes de mostrar (no blefe).
+ */
 function mostrar(s: EstadoPartida, cadeira: Cadeira): void {
   const m = maoAtual(s);
   if (s.fase !== 'jogando' || !m.cangada || m.cangada.etapa === 'empilhando') falha('não há cartas empilhadas para mostrar');
-  if (m.vez !== cadeira) falha('quem manda mostrar é a vez');
-  for (let i = 0, c = cadeira; i < 4; i++, c = proximaCadeira(c)) {
-    const carta = m.maos[c].shift();
-    if (!carta) falha('mão vazia na cangada');
-    m.mesa.push({ cadeira: c, carta, coberta: false, forca: forca(carta, s.regras.variante, m.vira) });
+  if (m.vez !== cadeira) falha('quem mostra é a vez');
+  const carta = m.maos[cadeira].shift();
+  if (!carta) falha('mão vazia na cangada');
+  m.mesa.push({ cadeira, carta, coberta: false, forca: forca(carta, s.regras.variante, m.vira) });
+  if (m.mesa.length < 4) {
+    m.vez = proximaCadeira(cadeira);
+    return;
   }
   fecharRodada(s, m);
+}
+
+/** Quem igualou a carta mais forte de uma rodada empatada: o último a jogá-la. */
+function quemCangou(rodada: readonly { cadeira: Cadeira; forca: number }[]): Cadeira {
+  const max = Math.max(...rodada.map((j) => j.forca));
+  return rodada.filter((j) => j.forca === max).at(-1)!.cadeira;
 }
 
 function pedirTruco(s: EstadoPartida, cadeira: Cadeira): void {

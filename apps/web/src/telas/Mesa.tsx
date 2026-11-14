@@ -14,7 +14,6 @@ import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
 import { MesaPausada } from '../componentes/MesaPausada';
 import { Cronometro } from '../componentes/Cronometro';
 import { FamiliasNaMesa } from '../componentes/FamiliasNaMesa';
-import { RevelacaoCangada } from '../componentes/RevelacaoCangada';
 import { GuiaOrdem } from '../componentes/GuiaOrdem';
 import { Icone3D, IconeChat, IconeFalas, IconeManual, IconePausa, IconeSair, IconeSinais, IconeSom } from '../componentes/IconesMesa';
 import { ManualMesa } from '../componentes/ManualMesa';
@@ -321,7 +320,6 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
           <div className="mesa-3d-hud">
             {linhaEtapa}
             <FamiliasNaMesa visao={v} nome={nome} />
-            <RevelacaoCangada dados={rodada.cangadaLateral} variante={variante} vira={vira} minha={minha} />
             <GuiaOrdem regras={v.regras} vira={vira} mao={m?.minhaMao ?? []} />
             {m?.maoParceiro && (
               <div className="mesa-3d-parceiro" aria-label={`Mão de ${nome(parceiroDe(minha))}`}>

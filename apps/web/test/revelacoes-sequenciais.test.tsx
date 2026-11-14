@@ -71,7 +71,9 @@ describe('revelação das famílias fechadas', () => {
 });
 
 describe('cangada na segunda rodada', () => {
-  test('revela as cartas na lateral, em ordem, sem mostrar as quatro no centro de uma vez', () => {
+  // Cada um mostra a sua na vez dele (o motor revela uma por vez): as cartas entram no centro como
+  // jogadas normais, sem a lateral que antes escalonava as quatro reveladas de uma vez.
+  test('cada carta mostrada aparece no centro na hora, uma por vez, sem lateral', () => {
     let s = jogar(distribuida(PAULISTA, [
       ['3o', '4o', '5o'],
       ['3e', '4e', '5e'],
@@ -80,39 +82,19 @@ describe('cangada na segunda rodada', () => {
     ], [0, 0], '7o'), [[0, 0], [1, 0], [2, 0], [3, 0]]);
     expect(s.fase).toBe('empilhando');
     for (const cadeira of [0, 1, 2, 3] as const) s = reduce(s, { tipo: 'empilhar', cadeira, indice: 0 });
-    s = reduce(s, { tipo: 'mostrar', cadeira: s.mao!.vez });
-    const v = visaoDoJogador(s, 0);
-    render(<CentroMesa mao={v.mao} ultimaMao={v.ultimaMao} minha={0} variante="paulista" />);
-    const lateral = screen.getByTestId('cangada-lateral');
-    expect(screen.getByTestId('centro').querySelectorAll('.jogada')).toHaveLength(0);
-    expect(lateral).toHaveAttribute('data-abertas', '0');
-    expect(lateral.querySelectorAll('.carta.verso')).toHaveLength(4);
-    for (let i = 1; i <= 4; i++) {
-      act(() => vi.advanceTimersByTime(250));
-      expect(lateral).toHaveAttribute('data-abertas', String(i));
-      expect(lateral.querySelectorAll('.carta.verso')).toHaveLength(4 - i);
+    const v0 = visaoDoJogador(s, 0);
+    const { rerender } = render(<CentroMesa mao={v0.mao} ultimaMao={v0.ultimaMao} minha={0} variante="paulista" />);
+    act(() => vi.advanceTimersByTime(MOSTRA_RODADA_MS));
+    for (let n = 1; n <= 3; n++) {
+      s = reduce(s, { tipo: 'mostrar', cadeira: s.mao!.vez });
+      const v = visaoDoJogador(s, 0);
+      rerender(<CentroMesa mao={v.mao} ultimaMao={v.ultimaMao} minha={0} variante="paulista" />);
+      expect(screen.getByTestId('centro').querySelectorAll('.jogada')).toHaveLength(n);
     }
-    act(() => vi.advanceTimersByTime(MOSTRA_RODADA_MS - 1_000));
-    expect(screen.queryByTestId('cangada-lateral')).toBeNull();
-  });
-
-  test('a lateral da cangada não passa para a mão seguinte (sai quando chega mão nova sem rodada)', () => {
-    let s = jogar(distribuida(PAULISTA, [
-      ['3o', '4o', '5o'],
-      ['3e', '4e', '5e'],
-      ['4c', '5c', '6c'],
-      ['4p', '5p', '6p'],
-    ], [0, 0], '7o'), [[0, 0], [1, 0], [2, 0], [3, 0]]);
-    for (const cadeira of [0, 1, 2, 3] as const) s = reduce(s, { tipo: 'empilhar', cadeira, indice: 0 });
     s = reduce(s, { tipo: 'mostrar', cadeira: s.mao!.vez });
     const v = visaoDoJogador(s, 0);
-    const { rerender } = render(<CentroMesa mao={v.mao} ultimaMao={v.ultimaMao} minha={0} variante="paulista" />);
-    expect(screen.getByTestId('cangada-lateral')).toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(1_000));
-    // Antes de MOSTRA_RODADA_MS, a mesa já está na mão seguinte (modo rápido, bots ligeiros).
-    const nova = visaoDoJogador(distribuida(PAULISTA), 0);
-    expect(nova.mao!.rodadasJogadas).toHaveLength(0);
-    rerender(<CentroMesa mao={nova.mao} ultimaMao={null} minha={0} variante="paulista" />);
+    rerender(<CentroMesa mao={v.mao} ultimaMao={v.ultimaMao} minha={0} variante="paulista" />);
+    expect(screen.getByTestId('centro').querySelectorAll('.jogada')).toHaveLength(4);
     expect(screen.queryByTestId('cangada-lateral')).toBeNull();
   });
 });

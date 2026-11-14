@@ -35,13 +35,16 @@ describe('agruparAcoes', () => {
     expect(ui(s, 0)).toMatchObject({ jogaveis: [0, 1], cobriveis: [0, 1] });
   });
 
-  test('cangada: clicar na carta empilha; empilhado, a vez tem Truco! e "Mostrar as de cima"', () => {
+  test('cangada: clicar na carta empilha; empilhado, a vez tem Truco! e "Mostrar a sua"', () => {
     // paulista, novoBaralho: os quatro 4 cangam na 1ª.
     const s = jogar(distribuida(PAULISTA), [[0, 0], [1, 0], [2, 0], [3, 0]]);
     expect(ui(s, 0)).toEqual({ jogaveis: [], cobriveis: [], empilhaveis: [0, 1], botoes: [] });
     let e = s;
     for (const cadeira of [0, 1, 2, 3] as const) e = reduce(e, { tipo: 'empilhar', cadeira, indice: 0 });
-    expect(rotulos(e, e.mao!.vez)).toEqual(['Truco!', 'Mostrar as de cima']);
+    expect(rotulos(e, e.mao!.vez)).toEqual(['Truco!', 'Mostrar a sua']);
+    // Cada um mostra a própria: depois da vez, o próximo tem os mesmos botões.
+    e = reduce(e, { tipo: 'mostrar', cadeira: e.mao!.vez });
+    expect(rotulos(e, e.mao!.vez)).toEqual(['Truco!', 'Mostrar a sua']);
   });
 
   test('mão de 10: jogar ou correr da mão', () => {
