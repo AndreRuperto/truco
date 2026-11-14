@@ -12,9 +12,11 @@ const TAMANHOS = [
   { width: 1280, height: 800 },
 ];
 
-async function entrar(browser: Browser, email: string, scheme: 'light' | 'dark', viewport = { width: 390, height: 844 }): Promise<Page> {
+async function entrar(browser: Browser, email: string, scheme: 'light' | 'dark', ip: string, viewport = { width: 390, height: 844 }): Promise<Page> {
   const contexto = await browser.newContext({ ...devices['Pixel 7'], viewport, colorScheme: scheme, baseURL: WEB });
   const page = await contexto.newPage();
+  // IP próprio para o limite de links mágicos por IP (5 a cada 15 min no servidor), como em contraste.spec.ts.
+  await page.route('**/api/auth/**', (r) => r.continue({ headers: { ...r.request().headers(), 'x-forwarded-for': ip } }));
   await page.goto('/#/entrar');
   await page.getByLabel('E-mail').fill(email);
   await page.getByRole('button', { name: 'Enviar link' }).click();
@@ -53,7 +55,7 @@ const medir = async (page: Page) => {
 
 for (const scheme of ['light', 'dark'] as const) {
   test(`boas-vindas: vale de papel no saldo, some sozinho (${scheme})`, async ({ browser }) => {
-    const page = await entrar(browser, `vale.${scheme}@teste.dev`, scheme);
+    const page = await entrar(browser, `vale.${scheme}@teste.dev`, scheme, scheme === 'light' ? '192.0.2.83' : '192.0.2.84');
     try {
       const aviso = page.getByTestId('aviso-bonus');
       await expect(aviso).toBeVisible();
@@ -78,7 +80,7 @@ for (const scheme of ['light', 'dark'] as const) {
   });
 
   test(`bônus do dia: cartão no saldo em todos os tamanhos, pausa com o mouse e some sozinho (${scheme})`, async ({ browser }) => {
-    const page = await entrar(browser, `cartao.${scheme}@teste.dev`, scheme);
+    const page = await entrar(browser, `cartao.${scheme}@teste.dev`, scheme, scheme === 'light' ? '192.0.2.85' : '192.0.2.86');
     try {
       // O servidor só dá o bônus do dia uma vez por dia: aqui a resposta da carteira ganha um bônus diário.
       await page.route('**/api/loja/eu', async (rota) => {

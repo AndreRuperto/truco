@@ -12,6 +12,8 @@ export interface CartaSolta {
   y: number;
   giro: number;
   d: number;
+  /** Fica com o verso para cima: mostra o baralho equipado sem precisar girar a carta. */
+  virada?: boolean;
 }
 
 /*
@@ -23,16 +25,16 @@ export const CARTAS_SOLTAS: readonly CartaSolta[] = [
   { id: '4p', x: 89, y: 12, giro: 14, d: 1 },
   { id: '7c', x: 17, y: 47, giro: 9, d: 0.35 },
   { id: 'Kc', x: 81, y: 45, giro: -11, d: 0.6 },
-  { id: '3o', x: 5, y: 82, giro: 22, d: 0.75 },
+  { id: '3o', x: 5, y: 82, giro: 22, d: 0.75, virada: true },
   { id: 'Qe', x: 93, y: 77, giro: -24, d: 0.85 },
   { id: '7o', x: 29, y: 9, giro: 28, d: 0.2 },
-  { id: 'Jp', x: 71, y: 23, giro: -6, d: 0.28 },
+  { id: 'Jp', x: 71, y: 23, giro: -6, d: 0.28, virada: true },
   { id: '2c', x: 25, y: 72, giro: -30, d: 0.15 },
   { id: 'Cc', x: 74, y: 90, giro: 12, d: 0.45 },
   { id: 'Ap', x: 50, y: 97, giro: -8, d: 0.22 },
   { id: '5e', x: 97, y: 40, giro: 34, d: 0.18 },
   { id: 'Ko', x: 2, y: 34, giro: -4, d: 0.5 },
-  { id: '6p', x: 58, y: 5, giro: -20, d: 0.12 },
+  { id: '6p', x: 58, y: 5, giro: -20, d: 0.12, virada: true },
 ];
 
 export interface Mexida {

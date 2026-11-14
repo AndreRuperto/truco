@@ -37,8 +37,9 @@ export default defineConfig({
         // Cadeira de quem caiu guardada por 30 s (e não 300) para testar a vencida (reconexao.spec.ts).
         // Maior que os 24 s do teste "fora por mais que o prazo". Ignorado em produção.
         TRUCO_RECONEXAO_S: '30',
-        // Admin só para o E2E das telas (responsividade.spec.ts); conta de teste da caixa de saída.
-        ADMIN_EMAILS: 'admin.qa@teste.dev',
+        // Admins só para o E2E (contas de teste da caixa de saída): telas (responsividade.spec.ts) e o
+        // baralho equipado no fundo (fundo-baralho.spec.ts; admin tem todos os itens, sem comprar).
+        ADMIN_EMAILS: 'admin.qa@teste.dev,admin.baralho@teste.dev',
         // Loja: o checkout volta pago na hora (nunca cobra; ignorado em produção).
         LOJA_PAGAMENTO: 'simulado',
         TRUCO_URL_PUBLICA: `http://127.0.0.1:${PORTA_WEB}`,
