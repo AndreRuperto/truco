@@ -11,8 +11,8 @@ interface Props {
 }
 
 const REGRAS_FIXAS: Record<Variante, string> = {
-  paulista: 'vira, 1 · 3 · 6 · 9 · 12, mão de 11, sem família',
-  mineiro: 'manilhas fixas, 2 · 4 · 8 · 10 · 12, mão de 10, família fechada',
+  paulista: 'vira, 1 · 3 · 6 · 9 · 12, mão de 11 e de ferro, sem família',
+  mineiro: 'manilhas fixas, 2 · 4 · 8 · 10 · 12, mão de 10 e de ferro, família fechada',
 };
 
 export function TelaFila({ estado, aoEntrar, aoCancelar }: Props) {

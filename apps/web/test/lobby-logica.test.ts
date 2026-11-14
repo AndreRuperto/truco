@@ -8,8 +8,8 @@ describe('formulário do lobby', () => {
       nome: '',
       variante: 'paulista',
       pontuacao: '1-3-6-9-12',
-      maoDe10: false,
-      maoDe11: 'qualquerDupla',
+      maoDe10: true,
+      maoDe11: 'onzeAOnze',
       familia: 'off',
       maoLimpa: false,
       humanos: 1,
@@ -20,7 +20,7 @@ describe('formulário do lobby', () => {
       provocacoes: true,
       privada: false,
     });
-    expect(formPadrao('mineiro')).toMatchObject({ pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'off', familia: 'fechada', maoLimpa: false });
+    expect(formPadrao('mineiro')).toMatchObject({ pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada', maoLimpa: false });
   });
 
   test('trocar a variante reaplica as regras mas mantém nome, humanos, bots e interceptação', () => {
@@ -34,12 +34,12 @@ describe('formulário do lobby', () => {
       variante: 'paulista',
       humanos: 3,
       nivelBot: 'dificil',
-      regras: { pontuacao: '1-3-6-9-12', maoDe10: false, maoDe11: 'qualquerDupla', familia: 'off', maoLimpa: false },
+      regras: { pontuacao: '1-3-6-9-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'off', maoLimpa: false },
       chanceInterceptarSinal: 0,
       tempoFamiliaS: 20,
       sinais: true,
       provocacoes: true,
-      chaveRegras: '1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|lim:0|int:0|sin:1',
+      chaveRegras: '1-3-6-9-12|m10:1|m11:onzeAOnze|fam:off|lim:0|int:0|sin:1',
       modo: 'desafio',
       cacife: 0,
     });

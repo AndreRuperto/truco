@@ -46,10 +46,9 @@ describe('família conferida com placar 9', () => {
     expect(janelaDeFamilia(t)).toBe(true);
   });
 
-  test('mineiro com mão de ferro: 9 → 11 fecha truco e família, mas a mão corrente não vira de ferro', () => {
-    const regras: RegrasMesa = { ...MINEIRO, maoDe11: 'qualquerDupla' };
-    const t = familiaRealDaDupla0(distribuida(regras, MAOS, undefined, [9, 0]));
-    expect(t.placar).toEqual([11, 0]);
+  test('mineiro: 8 → 10 (o limite) fecha truco e família, mas a mão corrente não vira mão de 10', () => {
+    const t = familiaRealDaDupla0(distribuida(MINEIRO, MAOS, undefined, [8, 0]));
+    expect(t.placar).toEqual([10, 0]);
     expect(t.mao!.tipo).toBe('normal');
     expect(t.mao!.nivel).toBe(0);
     expect(janelaDeFamilia(t)).toBe(false);
@@ -60,8 +59,8 @@ describe('família conferida com placar 9', () => {
 });
 
 describe('família conferida com placar 10', () => {
-  test('paulista: 10 → 11 no meio da mão não vira mão de ferro; a mão vale 1 até o fim', () => {
-    const t = familiaRealDaDupla0(distribuida(PAULISTA_FAMILIA, MAOS, '5p', [10, 0]));
+  test('paulista com mão de 11: 10 → 11 no meio da mão fecha família e truco, mas não vira mão de 11; vale 1 até o fim', () => {
+    const t = familiaRealDaDupla0(distribuida({ ...PAULISTA_FAMILIA, maoDe10: true }, MAOS, '5p', [10, 0]));
     expect(t.placar).toEqual([11, 0]);
     expect(t.fase).toBe('jogando');
     expect(t.mao!.tipo).toBe('normal');
@@ -82,10 +81,14 @@ describe('família conferida com placar 10', () => {
 });
 
 describe('família conferida com placar 11', () => {
-  test('paulista com mão de ferro para qualquer dupla: a mão já é de ferro e família não sai', () => {
-    const s = distribuida(PAULISTA_FAMILIA, MAOS, '5p', [11, 0]);
-    expect(s.mao!.tipo).toBe('mao11');
-    expect(() => pedir(s, 0)).toThrow(ErroJogada);
+  test('paulista com mão de 11: só uma dupla com 11 começa na decisão, 11 a 11 é de ferro; família não sai em nenhuma', () => {
+    const regras: RegrasMesa = { ...PAULISTA_FAMILIA, maoDe10: true };
+    const decisao = distribuida(regras, MAOS, '5p', [11, 0]);
+    expect(decisao.fase).toBe('decisaoMao10');
+    expect(() => pedir(decisao, 0)).toThrow(ErroJogada);
+    const ferro = distribuida(regras, MAOS, '5p', [11, 11]);
+    expect(ferro.mao!.tipo).toBe('mao11');
+    expect(() => pedir(ferro, 0)).toThrow(ErroJogada);
   });
 
   test('paulista só 11 a 11: com 11 a 4 a mão é normal e a família leva a 12, encerrando a partida', () => {

@@ -64,10 +64,19 @@ describe('fim de mão', () => {
     expect(resumoFimMao(visaoDoJogador(s, 1).ultimaMao!, 1)).toEqual({ titulo: 'Eles levaram!', detalhe: '+1 ponto — nós corremos', nos: false });
   });
 
-  test('correram da mão de 10', () => {
+  test('correram da mão de 10/11', () => {
     const s = reduce(distribuida(MINEIRO, undefined, [10, 0]), { tipo: 'mao10', cadeira: 0, jogar: false });
-    expect(resumoFimMao(visaoDoJogador(s, 0).ultimaMao!, 0).detalhe).toBe('+2 pontos — corremos na mão de 10');
-    expect(resumoFimMao(visaoDoJogador(s, 1).ultimaMao!, 1).detalhe).toBe('+2 pontos — eles correram na mão de 10');
+    expect(resumoFimMao(visaoDoJogador(s, 0).ultimaMao!, 0).detalhe).toBe('+2 pontos — corremos da mão');
+    expect(resumoFimMao(visaoDoJogador(s, 1).ultimaMao!, 1).detalhe).toBe('+2 pontos — eles correram da mão');
+  });
+
+  test('pediu truco numa mão já trucada (mão de 10/11): o adversário leva a mão', () => {
+    const jogando = reduce(distribuida(MINEIRO, undefined, [10, 0]), { tipo: 'mao10', cadeira: 0, jogar: true });
+    const vez = jogando.mao!.vez;
+    const s = reduce(jogando, { tipo: 'truco', cadeira: vez });
+    const outra = ((vez + 1) % 4) as 0 | 1 | 2 | 3;
+    expect(resumoFimMao(visaoDoJogador(s, vez).ultimaMao!, vez)).toMatchObject({ titulo: 'Eles levaram!', detalhe: '+4 pontos — pedimos truco numa mão já trucada' });
+    expect(resumoFimMao(visaoDoJogador(s, outra).ultimaMao!, outra).detalhe).toBe('+4 pontos — eles pediram truco numa mão já trucada');
   });
 
   test('empate total', () => {

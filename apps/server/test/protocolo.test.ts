@@ -8,7 +8,12 @@ describe('chaveRegras', () => {
   test('determinística e igual para as mesmas regras (a variante fica de fora: tem filtro próprio)', () => {
     expect(chaveRegras(base, 0)).toBe(chaveRegras({ ...base }, 0));
     expect(chaveRegras(base, 0)).toBe(chaveRegras({ ...base, variante: 'mineiro' }, 0, 20, true));
-    expect(chaveRegras(base, 0.25)).toBe('1-3-6-9-12|m10:0|m11:qualquerDupla|fam:off|lim:0|int:0.25|sin:1');
+    expect(chaveRegras(base, 0.25)).toBe('1-3-6-9-12|m10:1|m11:onzeAOnze|fam:off|lim:0|int:0.25|sin:1');
+  });
+
+  test('cliente antigo com mão de ferro "qualquer dupla" (opção removida) cai no 11 a 11', () => {
+    expect(opcoesDaSala({ variante: 'paulista', regras: { maoDe11: 'qualquerDupla' } }).regras.maoDe11).toBe('onzeAOnze');
+    expect(opcoesDaSala({ variante: 'paulista', regras: { maoDe11: 'off' } }).regras.maoDe11).toBe('off');
   });
 
   test('sinais: padrão ligados no paulista e desligados no mineiro; a escolha da mesa vale e entra na chave', () => {

@@ -95,7 +95,7 @@ export interface EstadoMao {
 export interface ResultadoMao {
   vencedor: Dupla | null;
   pontos: number;
-  motivo: 'rodadas' | 'correu' | 'mao10Correu' | 'familia';
+  motivo: 'rodadas' | 'correu' | 'mao10Correu' | 'familia' | 'trucoNaMaoEspecial';
   /** Resultado de cada rodada encerrada. */
   rodadas: ResultadoRodada[];
   /**

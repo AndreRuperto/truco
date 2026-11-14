@@ -85,7 +85,7 @@ export const PREFERENCIAS_PADRAO: Readonly<PreferenciasMesa> = Object.freeze({
   variante: 'mineiro',
   pontuacao: '1-3-6-9-12',
   maoDe10: true,
-  maoDe11: 'qualquerDupla',
+  maoDe11: 'onzeAOnze',
   familia: 'fechada',
   maoLimpa: true,
   humanos: 1,
@@ -130,7 +130,9 @@ export function limparPreferencias(cru: unknown): Partial<PreferenciasMesa> | nu
   if (umDe(o.variante, ['paulista', 'mineiro'] as const)) p.variante = o.variante;
   if (umDe(o.pontuacao, ['1-3-6-9-12', '2-4-8-10-12'] as const)) p.pontuacao = o.pontuacao;
   if (typeof o.maoDe10 === 'boolean') p.maoDe10 = o.maoDe10;
-  if (umDe(o.maoDe11, ['off', 'qualquerDupla', 'onzeAOnze'] as const)) p.maoDe11 = o.maoDe11;
+  // 'qualquerDupla' saiu (todos às cegas com só uma dupla no 11): preferência antiga vira o 11 a 11.
+  if (o.maoDe11 === 'qualquerDupla') p.maoDe11 = 'onzeAOnze';
+  else if (umDe(o.maoDe11, ['off', 'onzeAOnze'] as const)) p.maoDe11 = o.maoDe11;
   if (umDe(o.familia, ['off', 'aberta', 'fechada'] as const)) p.familia = o.familia;
   if (typeof o.maoLimpa === 'boolean') p.maoLimpa = o.maoLimpa;
   if (umDe(o.humanos, [1, 2, 3, 4] as const)) p.humanos = o.humanos;

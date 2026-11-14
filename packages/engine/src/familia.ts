@@ -12,7 +12,7 @@ export function ehFamilia(mao: readonly Carta[]): boolean {
 
 /** O mínimo para decidir sobre família: serve para `EstadoPartida` e para `Visao`. */
 export interface SituacaoFamilia {
-  regras: Pick<RegrasMesa, 'familia' | 'maoDe10' | 'maoDe11'>;
+  regras: Pick<RegrasMesa, 'familia' | 'maoDe10' | 'maoDe11' | 'pontuacao'>;
   placar: readonly [number, number];
   fase: Fase;
   mao: {

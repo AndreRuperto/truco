@@ -24,7 +24,7 @@ const TODAS_REGRAS: RegrasMesa[] = [
   { ...PAULISTA, pontuacao: '2-4-8-10-12', maoDe10: true, familia: 'aberta' },
   { ...MINEIRO, pontuacao: '1-3-6-9-12', maoDe11: 'onzeAOnze', familia: 'off' },
   MINEIRO_LIMPA,
-  { ...MINEIRO_LIMPA, familia: 'aberta', maoDe11: 'qualquerDupla' },
+  { ...MINEIRO_LIMPA, familia: 'aberta', maoDe11: 'onzeAOnze' },
 ];
 
 function cartasEmJogo(s: EstadoPartida): Carta[] {

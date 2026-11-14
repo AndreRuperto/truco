@@ -16,7 +16,7 @@ import {
 import { ehFamilia, janelaDeFamilia, tipoDaProximaFamilia } from './familia';
 import { forca } from './forca';
 import { resolverRodada, vencedorMao } from './mao';
-import { ESCADAS, NIVEL_MAXIMO, PONTOS_VITORIA, type RegrasMesa, tipoPeloPlacar } from './regras';
+import { ESCADAS, limiteMaoEspecial, NIVEL_MAXIMO, PONTOS_VITORIA, type RegrasMesa, tipoPeloPlacar } from './regras';
 import {
   cortarMonte,
   darCartas,
@@ -298,7 +298,7 @@ function distribuir(s: EstadoPartida, cadeira: Cadeira, modo: ModoDistribuicao):
     nivel: tipo === 'mao11' ? 1 : 0,
     ultimoAumento: null,
     trucoPendente: null,
-    duplaNoDez: tipo === 'mao10' ? (s.placar[0] === 10 ? 0 : 1) : null,
+    duplaNoDez: tipo === 'mao10' ? (s.placar[0] === limiteMaoEspecial(s.regras.pontuacao) ? 0 : 1) : null,
     modo,
     pulada,
     abertasNoCorte: r.abertas,
@@ -438,7 +438,11 @@ function pedirTruco(s: EstadoPartida, cadeira: Cadeira): void {
   const m = maoAtual(s);
   if (s.fase !== 'jogando') falha('não é hora de trucar');
   if (m.vez !== cadeira) falha('só pode trucar na sua vez');
-  if (m.tipo !== 'normal') falha('não se truca nesta mão');
+  // Mão de 11 (ou de ferro) já é trucada: pedir truco nela é falta e o adversário leva a mão.
+  if (m.tipo !== 'normal') {
+    finalizarMao(s, (1 - duplaDe(cadeira)) as Dupla, escada(s)[Math.max(m.nivel, 1)], 'trucoNaMaoEspecial');
+    return;
+  }
   if (m.rodadas.length === 0) falha('truco só a partir da 2ª rodada');
   // Pontos de família no meio da mão podem ter levado o placar a 10/11: aí não se truca mais.
   if (tipoDaMao(s) !== 'normal') falha('não se truca nesta mão');
@@ -476,7 +480,7 @@ function decidirMao10(s: EstadoPartida, cadeira: Cadeira, jogarMao: boolean): vo
   const m = maoAtual(s);
   if (s.fase !== 'decisaoMao10') falha('não há mão de 10 para decidir');
   const dupla = duplaDe(cadeira);
-  if (dupla !== m.duplaNoDez) falha('só a dupla com 10 decide');
+  if (dupla !== m.duplaNoDez) falha(`só a dupla com ${limiteMaoEspecial(s.regras.pontuacao)} decide`);
   if (!jogarMao) {
     finalizarMao(s, (1 - dupla) as Dupla, escada(s)[0], 'mao10Correu');
     return;

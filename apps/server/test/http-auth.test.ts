@@ -187,7 +187,7 @@ describe('preferências da mesa', () => {
     variante: 'mineiro',
     pontuacao: '1-3-6-9-12',
     maoDe10: true,
-    maoDe11: 'qualquerDupla',
+    maoDe11: 'onzeAOnze',
     familia: 'fechada',
     maoLimpa: true,
     humanos: 1,

@@ -1,7 +1,7 @@
 import { SeletorAvatar } from '../componentes/SeletorAvatar';
 import { InstalarTruco } from '../componentes/InstalarTruco';
 import type { PreferenciasMesa } from '@truco/api';
-import type { Pontuacao, RegrasMesa, Variante } from '@truco/engine';
+import { limiteMaoEspecial, type Pontuacao, type RegrasMesa, type Variante } from '@truco/engine';
 import { type NivelBot, TEMPOS_FAMILIA_S } from '@truco/protocolo';
 import { type ComponentProps, type FormEvent, useEffect, useRef, useState } from 'react';
 import { FundoCartas } from '../componentes/FundoCartas';
@@ -144,11 +144,12 @@ export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferencia
               </select>
             </div>
             <div className="campo">
-              <label htmlFor="mao11">Mão de 11</label>
+              <label htmlFor="mao11">Mão de ferro</label>
               <select id="mao11" value={f.maoDe11} onChange={(e) => mudar('maoDe11', e.target.value as RegrasMesa['maoDe11'])}>
                 <option value="off">Desligada</option>
-                <option value="qualquerDupla">Qualquer dupla com 11</option>
-                <option value="onzeAOnze">Só no 11 a 11</option>
+                <option value="onzeAOnze">
+                  Só no {limiteMaoEspecial(f.pontuacao)} a {limiteMaoEspecial(f.pontuacao)}
+                </option>
               </select>
             </div>
             <div className="campo">
@@ -225,7 +226,7 @@ export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferencia
             )}
             <label className="campo-check largo">
               <input type="checkbox" checked={f.maoDe10} onChange={(e) => mudar('maoDe10', e.target.checked)} />
-              Mão de 10
+              Mão de {limiteMaoEspecial(f.pontuacao)}
             </label>
             {f.variante === 'mineiro' && (
               <label className="campo-check largo">
@@ -251,7 +252,6 @@ export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferencia
 }
 
 const TEXTO_FAMILIA: Record<RegrasMesa['familia'], string> = { off: 'sem família', aberta: 'família aberta', fechada: 'família fechada' };
-const TEXTO_MAO11: Record<RegrasMesa['maoDe11'], string | null> = { off: null, qualquerDupla: 'mão de 11', onzeAOnze: 'mão de 11 só no 11 a 11' };
 
 /** Uma linha com as regras escolhidas, para o bloco recolhido. */
 function resumoLobby(f: FormLobby): string {
@@ -260,8 +260,8 @@ function resumoLobby(f: FormLobby): string {
   const partes = [
     f.variante === 'paulista' ? 'Paulista' : 'Mineiro',
     f.pontuacao,
-    f.maoDe10 ? 'mão de 10' : null,
-    TEXTO_MAO11[f.maoDe11],
+    f.maoDe10 ? `mão de ${limiteMaoEspecial(f.pontuacao)}` : null,
+    f.maoDe11 === 'onzeAOnze' ? 'mão de ferro' : null,
     TEXTO_FAMILIA[f.familia],
     f.variante === 'mineiro' && f.maoLimpa ? 'mão limpa' : null,
     bots > 0 ? `${bots} ${bots === 1 ? 'bot' : 'bots'} ${nivel}` : 'só humanos',

@@ -19,7 +19,7 @@ const TODAS_REGRAS: RegrasMesa[] = [
   { ...PAULISTA, familia: 'fechada', maoDe11: 'onzeAOnze' },
   { ...MINEIRO, pontuacao: '1-3-6-9-12', maoDe11: 'onzeAOnze', familia: 'off' },
   MINEIRO_LIMPA,
-  { ...MINEIRO_LIMPA, familia: 'aberta', maoDe11: 'qualquerDupla' },
+  { ...MINEIRO_LIMPA, familia: 'aberta', maoDe11: 'onzeAOnze' },
 ];
 const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
 const conservou = (s: Parameters<typeof cartasDaPartida>[0], regras: RegrasMesa) =>

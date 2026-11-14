@@ -1,4 +1,4 @@
-import { FORCA_MANILHA_MIN, forca, type Visao } from '@truco/engine';
+import { FORCA_MANILHA_MIN, forca, limiteMaoEspecial, type Visao } from '@truco/engine';
 import type { MsgEstado } from '@truco/protocolo';
 import type { AcoesUI } from './acoes';
 import { rotuloCarta } from './cartas';
@@ -46,7 +46,10 @@ export function dicaAgora(msg: MsgEstado, ui: AcoesUI, vistas: readonly IdDica[]
   const tem = (t: string) => msg.minhasAcoes.some((a) => a.tipo === t);
   const candidatas: (Dica | null)[] = [
     v.fase === 'decisaoMao10' && tem('mao10')
-      ? { id: 'mao10', texto: 'Mão de 10: vocês veem as cartas do parceiro e decidem. Jogar vale truco (3 ou 4); correr dá ao adversário o valor inicial da mão.' }
+      ? {
+          id: 'mao10',
+          texto: `Mão de ${limiteMaoEspecial(v.regras.pontuacao)}: vocês veem as cartas do parceiro e decidem. Jogar vale truco (3 ou 4); correr dá ao adversário o valor inicial da mão. Ela já é trucada: quem pedir truco entrega a mão.`,
+        }
       : null,
     v.fase === 'conferindoFamilia' && tem('conferir')
       ? { id: 'conferir', texto: 'Pediram família fechada, que pode ser blefe. Conferir: se era família, eles pontuam; se era blefe, vocês pontuam. Deixar passar: ninguém pontua.' }
