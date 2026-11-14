@@ -132,6 +132,10 @@ export interface MsgEstado {
   visao: Visao | null;
   /** Quem precisa agir e até quando (epoch ms). */
   prazo: { cadeiras: Cadeira[]; ate: number } | null;
+  /** Mesa pausada: quem pausou e quando volta sozinha (epoch ms). null/ausente = rodando. */
+  pausa?: { por: Cadeira; ate: number } | null;
+  /** Esta cadeira pode pausar e retomar (sozinha contra bots; na privada, o admin). */
+  podePausar?: boolean;
   /**
    * Hora de pedir família, logo depois de dar: ninguém joga carta até `ate` ou até todos os
    * humanos decidirem (pedir ou "sem família"). `decidiram`: humanos que já decidiram.

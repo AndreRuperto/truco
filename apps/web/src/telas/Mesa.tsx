@@ -11,11 +11,12 @@ import { Chat } from '../componentes/Chat';
 import { Denunciar } from '../componentes/Denunciar';
 import { DURACAO_PROVOCACAO_MS, FRASE_EFEITO } from '../componentes/Provocacao';
 import { ConfirmarSaida } from '../componentes/ConfirmarSaida';
+import { MesaPausada } from '../componentes/MesaPausada';
 import { Cronometro } from '../componentes/Cronometro';
 import { FamiliasNaMesa } from '../componentes/FamiliasNaMesa';
 import { RevelacaoCangada } from '../componentes/RevelacaoCangada';
 import { GuiaOrdem } from '../componentes/GuiaOrdem';
-import { Icone3D, IconeChat, IconeFalas, IconeManual, IconeSair, IconeSinais, IconeSom } from '../componentes/IconesMesa';
+import { Icone3D, IconeChat, IconeFalas, IconeManual, IconePausa, IconeSair, IconeSinais, IconeSom } from '../componentes/IconesMesa';
 import { ManualMesa } from '../componentes/ManualMesa';
 import { Mao } from '../componentes/Mao';
 import { Mesa3D } from '../componentes/Mesa3D';
@@ -51,7 +52,7 @@ interface Props {
   snap: EstadoLoja;
   /** Feltro em prévia gratuita para contas; não há cobrança. */
   temConta?: boolean;
-  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida' | 'enviarSemFamilia' | 'enviarRevanche' | 'denunciar' | 'provocar'>>;
+  acoes: Pick<Loja, 'enviarAcao' | 'enviarSinal' | 'enviarFala' | 'sair'> & Partial<Pick<Loja, 'enviarBatida' | 'enviarSemFamilia' | 'enviarRevanche' | 'denunciar' | 'provocar' | 'enviarPausar' | 'enviarRetomar'>>;
   aoChat?: (texto: string) => void;
   /** Começa outra partida com as mesmas opções (a App decide como). Sem ele, o fim só volta ao início. */
   aoJogarDeNovo?: () => void;
@@ -252,6 +253,11 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
         >
           <IconeSom ligado={somLigado} />
         </button>
+        {msg.podePausar && acoes.enviarPausar && !msg.pausa && (
+          <button type="button" className="icone-mesa" aria-label="Pausar" title="Pausar a mesa" onClick={acoes.enviarPausar}>
+            <IconePausa />
+          </button>
+        )}
         <button type="button" className="icone-mesa botao-ajuda" aria-label="Como jogar" title="Como jogar" onClick={() => setManual(true)}>
           <IconeManual />
         </button>
@@ -478,6 +484,13 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
       {painel === 'chat' && aoChat && <Chat mensagens={snap.chat} aoEnviar={aoChat} />}
       {painel === 'denunciar' && podeDenunciar && acoes.denunciar && (
         <Denunciar pessoas={outrosHumanos} resposta={snap.denuncia ?? null} aoDenunciar={acoes.denunciar} aoFechar={() => setPainel(null)} />
+      )}
+      {msg.pausa && (
+        <MesaPausada
+          restamMs={msg.pausa.ate - agora}
+          quem={msg.pausa.por === minha ? null : nome(msg.pausa.por)}
+          aoRetomar={msg.podePausar ? acoes.enviarRetomar : undefined}
+        />
       )}
       {confirmarSaida && <ConfirmarSaida ranqueada={modo === 'ranqueada'} aoSair={() => void acoes.sair()} aoCancelar={() => setConfirmarSaida(false)} />}
       {painel !== 'sinais' && sinal && agora - sinal.em < DURACAO_SINAL_MS && (

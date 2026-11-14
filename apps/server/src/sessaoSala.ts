@@ -7,6 +7,8 @@ export interface UsuarioConexao {
   usuarioId: number;
   apelido: string;
   avatar?: string | null;
+  /** Só presente (true) para contas em `ADMIN_EMAILS`: na mesa privada, pode pausar. */
+  admin?: true;
 }
 
 /** Sessão a partir do cookie (navegador) ou do Bearer (`client.auth.token` do SDK). */
@@ -21,7 +23,9 @@ export async function usuarioDaConexao(
   for (const bruto of new Set(candidatos)) {
     if (!bruto) continue;
     const u = await usuarioDaSessao(s.banco, bruto, s.agora());
-    if (u) return { usuarioId: u.id, apelido: u.apelido, avatar: u.avatar };
+    if (!u) continue;
+    const admin = !!u.email && (s.admins ?? []).includes(u.email);
+    return { usuarioId: u.id, apelido: u.apelido, avatar: u.avatar, ...(admin ? { admin: true as const } : {}) };
   }
   return null;
 }

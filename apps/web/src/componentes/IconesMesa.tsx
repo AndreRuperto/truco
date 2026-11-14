@@ -70,3 +70,9 @@ export const IconeSair = () => (
     <path d="m16 17 5-5-5-5M21 12H9" />
   </Icone>
 );
+
+export const IconePausa = () => (
+  <Icone>
+    <path d="M9 5v14M15 5v14" />
+  </Icone>
+);
