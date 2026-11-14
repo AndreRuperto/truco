@@ -1,3 +1,4 @@
+import type React from 'react';
 import { fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { FundoCartas } from '../src/componentes/FundoCartas';
@@ -146,12 +147,14 @@ describe('distribuição na abertura', () => {
     }
   }
 
-  test('na primeira visita, cada carta sai do monte e desvira; marca o dia', () => {
+  test('na primeira visita, cada carta sai do monte e desvira (menos as que ficam viradas); marca o dia', () => {
     localStorage.removeItem(CHAVE_CARTAS_DADAS);
     comAnimacao(false, (animar) => {
       render(<FundoCartas />);
-      // um voo e um desvirar por carta
-      expect(animar).toHaveBeenCalledTimes(CARTAS_SOLTAS.length * 2);
+      // um voo por carta e um desvirar por carta que fica de face para cima
+      const viradas = CARTAS_SOLTAS.filter((c) => c.virada).length;
+      expect(viradas).toBeGreaterThan(0);
+      expect(animar).toHaveBeenCalledTimes(CARTAS_SOLTAS.length * 2 - viradas);
       expect(localStorage.getItem(CHAVE_CARTAS_DADAS)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
@@ -174,5 +177,35 @@ describe('distribuição na abertura', () => {
       expect(animar.mock.calls.length).toBe(primeira);
       vi.restoreAllMocks();
     });
+  });
+});
+
+describe('FundoCartas com o baralho equipado', () => {
+  const listra = { style: { '--verso': '#b8202a', '--verso-linha': '#fbf3dc' } as React.CSSProperties, estampa: 'listra' };
+
+  test('o verso equipado vale para as cartas do fundo (estampa e cores)', () => {
+    const { container } = render(<FundoCartas verso={listra} />);
+    const camada = container.querySelector<HTMLElement>('.fundo-cartas')!;
+    expect(camada).toHaveAttribute('data-verso', 'listra');
+    expect(camada.style.getPropertyValue('--verso')).toBe('#b8202a');
+    expect(camada.style.getPropertyValue('--verso-linha')).toBe('#fbf3dc');
+  });
+
+  test('sem baralho equipado, fica o verso clássico', () => {
+    const { container } = render(<FundoCartas />);
+    expect(container.querySelector('.fundo-cartas')).not.toHaveAttribute('data-verso');
+  });
+
+  test('algumas cartas ficam viradas para baixo: o baralho aparece sem precisar girar', () => {
+    const { container } = render(<FundoCartas verso={listra} />);
+    const viradas = container.querySelectorAll('[data-solta][data-virada]');
+    expect(viradas).toHaveLength(CARTAS_SOLTAS.filter((c) => c.virada).length);
+    expect(viradas.length).toBeGreaterThanOrEqual(3);
+    for (const v of viradas) expect(v.querySelector('.carta-solta-gira')).toHaveClass('virada');
+  });
+
+  test('no modo discreto (telas internas) também sobra ao menos uma virada', () => {
+    const { container } = render(<FundoCartas discreto verso={listra} />);
+    expect(container.querySelectorAll('[data-solta][data-virada]').length).toBeGreaterThanOrEqual(1);
   });
 });

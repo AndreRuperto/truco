@@ -573,6 +573,10 @@ button:disabled {
 .carta-solta-gira > .carta.verso {
   transform: rotateY(180deg);
 }
+/* Algumas ficam com o verso para cima: o baralho equipado aparece no fundo (FundoCartas, `virada`). */
+.carta-solta-gira.virada {
+  transform: rotateY(180deg);
+}
 .carta-solta .carta {
   box-shadow:
     0 2px 0 color-mix(in srgb, var(--sombra) 25%, transparent),

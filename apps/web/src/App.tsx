@@ -9,7 +9,8 @@ import { criarMesaAberta, criarMesaPrivada, entrarNaMesa, entrarPorCodigo, lerTo
 import { useCarteira, useFila, useLoja, useSessao } from './rede/hooks';
 import { api, carteira, loja, lojaFila, sessao } from './rede/instancia';
 import { TelaLoja, TelaLojaObrigado } from './telas/Loja';
-import { type AvisoBonusDados, avisoDosBonus, itemPorIdDoCatalogo } from './logica/lojaApp';
+import { type AvisoBonusDados, avisoDosBonus, itemPorIdDoCatalogo, versoEquipado } from './logica/lojaApp';
+import { estiloVerso } from './logica/lojaItens';
 import { navegar, useRota } from './rede/rota';
 import { TelaEntrar } from './telas/Entrar';
 import { TelaEntrarPrivada } from './telas/EntrarPrivada';
@@ -84,9 +85,12 @@ export function App() {
       if (t) setAvisoBonus(t);
     });
   }, [idUsuario, snap.status === 'fora']);
+  // O catálogo diz as cores e a estampa de cada item: carrega na loja e quando há baralho equipado (fundo de cartas).
+  const idVerso = cart.carteira?.equipados.verso;
   useEffect(() => {
-    if (rota.tela === 'loja') void carteira.carregarCatalogo();
-  }, [rota.tela]);
+    if (rota.tela === 'loja' || idVerso) void carteira.carregarCatalogo();
+  }, [rota.tela, idVerso]);
+  const versoFundo = estiloVerso(versoEquipado(cart.catalogo, idVerso));
   // O aviso do bônus vale para a tela em que apareceu: ao trocar de tela ele some.
   const telaDoAviso = useRef<string | null>(null);
   useEffect(() => {
@@ -332,6 +336,7 @@ export function App() {
       default:
         conteudo = (
           <Lobby
+            verso={versoFundo}
             aoJogar={(cru) => {
               const o = comFoto(cru);
               ultimaEntrada = { tipo: 'mesa', opcoes: o };
@@ -369,7 +374,7 @@ export function App() {
           {avisoBonus && snap.status === 'fora' && <AvisoBonus aviso={avisoBonus} aoFechar={() => setAvisoBonus(null)} />}
         </div>
         {/* A tela inicial tem o fundo de cartas inteiro (com mouse); as outras, a versão discreta. */}
-        {rota.tela !== 'inicio' && <FundoCartas discreto />}
+        {rota.tela !== 'inicio' && <FundoCartas discreto verso={versoFundo} />}
         {/* trocar de conta remonta a tela: nada do usuário anterior sobrevive em estado local */}
         <Fragment key={ses.usuario?.id ?? 'anon'}>{conteudo}</Fragment>
       </>

@@ -109,14 +109,23 @@ function darCartas(raiz: HTMLElement): void {
     );
     // Sem `finished` (navegador antigo), considera assentada na hora.
     (voo?.finished ?? Promise.resolve()).then(assentou, assentou);
-    el.querySelector<HTMLElement>('.carta-solta-gira')?.animate(
-      [{ transform: 'rotateY(180deg)' }, { transform: 'rotateY(0deg)' }],
-      tempo,
-    );
+    // As que ficam viradas saem do monte já com o verso para cima: não desviram.
+    if (el.dataset.virada === undefined)
+      el.querySelector<HTMLElement>('.carta-solta-gira')?.animate(
+        [{ transform: 'rotateY(180deg)' }, { transform: 'rotateY(0deg)' }],
+        tempo,
+      );
   });
 }
 
-export function FundoCartas({ discreto = false }: { discreto?: boolean }) {
+interface Props {
+  /** Telas internas: só as cartas das bordas, sem mouse nem distribuição. */
+  discreto?: boolean;
+  /** Baralho equipado na loja (`estiloVerso`): estampa e cores do verso. Sem ele, o clássico. */
+  verso?: { style: CSSProperties; estampa: string } | null;
+}
+
+export function FundoCartas({ discreto = false, verso = null }: Props) {
   const camada = useRef<HTMLDivElement>(null);
   const cartas = discreto ? CARTAS_DAS_BORDAS : CARTAS_SOLTAS;
 
@@ -223,8 +232,9 @@ export function FundoCartas({ discreto = false }: { discreto?: boolean }) {
 
       // Reinicia o movimento a cada duplo clique, inclusive durante outro giro.
       giratoria.getAnimations().forEach((a) => a.cancel());
+      const base = giratoria.classList.contains('virada') ? 180 : 0;
       giratoria.animate(
-        [{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(360deg)' }],
+        [{ transform: `rotateY(${base}deg)` }, { transform: `rotateY(${base + 360}deg)` }],
         { duration: 850, easing: 'cubic-bezier(0.22, 0.8, 0.2, 1)' },
       );
     };
@@ -233,13 +243,21 @@ export function FundoCartas({ discreto = false }: { discreto?: boolean }) {
   }, [discreto]);
 
   return (
-    <div className={discreto ? 'fundo-cartas discreto' : 'fundo-cartas'} ref={camada} aria-hidden="true" data-testid="fundo-cartas">
+    <div
+      className={discreto ? 'fundo-cartas discreto' : 'fundo-cartas'}
+      ref={camada}
+      aria-hidden="true"
+      data-testid="fundo-cartas"
+      data-verso={verso?.estampa}
+      style={verso?.style}
+    >
       {cartas.map((c, i) => (
         <span
           key={c.id}
           className="carta-solta"
           data-solta=""
           data-d={c.d}
+          data-virada={c.virada ? '' : undefined}
           style={
             {
               left: `${c.x}%`,
@@ -254,7 +272,7 @@ export function FundoCartas({ discreto = false }: { discreto?: boolean }) {
         >
           <span className="carta-solta-mexe">
             <span className="carta-solta-flutua">
-              <span className="carta-solta-gira">
+              <span className={c.virada ? 'carta-solta-gira virada' : 'carta-solta-gira'}>
                 <CartaVisual carta={carta(c.id)} variante="mineiro" vira={null} />
                 <CartaVisual carta={null} variante="mineiro" vira={null} />
               </span>

@@ -3,7 +3,7 @@ import { InstalarTruco } from '../componentes/InstalarTruco';
 import type { PreferenciasMesa } from '@truco/api';
 import type { Pontuacao, RegrasMesa, Variante } from '@truco/engine';
 import { type NivelBot, TEMPOS_FAMILIA_S } from '@truco/protocolo';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type ComponentProps, type FormEvent, useEffect, useRef, useState } from 'react';
 import { FundoCartas } from '../componentes/FundoCartas';
 import {
   type FormLobby,
@@ -32,6 +32,8 @@ interface Props {
   preferenciasConta?: PreferenciasMesa | null;
   /** Grava na conta (só com login). Chamado pouco depois de cada mudança nas regras. */
   aoSalvarNaConta?: (p: PreferenciasMesa) => void;
+  /** Baralho equipado na loja: aparece nas cartas do fundo. */
+  verso?: ComponentProps<typeof FundoCartas>['verso'];
 }
 
 /** Espera depois da última mudança antes de mandar para a conta. */
@@ -40,7 +42,7 @@ const ESPERA_SALVAR_MS = 600;
 /** Os mesmos de `CACIFES_MESA` no servidor (ele valida). */
 const CACIFES = [0, 50, 100, 250, 500, 1000] as const;
 
-export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta, aoSalvarNaConta, avatar = null, aoTrocarAvatar, apelidoConta }: Props) {
+export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta, aoSalvarNaConta, avatar = null, aoTrocarAvatar, apelidoConta }: Props) {
   const [f, setFCru] = useState<FormLobby>(() => formInicial(lerApelido(), lerPreferenciasLocais()));
   // Só grava depois que a pessoa mexe: abrir a tela não sobrescreve o que está na conta.
   const mexeu = useRef(false);
@@ -77,7 +79,7 @@ export function Lobby({ aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta,
 
   return (
     <main className="lobby">
-      <FundoCartas />
+      <FundoCartas verso={verso} />
       <h1 className="letreiro">Truco</h1>
       <p className="letreiro-sub">Senta, que a mesa tá posta.</p>
       <form className="formulario" onSubmit={enviar}>

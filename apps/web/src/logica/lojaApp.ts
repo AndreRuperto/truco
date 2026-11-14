@@ -1,4 +1,4 @@
-import type { CarteiraApi, CatalogoApi, VisualMoldura } from '@truco/api';
+import type { CarteiraApi, CatalogoApi, VisualMoldura, VisualVerso } from '@truco/api';
 
 /** Estilo da moldura equipada (o catálogo diz o `estilo` de cada item). */
 export function itemPorIdDoCatalogo(catalogo: CatalogoApi | null, id: string | undefined): string | null {
@@ -7,6 +7,13 @@ export function itemPorIdDoCatalogo(catalogo: CatalogoApi | null, id: string | u
   if (item?.slot === 'moldura') return (item.visual as VisualMoldura).estilo;
   // Catálogo ainda não carregou: o id segue o padrão `moldura-<estilo>`.
   return id.startsWith('moldura-') ? id.slice('moldura-'.length) : null;
+}
+
+/** Visual do verso equipado (o fundo de cartas usa o mesmo baralho da mesa). Sem catálogo ainda: null. */
+export function versoEquipado(catalogo: CatalogoApi | null, id: string | undefined): VisualVerso | null {
+  if (!id) return null;
+  const item = catalogo?.itens.find((i) => i.id === id);
+  return item?.slot === 'verso' ? (item.visual as VisualVerso) : null;
 }
 
 /** Aviso dos bônus (componentes/AvisoBonus.tsx): o tipo escolhe o título e o desenho; `fichas` é o número grande. */
