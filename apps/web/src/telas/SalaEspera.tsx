@@ -20,9 +20,11 @@ interface Props {
   origem?: string;
   chat?: MsgChat[];
   aoChat?: (texto: string) => void;
+  /** Habilidade Floreios (loja; admin tem sempre): os truques de treino na sala privada. */
+  floreios?: boolean;
 }
 
-export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = window.location.origin, chat = [], aoChat }: Props) {
+export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = window.location.origin, chat = [], aoChat, floreios = false }: Props) {
   const dono = souDono(msg);
   const modo = msg.modo;
   // Faltam humanos, não cadeiras: as vazias que sobrarem viram bots ao começar.
@@ -78,10 +80,10 @@ export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = win
             );
           })}
           <li className="sala-tampo" aria-hidden={modo !== 'privada'}>
-            {modo === 'privada' ? <MonteBaralhoTreino treino={baralhoTreino} /> : <span className="sala-baralho" />}
+            {modo === 'privada' && floreios ? <MonteBaralhoTreino treino={baralhoTreino} /> : <span className="sala-baralho" />}
           </li>
         </ul>
-        {modo === 'privada' && <ComandosBaralhoTreino treino={baralhoTreino} />}
+        {modo === 'privada' && floreios && <ComandosBaralhoTreino treino={baralhoTreino} />}
       </section>
 
       <div className="sala-lado">

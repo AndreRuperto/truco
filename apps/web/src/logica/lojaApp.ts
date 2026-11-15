@@ -9,6 +9,15 @@ export function itemPorIdDoCatalogo(catalogo: CatalogoApi | null, id: string | u
   return id.startsWith('moldura-') ? id.slice('moldura-'.length) : null;
 }
 
+/**
+ * Habilidade Floreios (loja): os truques de embaralhar embaralham de verdade na sua vez. Vale com
+ * ela equipada (comprar já equipa); admin tem sempre, sem comprar.
+ */
+export function temFloreios(usuario: { admin?: boolean } | null, carteira: CarteiraApi | null): boolean {
+  if (usuario?.admin) return true;
+  return carteira?.equipados.habilidade === 'habilidade-floreios';
+}
+
 /** Visual do verso equipado (o fundo de cartas usa o mesmo baralho da mesa). Sem catálogo ainda: null. */
 export function versoEquipado(catalogo: CatalogoApi | null, id: string | undefined): VisualVerso | null {
   if (!id) return null;

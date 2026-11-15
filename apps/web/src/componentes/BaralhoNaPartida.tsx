@@ -1,10 +1,10 @@
 import { ComandosBaralhoTreino, MonteBaralhoTreino, useBaralhoTreino } from './BaralhoTreino';
 
-/** Passatempo local durante a própria vez de embaralhar, sem enviar ações ao motor. */
-export function BaralhoNaPartida() {
-  const treino = useBaralhoTreino();
+/** Floreios na própria vez de embaralhar (habilidade da loja): cada truque embaralha de verdade. */
+export function BaralhoNaPartida({ aoEmbaralhar }: { aoEmbaralhar: () => void }) {
+  const treino = useBaralhoTreino(aoEmbaralhar);
   return (
-    <aside className="baralho-na-partida" data-testid="treino-na-partida" aria-label="Treino de embaralhamento na partida">
+    <aside className="baralho-na-partida" data-testid="treino-na-partida" aria-label="Floreios ao embaralhar">
       <div className="baralho-na-partida-monte">
         <MonteBaralhoTreino treino={treino} />
       </div>

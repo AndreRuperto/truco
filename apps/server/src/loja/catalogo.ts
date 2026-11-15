@@ -6,7 +6,7 @@ import type { Moeda } from './regras';
  * Personagem, moldura do Avatar, superfície do Tampo).
  */
 
-export const SLOTS = ['verso', 'roupa', 'moldura', 'avatar', 'tampo'] as const;
+export const SLOTS = ['verso', 'roupa', 'moldura', 'avatar', 'tampo', 'habilidade'] as const;
 export type Slot = (typeof SLOTS)[number];
 
 export type EstampaVerso = 'losango' | 'listra' | 'azulejo' | 'chita' | 'cartola';
@@ -36,7 +36,12 @@ export interface VisualTampo {
   superficie: SuperficieTampo;
 }
 
-export type VisualItem = VisualVerso | VisualRoupa | VisualMoldura | VisualAvatar | VisualTampo;
+/** Habilidade: não muda o visual de ninguém, só o que a pessoa pode fazer (os floreios ao embaralhar). */
+export interface VisualHabilidade {
+  floreios: boolean;
+}
+
+export type VisualItem = VisualVerso | VisualRoupa | VisualMoldura | VisualAvatar | VisualTampo | VisualHabilidade;
 
 export interface ItemLoja {
   id: string;
@@ -82,6 +87,10 @@ export const ITENS: readonly ItemLoja[] = [
   { id: 'tampo-plastico', slot: 'tampo', nome: 'Plástico', preco: null, visual: { superficie: 'plastico' } },
   { id: 'tampo-marmore', slot: 'tampo', nome: 'Mármore de Bar', preco: pila(200), visual: { superficie: 'marmore' } },
   { id: 'tampo-formica', slot: 'tampo', nome: 'Fórmica Anos 70', preco: pila(150), visual: { superficie: 'formica' } },
+  // Habilidade (pedido do André): os truques de embaralhar (cascata, corte triplo, leque, mola)
+  // embaralham de verdade na sua vez. Comprada com Fichas, o dinheiro do jogo; admin tem sem comprar.
+  { id: 'habilidade-simples', slot: 'habilidade', nome: 'Embaralhar simples', preco: null, visual: { floreios: false } },
+  { id: 'habilidade-floreios', slot: 'habilidade', nome: 'Floreios', preco: fichas(5000), visual: { floreios: true } },
 ];
 
 export interface PacotePila {

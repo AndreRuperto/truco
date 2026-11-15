@@ -9,7 +9,7 @@ import { criarMesaAberta, criarMesaPrivada, entrarNaMesa, entrarPorCodigo, lerTo
 import { useCarteira, useFila, useLoja, useSessao } from './rede/hooks';
 import { api, carteira, loja, lojaFila, sessao } from './rede/instancia';
 import { TelaLoja, TelaLojaObrigado } from './telas/Loja';
-import { type AvisoBonusDados, avisoDosBonus, itemPorIdDoCatalogo, versoEquipado } from './logica/lojaApp';
+import { type AvisoBonusDados, avisoDosBonus, itemPorIdDoCatalogo, temFloreios, versoEquipado } from './logica/lojaApp';
 import { estiloVerso } from './logica/lojaItens';
 import { navegar, useRota } from './rede/rota';
 import { TelaEntrar } from './telas/Entrar';
@@ -180,6 +180,7 @@ export function App() {
       <TelaMesa
         temConta={!!ses.usuario}
         inventario={cart.carteira?.inventario}
+        floreios={temFloreios(ses.usuario, cart.carteira)}
         snap={{ ...snap, msg: { ...anterior, prazo: null } }}
         acoes={loja}
         desatualizada
@@ -205,6 +206,7 @@ export function App() {
           salaId={snap.salaId}
           chat={snap.chat}
           aoChat={loja.enviarChat}
+          floreios={temFloreios(ses.usuario, cart.carteira)}
         />
       );
     else
@@ -212,6 +214,7 @@ export function App() {
         <TelaMesa
           temConta={!!ses.usuario}
           inventario={cart.carteira?.inventario}
+          floreios={temFloreios(ses.usuario, cart.carteira)}
           snap={snap}
           acoes={loja}
           aoChat={loja.enviarChat}

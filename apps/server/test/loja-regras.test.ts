@@ -88,6 +88,13 @@ describe('catálogo', () => {
     expect(avatares.map((i) => i.id)).toEqual(['avatar-violeiro', 'avatar-garrafa', 'avatar-caramelo', 'avatar-mao', 'avatar-dono', 'avatar-vo']);
     for (const a of avatares) expect(a.preco).not.toBeNull();
   });
+  it('habilidade: embaralhar simples de série e Floreios por 5.000 Fichas (o dinheiro do jogo)', () => {
+    const habilidades = ITENS.filter((i) => i.slot === 'habilidade');
+    expect(habilidades.map((i) => [i.id, i.preco])).toEqual([
+      ['habilidade-simples', null],
+      ['habilidade-floreios', { moeda: 'fichas', valor: 5000 }],
+    ]);
+  });
   it('itens de Fichas não estão à venda por Pila e vice-versa (um preço só)', () => {
     expect(ITENS.some((i) => i.preco?.moeda === 'fichas')).toBe(true);
     expect(ITENS.some((i) => i.preco?.moeda === 'pila')).toBe(true);

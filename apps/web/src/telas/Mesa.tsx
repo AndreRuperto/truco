@@ -62,9 +62,11 @@ interface Props {
   desatualizada?: boolean;
   /** Itens da loja que a conta tem (libera os tampos comprados). */
   inventario?: readonly string[];
+  /** Habilidade Floreios (loja; admin tem sempre): os truques de embaralhar na sua vez. */
+  floreios?: boolean;
 }
 
-export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false, desatualizada = false, inventario = [] }: Props) {
+export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false, desatualizada = false, inventario = [], floreios = false }: Props) {
   const agora = useAgora(250);
   const raiz = useRef<HTMLElement>(null);
   // React 18 não conhece `inert` como propriedade booleana: liga direto no elemento.
@@ -161,7 +163,8 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   // No ritual a última rodada só fica no centro enquanto o resumo está na tela (depois as cartas já voltaram ao monte).
   const ultimaVisivel = emRitual && !resumoMao ? null : v.ultimaMao;
   const etapa = textoEtapa(v, nome);
-  const podeTreinarEmbaralhamento = v.fase === 'embaralhando' && v.ritual?.embaralhador === minha;
+  // Floreios: só com a habilidade, na sua vez de embaralhar e com o embaralhar disponível.
+  const acaoEmbaralhar = floreios && v.fase === 'embaralhando' && v.ritual?.embaralhador === minha ? msg.minhasAcoes.find((a) => a.tipo === 'embaralhar') : undefined;
   // Sem etapa do ritual: a linha do meio diz de quem é a vez e, se é de humano, quanto tempo falta.
   // Na vista 3D a cena já marca a vez (anel e segundos): a linha fica só para o ritual.
   const vezTexto = etapa || msg.janelaFamilia || vista3d ? null : textoVez(v, agentes, minha, nome, msg.prazo, agora);
@@ -398,7 +401,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
         <div ref={camadaRitual} className="camada-voo" aria-hidden="true" />
       </Tampo>
       )}
-      {podeTreinarEmbaralhamento && <BaralhoNaPartida key={minha} />}
+      {acaoEmbaralhar && <BaralhoNaPartida key={minha} aoEmbaralhar={() => acoes.enviarAcao(acaoEmbaralhar)} />}
       {aviso3d && (
         <p className="aviso-3d" role="alert">
           {aviso3d}
