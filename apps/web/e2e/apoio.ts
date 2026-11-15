@@ -1,7 +1,10 @@
 import type { Page } from '@playwright/test';
 
-/** A ação padrão de cada etapa: passar sem embaralhar, cortar (até gastar os 3), dar por cima, não conferir. */
-const PADRAO = ['Passar pra cortar', 'Cortar', 'Por cima', 'Deixar passar'] as const;
+/**
+ * A ação padrão de cada etapa: passar sem embaralhar, cortar (até gastar os 3), dar por cima, não
+ * conferir e, na cangada, mostrar a sua (uma por vez: sem isso cada carta espera o prazo de 20 s).
+ */
+const PADRAO = ['Passar pra cortar', 'Cortar', 'Por cima', 'Deixar passar', 'Mostrar a sua', 'Abrir a de baixo'] as const;
 
 /**
  * Faz a etapa do ritual (ou do conferir) que estiver na tela; true se clicou em algo.
