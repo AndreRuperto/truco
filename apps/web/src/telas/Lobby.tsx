@@ -144,20 +144,20 @@ export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferencia
               </select>
             </div>
             <div className="campo">
+              <label htmlFor="familia">Família</label>
+              <select id="familia" value={f.familia} onChange={(e) => mudar('familia', e.target.value as RegrasMesa['familia'])}>
+                <option value="off">Desligada</option>
+                <option value="aberta">Aberta (mostra as cartas)</option>
+                <option value="fechada">Fechada</option>
+              </select>
+            </div>
+            <div className="campo">
               <label htmlFor="mao11">Mão de ferro</label>
               <select id="mao11" value={f.maoDe11} onChange={(e) => mudar('maoDe11', e.target.value as RegrasMesa['maoDe11'])}>
                 <option value="off">Desligada</option>
                 <option value="onzeAOnze">
                   Só no {limiteMaoEspecial(f.pontuacao)} a {limiteMaoEspecial(f.pontuacao)}
                 </option>
-              </select>
-            </div>
-            <div className="campo">
-              <label htmlFor="familia">Família</label>
-              <select id="familia" value={f.familia} onChange={(e) => mudar('familia', e.target.value as RegrasMesa['familia'])}>
-                <option value="off">Desligada</option>
-                <option value="aberta">Aberta (mostra as cartas)</option>
-                <option value="fechada">Fechada</option>
               </select>
             </div>
             {f.familia !== 'off' && (
@@ -181,8 +181,16 @@ export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferencia
                 <option value="4">4 humanos</option>
               </select>
             </div>
+            <div className="campo">
+              <label htmlFor="bots">Bots</label>
+              <select id="bots" value={f.nivelBot} onChange={(e) => mudar('nivelBot', e.target.value as NivelBot)}>
+                <option value="facil">Fácil</option>
+                <option value="dificil">Difícil</option>
+              </select>
+            </div>
+            {/* Linha inteira: "1000 Fichas por cabeça" não cabe na coluna da direita. */}
             {apelidoConta !== undefined && (f.humanos >= 2 || f.privada) && (
-              <div className="campo">
+              <div className="campo largo">
                 <label htmlFor="cacife">Valendo Fichas</label>
                 <select id="cacife" value={String(f.cacife ?? 0)} onChange={(e) => mudar('cacife', Number(e.target.value))}>
                   {CACIFES.map((c) => (
@@ -193,13 +201,6 @@ export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferencia
                 </select>
               </div>
             )}
-            <div className="campo">
-              <label htmlFor="bots">Bots</label>
-              <select id="bots" value={f.nivelBot} onChange={(e) => mudar('nivelBot', e.target.value as NivelBot)}>
-                <option value="facil">Fácil</option>
-                <option value="dificil">Difícil</option>
-              </select>
-            </div>
             <label className="campo-check largo">
               <input type="checkbox" checked={f.sinais} onChange={(e) => mudar('sinais', e.target.checked)} />
               Sinais entre parceiros

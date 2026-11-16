@@ -697,3 +697,46 @@ for (const [largura, altura] of [[1857, 912], [1440, 900], [1280, 800], [1024, 7
     }
   });
 }
+
+/**
+ * Pedido do André (2026-11-16): no desktop, "Jogar coberta" fica ao lado das cartas e estava
+ * colado na última carta da mão. Folga mínima de 24 px entre a carta e o botão.
+ */
+for (const [largura, altura] of [[1440, 900], [1280, 800], [1024, 768]] as const) {
+  test('desktop: "Jogar coberta" afastado das cartas - ' + largura + 'x' + altura, async ({ browser }, testInfo) => {
+    test.setTimeout(150_000);
+    const ctx = await browser.newContext({ ...devices['Desktop Chrome'], viewport: { width: largura, height: altura }, baseURL: test.info().project.use.baseURL });
+    const page = await ctx.newPage();
+    try {
+      await page.goto('/');
+      await page.getByLabel('Apelido').fill('QA Coberta');
+      await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+      await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+      const coberta = page.getByRole('button', { name: 'Jogar coberta' });
+      const jogavel = page.getByTestId('minha-mao').locator('button.carta-botao:enabled');
+      const deNovo = page.getByRole('button', { name: 'Jogar de novo' });
+      // Joga a 1ª vaza até aparecer "Jogar coberta" (só vale da 2ª em diante).
+      await expect(async () => {
+        if (await deNovo.isVisible()) await deNovo.click({ timeout: 1_000 }).catch(() => {});
+        await agirNoRitual(page).catch(() => false);
+        if (!(await coberta.isVisible()) && (await jogavel.count()) > 0) await jogavel.first().click({ timeout: 1_000 }).catch(() => {});
+        await expect(coberta).toBeVisible({ timeout: 300 });
+      }).toPass({ timeout: 120_000, intervals: [300] });
+      await expect.poll(() => page.evaluate(() => Array.from(
+        document.querySelectorAll('[data-testid="minha-mao"] .carta-botao .carta'),
+      ).every((c) => c.getAnimations().length === 0))).toBe(true);
+      const g = await page.evaluate(() => {
+        const botao = document.querySelector('[data-testid="minha-mao"] .alternar-coberta')!.getBoundingClientRect();
+        const cartas = Array.from(document.querySelectorAll('[data-testid="minha-mao"] .carta-botao .carta')).map((c) => c.getBoundingClientRect());
+        return { folga: botao.left - Math.max(...cartas.map((r) => r.right)), mesmaLinha: cartas.some((r) => r.bottom > botao.top && r.top < botao.bottom) };
+      });
+      const foto = testInfo.outputPath('coberta-folga-' + largura + 'x' + altura + '.png');
+      await page.screenshot({ path: foto });
+      await testInfo.attach('coberta-folga', { path: foto, contentType: 'image/png' });
+      expect(g.mesmaLinha, 'o botão deveria estar ao lado das cartas neste tamanho').toBe(true);
+      expect(g.folga, 'folga entre a última carta e "Jogar coberta" (px)').toBeGreaterThanOrEqual(24);
+    } finally {
+      await ctx.close();
+    }
+  });
+}

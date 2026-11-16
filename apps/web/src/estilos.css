@@ -739,8 +739,9 @@ button:disabled {
   padding-top: var(--e2);
 }
 @media (min-width: 560px) {
+  /* A coluna da esquerda é mais larga: nela ficam as escolhas de texto longo (variante, família). */
   .regras-grade {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   }
   .regras-grade .largo {
     grid-column: 1 / -1;
@@ -2909,6 +2910,10 @@ body:has(.tela-mesa) {
     grid-column: 2;
     grid-auto-flow: column;
     align-items: center;
+  }
+  /* "Jogar coberta" ao lado da mão: a carta do leque gira e encostava no botão. */
+  .tela-mesa > .minha-mao > .alternar-coberta {
+    margin-inline-start: clamp(36px, 3vw, 48px);
   }
   .tela-mesa > .minha-mao + .rodape-mesa {
     grid-column: 3;
