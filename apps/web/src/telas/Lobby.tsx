@@ -172,6 +172,19 @@ export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferencia
                 </select>
               </div>
             )}
+            {f.privada && aoCriarPrivada && (
+              <div className="campo">
+                <label htmlFor="tempo-jogada">Tempo por jogada</label>
+                <select
+                  id="tempo-jogada"
+                  value={f.semLimiteDeTempo ? 'semLimite' : 'limite'}
+                  onChange={(e) => mudar('semLimiteDeTempo', e.target.value === 'semLimite')}
+                >
+                  <option value="limite">20 segundos</option>
+                  <option value="semLimite">Sem limite</option>
+                </select>
+              </div>
+            )}
             <div className="campo">
               <label htmlFor="humanos">Humanos</label>
               <select id="humanos" value={String(f.humanos)} onChange={(e) => mudar('humanos', Number(e.target.value))}>
@@ -269,6 +282,7 @@ function resumoLobby(f: FormLobby): string {
     !f.sinais ? 'sem sinais' : f.chanceInterceptarSinal > 0 ? 'sinais interceptáveis' : null,
     !f.provocacoes ? 'sem provocações' : null,
     f.cacife && (f.humanos >= 2 || f.privada) ? `valendo ${f.cacife} Fichas` : null,
+    f.privada && f.semLimiteDeTempo ? 'sem limite de tempo' : null,
   ];
   return partes.filter(Boolean).join(', ');
 }

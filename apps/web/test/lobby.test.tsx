@@ -128,6 +128,33 @@ describe('Lobby', () => {
     expect(resumo).toHaveTextContent('2 bots difíceis');
   });
 
+  test('mesa privada: o dono escolhe "Sem limite" de tempo por jogada; o padrão continua 20 s', async () => {
+    const user = userEvent.setup();
+    const aoCriarPrivada = vi.fn();
+    const aoJogar = vi.fn();
+    render(<Lobby aoJogar={aoJogar} aoCriarPrivada={aoCriarPrivada} />);
+    // Mesa pública: a opção nem aparece (o relógio segura as mesas com desconhecidos).
+    expect(screen.queryByLabelText('Tempo por jogada')).toBeNull();
+    await user.click(screen.getByLabelText('Mesa privada (só entra quem tiver o link)'));
+    expect(screen.getByLabelText('Tempo por jogada')).toHaveValue('limite');
+    await user.selectOptions(screen.getByLabelText('Tempo por jogada'), 'semLimite');
+    expect(screen.getByText(/sem limite de tempo/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Criar mesa privada' }));
+    expect(aoCriarPrivada.mock.calls[0][0]).toMatchObject({ modo: 'privada', semLimiteDeTempo: true });
+  });
+
+  test('sem limite não vaza para a mesa pública ao desmarcar "Mesa privada"', async () => {
+    const user = userEvent.setup();
+    const aoCriarPrivada = vi.fn();
+    const aoJogar = vi.fn();
+    render(<Lobby aoJogar={aoJogar} aoCriarPrivada={aoCriarPrivada} />);
+    await user.click(screen.getByLabelText('Mesa privada (só entra quem tiver o link)'));
+    await user.selectOptions(screen.getByLabelText('Tempo por jogada'), 'semLimite');
+    await user.click(screen.getByLabelText('Mesa privada (só entra quem tiver o link)'));
+    await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
+    expect(aoJogar.mock.calls[0][0]).not.toHaveProperty('semLimiteDeTempo');
+  });
+
   test('mesa privada: chama aoCriarPrivada em vez de aoJogar', async () => {
     const user = userEvent.setup();
     const aoJogar = vi.fn();

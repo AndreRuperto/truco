@@ -127,6 +127,11 @@ export interface MsgEstado {
   sinais?: boolean;
   /** Provocações com a moldura liberadas (nunca na ranqueada). Ausente = desligadas (servidor antigo). */
   provocacoes?: boolean;
+  /**
+   * Mesa privada sem limite de tempo: quem está conectado não tem prazo (o `prazo` fica null na
+   * vez dele). Quem caiu continua com o prazo normal. Ausente = com limite (servidor antigo).
+   */
+  semLimiteDeTempo?: boolean;
   /** Quantos humanos a mesa espera antes de começar sozinha (o resto vira bot). */
   humanosEsperados: number;
   visao: Visao | null;
@@ -240,6 +245,8 @@ export interface OpcoesSala {
   provocacoes: boolean;
   /** Fichas que cada humano com conta põe no pote (0 = sem cacife). */
   cacife: number;
+  /** Sem prazo para quem está conectado (só na mesa privada; ver `MsgEstado.semLimiteDeTempo`). */
+  semLimiteDeTempo: boolean;
 }
 
 /** Sinais vêm ligados no paulista e desligados no mineiro (quem quiser liga na mesa). */
@@ -319,6 +326,7 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
       provocacoes: false,
       // Vem só da fila (que calcula pela patente); o cliente não cria ranqueada.
       cacife: cacifeRanqueadaValido(o.cacife),
+      semLimiteDeTempo: false,
     };
   }
   const nivelBot: NivelBot = modo === 'classica' ? 'facil' : modo === 'desafio' ? 'dificil' : nivelPedido;
@@ -327,7 +335,9 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
   const humanosMesa = modo === 'privada' && humanos < 2 ? 4 : humanos;
   // Sozinho contra bots não há com quem apostar.
   const cacife = humanosMesa >= 2 ? cacifeValido(o.cacife) : 0;
-  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, provocacoes, cacife };
+  // Sem limite de tempo é coisa de mesa entre amigos: nas públicas o relógio segura a mesa.
+  const semLimiteDeTempo = modo === 'privada' && o.semLimiteDeTempo === true;
+  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, provocacoes, cacife, semLimiteDeTempo };
 }
 
 /** Campos do `filterBy` da sala `mesa`, sempre preenchidos com valores validados. */

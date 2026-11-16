@@ -2,6 +2,7 @@ import type { Visao } from '@truco/engine';
 import { useEffect, useRef } from 'react';
 import type { EstadoLoja } from '../rede/loja';
 import { cadeiraNaPosicao } from '../logica/posicoes';
+import { vezEhMinha } from '../logica/prazo';
 import { tiposDaMesa } from '../componentes/Personagem';
 import { sonsDaAcao, sonsDoEstado } from './decidir';
 import { arquivoDaFala, ehVozPessoal, FALAS, falaDoBalao } from './falas';
@@ -71,8 +72,10 @@ export function useSonsDaMesa(snap: EstadoLoja, ligado: boolean, agora: number):
   // Minha vez de jogar carta: um sino; nos últimos 5 s, um tique por segundo.
   const prazo = msg?.prazo ?? null;
   const meu = !!prazo && prazo.cadeiras.includes(minha);
+  // Mesa sem limite de tempo: sem prazo, o sino toca do mesmo jeito (sem os tiques).
+  const vezMinha = !!msg && vezEhMinha(msg);
   const jogando = visao?.fase === 'jogando' || visao?.fase === 'respondendoTruco';
-  const minhaVez = meu && jogando;
+  const minhaVez = vezMinha && jogando;
   const eraMinha = useRef(false);
   useEffect(() => {
     if (minhaVez && !eraMinha.current && ligado) sintetizar('vez');

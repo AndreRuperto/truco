@@ -37,7 +37,7 @@ describe('chaveRegras', () => {
 
 describe('opcoesDaSala', () => {
   test('padrão: paulista ranqueado, 1 humano, bot fácil', () => {
-    expect(opcoesDaSala(undefined)).toEqual({ modo: 'classica', regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0, tempoFamiliaS: 20, sinais: true, provocacoes: true, cacife: 0 });
+    expect(opcoesDaSala(undefined)).toEqual({ modo: 'classica', regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0, tempoFamiliaS: 20, sinais: true, provocacoes: true, cacife: 0, semLimiteDeTempo: false });
   });
 
   test('mistura variante com regras customizadas', () => {
@@ -64,7 +64,7 @@ describe('opcoesDaSala', () => {
 
   test('valores inválidos caem no padrão', () => {
     const o = opcoesDaSala({ variante: 'gaucho', humanos: 9, nivelBot: 'deus', regras: { maoDe10: 'sim', familia: 'talvez' }, chanceInterceptarSinal: 2 });
-    expect(o).toEqual({ modo: 'classica', regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0, tempoFamiliaS: 20, sinais: true, provocacoes: true, cacife: 0 });
+    expect(o).toEqual({ modo: 'classica', regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0, tempoFamiliaS: 20, sinais: true, provocacoes: true, cacife: 0, semLimiteDeTempo: false });
   });
 });
 
@@ -117,7 +117,7 @@ describe('modo da mesa', () => {
 
   test('ranqueada: regras fixas da variante, 2 ou 4 humanos, bot difícil, sem interceptação', () => {
     const o = opcoesDaSala({ modo: 'ranqueada', variante: 'mineiro', humanos: 3, regras: { familia: 'off' }, chanceInterceptarSinal: 0.5 });
-    expect(o).toEqual({ modo: 'ranqueada', regras: REGRAS_RANQUEADA.mineiro, humanos: 2, nivelBot: 'dificil', chanceInterceptarSinal: 0, tempoFamiliaS: 20, sinais: false, provocacoes: false, cacife: 0 });
+    expect(o).toEqual({ modo: 'ranqueada', regras: REGRAS_RANQUEADA.mineiro, humanos: 2, nivelBot: 'dificil', chanceInterceptarSinal: 0, tempoFamiliaS: 20, sinais: false, provocacoes: false, cacife: 0, semLimiteDeTempo: false });
     expect(opcoesDaSala({ modo: 'ranqueada', humanos: 4 }).humanos).toBe(4);
   });
 
