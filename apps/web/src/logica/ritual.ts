@@ -27,7 +27,8 @@ export function textoEtapa(v: Visao, nome: (c: Cadeira) => string): string | nul
   if (r && v.fase === 'escolhendoDistribuicao') return eu(r.embaralhador) ? 'Como você vai dar as cartas?' : `${nome(r.embaralhador)} vai dar as cartas`;
   const m = v.mao;
   if (m?.cangada && v.fase === 'empilhando') {
-    return m.cangada.empilhou[v.cadeira] ? 'Cangou! Esperando os outros empilharem' : 'Cangou! Escolha a carta que vai por cima';
+    if (m.cangada.empilhou[v.cadeira]) return 'Cangou! Esperando os outros empilharem';
+    return v.regras.variante === 'mineiro' ? 'Cangou! Escolha a carta que vai por cima (vale a de baixo)' : 'Cangou! Escolha a carta que vai por cima';
   }
   if (m?.cangada && v.fase === 'jogando') {
     const o = m.cangada.etapa === 'baixo' ? 'abrir as de baixo' : 'mostrar as de cima';

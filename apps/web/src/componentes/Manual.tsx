@@ -356,19 +356,29 @@ function secoesDe(v: Variante): SecaoInfo[] {
         <h3>Cangou a 1ª: cartas empilhadas</h3>
         <p>
           Quando a 1ª rodada canga, ninguém joga a 2ª carta na vez. <strong>Todo mundo junta as duas cartas que sobraram,
-          uma em cima da outra</strong>, e escolhe qual vai por cima: a mais forte, para decidir já na 2ª, ou a mais fraca,
-          guardando a forte embaixo. Cada um escolhe sem ver o que os outros fizeram. Na mesa, é só tocar na carta que vai
+          uma em cima da outra</strong>, e escolhe qual vai por cima. Cada um escolhe sem ver o que os outros fizeram. Na mesa, é só tocar na carta que vai
           por cima.
         </p>
+        <p>
+          <strong>Paulista: vale a de cima.</strong>
+        </p>
         <ol>
-          <li>Com tudo empilhado, quem é da vez pode pedir truco ou mandar mostrar.</li>
           <li>
-            <strong>Todos mostram a de cima ao mesmo tempo</strong>: essa é a 2ª rodada. A de baixo continua escondida.
+            Quem cangou mostra a de cima primeiro; depois, um de cada vez, cada um mostra a sua. Antes de mostrar, quem é
+            da vez pode pedir truco (no blefe, se quiser). As de cima decidem a 2ª.
           </li>
+          <li>Se a 2ª também cangar, abrem a de baixo do mesmo jeito, uma por vez, e ela decide a 3ª.</li>
+        </ol>
+        <p>
+          <strong>Mineiro: vale a de baixo.</strong>
+        </p>
+        <ol>
+          <li>Com tudo empilhado, as de cima viram juntas. Ficam à mostra e não valem nada.</li>
           <li>
-            Se a 2ª também cangar, quem é da vez (pode pedir truco de novo) manda <strong>abrir</strong>: todos viram a de
-            baixo de lado, e ela decide a 3ª.
+            Quem cangou abre a de baixo primeiro; depois, um de cada vez, cada um abre a sua. Antes de abrir, quem é da
+            vez pode pedir truco (no blefe, se quiser). A de baixo mais forte leva a mão.
           </li>
+          <li>Se as de baixo também cangarem, ninguém marca ponto: no mineiro o naipe não desempata.</li>
         </ol>
         <h3>Carta coberta</h3>
         <p>

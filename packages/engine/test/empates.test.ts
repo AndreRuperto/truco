@@ -55,8 +55,17 @@ const VARIANTES: { nome: string; regras: RegrasMesa; vira?: string; base: number
   { nome: 'mineiro', regras: MINEIRO, base: 2 },
 ];
 
+/**
+ * No mineiro a cangada vai pela de baixo: as de cima viram juntas e contam como 2ª rodada cangada.
+ * Então ['E', X] lá é jogado como ['E', E de cima, X de baixo].
+ */
+const casosDa = (regras: RegrasMesa) =>
+  regras.variante === 'mineiro'
+    ? CASOS.map((c) => (c.seq[0] === 'E' && c.seq.length === 2 ? { ...c, seq: ['E', 'E', c.seq[1]] as Resultado[] } : c))
+    : CASOS;
+
 describe.each(VARIANTES)('empates no $nome', ({ regras, vira, base }) => {
-  test.each(CASOS)('$seq → leva $vence', ({ seq, vence }) => {
+  test.each(casosDa(regras))('$seq → leva $vence', ({ seq, vence }) => {
     const s = distribuida(regras, maosPara(seq), vira);
     expect(s.pe).toBe(3);
     const fim = jogarAteOFimDaMao(s);

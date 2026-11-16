@@ -34,12 +34,19 @@ describe('cangada na Mesa', () => {
     expect(t.estado('a')!.visao!.mao!.cangada!.empilhou).toEqual([false, true, true, true]);
     // o prazo não reinicia quando os bots empilham
     expect(t.estado('a')!.prazo!.ate).toBe(e.prazo!.ate);
-    const [, segunda] = t.estado('a')!.visao!.mao!.minhaMao;
+    const [primeira, segunda] = t.estado('a')!.visao!.mao!.minhaMao;
     t.mesa.acao('a', { tipo: 'empilhar', indice: 1 });
     const v = t.estado('a')!.visao!;
     expect(v.fase).toBe('jogando');
-    expect(v.mao!.cangada!.etapa).toBe('cima');
-    expect(v.mao!.minhaMao[0]).toEqual(segunda);
+    if (v.regras.variante === 'mineiro') {
+      // Mineiro: as de cima viram juntas (a 2ª da Ana foi por cima) e fica a de baixo, que decide.
+      expect(v.mao!.cangada!.etapa).toBe('baixo');
+      expect(v.mao!.rodadasJogadas[1].find((j) => j.cadeira === 0)!.carta).toEqual(segunda);
+      expect(v.mao!.minhaMao).toEqual([primeira]);
+    } else {
+      expect(v.mao!.cangada!.etapa).toBe('cima');
+      expect(v.mao!.minhaMao[0]).toEqual(segunda);
+    }
   });
 
   test('o tempo acaba: o servidor empilha pela Ana (a mais forte por cima) e o jogo segue', () => {

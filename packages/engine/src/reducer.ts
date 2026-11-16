@@ -404,10 +404,23 @@ function empilhar(s: EstadoPartida, cadeira: Cadeira, indice: number): void {
   const [cima] = mao.splice(indice, 1);
   mao.unshift(cima);
   m.cangada.empilhou[cadeira] = true;
-  if (m.cangada.empilhou.every(Boolean)) {
+  if (!m.cangada.empilhou.every(Boolean)) return;
+  s.fase = 'jogando';
+  if (s.regras.variante !== 'mineiro') {
     m.cangada.etapa = 'cima';
-    s.fase = 'jogando';
+    return;
   }
+  // Mineiro: as 4 de cima viram juntas, à mostra e sem valor (uma rodada cangada, a 2ª); a de
+  // baixo decide, aberta uma por vez a partir de quem cangou (a vez, que não muda).
+  const ordem = [0, 1, 2, 3].map((i) => ((m.vez + i) % 4) as Cadeira);
+  m.rodadasJogadas.push(
+    ordem.map((c) => {
+      const carta = m.maos[c].shift()!;
+      return { cadeira: c, carta, coberta: false, forca: forca(carta, s.regras.variante, m.vira) };
+    }),
+  );
+  m.rodadas.push('empate');
+  m.cangada.etapa = 'baixo';
 }
 
 /**
