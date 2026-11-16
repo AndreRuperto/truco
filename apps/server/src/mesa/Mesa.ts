@@ -130,6 +130,12 @@ export interface OpcoesMesa {
   aoAplicar?: (acao: AcaoJogador, porHumano: boolean) => void;
   /** Decisão dos bots. Padrão: bot fácil ou difícil conforme `nivelBot`. */
   decidirBot?: (s: EstadoPartida, cadeira: Cadeira) => AcaoJogador | null;
+  /**
+   * Mesa privada sem limite de tempo: humano conectado não tem prazo (jogada, ritual, truco,
+   * conferir, cangada). Quem caiu tem o prazo normal e a ação padrão, para a mesa não travar.
+   * A janela de família continua com o tempo dela (`janelaFamiliaMs`).
+   */
+  semLimiteDeTempo?: boolean;
   /** Chance (0–1) de um bot bater na mesa ao pedir seis/nove/doze. Padrão `CHANCE_BATIDA_BOT`. */
   chanceBatidaBot?: number;
 }
@@ -689,10 +695,11 @@ export class Mesa {
     // têm um prazo só, e quem não empilhar até lá empilha a mais forte por cima.
     if (s.fase === 'empilhando') {
       const agora = this.relogio.agora();
-      this.ateEmpilhar ??= agora + this.tempos.jogadaMs;
       const faltam = quemDeveAgir(s);
-      const humanos = faltam.filter((c) => this.humanoNaVez(c));
+      // Sem limite de tempo, só quem caiu tem prazo (o prazo começa quando o primeiro cai).
+      const humanos = faltam.filter((c) => this.humanoNaVez(c) && this.temPrazo(c));
       if (humanos.length > 0) {
+        this.ateEmpilhar ??= agora + this.tempos.jogadaMs;
         this.prazo = { cadeiras: humanos, ate: this.ateEmpilhar };
         this.agendar(Math.max(0, this.ateEmpilhar - agora), () => {
           for (const c of humanos) if (this.estado?.fase === 'empilhando' && quemDeveAgir(this.estado).includes(c)) this.agirPor(c);
@@ -705,14 +712,15 @@ export class Mesa {
     this.ateEmpilhar = null;
     // Os agentes são sempre de uma só dupla (ou uma cadeira, no ritual). Havendo humano ativo
     // entre eles, ninguém decide por ele: espera o prazo; no fim, o parceiro bot (se houver) decide.
+    // Sem limite de tempo e algum desses humanos conectado: espera sem relógio (ninguém age por ele).
     const agentes = quemDeveAgir(s);
     const humanos = agentes.filter((c) => this.humanoNaVez(c));
-    if (humanos.length > 0) {
+    if (humanos.length > 0 && !humanos.some((c) => !this.temPrazo(c))) {
       const ms = this.prazoMs(s);
       const substituto = agentes.find((c) => !this.humanoNaVez(c));
       this.prazo = { cadeiras: humanos, ate: this.relogio.agora() + ms };
       this.agendar(ms, () => (substituto !== undefined ? this.jogarBot(substituto) : this.estourouTempo(humanos[0])));
-    } else {
+    } else if (humanos.length === 0) {
       const ms = this.atrasoBot(s);
       for (const c of agentes) this.agendar(ms, () => this.jogarBot(c));
     }
@@ -788,7 +796,8 @@ export class Mesa {
    */
   private chaveDoTurno(s: EstadoPartida): string {
     const agentes = quemDeveAgir(s);
-    const marcas = agentes.map((c) => `${c}${this.humanoNaVez(c) ? 'h' : 'b'}`);
+    // Sem limite de tempo, cair ou voltar muda o prazo (quem caiu tem relógio): entra na chave.
+    const marcas = agentes.map((c) => `${c}${this.humanoNaVez(c) ? (this.temPrazo(c) && this.o.semLimiteDeTempo ? 'd' : 'h') : 'b'}`);
     const marco = agentes.some((c) => this.humanoNaVez(c)) ? `e${this.etapa}` : `v${this.versao}`;
     const j = this.janelaAberta() ? `|jf${[...this.janela!.decidiram].join('')}` : '';
     return `${marco}|${s.fase}|${marcas.join(',')}${j}`;
@@ -914,6 +923,7 @@ export class Mesa {
       chanceInterceptarSinal: this.o.chanceInterceptarSinal ?? 0,
       sinais: this.o.sinais !== false,
       provocacoes: this.provocacoesLigadas(),
+      semLimiteDeTempo: this.o.semLimiteDeTempo === true,
       humanosEsperados: this.o.humanosEsperados,
       visao: s ? visaoDoJogador(s, c) : null,
       prazo: this.prazo,
@@ -1027,6 +1037,11 @@ export class Mesa {
   private humanoNaVez(c: Cadeira): boolean {
     const o = this.ocupantes[c];
     return o.humano && o.id !== null;
+  }
+
+  /** Esta cadeira humana corre contra o relógio: sempre, menos conectada numa mesa sem limite de tempo. */
+  private temPrazo(c: Cadeira): boolean {
+    return !this.o.semLimiteDeTempo || !this.humanoAtivo(c);
   }
 
   private humanosSentados(): number {

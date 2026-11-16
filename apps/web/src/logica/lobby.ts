@@ -25,6 +25,8 @@ export interface FormLobby {
   privada: boolean;
   /** Fichas por cabeça (0 = sem cacife). Não fica nas preferências: cada mesa escolhe. */
   cacife?: number;
+  /** Mesa privada sem limite de tempo por jogada. Não fica nas preferências: cada mesa escolhe. */
+  semLimiteDeTempo?: boolean;
 }
 
 /** Opções do campo "Adversários podem interceptar sinais". */
@@ -55,6 +57,8 @@ export interface OpcoesEntrada {
   avatar?: string | null;
   /** Fichas por cabeça (0/ausente = sem cacife; o servidor valida e só aceita com conta). */
   cacife?: number;
+  /** Só na mesa privada (o servidor ignora nas outras): ninguém conectado tem prazo para agir. */
+  semLimiteDeTempo?: boolean;
 }
 
 export const CHAVE_APELIDO = 'truco:apelido';
@@ -191,6 +195,7 @@ export function trocarVariante(f: FormLobby, variante: Variante): FormLobby {
     tempoFamiliaS: f.tempoFamiliaS,
     provocacoes: f.provocacoes,
     privada: f.privada,
+    semLimiteDeTempo: f.semLimiteDeTempo,
   };
 }
 
@@ -218,6 +223,7 @@ export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
     modo: f.privada ? 'privada' : f.nivelBot === 'dificil' ? 'desafio' : 'classica',
     // Sozinho contra bots não há aposta.
     cacife: f.privada || f.humanos >= 2 ? (f.cacife ?? 0) : 0,
+    ...(f.privada && f.semLimiteDeTempo ? { semLimiteDeTempo: true } : {}),
   };
 }
 

@@ -319,7 +319,7 @@ function secoesDe(v: Variante): SecaoInfo[] {
           <p>No mineiro não tem vira: as manilhas são sempre as mesmas.</p>
         )}
         <p>
-          Se você não fizer nada no seu tempo, o jogo faz o movimento por você. Durante a partida, cada jogada tem 20 segundos.
+          Se você não fizer nada no seu tempo, o jogo faz o movimento por você. Durante a partida, cada jogada tem 20 segundos; na mesa privada, quem cria pode tirar o limite de tempo.
         </p>
       </>
     ),

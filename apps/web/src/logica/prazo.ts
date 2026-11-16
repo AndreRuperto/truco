@@ -1,3 +1,4 @@
+import { quemDeveAgir } from '@truco/engine';
 import type { MsgEstado } from '@truco/protocolo';
 
 type Prazo = MsgEstado['prazo'];
@@ -18,3 +19,12 @@ export function fracaoRestante(prazo: Prazo, agora: number, totalMs: number): nu
 }
 
 export const prazoEhMeu = (msg: MsgEstado): boolean => !!msg.prazo?.cadeiras.includes(msg.minhaCadeira);
+
+/**
+ * É a minha vez de agir (aviso na aba, sino)? Com limite, o servidor manda o prazo de quem age.
+ * Na mesa sem limite de tempo não há prazo para quem está conectado: vale quem deve agir.
+ */
+export function vezEhMinha(msg: MsgEstado): boolean {
+  if (prazoEhMeu(msg)) return true;
+  return msg.semLimiteDeTempo === true && !!msg.visao && quemDeveAgir(msg.visao).includes(msg.minhaCadeira);
+}

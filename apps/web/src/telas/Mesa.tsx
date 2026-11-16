@@ -33,7 +33,7 @@ import { rotuloCarta } from '../logica/cartas';
 import { baloesAtivos } from '../logica/eventos';
 import { estadoMesa3D } from '../logica/mesa3d';
 import { cadeiraNaPosicao } from '../logica/posicoes';
-import { prazoEhMeu } from '../logica/prazo';
+import { prazoEhMeu, vezEhMinha } from '../logica/prazo';
 import { donoDoMonte, mostrarResumoMao, textoEtapa } from '../logica/ritual';
 import { type SinalRecebido, temCoringa, textoSinalRecebido } from '../logica/sinais';
 import { placarRelativo, resumoFimMao, resumoFimPartida, textoPedidoPendente, textoResultadoRodada, valorMao } from '../logica/textos';
@@ -80,7 +80,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   const [somLigado, setSomLigado] = useState(lerSomLigado);
   useSonsDaMesa(snap, somLigado, agora);
   // Em outra aba/app: o título pisca e o celular vibra quando é a minha vez de agir.
-  useAvisoNaAba(prazoEhMeu(snap.msg!), 'Sua vez! · Truco', somLigado);
+  useAvisoNaAba(vezEhMinha(snap.msg!), 'Sua vez! · Truco', somLigado);
   const [visualizacao, setVisualizacao] = useState<VisualizacaoMesa>(lerVisualizacaoMesa);
   const ultima2D = useRef<'personagens' | 'cadeiras'>(visualizacao === 'cadeiras' ? 'cadeiras' : 'personagens');
   const [menuVistas, setMenuVistas] = useState(false);

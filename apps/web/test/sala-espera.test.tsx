@@ -47,6 +47,13 @@ describe('SalaEspera', () => {
     expect(screen.getByRole('list', { name: 'Regras da mesa' })).not.toHaveTextContent('Mão limpa');
   });
 
+  test('mesa sem limite de tempo: todos veem nas regras da casa', () => {
+    const { rerender } = render(<SalaEspera msg={msgEstado(null, 2, { cadeiras, modo: 'privada', semLimiteDeTempo: true })} aoIniciar={vi.fn()} aoSair={vi.fn()} />);
+    expect(screen.getByRole('list', { name: 'Regras da mesa' })).toHaveTextContent('Sem limite de tempo por jogada');
+    rerender(<SalaEspera msg={msgEstado(null, 2, { cadeiras, modo: 'privada' })} aoIniciar={vi.fn()} aoSair={vi.fn()} />);
+    expect(screen.getByRole('list', { name: 'Regras da mesa' })).not.toHaveTextContent('Sem limite');
+  });
+
   test('conta os humanos que faltam, não as cadeiras vazias (bots completam o resto)', () => {
     const so: InfoCadeira[] = [
       { tipo: 'humano', nome: 'Ana', conectado: true },
