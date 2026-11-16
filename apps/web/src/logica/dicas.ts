@@ -58,7 +58,13 @@ export function dicaAgora(msg: MsgEstado, ui: AcoesUI, vistas: readonly IdDica[]
       ? { id: 'responder', texto: 'Pediram truco! Aceitar: a mão passa a valer mais. Aumentar: você sobe a aposta. Correr: eles levam o que a mão valia antes.' }
       : null,
     ui.empilhaveis.length > 0
-      ? { id: 'cangada', texto: 'Cangou (a 1ª rodada empatou)! Toque na carta que vai por cima: ela decide a 2ª. A de baixo só abre se cangar de novo.' }
+      ? {
+          id: 'cangada',
+          texto:
+            v.regras.variante === 'mineiro'
+              ? 'Cangou (a 1ª rodada empatou)! Toque na carta que vai por cima: ela fica à mostra e não vale. Quem decide é a de baixo, aberta uma por vez.'
+              : 'Cangou (a 1ª rodada empatou)! Toque na carta que vai por cima: ela decide a 2ª. A de baixo só abre se cangar de novo.',
+        }
       : null,
     msg.janelaFamilia && !msg.janelaFamilia.decidiram.includes(msg.minhaCadeira)
       ? { id: 'familia', texto: 'Família é mão só de Q, J, K e Ás. Tem? Peça e troque as cartas. Não tem? Toque em "Sem família" para o jogo seguir.' }

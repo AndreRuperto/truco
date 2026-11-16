@@ -26,11 +26,12 @@ export function botFacil(s: EstadoPartida, cadeira: Cadeira): AcaoJogador | null
     return { tipo: 'mao10', cadeira, jogar: boa };
   }
 
-  // Cangada: a mais forte por cima (a 2ª rodada decide); com tudo empilhado, a vez manda mostrar.
+  // Cangada: a que decide é a mais forte — por cima no paulista, embaixo no mineiro (lá a de baixo
+  // decide). Com tudo empilhado, a vez manda mostrar.
   if (s.fase === 'empilhando') {
     if (!m.cangada || m.cangada.empilhou[cadeira]) return null;
     const forte = minha.reduce((b, c, i) => (f(c) > f(minha[b]) ? i : b), 0);
-    return { tipo: 'empilhar', cadeira, indice: forte };
+    return { tipo: 'empilhar', cadeira, indice: s.regras.variante === 'mineiro' ? 1 - forte : forte };
   }
   if (s.fase === 'jogando' && m.cangada && m.vez === cadeira) return { tipo: 'mostrar', cadeira };
 

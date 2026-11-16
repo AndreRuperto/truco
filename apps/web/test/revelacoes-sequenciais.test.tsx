@@ -98,3 +98,27 @@ describe('cangada na segunda rodada', () => {
     expect(screen.queryByTestId('cangada-lateral')).toBeNull();
   });
 });
+
+describe('cangada no mineiro', () => {
+  test('as de cima viram juntas e ficam à vista até a 1ª de baixo ser aberta', () => {
+    let s = jogar(distribuida(MINEIRO, [
+      ['3o', '5o', '6o'],
+      ['3e', '2e', '6e'],
+      ['4o', '5e', 'Qo'],
+      ['4e', '5c', 'Qe'],
+    ]), [[0, 0], [1, 0], [2, 0], [3, 0]]);
+    expect(s.fase).toBe('empilhando');
+    const v0 = visaoDoJogador(s, 0);
+    const { rerender } = render(<CentroMesa mao={v0.mao} ultimaMao={v0.ultimaMao} minha={0} variante="mineiro" />);
+    for (const cadeira of [0, 1, 2, 3] as const) s = reduce(s, { tipo: 'empilhar', cadeira, indice: 0 });
+    let v = visaoDoJogador(s, 0);
+    rerender(<CentroMesa mao={v.mao} ultimaMao={v.ultimaMao} minha={0} variante="mineiro" />);
+    expect(screen.getByTestId('centro').querySelectorAll('.jogada')).toHaveLength(4);
+    act(() => vi.advanceTimersByTime(MOSTRA_RODADA_MS * 5));
+    expect(screen.getByTestId('centro').querySelectorAll('.jogada'), 'as de cima continuam à vista').toHaveLength(4);
+    s = reduce(s, { tipo: 'mostrar', cadeira: s.mao!.vez });
+    v = visaoDoJogador(s, 0);
+    rerender(<CentroMesa mao={v.mao} ultimaMao={v.ultimaMao} minha={0} variante="mineiro" />);
+    expect(screen.getByTestId('centro').querySelectorAll('.jogada')).toHaveLength(1);
+  });
+});

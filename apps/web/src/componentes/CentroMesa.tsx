@@ -97,7 +97,10 @@ export function useRodadaNaMesa(mao: VisaoMao | null, ultimaMao: VisaoResultadoM
     return () => clearTimeout(t);
   }, [chaveRodada]);
   // Na cangada cada um mostra a sua na vez dele: as cartas entram no centro como jogadas normais.
-  const limpou = chaveRodada !== null && limpa === chaveRodada;
+  // Cangada indo para as de baixo (no mineiro, as de cima viram juntas): as de cima ficam à vista
+  // até a 1ª de baixo ser aberta.
+  const deCimaAVista = mao?.cangada?.etapa === 'baixo' && mao.mesa.length === 0 && mao.rodadas.length === 2;
+  const limpou = chaveRodada !== null && limpa === chaveRodada && !deCimaAVista;
   const exibicao = limpou ? { ...completa, jogadas: [] } : completa;
   // Rodadas já recolhidas: todas as encerradas, menos a que ainda está no meio.
   const naPilha = mao ? mao.rodadasJogadas.length - (completa.anterior && !limpou && completa.jogadas.length > 0 ? 1 : 0) : 0;

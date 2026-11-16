@@ -32,8 +32,9 @@ const mostrarRodada = (s: EstadoPartida) => {
   return s;
 };
 
+// Cangada pela de cima (paulista). A do mineiro, pela de baixo, está em cangada-mineira.test.ts.
 describe('cangou dentro de uma mão real', () => {
-  // Mineiro, sem manilhas em jogo. R1: 3o(10) x 3e(10) → empate entre duplas.
+  // Paulista com vira J (manilha K), sem manilhas em jogo. R1: 3o(10) x 3e(10) → empate entre duplas.
   // R2: 5o(2), 2e(9), 5e(2), 5c(2) → dupla 1 decide.
   const MAOS = [
     ['3o', '5o', '6o'],
@@ -43,18 +44,18 @@ describe('cangou dentro de uma mão real', () => {
   ];
 
   test('1ª rodada empatada → todos empilham; quem vence a 2ª (as de cima) leva a mão', () => {
-    let s = jogarSeq(distribuida(MINEIRO, MAOS), RODADA_IDX0);
+    let s = jogarSeq(distribuida(PAULISTA, MAOS, 'Jp'), RODADA_IDX0);
     expect(s.mao!.rodadas).toEqual(['empate']);
     expect(s.mao!.vez).toBe(1); // quem cangou (o 3e igualou o 3o) abre primeiro
     expect(s.fase).toBe('empilhando');
     s = mostrarRodada(empilharTodos(s));
-    expect(s.placar).toEqual([0, 2]);
-    expect(s.ultimaMao).toMatchObject({ vencedor: 1, pontos: 2, motivo: 'rodadas', rodadas: ['empate', 1] });
+    expect(s.placar).toEqual([0, 1]);
+    expect(s.ultimaMao).toMatchObject({ vencedor: 1, pontos: 1, motivo: 'rodadas', rodadas: ['empate', 1] });
   });
 });
 
 describe('três rodadas empatadas', () => {
-  // R1: 3o x 3e; R2: 2o x 2e; R3: Ko x Ke — parceiros sempre mais fracos.
+  // Paulista com vira 6 (manilha 7). R1: 3o x 3e; R2: 2o x 2e; R3: Ko x Ke — parceiros sempre mais fracos.
   const MAOS = [
     ['3o', '2o', 'Ko'],
     ['3e', '2e', 'Ke'],
@@ -63,7 +64,7 @@ describe('três rodadas empatadas', () => {
   ];
 
   test('ninguém pontua e o pé avança', () => {
-    let s = empilharTodos(jogarSeq(distribuida(MINEIRO, MAOS), RODADA_IDX0));
+    let s = empilharTodos(jogarSeq(distribuida(PAULISTA, MAOS, '6p'), RODADA_IDX0));
     s = mostrarRodada(s);
     expect(s.mao!.cangada!.etapa).toBe('baixo');
     // Cangou de novo: a cadeira 1 abriu com o 2e e a 0, a última, igualou com o 2o. Ela abre as de baixo.
@@ -217,7 +218,8 @@ describe('cangada: cartas empilhadas', () => {
     ['4o', '5e', 'Qo'],
     ['4e', '5c', 'Qe'],
   ];
-  const cangou = () => jogarSeq(distribuida(MINEIRO, MAOS), RODADA_IDX0);
+  // Paulista com vira J (manilha K, ninguém tem): a de cima decide.
+  const cangou = () => jogarSeq(distribuida(PAULISTA, MAOS, 'Jp'), RODADA_IDX0);
 
   test('todos escolhem a de cima ao mesmo tempo; ninguém joga carta nem truca enquanto empilha', () => {
     const s = cangou();
@@ -242,9 +244,9 @@ describe('cangada: cartas empilhadas', () => {
     expect(() => reduce(s, { tipo: 'mostrar', cadeira: 0 })).toThrow(/vez/);
     const trucado = reduce(reduce(s, { tipo: 'truco', cadeira: 1 }), { tipo: 'aceitar', cadeira: 0 });
     expect(trucado.fase).toBe('jogando');
-    // A cadeira 1 pôs o 6e por cima: as de cima são 6e, 5e, 5c, 5o → a dupla 1 leva o truco (4 no mineiro).
+    // A cadeira 1 pôs o 6e por cima: as de cima são 6e, 5e, 5c, 5o → a dupla 1 leva o truco (3 no paulista).
     const fim = mostrarRodada(trucado);
-    expect(fim.ultimaMao).toMatchObject({ vencedor: 1, pontos: 4, rodadas: ['empate', 1] });
+    expect(fim.ultimaMao).toMatchObject({ vencedor: 1, pontos: 3, rodadas: ['empate', 1] });
     expect(fim.ultimaMao!.rodadasJogadas[1].map((j) => idCarta(j.carta))).toEqual(['6e', '5e', '5c', '5o']);
   });
 
