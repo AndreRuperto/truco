@@ -54,7 +54,22 @@ Pedido do André: em mesa privada, onde a turma conversa, poder tirar o tempo de
   `lobby.test.tsx`, `sala-espera.test.tsx`; E2E `apps/web/e2e/sem-limite.spec.ts`.
 - Rollback: reverter o commit; sem migração de banco.
 
-## QA Visual e UX
+## QA Visual e UX (2026-11-16, Windows, Chromium do Playwright, projeto "celular")
 
-Ver o PR para resultados e capturas. Revisão feita pelo mesmo modelo que implementou: não
-equivale a validação independente.
+| Verificação | Resultado |
+| --- | --- |
+| `pnpm -r typecheck` (engine, server, web) | passou |
+| `pnpm -r test`: server 492, engine 290, web 522 (+4 pulados) | passou |
+| E2E `sem-limite.spec.ts` (lobby → sala de espera → 23 s parado na vez → joga) | passou |
+| E2E `layout-mobile.spec.ts` + `qa-visual-mesa.spec.ts` | 51 passaram; "rodapé fixo não cobre a mão - 360x780" falhou uma vez com a máquina carregada (E2E de outra sessão em paralelo) e passou na repetição isolada; "dica não cobre o centro - 320x568" é falha esperada (`test.fail`, P3 já conhecida) |
+| `pnpm test:e2e` completo | NAO_EXECUTADO localmente (roda no CI do PR) |
+
+- Viewports 320x568, 360x640, 360x740, 390x844, 430x932 e 1280x800, nas vistas personagens,
+  cadeiras e 3D, com a vez parada: nenhum cronômetro (`role=timer`) e nenhuma rolagem lateral
+  (conferido pelo E2E; capturas em `capturas/sem-limite/`).
+- A vez aparece como "Sua vez" (placar, linha da vez e etiqueta do assento), sem segundos.
+- Acessibilidade: o campo novo é um `<select>` com `<label>` (teclado e leitor de tela como os
+  demais). Não houve auditoria axe/zoom específica desta mudança: NAO_EXECUTADO.
+- Observação fora do escopo (não mexida): na vista 3D a 390x844 a barra de ícones do topo
+  passa da largura e corta o último ícone (rola dentro da barra; o documento não rola).
+- Revisão feita pelo mesmo modelo que implementou: não equivale a validação independente.
