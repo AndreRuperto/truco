@@ -10,6 +10,7 @@ import { useCarteira, useFila, useLoja, useSessao } from './rede/hooks';
 import { api, carteira, loja, lojaFila, sessao } from './rede/instancia';
 import { TelaLoja, TelaLojaObrigado } from './telas/Loja';
 import { type AvisoBonusDados, avisoDosBonus, itemPorIdDoCatalogo, temFloreios, versoEquipado } from './logica/lojaApp';
+import { vista3dLiberada } from './logica/visualizacaoMesa';
 import { estiloVerso } from './logica/lojaItens';
 import { navegar, useRota } from './rede/rota';
 import { TelaEntrar } from './telas/Entrar';
@@ -181,6 +182,7 @@ export function App() {
         temConta={!!ses.usuario}
         inventario={cart.carteira?.inventario}
         floreios={temFloreios(ses.usuario, cart.carteira)}
+        vista3d={vista3dLiberada(ses.usuario)}
         snap={{ ...snap, msg: { ...anterior, prazo: null } }}
         acoes={loja}
         desatualizada
@@ -215,6 +217,7 @@ export function App() {
           temConta={!!ses.usuario}
           inventario={cart.carteira?.inventario}
           floreios={temFloreios(ses.usuario, cart.carteira)}
+          vista3d={vista3dLiberada(ses.usuario)}
           snap={snap}
           acoes={loja}
           aoChat={loja.enviarChat}
