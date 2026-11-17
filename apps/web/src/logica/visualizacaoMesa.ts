@@ -23,3 +23,13 @@ export function gravarVisualizacaoMesa(valor: VisualizacaoMesa): void {
     // Sem armazenamento: a escolha continua válida enquanto o componente existir.
   }
 }
+
+const HOSTS_LOCAIS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/**
+ * A vista 3D ainda está em obras: em produção só o admin a vê; no computador (localhost, E2E)
+ * continua liberada para desenvolver e testar.
+ */
+export function vista3dLiberada(usuario: { admin?: boolean } | null | undefined, host: string = location.hostname): boolean {
+  return HOSTS_LOCAIS.has(host) || usuario?.admin === true;
+}

@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { TelaMesa, CHAVE_VISTA_3D } from '../src/telas/Mesa';
-import { CHAVE_VISUALIZACAO_MESA, gravarVisualizacaoMesa, lerVisualizacaoMesa } from '../src/logica/visualizacaoMesa';
+import { CHAVE_VISUALIZACAO_MESA, gravarVisualizacaoMesa, lerVisualizacaoMesa, vista3dLiberada } from '../src/logica/visualizacaoMesa';
 import type { EstadoLoja } from '../src/rede/loja';
 import { distribuida, msgEstado, noRitual, PAULISTA } from './fixtures';
 
@@ -54,6 +54,30 @@ describe('visualização da partida', () => {
     gravarVisualizacaoMesa('personagens');
     expect(lerVisualizacaoMesa()).toBe('personagens');
     expect(localStorage.getItem(CHAVE_VISTA_3D)).toBe('0');
+  });
+});
+
+// Pedido do André (2026-11-17): a vista 3D ainda precisa melhorar; em produção só o admin a vê.
+// No computador (localhost, E2E) continua liberada para desenvolver e testar.
+describe('vista 3D restrita em produção', () => {
+  test('em produção só o admin; em ambiente local, todos', () => {
+    expect(vista3dLiberada({ admin: true }, 'truco.up.railway.app')).toBe(true);
+    expect(vista3dLiberada({ admin: false }, 'truco.up.railway.app')).toBe(false);
+    expect(vista3dLiberada(null, 'truco-copy-production.up.railway.app')).toBe(false);
+    for (const local of ['localhost', '127.0.0.1', '[::1]']) expect(vista3dLiberada(null, local)).toBe(true);
+  });
+
+  test('sem liberação: nem o atalho nem a opção 3D, e a preferência 3D salva vira a mesa normal', async () => {
+    const user = userEvent.setup();
+    gravarVisualizacaoMesa('3d');
+    render(<TelaMesa snap={snap(msgEstado(distribuida(PAULISTA)))} acoes={acoes()} vista3d={false} />);
+    expect(document.querySelector('.tela-mesa')).toHaveAttribute('data-visualizacao', 'personagens');
+    expect(screen.queryByTestId('mesa-3d')).toBeNull();
+    expect(screen.queryByRole('button', { name: '3D' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Visual da mesa' }));
+    const menu = screen.getByRole('group', { name: 'Selecionar visualização da mesa' });
+    expect(within(menu).getAllByRole('button').map((b) => b.textContent)).toEqual(['Personagens', 'Cadeiras (vista de cima)']);
+    expect(screen.getByRole('button', { name: 'Visual da mesa' })).toHaveAttribute('title', 'Personagens ou cadeiras');
   });
 });
 

@@ -65,9 +65,11 @@ interface Props {
   inventario?: readonly string[];
   /** Habilidade Floreios (loja; admin tem sempre): os truques de embaralhar na sua vez. */
   floreios?: boolean;
+  /** Vista 3D liberada (em produção, só para o admin: ver `vista3dLiberada`). */
+  vista3d?: boolean;
 }
 
-export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false, desatualizada = false, inventario = [], floreios = false }: Props) {
+export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false, desatualizada = false, inventario = [], floreios = false, vista3d: pode3d = true }: Props) {
   const agora = useAgora(250);
   const raiz = useRef<HTMLElement>(null);
   // React 18 não conhece `inert` como propriedade booleana: liga direto no elemento.
@@ -82,7 +84,9 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   useSonsDaMesa(snap, somLigado, agora);
   // Em outra aba/app: o título pisca e o celular vibra quando é a minha vez de agir.
   useAvisoNaAba(vezEhMinha(snap.msg!), 'Sua vez! · Truco', somLigado);
-  const [visualizacao, setVisualizacao] = useState<VisualizacaoMesa>(lerVisualizacaoMesa);
+  const [visualizacaoSalva, setVisualizacao] = useState<VisualizacaoMesa>(lerVisualizacaoMesa);
+  // Sem a vista 3D liberada, uma preferência 3D salva vira a mesa normal (a preferência fica guardada).
+  const visualizacao: VisualizacaoMesa = visualizacaoSalva === '3d' && !pode3d ? 'personagens' : visualizacaoSalva;
   const ultima2D = useRef<'personagens' | 'cadeiras'>(visualizacao === 'cadeiras' ? 'cadeiras' : 'personagens');
   const [menuVistas, setMenuVistas] = useState(false);
   const vista3d = visualizacao === '3d';
@@ -237,12 +241,14 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
         <button type="button" className="icone-mesa" aria-label="Personalizar mesa" title="Escolher madeira, feltro ou plástico" aria-expanded={personalizando} aria-controls="personalizar-mesa" onClick={() => setPersonalizando((v) => !v)}>
           <span aria-hidden="true">♣</span>
         </button>
-        <button type="button" className="icone-mesa" aria-label="Visual da mesa" aria-expanded={menuVistas} aria-controls="menu-visualizacao-mesa" title="Personagens, cadeiras ou 3D" onClick={() => setMenuVistas((v) => !v)}>
+        <button type="button" className="icone-mesa" aria-label="Visual da mesa" aria-expanded={menuVistas} aria-controls="menu-visualizacao-mesa" title={pode3d ? 'Personagens, cadeiras ou 3D' : 'Personagens ou cadeiras'} onClick={() => setMenuVistas((v) => !v)}>
           <span aria-hidden="true">▦</span>
         </button>
-        <button type="button" className="icone-mesa" aria-label="3D" title={vista3d ? 'Voltar para a mesa 2D' : 'Ver a mesa em 3D'} aria-pressed={vista3d} onClick={trocarVista}>
-          <Icone3D />
-        </button>
+        {pode3d && (
+          <button type="button" className="icone-mesa" aria-label="3D" title={vista3d ? 'Voltar para a mesa 2D' : 'Ver a mesa em 3D'} aria-pressed={vista3d} onClick={trocarVista}>
+            <Icone3D />
+          </button>
+        )}
         <button
           type="button"
           className="icone-mesa"
@@ -281,7 +287,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
             ['personagens', 'Personagens'],
             ['cadeiras', 'Cadeiras (vista de cima)'],
             ['3d', '3D'],
-          ] as const).map(([id, rotulo]) => (
+          ] as const).filter(([id]) => pode3d || id !== '3d').map(([id, rotulo]) => (
             <button type="button" key={id} aria-pressed={visualizacao === id} onClick={() => escolherVisualizacao(id)}>{rotulo}</button>
           ))}
         </div>
