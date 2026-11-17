@@ -80,3 +80,32 @@ export function baloesAtivos(
   const recentes = [...ultimo].sort(([, a], [, b]) => a.em - b.em).slice(-maximo);
   return new Map(recentes.map(([c, { texto }]) => [c, texto]));
 }
+
+/** Quanto o anúncio grande fica no meio da mesa (entrada, pausa curta e saída). */
+export const DURACAO_ANUNCIO_MS = 1_600;
+
+/** Pedidos de truco e aumentos (texto do balão de `textoDaAcao`). */
+const PEDIDOS_TRUCO = new Set(['TRUCO!', 'SEIS!', 'NOVE!', 'DOZE!']);
+
+export interface Anuncio {
+  id: number;
+  de: Cadeira;
+  tipo: 'truco' | 'familia';
+  texto: string;
+}
+
+/**
+ * Anúncio grande do meio da mesa: o pedido de truco (e aumentos) ou o desafio da família fechada
+ * mais recente, enquanto dura. Só ações de verdade: a fala "TRUCO!" do painel de falas é
+ * provocação e fica só no balão.
+ */
+export function anuncioGrande(eventos: Evento[], agora: number, duracaoMs = DURACAO_ANUNCIO_MS): Anuncio | null {
+  for (let i = eventos.length - 1; i >= 0; i--) {
+    const e = eventos[i];
+    if (agora - e.em >= duracaoMs) return null;
+    if (e.tipo !== 'acao') continue;
+    if (PEDIDOS_TRUCO.has(e.texto)) return { id: e.id, de: e.de, tipo: 'truco', texto: e.texto };
+    if (e.texto === 'Família fechada!') return { id: e.id, de: e.de, tipo: 'familia', texto: 'FAMÍLIA FECHADA!' };
+  }
+  return null;
+}

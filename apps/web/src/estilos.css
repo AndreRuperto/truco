@@ -2716,6 +2716,85 @@ body:has(.tela-mesa) {
   transform: translateX(-50%);
 }
 
+/*
+ * Anúncio grande do pedido (TRUCO!, SEIS!, NOVE!, DOZE!, FAMÍLIA FECHADA!): uma plaquinha de lousa
+ * com moldura de madeira que "bate" no meio da mesa e some em DURACAO_ANUNCIO_MS (1,6 s, eventos.ts).
+ * Não pega clique (a jogada e o Aceitar/Correr seguem livres). Fica acima da dica da mesa (40),
+ * que no celular ocupa o meio da tela, e abaixo dos painéis abertos (50); com janela modal
+ * (resumo, fim, manual, sair, pausa) a Mesa nem mostra a placa.
+ * Contraste: grito/lousa 7.5, giz/lousa 12.2.
+ */
+.anuncio-grande {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  z-index: 45;
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  max-width: calc(100vw - 2 * var(--e4));
+  padding: var(--e2) var(--e5) var(--e3);
+  border: 5px solid var(--madeira-funda);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  box-shadow: inset 0 0 0 2px var(--madeira-veio), 0 14px 40px color-mix(in srgb, var(--sombra) 70%, transparent);
+  color: var(--grito);
+  font-family: var(--fonte-giz);
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+  transform: translate(-50%, -50%) rotate(-4deg);
+  animation: anuncio-grande 1600ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.anuncio-grande-quem {
+  color: var(--giz-suave);
+  font-family: var(--fonte-ui);
+  font-size: var(--t0);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.anuncio-grande-palavra {
+  font-size: clamp(3.5rem, 19vw, 7.5rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-shadow: 0 2px 0 color-mix(in srgb, var(--sombra) 60%, transparent);
+}
+/* "FAMÍLIA FECHADA!" é comprida: menor, em giz, para caber em 320 px sem quebrar. */
+.anuncio-grande[data-tipo='familia'] .anuncio-grande-palavra {
+  color: var(--giz);
+  font-size: clamp(2rem, 10.5vw, 4.5rem);
+}
+@keyframes anuncio-grande {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.6) rotate(-12deg);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.9) rotate(-3deg);
+  }
+  22% {
+    transform: translate(-50%, -50%) scale(1.06) rotate(-5deg);
+  }
+  30%,
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(-4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(1.12) rotate(-4deg);
+  }
+}
+/* Sem movimento: a placa só aparece e some (o tempo de tela vem do React, não da animação). */
+@media (prefers-reduced-motion: reduce) {
+  .anuncio-grande {
+    animation: none;
+  }
+}
+
 /* ---------- overlays: lousa com moldura de madeira ---------- */
 .overlay {
   position: fixed;
