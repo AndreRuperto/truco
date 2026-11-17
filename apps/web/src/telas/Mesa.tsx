@@ -4,6 +4,7 @@ import { CartaVisual } from '../componentes/CartaVisual';
 import { BaralhoNaPartida } from '../componentes/BaralhoNaPartida';
 import { SeletorAparenciaMesa } from '../componentes/SeletorAparenciaMesa';
 import { useAnimacaoRitual } from '../componentes/animacaoMesa';
+import { AnuncioGrande } from '../componentes/AnuncioGrande';
 import { Assento, GRITOS } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
 import { CentroMesa, useRodadaNaMesa } from '../componentes/CentroMesa';
@@ -30,7 +31,7 @@ import { aparenciaPermitida, lerAparenciaMesa, salvarAparenciaMesa, type Aparenc
 import { estiloVerso } from '../logica/lojaItens';
 import { botaoBate } from '../logica/batida';
 import { rotuloCarta } from '../logica/cartas';
-import { baloesAtivos } from '../logica/eventos';
+import { anuncioGrande, baloesAtivos } from '../logica/eventos';
 import { estadoMesa3D } from '../logica/mesa3d';
 import { cadeiraNaPosicao } from '../logica/posicoes';
 import { prazoEhMeu, vezEhMinha } from '../logica/prazo';
@@ -122,6 +123,8 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   // Em até 340 px de largura, três balões ao mesmo tempo se encobriam: mostra só os 2 mais recentes.
   const estreita = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 340px)').matches ?? false);
   const baloes = baloesAtivos(snap.eventos, agora, undefined, estreita ? 2 : Infinity);
+  // TRUCO!/SEIS!/... e FAMÍLIA FECHADA! grandes no meio da mesa (o balão do assento continua).
+  const grande = anuncioGrande(snap.eventos, agora);
   const { nos, eles } = placarRelativo(v);
   const nome = (c: Cadeira) => msg.cadeiras[c]?.nome ?? `Cadeira ${c + 1}`;
   // Denúncia (F6.5): só quem tem conta, e só contra outro humano da mesa.
@@ -401,6 +404,8 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
         <div ref={camadaRitual} className="camada-voo" aria-hidden="true" />
       </Tampo>
       )}
+      {/* Com janela modal na tela (resumo da mão quando correram na hora, fim, manual, sair, pausa), ela manda. */}
+      <AnuncioGrande anuncio={resumoMao || fim || manual || confirmarSaida || msg.pausa ? null : grande} quem={grande ? (grande.de === minha ? 'Você' : nome(grande.de)) : ''} />
       {acaoEmbaralhar && <BaralhoNaPartida key={minha} aoEmbaralhar={() => acoes.enviarAcao(acaoEmbaralhar)} />}
       {aviso3d && (
         <p className="aviso-3d" role="alert">
