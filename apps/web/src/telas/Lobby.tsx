@@ -15,9 +15,11 @@ import {
   OPCOES_INTERCEPTACAO,
   type OpcoesEntrada,
   opcoesDeEntrada,
+  opcoesTutorial,
   preferenciasDe,
   trocarVariante,
 } from '../logica/lobby';
+import { marcarTutorial, tutorialPendente } from '../logica/tutorial';
 
 interface Props {
   aoJogar: (o: OpcoesEntrada) => void;
@@ -34,6 +36,8 @@ interface Props {
   aoSalvarNaConta?: (p: PreferenciasMesa) => void;
   /** Baralho equipado na loja: aparece nas cartas do fundo. */
   verso?: ComponentProps<typeof FundoCartas>['verso'];
+  /** Partida guiada (tutorial). Sem ele, nem o convite da 1ª visita nem o botão aparecem. */
+  aoTutorial?: (o: OpcoesEntrada) => void;
 }
 
 /** Espera depois da última mudança antes de mandar para a conta. */
@@ -42,7 +46,7 @@ const ESPERA_SALVAR_MS = 600;
 /** Os mesmos de `CACIFES_MESA` no servidor (ele valida). */
 const CACIFES = [0, 50, 100, 250, 500, 1000] as const;
 
-export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta, aoSalvarNaConta, avatar = null, aoTrocarAvatar, apelidoConta }: Props) {
+export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada, preferenciasConta, aoSalvarNaConta, avatar = null, aoTrocarAvatar, apelidoConta }: Props) {
   const [f, setFCru] = useState<FormLobby>(() => formInicial(lerApelido(), lerPreferenciasLocais()));
   // Só grava depois que a pessoa mexe: abrir a tela não sobrescreve o que está na conta.
   const mexeu = useRef(false);
@@ -69,6 +73,13 @@ export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferencia
   // O apelido não conta como mexer nas regras (não impede as da conta de chegarem).
   const mudar = <K extends keyof FormLobby>(k: K, v: FormLobby[K]) => (k === 'nome' ? setFCru : setF)((x) => ({ ...x, [k]: v }));
 
+  const [convite, setConvite] = useState(tutorialPendente);
+  const comecarTutorial = () => {
+    if (!aoTutorial) return;
+    if (apelidoConta === undefined) gravarApelido(f.nome.trim());
+    aoTutorial(opcoesTutorial((apelidoConta ?? f.nome).trim() || 'Jogador'));
+  };
+
   const enviar = (e: FormEvent) => {
     e.preventDefault();
     if (apelidoConta === undefined) gravarApelido(f.nome.trim());
@@ -82,6 +93,27 @@ export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferencia
       <FundoCartas verso={verso} />
       <h1 className="letreiro">Truco</h1>
       <p className="letreiro-sub">Senta, que a mesa tá posta.</p>
+      {aoTutorial && convite && (
+        <section className="convite-tutorial" aria-labelledby="convite-tutorial-titulo">
+          <h2 id="convite-tutorial-titulo">Primeira vez por aqui?</h2>
+          <p>Aprenda jogando: uma partida guiada contra bots, sem pressa. Dá para pular quando quiser.</p>
+          <div className="convite-tutorial-botoes">
+            <button type="button" className="botao-principal" onClick={comecarTutorial}>
+              Começar tutorial
+            </button>
+            <button
+              type="button"
+              className="botao-discreto"
+              onClick={() => {
+                marcarTutorial('pulado');
+                setConvite(false);
+              }}
+            >
+              Agora não
+            </button>
+          </div>
+        </section>
+      )}
       <form className="formulario" onSubmit={enviar}>
         <div className="lobby-principal">
           <div className="campo">
@@ -113,6 +145,11 @@ export function Lobby({ verso, aoJogar, aoRanqueada, aoCriarPrivada, preferencia
             <button type="button" onClick={aoRanqueada} disabled={!aoRanqueada}>
               Ranqueada
             </button>
+            {aoTutorial && (
+              <button type="button" onClick={comecarTutorial}>
+                Tutorial
+              </button>
+            )}
             {aoCriarPrivada && (
               <label className="alternar-privada">
                 <input type="checkbox" checked={f.privada} onChange={(e) => mudar('privada', e.target.checked)} />

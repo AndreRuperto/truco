@@ -237,6 +237,14 @@
   }
   main.tela-mesa > .dica-mesa p { margin-bottom: 6px; line-height: 1.35; }
   main.tela-mesa > .dica-mesa .dica-mesa-botoes button { min-height: 40px; padding-block: 6px; }
+  /* Tutorial no celular: etiqueta, título e texto no tamanho da dica, e 16px mais alto que a
+     dica para a carta levantada da mão (jogável) nunca encostar nele. */
+  main.tela-mesa > .treinador-tutorial {
+    bottom: calc(100dvh - 120px - env(safe-area-inset-top) - var(--altura-mesa-mobile) + 24px);
+  }
+  main.tela-mesa > .treinador-tutorial .treinador-cabeca { margin-bottom: 2px; font-size: .95rem; }
+  main.tela-mesa > .treinador-tutorial h2 { font-size: .95rem; }
+  main.tela-mesa > .treinador-tutorial [aria-live] p { margin-top: 4px; }
 
   .tela-mesa .assento.pos-esquerda .balao.grito::before { left: 2px; top: -14px; }
   .tela-mesa .assento.pos-direita .balao.grito::after { right: 2px; bottom: -14px; }

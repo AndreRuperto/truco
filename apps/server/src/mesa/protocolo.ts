@@ -335,8 +335,10 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
   const humanosMesa = modo === 'privada' && humanos < 2 ? 4 : humanos;
   // Sozinho contra bots não há com quem apostar.
   const cacife = humanosMesa >= 2 ? cacifeValido(o.cacife) : 0;
-  // Sem limite de tempo é coisa de mesa entre amigos: nas públicas o relógio segura a mesa.
-  const semLimiteDeTempo = modo === 'privada' && o.semLimiteDeTempo === true;
+  // Sem limite de tempo é coisa de mesa entre amigos: nas públicas o relógio segura a mesa. A
+  // exceção é o tutorial: sozinho contra bots fáceis, ninguém espera por quem está aprendendo.
+  const tutorial = o.tutorial === true && modo === 'classica' && humanosMesa === 1;
+  const semLimiteDeTempo = (modo === 'privada' || tutorial) && o.semLimiteDeTempo === true;
   return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, provocacoes, cacife, semLimiteDeTempo };
 }
 

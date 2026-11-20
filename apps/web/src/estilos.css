@@ -1746,6 +1746,68 @@ body:has(.tela-mesa) {
   margin: 0 0 var(--e2);
   line-height: 1.4;
 }
+/* Tutorial: o mesmo cartão da dica, com a etiqueta de giz e o título do passo. */
+.treinador-tutorial .treinador-cabeca {
+  margin: 0 0 var(--e1);
+  color: var(--grito);
+  font-family: var(--fonte-giz);
+  font-size: var(--t1);
+  line-height: 1;
+}
+.treinador-tutorial h2 {
+  margin: 0 0 var(--e1);
+  font-size: var(--t1);
+  line-height: 1.2;
+}
+/* Desktop: o treinador vai para o canto de baixo à esquerda, longe da vira, do centro e da mão
+   (a dica comum fica no topo porque some depressa; o treinador acompanha a mão inteira). */
+@media (min-width: 1024px) and (min-height: 521px) {
+  .tela-mesa > .treinador-tutorial {
+    top: auto;
+    bottom: var(--e5);
+    left: var(--e5);
+    translate: none;
+    width: min(360px, 28vw);
+  }
+}
+/* Convite da 1ª visita no lobby: lousa com borda de giz, acima do formulário. */
+.convite-tutorial {
+  position: relative;
+  z-index: 1;
+  width: min(440px, 100%);
+  margin: 0 auto var(--e4);
+  padding: var(--e4);
+  border: 3px solid var(--grito);
+  border-radius: var(--raio-painel);
+  background: var(--lousa);
+  color: var(--giz);
+  box-shadow: var(--sombra-tampo);
+}
+.convite-tutorial h2 {
+  margin: 0 0 var(--e1);
+  font-family: var(--fonte-giz);
+  font-size: var(--t3);
+  line-height: 1.05;
+  color: var(--grito);
+}
+.convite-tutorial p {
+  margin: 0 0 var(--e3);
+  line-height: 1.4;
+}
+.convite-tutorial-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  align-items: center;
+}
+.convite-tutorial .botao-principal {
+  flex: 1 1 180px;
+}
+.convite-tutorial .botao-discreto {
+  border-color: transparent;
+  background: transparent;
+  color: var(--giz-suave);
+}
 .dica-mesa-botoes {
   display: flex;
   gap: var(--e2);

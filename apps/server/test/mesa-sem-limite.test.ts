@@ -33,6 +33,18 @@ describe('opção "sem limite de tempo" (só na mesa privada)', () => {
   });
 });
 
+// Tutorial (2026-11-20): partida guiada, sozinho contra bots fáceis, sem relógio para quem aprende.
+describe('tutorial: mesa solo sem limite de tempo', () => {
+  test('só com o pedido de tutorial, sozinho, na clássica', () => {
+    expect(opcoesDaSala({ modo: 'classica', humanos: 1, tutorial: true, semLimiteDeTempo: true }).semLimiteDeTempo).toBe(true);
+    // Com gente na mesa, ou fora da clássica, o relógio continua.
+    expect(opcoesDaSala({ modo: 'classica', humanos: 2, tutorial: true, semLimiteDeTempo: true }).semLimiteDeTempo).toBe(false);
+    expect(opcoesDaSala({ modo: 'desafio', humanos: 1, tutorial: true, semLimiteDeTempo: true }).semLimiteDeTempo).toBe(false);
+    expect(opcoesDaSala({ modo: 'ranqueada', humanos: 2, tutorial: true, semLimiteDeTempo: true }).semLimiteDeTempo).toBe(false);
+    expect(opcoesDaSala({ modo: 'classica', humanos: 1, tutorial: 'sim', semLimiteDeTempo: true }).semLimiteDeTempo).toBe(false);
+  });
+});
+
 describe('mesa sem limite de tempo', () => {
   test('o estado avisa todos que a mesa é sem limite (desde a sala de espera)', () => {
     const t = criarMesa({ humanosEsperados: 2, semLimiteDeTempo: true, modo: 'privada' });
