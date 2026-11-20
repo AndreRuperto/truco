@@ -34,6 +34,10 @@ export interface PreferenciasMesa {
   sinais?: boolean;
   /** Provocações com a moldura (ausente = ligadas). */
   provocacoes?: boolean;
+  /** Ritmo da mesa (ausente = calmo). */
+  ritmo?: 'calmo' | 'rapido';
+  /** Segundos por jogada (ausente = 20). */
+  tempoJogadaS?: 15 | 20 | 30;
 }
 
 export interface ConfigApi {

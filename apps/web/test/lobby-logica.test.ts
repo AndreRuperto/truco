@@ -18,6 +18,8 @@ describe('formulário do lobby', () => {
       tempoFamiliaS: 20,
       sinais: true,
       provocacoes: true,
+      ritmo: 'calmo',
+      tempoJogadaS: 20,
       privada: false,
     });
     expect(formPadrao('mineiro')).toMatchObject({ pontuacao: '2-4-8-10-12', maoDe10: true, maoDe11: 'onzeAOnze', familia: 'fechada', maoLimpa: false });
@@ -39,6 +41,8 @@ describe('formulário do lobby', () => {
       tempoFamiliaS: 20,
       sinais: true,
       provocacoes: true,
+      ritmo: 'calmo',
+      tempoJogadaS: 20,
       chaveRegras: '1-3-6-9-12|m10:1|m11:onzeAOnze|fam:off|lim:0|int:0|sin:1',
       modo: 'desafio',
       cacife: 0,

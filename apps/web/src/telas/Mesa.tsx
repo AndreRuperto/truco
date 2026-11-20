@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CartaVisual } from '../componentes/CartaVisual';
 import { BaralhoNaPartida } from '../componentes/BaralhoNaPartida';
 import { SeletorAparenciaMesa } from '../componentes/SeletorAparenciaMesa';
-import { useAnimacaoRitual } from '../componentes/animacaoMesa';
+import { definirRitmoAnimacao, useAnimacaoRitual } from '../componentes/animacaoMesa';
 import { AnuncioGrande } from '../componentes/AnuncioGrande';
 import { Assento, GRITOS } from '../componentes/Assento';
 import { BarraAcoes } from '../componentes/BarraAcoes';
@@ -117,6 +117,8 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
     setAviso3d('Não deu para abrir a vista 3D neste aparelho. Voltamos para a mesa normal.');
   }, []);
   const msg = snap.msg!;
+  // As animações seguem o ritmo escolhido na criação da mesa (antes de qualquer animação desta renderização).
+  definirRitmoAnimacao(msg.ritmo);
   const modo = msg.modo;
   const v = msg.visao!;
   const verso = estiloVerso(msg.cadeiras[v.pe]?.visual?.verso);

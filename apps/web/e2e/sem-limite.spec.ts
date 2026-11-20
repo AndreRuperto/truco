@@ -34,7 +34,7 @@ test('mesa privada sem limite de tempo: sem cronômetro e ninguém joga por voc�
   await page.getByLabel('Apelido').fill('Sem Pressa');
   await page.getByLabel(/Mesa privada/).check();
   await page.getByText('Regras da mesa', { exact: true }).click();
-  await expect(page.getByLabel('Tempo por jogada')).toHaveValue('limite');
+  await expect(page.getByLabel('Tempo por jogada')).toHaveValue('20');
   await page.getByLabel('Tempo por jogada').selectOption('semLimite');
   await page.getByLabel('Tempo por jogada').scrollIntoViewIfNeeded();
   const lobby = testInfo.outputPath('lobby-tempo-por-jogada.png');

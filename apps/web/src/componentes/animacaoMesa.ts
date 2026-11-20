@@ -12,6 +12,19 @@ import type { Movimento } from '../rede/loja';
  * de re-render, e nada bloqueia clique (pointer-events: none) nem atrasa a próxima jogada.
  */
 
+/**
+ * Ritmo da mesa (escolhido ao criar): no "rapido", o voo da carta, o embaralhar e o corte voltam
+ * às durações de antes (×0,8); no "calmo", as de cima. A TelaMesa define pelo `msg.ritmo`.
+ */
+const FATOR_RITMO = { calmo: 1, rapido: 0.8 } as const;
+let fatorRitmo: number = FATOR_RITMO.calmo;
+export function definirRitmoAnimacao(ritmo: keyof typeof FATOR_RITMO | undefined): void {
+  fatorRitmo = FATOR_RITMO[ritmo ?? 'calmo'];
+}
+export function duracaoNoRitmo(ms: number): number {
+  return Math.round(ms * fatorRitmo);
+}
+
 export const DUR_VOO = 460;
 export const DUR_RECUO = 150;
 export const DUR_RECOLHER = 300;
@@ -147,7 +160,7 @@ class Animador {
       const t = setTimeout(() => {
         this.timers.delete(t);
         soltar();
-      }, DUR_VOO);
+      }, duracaoNoRitmo(DUR_VOO));
       this.timers.add(t);
       return;
     }
@@ -171,7 +184,7 @@ class Animador {
         },
         { transform: 'translate(0px, 0px) rotate(0deg) scale(1)' },
       ],
-      { duration: DUR_VOO },
+      { duration: duracaoNoRitmo(DUR_VOO) },
     );
     this.seguir(voo, soltar);
 
@@ -180,7 +193,7 @@ class Animador {
       const final = getComputedStyle(carta).boxShadow || 'none';
       this.seguir(
         carta.animate([{ boxShadow: SOMBRA_ALTA, easing: EASE_ARREMESSO }, { offset: TOQUE, boxShadow: SOMBRA_TOQUE }, { boxShadow: final }], {
-          duration: DUR_VOO,
+          duration: duracaoNoRitmo(DUR_VOO),
         }),
       );
     }
@@ -214,9 +227,9 @@ class Animador {
     const remover = this.adicionar(caixa);
 
     const a = ANGULO_MAO[pos];
-    const total = DUR_VOO + DUR_RECUO;
-    const toque = (DUR_VOO * TOQUE) / total;
-    const solta = DUR_VOO / total;
+    const total = duracaoNoRitmo(DUR_VOO) + DUR_RECUO;
+    const toque = (duracaoNoRitmo(DUR_VOO) * TOQUE) / total;
+    const solta = duracaoNoRitmo(DUR_VOO) / total;
     const anim = caixa.animate(
       [
         {
@@ -575,7 +588,7 @@ class AnimadorRitual {
   }
 
   embaralhar(monte: HTMLElement) {
-    this.marcar(monte, 'embaralhar', DUR_RIFFLE);
+    this.marcar(monte, 'embaralhar', duracaoNoRitmo(DUR_RIFFLE));
     if (!podeAnimar(this.camada)) return;
     const r = monte.getBoundingClientRect();
     // As duas metades se abrem em leque e as cartas caem intercaladas, uma de cada lado.
@@ -592,7 +605,7 @@ class AnimadorRitual {
               { offset: atraso, transform: `translate(0px, ${-i * 2}px) rotate(${lado * -4}deg)` },
               { transform: 'translate(0px, 0px) rotate(0deg)' },
             ],
-            { duration: DUR_RIFFLE, easing: 'ease-in-out', fill: 'forwards' },
+            { duration: duracaoNoRitmo(DUR_RIFFLE), easing: 'ease-in-out', fill: 'forwards' },
           ),
         );
       });
@@ -605,7 +618,7 @@ class AnimadorRitual {
             { offset: 0.85, transform: `translate(${lado * r.width * 0.08}px, -1px) rotate(${lado * 1}deg)`, opacity: 1 },
             { transform: 'translate(0px, 0px) rotate(0deg)', opacity: 0 },
           ],
-          { duration: DUR_RIFFLE, easing: 'ease-in-out', fill: 'forwards' },
+          { duration: duracaoNoRitmo(DUR_RIFFLE), easing: 'ease-in-out', fill: 'forwards' },
         ),
         () => this.remover(f),
       );
@@ -614,7 +627,7 @@ class AnimadorRitual {
 
   /** A parte de cima (aprox. `fracao` do monte: o servidor só manda 0.3, 0.5 ou 0.7) sobe, vai para o lado e o resto passa por cima dela. */
   cortar(monte: HTMLElement, fracao: number) {
-    this.marcar(monte, 'cortar', DUR_CORTE);
+    this.marcar(monte, 'cortar', duracaoNoRitmo(DUR_CORTE));
     if (!podeAnimar(this.camada)) return;
     const r = monte.getBoundingClientRect();
     const f = Math.min(0.9, Math.max(0.1, fracao));
@@ -631,7 +644,7 @@ class AnimadorRitual {
           { offset: 0.8, transform: `translate(${lado * 0.3}px, 0px)`, opacity: 1, zIndex: 1 },
           { transform: 'translate(0px, 0px)', opacity: 0, zIndex: 1 },
         ],
-        { duration: DUR_CORTE, easing: 'ease-in-out', fill: 'forwards' },
+        { duration: duracaoNoRitmo(DUR_CORTE), easing: 'ease-in-out', fill: 'forwards' },
       ),
       () => this.remover(cima),
     );
@@ -644,7 +657,7 @@ class AnimadorRitual {
           { offset: 0.9, transform: `translate(${lado * 0.15}px, -3px)`, opacity: 1, zIndex: 3 },
           { transform: 'translate(0px, 0px)', opacity: 0, zIndex: 3 },
         ],
-        { duration: DUR_CORTE, easing: 'ease-in-out', fill: 'forwards' },
+        { duration: duracaoNoRitmo(DUR_CORTE), easing: 'ease-in-out', fill: 'forwards' },
       ),
       () => this.remover(resto),
     );
@@ -749,7 +762,7 @@ class AnimadorRitual {
                 { offset: 0.6, transform: 'translateY(-8px) scaleX(1.08)' },
                 { transform: 'translateY(0px) scaleX(1)' },
               ],
-              { duration: DUR_CORTE, delay: i * 140, easing: 'ease-out', fill: 'backwards' },
+              { duration: duracaoNoRitmo(DUR_CORTE), delay: i * 140, easing: 'ease-out', fill: 'backwards' },
             ),
           );
         }),

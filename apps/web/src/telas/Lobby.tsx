@@ -2,7 +2,7 @@ import { SeletorAvatar } from '../componentes/SeletorAvatar';
 import { InstalarTruco } from '../componentes/InstalarTruco';
 import type { PreferenciasMesa } from '@truco/api';
 import { limiteMaoEspecial, type Pontuacao, type RegrasMesa, type Variante } from '@truco/engine';
-import { type NivelBot, TEMPOS_FAMILIA_S } from '@truco/protocolo';
+import { type NivelBot, TEMPOS_FAMILIA_S, TEMPOS_JOGADA_S } from '@truco/protocolo';
 import { type ComponentProps, type FormEvent, useEffect, useRef, useState } from 'react';
 import { FundoCartas } from '../componentes/FundoCartas';
 import {
@@ -138,6 +138,25 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
               </small>
             )}
           </div>
+          <fieldset className="ritmo-mesa">
+            <legend id="ritmo-mesa-titulo">Ritmo da mesa</legend>
+            <div role="radiogroup" aria-labelledby="ritmo-mesa-titulo" className="ritmo-opcoes">
+              {(
+                [
+                  ['calmo', 'Calmo', 'dá tempo de acompanhar'],
+                  ['rapido', 'Rápido', 'pra quem já joga'],
+                ] as const
+              ).map(([valor, rotulo, explica]) => (
+                <label key={valor} className="ritmo-opcao">
+                  <input type="radio" name="ritmo" value={valor} checked={f.ritmo === valor} onChange={() => mudar('ritmo', valor)} />
+                  <span>
+                    <strong>{rotulo}</strong>
+                    <small>{explica}</small>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <button type="submit" className="botao-principal">
             {f.privada && aoCriarPrivada ? 'Criar mesa privada' : 'Jogar agora'}
           </button>
@@ -209,19 +228,26 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
                 </select>
               </div>
             )}
-            {f.privada && aoCriarPrivada && (
-              <div className="campo">
-                <label htmlFor="tempo-jogada">Tempo por jogada</label>
-                <select
-                  id="tempo-jogada"
-                  value={f.semLimiteDeTempo ? 'semLimite' : 'limite'}
-                  onChange={(e) => mudar('semLimiteDeTempo', e.target.value === 'semLimite')}
-                >
-                  <option value="limite">20 segundos</option>
-                  <option value="semLimite">Sem limite</option>
-                </select>
-              </div>
-            )}
+            <div className="campo">
+              <label htmlFor="tempo-jogada">Tempo por jogada</label>
+              <select
+                id="tempo-jogada"
+                value={f.privada && f.semLimiteDeTempo ? 'semLimite' : String(f.tempoJogadaS)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === 'semLimite') mudar('semLimiteDeTempo', true);
+                  else setF((x) => ({ ...x, semLimiteDeTempo: false, tempoJogadaS: Number(v) as FormLobby['tempoJogadaS'] }));
+                }}
+              >
+                {TEMPOS_JOGADA_S.map((s) => (
+                  <option key={s} value={String(s)}>
+                    {s} segundos
+                  </option>
+                ))}
+                {/* Sem relógio só entre amigos: nas públicas o relógio segura a mesa. */}
+                {f.privada && aoCriarPrivada && <option value="semLimite">Sem limite</option>}
+              </select>
+            </div>
             <div className="campo">
               <label htmlFor="humanos">Humanos</label>
               <select id="humanos" value={String(f.humanos)} onChange={(e) => mudar('humanos', Number(e.target.value))}>
@@ -319,7 +345,8 @@ function resumoLobby(f: FormLobby): string {
     !f.sinais ? 'sem sinais' : f.chanceInterceptarSinal > 0 ? 'sinais interceptáveis' : null,
     !f.provocacoes ? 'sem provocações' : null,
     f.cacife && (f.humanos >= 2 || f.privada) ? `valendo ${f.cacife} Fichas` : null,
-    f.privada && f.semLimiteDeTempo ? 'sem limite de tempo' : null,
+    f.ritmo === 'rapido' ? 'ritmo rápido' : 'ritmo calmo',
+    f.privada && f.semLimiteDeTempo ? 'sem limite de tempo' : `${f.tempoJogadaS} s por jogada`,
   ];
   return partes.filter(Boolean).join(', ');
 }

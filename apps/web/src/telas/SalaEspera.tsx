@@ -91,7 +91,7 @@ export function SalaEspera({ msg, aoIniciar, aoSair, salaId = null, origem = win
         <section className="sala-regras" aria-labelledby="titulo-regras-casa">
           <h2 id="titulo-regras-casa">Regras da casa</h2>
           <ul aria-label="Regras da mesa">
-            {resumoRegras(msg.regras, msg.chanceInterceptarSinal, msg.sinais !== false, msg.semLimiteDeTempo === true).map((t) => (
+            {resumoRegras(msg.regras, msg.chanceInterceptarSinal, msg.sinais !== false, msg.semLimiteDeTempo === true, msg.ritmo, msg.tempoJogadaS).map((t) => (
               <li key={t}>{t}</li>
             ))}
           </ul>
