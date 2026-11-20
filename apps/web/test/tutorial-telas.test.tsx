@@ -14,7 +14,7 @@ const acoes = () => ({ enviarAcao: vi.fn(), enviarSinal: vi.fn(), enviarFala: vi
 const snap = (msg: NonNullable<EstadoLoja['msg']>): EstadoLoja => ({ status: 'na-mesa', msg, eventos: [], erro: null, chat: [], salaId: 'r1' });
 
 describe('tutorial no lobby', () => {
-  test('1ª visita: oferece o tutorial; "Começar" abre a mesa guiada (sozinho, bots fáceis, sem relógio, sem família)', async () => {
+  test('1ª visita: oferece o tutorial; "Começar" abre a mesa guiada (sozinho, bots fáceis, sem relógio, com família para ensinar)', async () => {
     const user = userEvent.setup();
     const aoTutorial = vi.fn();
     render(<Lobby aoJogar={vi.fn()} aoTutorial={aoTutorial} />);
@@ -23,7 +23,7 @@ describe('tutorial no lobby', () => {
     expect(aoTutorial).toHaveBeenCalledWith(
       expect.objectContaining({ tutorial: true, semLimiteDeTempo: true, humanos: 1, nivelBot: 'facil', modo: 'classica', sinais: false }),
     );
-    expect(aoTutorial.mock.calls[0][0].regras.familia).toBe('off');
+    expect(aoTutorial.mock.calls[0][0].regras.familia).toBe('fechada');
     expect(convite).toBeInTheDocument();
   });
 

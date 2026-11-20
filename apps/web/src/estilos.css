@@ -1810,6 +1810,55 @@ body:has(.tela-mesa) {
   font-size: var(--t1);
   line-height: 1.2;
 }
+/* Treinador recolhido: uma etiqueta pequena com o progresso (abre de novo com um toque) e "Pular". */
+.treinador-tutorial-recolhido {
+  position: fixed;
+  z-index: 40;
+  top: 92px;
+  right: var(--e3);
+  display: flex;
+  gap: var(--e1);
+  align-items: center;
+  padding: var(--e1);
+  border: 2px solid var(--grito);
+  border-radius: 999px;
+  background: var(--lousa);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--sombra) 45%, transparent);
+}
+.treinador-tutorial-recolhido button {
+  min-height: 36px;
+  padding: 0 var(--e3);
+  border-radius: 999px;
+  font-size: var(--t-1);
+}
+.treinador-tutorial-recolhido .treinador-etiqueta {
+  border-color: transparent;
+  background: transparent;
+  color: var(--grito);
+  font-weight: 700;
+}
+.treinador-tutorial-recolhido .botao-discreto {
+  border-color: transparent;
+  background: transparent;
+  color: var(--giz-suave);
+}
+.treinador-progresso {
+  color: var(--giz-suave);
+  font-family: var(--fonte-ui);
+  font-size: var(--t-1);
+}
+.treinador-faltou {
+  color: var(--giz-suave);
+  font-size: var(--t-1);
+}
+@media (min-width: 1024px) and (min-height: 521px) {
+  .tela-mesa > .treinador-tutorial-recolhido {
+    top: auto;
+    right: auto;
+    bottom: var(--e5);
+    left: var(--e5);
+  }
+}
 /* Desktop: o treinador vai para o canto de baixo à esquerda, longe da vira, do centro e da mão
    (a dica comum fica no topo porque some depressa; o treinador acompanha a mão inteira). */
 @media (min-width: 1024px) and (min-height: 521px) {
