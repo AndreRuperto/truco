@@ -12,7 +12,7 @@ import type { Movimento } from '../rede/loja';
  * de re-render, e nada bloqueia clique (pointer-events: none) nem atrasa a próxima jogada.
  */
 
-export const DUR_VOO = 360;
+export const DUR_VOO = 460;
 export const DUR_RECUO = 150;
 export const DUR_RECOLHER = 300;
 const DUR_FADE = 120;
@@ -408,8 +408,8 @@ export function useAnimacaoJogadas(exibicao: Exibicao, minha: Cadeira, centro: R
 
 /* ---------- Ritual: embaralhar, cortar, dar, abrir 3, família e conferir ---------- */
 
-export const DUR_RIFFLE = 560;
-export const DUR_CORTE = 480;
+export const DUR_RIFFLE = 700;
+export const DUR_CORTE = 600;
 export const DUR_DADA = 820;
 /** Intervalo entre um voo e o próximo na distribuição (leva de 3 cartas). */
 export const PASSO_DADA = 540;
