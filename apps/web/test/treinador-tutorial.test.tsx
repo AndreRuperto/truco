@@ -27,7 +27,7 @@ describe('treinador do tutorial', () => {
     const { rerender } = render(<TreinadorTutorial {...props} msg={msgEstado(s, 0)} />);
     await user.click(screen.getByRole('button', { name: 'Recolher' }));
     expect(screen.getByRole('complementary', { name: 'Tutorial' })).toHaveAttribute('data-passo', 'recolhido');
-    expect(screen.getByRole('button', { name: 'Tutorial · 1 de 7' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Abrir o tutorial (já viu 1 de 7)' })).toHaveTextContent('Tutorial · 1/7');
     // "Pular" continua à mão, mesmo recolhido.
     expect(screen.getByRole('button', { name: 'Pular' })).toBeInTheDocument();
     // Vez de outro (passo novo): abre.
@@ -39,7 +39,7 @@ describe('treinador do tutorial', () => {
     rerender(<TreinadorTutorial {...props} msg={msgEstado(jogar(outro, [[1, 0]]), 0)} />);
     expect(screen.getByRole('complementary', { name: 'Tutorial' })).toHaveAttribute('data-passo', 'recolhido');
     // Tocar na etiqueta abre o passo do momento.
-    await user.click(screen.getByRole('button', { name: /Tutorial · / }));
+    await user.click(screen.getByRole('button', { name: /Abrir o tutorial/ }));
     expect(screen.getByRole('complementary', { name: 'Tutorial' })).toHaveAttribute('data-passo', 'esperar');
   });
 
@@ -61,5 +61,19 @@ describe('treinador do tutorial', () => {
     expect(screen.getByText(/Não apareceu nesta partida:.*família/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Terminar tutorial' }));
     expect(aoTerminar).toHaveBeenCalledOnce();
+  });
+});
+
+describe('treinador sem passo no momento', () => {
+  test('a etiqueta abre mesmo assim, e o painel tem "Pular tutorial"', async () => {
+    const user = userEvent.setup();
+    const aoPular = vi.fn();
+    const espera = msgEstado(null, 0);
+    // Sem visão não há passo: começa recolhido.
+    render(<TreinadorTutorial {...props} aoPular={aoPular} msg={espera} />);
+    await user.click(screen.getByRole('button', { name: /Abrir o tutorial/ }));
+    expect(screen.getByText(/Acompanhe a mesa/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Pular tutorial' }));
+    expect(aoPular).toHaveBeenCalledOnce();
   });
 });

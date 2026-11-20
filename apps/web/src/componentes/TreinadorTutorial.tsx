@@ -36,7 +36,10 @@ export function TreinadorTutorial({ msg, nome, aoPular, aoTerminar }: Props) {
     // só reage à troca de passo
   }, [bruto?.id]);
 
-  const passo = bruto && bruto.id === mostrado ? bruto : null;
+  // Aberto à mão sem passo no momento: um texto de espera (o painel é onde fica o "Pular tutorial").
+  const [abertoSemPasso, setAbertoSemPasso] = useState(false);
+  const passo: PassoTutorial | null =
+    bruto && bruto.id === mostrado ? bruto : abertoSemPasso ? { id: 'esperar', titulo: 'Tutorial', texto: 'Acompanhe a mesa: a próxima situação nova aparece aqui.' } : null;
   const aberto = passo !== null && !recolhido;
   const tudoVisto = topicos.size === TOPICOS.length;
   const podeTerminar = tudoVisto || bruto?.id === 'fim';
@@ -49,18 +52,20 @@ export function TreinadorTutorial({ msg, nome, aoPular, aoTerminar }: Props) {
           type="button"
           className="treinador-etiqueta"
           aria-expanded="false"
+          aria-label={`Abrir o tutorial (já viu ${progresso})`}
           onClick={() => {
             if (bruto) {
               vistos.current.set(bruto.id, bruto);
               setMostrado(bruto.id);
-            }
+            } else setAbertoSemPasso(true);
             setRecolhido(false);
           }}
-          disabled={!bruto}
         >
-          Tutorial · {progresso}
+          <span className="treinador-etiqueta-nome">Tutorial · </span>
+          {topicos.size}/{TOPICOS.length}
         </button>
-        <button type="button" className="botao-discreto" onClick={aoPular}>
+        {/* No celular some (a etiqueta vira um botão redondo); "Pular tutorial" fica no painel aberto. */}
+        <button type="button" className="botao-discreto treinador-pular-recolhido" onClick={aoPular}>
           Pular
         </button>
       </aside>
@@ -91,7 +96,14 @@ export function TreinadorTutorial({ msg, nome, aoPular, aoTerminar }: Props) {
             Terminar tutorial
           </button>
         ) : (
-          <button type="button" onClick={() => setRecolhido(true)} aria-expanded="true">
+          <button
+            type="button"
+            onClick={() => {
+              setRecolhido(true);
+              setAbertoSemPasso(false);
+            }}
+            aria-expanded="true"
+          >
             Recolher
           </button>
         )}

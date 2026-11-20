@@ -245,8 +245,23 @@
   main.tela-mesa > .treinador-tutorial .treinador-cabeca { margin-bottom: 2px; font-size: .95rem; }
   main.tela-mesa > .treinador-tutorial h2 { font-size: .95rem; }
   main.tela-mesa > .treinador-tutorial [aria-live] p { margin-top: 4px; }
-  /* Recolhido: no canto de cima à direita do tampo, que fica livre (o "Ordem" está à esquerda). */
-  main.tela-mesa > .treinador-tutorial-recolhido { top: calc(120px + env(safe-area-inset-top) + 6px); right: 8px; }
+  /* Recolhido: um botão redondo com o progresso no canto de cima à direita do tampo. A etiqueta
+     larga ("Tutorial · 3/7 Pular") encostava nas cartas do assento de cima (360px) e, embaixo, na
+     mão (390px). "Pular tutorial" fica no painel, a um toque. */
+  main.tela-mesa > .treinador-tutorial-recolhido {
+    top: calc(120px + env(safe-area-inset-top) + 6px);
+    right: 8px;
+    padding: 0;
+    border-width: 2px;
+  }
+  main.tela-mesa > .treinador-tutorial-recolhido .treinador-etiqueta-nome,
+  main.tela-mesa > .treinador-tutorial-recolhido .treinador-pular-recolhido { display: none; }
+  main.tela-mesa > .treinador-tutorial-recolhido .treinador-etiqueta {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 6px;
+  }
+  main.tela-mesa > .treinador-tutorial-recolhido button { font-size: .8rem; }
 
   .tela-mesa .assento.pos-esquerda .balao.grito::before { left: 2px; top: -14px; }
   .tela-mesa .assento.pos-direita .balao.grito::after { right: 2px; bottom: -14px; }
