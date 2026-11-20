@@ -20,6 +20,7 @@ import { Icone3D, IconeChat, IconeFalas, IconeManual, IconePausa, IconeSair, Ico
 import { ManualMesa } from '../componentes/ManualMesa';
 import { Mao } from '../componentes/Mao';
 import { Mesa3D } from '../componentes/Mesa3D';
+import { TreinadorTutorial } from '../componentes/TreinadorTutorial';
 import { Monte } from '../componentes/Monte';
 import { FimDeMao, FimDePartida } from '../componentes/Overlays';
 import { PainelFalas } from '../componentes/PainelFalas';
@@ -67,9 +68,11 @@ interface Props {
   floreios?: boolean;
   /** Vista 3D liberada (em produção, só para o admin: ver `vista3dLiberada`). */
   vista3d?: boolean;
+  /** Partida guiada: o treinador entra no lugar das dicas, com "Pular tutorial" sempre à mão. */
+  tutorial?: { aoPular: () => void; aoTerminar: () => void };
 }
 
-export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false, desatualizada = false, inventario = [], floreios = false, vista3d: pode3d = true }: Props) {
+export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false, desatualizada = false, inventario = [], floreios = false, vista3d: pode3d = true, tutorial }: Props) {
   const agora = useAgora(250);
   const raiz = useRef<HTMLElement>(null);
   // React 18 não conhece `inert` como propriedade booleana: liga direto no elemento.
@@ -179,7 +182,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
   const pedido = textoPedidoPendente(v);
   // Primeira partida guiada: uma dica por vez; some ao tocar "Entendi" ou quando a pessoa já agiu.
   const [dicas, setDicas] = useState(lerDicas);
-  const dica = dicas.desligadas ? null : dicaAgora(msg, ui, dicas.vistas);
+  const dica = dicas.desligadas || tutorial ? null : dicaAgora(msg, ui, dicas.vistas);
   const marcarVista = useCallback((id: IdDica) => {
     setDicas((d) => {
       if (d.vistas.includes(id)) return d;
@@ -418,6 +421,7 @@ export function TelaMesa({ snap, acoes, aoChat, aoJogarDeNovo, temConta = false,
           {aviso3d}
         </p>
       )}
+      {tutorial && <TreinadorTutorial msg={msg} nome={nome} aoPular={tutorial.aoPular} aoTerminar={tutorial.aoTerminar} />}
       {dica && (
         <aside className="dica-mesa" aria-label="Dica">
           <p>{dica.texto}</p>

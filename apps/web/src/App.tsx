@@ -11,6 +11,7 @@ import { api, carteira, loja, lojaFila, sessao } from './rede/instancia';
 import { TelaLoja, TelaLojaObrigado } from './telas/Loja';
 import { type AvisoBonusDados, avisoDosBonus, itemPorIdDoCatalogo, temFloreios, versoEquipado } from './logica/lojaApp';
 import { vista3dLiberada } from './logica/visualizacaoMesa';
+import { marcarTutorial } from './logica/tutorial';
 import { estiloVerso } from './logica/lojaItens';
 import { navegar, useRota } from './rede/rota';
 import { TelaEntrar } from './telas/Entrar';
@@ -70,6 +71,23 @@ export function App() {
   const ses = useSessao(sessao);
   const rota = useRota();
   const fila = useFila(lojaFila);
+  // Partida guiada: vale da entrada pelo "Tutorial" até sair da mesa (ou pular/terminar).
+  const [emTutorial, setEmTutorial] = useState(false);
+  useEffect(() => {
+    if (snap.status === 'fora') setEmTutorial(false);
+  }, [snap.status]);
+  const treinador = emTutorial
+    ? {
+        aoPular: () => {
+          marcarTutorial('pulado');
+          setEmTutorial(false);
+        },
+        aoTerminar: () => {
+          marcarTutorial('feito');
+          setEmTutorial(false);
+        },
+      }
+    : undefined;
   const cart = useCarteira(carteira);
   const [avisoBonus, setAvisoBonus] = useState<AvisoBonusDados | null>(null);
   // Regras da tela inicial guardadas na conta: undefined = sem conta ou carregando.
@@ -218,6 +236,7 @@ export function App() {
           inventario={cart.carteira?.inventario}
           floreios={temFloreios(ses.usuario, cart.carteira)}
           vista3d={vista3dLiberada(ses.usuario)}
+          tutorial={treinador}
           snap={snap}
           acoes={loja}
           aoChat={loja.enviarChat}
@@ -348,6 +367,12 @@ export function App() {
             aoJogar={(cru) => {
               const o = comFoto(cru);
               ultimaEntrada = { tipo: 'mesa', opcoes: o };
+              void entrarNaMesa(loja, o);
+            }}
+            aoTutorial={(cru) => {
+              const o = comFoto(cru);
+              ultimaEntrada = { tipo: 'mesa', opcoes: o };
+              setEmTutorial(true);
               void entrarNaMesa(loja, o);
             }}
             aoCriarPrivada={(cru) => {

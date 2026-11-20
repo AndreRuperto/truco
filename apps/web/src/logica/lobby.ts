@@ -59,6 +59,8 @@ export interface OpcoesEntrada {
   cacife?: number;
   /** Só na mesa privada (o servidor ignora nas outras): ninguém conectado tem prazo para agir. */
   semLimiteDeTempo?: boolean;
+  /** Partida guiada: sozinho, bots fáceis, e o servidor libera o "sem limite de tempo" na clássica. */
+  tutorial?: true;
 }
 
 export const CHAVE_APELIDO = 'truco:apelido';
@@ -266,4 +268,21 @@ export function gravarApelido(nome: string): void {
   } catch {
     // modo privado / storage cheio: segue sem lembrar
   }
+}
+
+/**
+ * A mesa do tutorial: paulista como vem, sozinho contra bots fáceis, sem relógio, sem família e sem
+ * sinais (o treinador explica o básico: ritual, carta, truco). O resto das regras fica no Manual.
+ */
+export function opcoesTutorial(nome: string): OpcoesEntrada {
+  const f: FormLobby = {
+    ...formPadrao('paulista', nome),
+    humanos: 1,
+    nivelBot: 'facil',
+    familia: 'off',
+    sinais: false,
+    provocacoes: false,
+    privada: false,
+  };
+  return { ...opcoesDeEntrada(f), modo: 'classica', tutorial: true, semLimiteDeTempo: true };
 }
