@@ -89,8 +89,8 @@ export interface Tempos {
 
 export const TEMPOS_PADRAO: Tempos = {
   jogadaMs: 20_000,
-  botMs: 900,
-  pausaMaoMs: 1_800,
+  botMs: 1_400,
+  pausaMaoMs: 2_600,
   intervaloMensagemMs: 1_000,
   ritualMs: 12_000,
   conferirMs: 6_000,

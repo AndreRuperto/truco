@@ -44,3 +44,17 @@ describe('reconexaoDoAmbiente (F5.2)', () => {
   });
 });
 
+
+// Retorno de quem jogou (2026-11-20): "as animações tão um pouco rápidas, no início demora pra
+// entender o que tá acontecendo". O bot pensa um pouco mais antes de agir (ritual e jogada) e o
+// fim da mão fica mais tempo na tela.
+describe('ritmo padrão (produção)', () => {
+  test('dá tempo de acompanhar o que os bots fazem', async () => {
+    const { TEMPOS_PADRAO } = await import('../src/mesa/Mesa');
+    expect(TEMPOS_PADRAO.botMs).toBeGreaterThanOrEqual(1_400);
+    expect(TEMPOS_PADRAO.pausaMaoMs).toBeGreaterThanOrEqual(2_600);
+    // A jogada humana e o ritual continuam com os prazos de sempre.
+    expect(TEMPOS_PADRAO.jogadaMs).toBe(20_000);
+    expect(TEMPOS_PADRAO.ritualMs).toBe(12_000);
+  });
+});
