@@ -1,7 +1,7 @@
 import { devices, expect, test } from '@playwright/test';
 
 // "?" das regras (pedido do André, 2026-11-21): abre a explicação sem estourar a largura, com alvo
-// de toque de pelo menos 24 px, e nada entre parênteses nas regras.
+// de toque de pelo menos 44 px, e nada entre parênteses nas regras.
 for (const [nomeTela, uso] of [
   ['320x568', { ...devices['Pixel 7'], viewport: { width: 320, height: 568 } }],
   ['390x844', { ...devices['Pixel 7'], viewport: { width: 390, height: 844 } }],
@@ -17,7 +17,7 @@ for (const [nomeTela, uso] of [
       const ajudas = page.locator('.botao-ajuda-regra');
       expect(await ajudas.count()).toBeGreaterThanOrEqual(12);
       for (const caixa of await ajudas.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0))) {
-        expect(Math.min(caixa.width, caixa.height)).toBeGreaterThanOrEqual(24);
+        expect(Math.min(caixa.width, caixa.height)).toBeGreaterThanOrEqual(44);
       }
       const textos = await page.locator('.regras-grade label, .regras-grade option').allTextContents();
       expect(textos.filter((t) => /[()]/.test(t))).toEqual([]);

@@ -477,15 +477,16 @@ button:disabled {
 .alternar-privada-linha .alternar-privada {
   flex: 1 1 auto;
 }
-/* Alvo de toque de 32px (24 é o mínimo do WCAG 2.5.8) num círculo de giz; o desenho é de 22px. */
+/* Alvo de toque de 44px (o mínimo da casa, ver responsividade.spec) num círculo de giz de 22px; a
+   margem negativa não deixa o alvo grande empurrar a linha do rótulo. */
 .botao-ajuda-regra {
   flex: none;
   display: inline-grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   min-height: 0;
-  margin: -6px 0;
+  margin: -12px -8px;
   padding: 0;
   border: 0;
   border-radius: 50%;
