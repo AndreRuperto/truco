@@ -20,6 +20,8 @@ import {
   trocarVariante,
 } from '../logica/lobby';
 import { marcarTutorial, tutorialPendente } from '../logica/tutorial';
+import { type IdAjuda, textoAjuda } from '../logica/ajudaRegras';
+import { BotaoAjuda } from '../componentes/Ajuda';
 
 interface Props {
   aoJogar: (o: OpcoesEntrada) => void;
@@ -74,6 +76,39 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
   const mudar = <K extends keyof FormLobby>(k: K, v: FormLobby[K]) => (k === 'nome' ? setFCru : setF)((x) => ({ ...x, [k]: v }));
 
   const [convite, setConvite] = useState(tutorialPendente);
+  // O "?" de cada regra: uma explicação aberta por vez, logo abaixo da regra.
+  const [ajuda, setAjuda] = useState<IdAjuda | null>(null);
+  const ajudaDe = (id: IdAjuda, tema: string) => {
+    const aberta = ajuda === id;
+    const idTexto = `ajuda-${id}`;
+    return {
+      botao: <BotaoAjuda tema={tema} aberta={aberta} controla={idTexto} aoAlternar={() => setAjuda((a) => (a === id ? null : id))} />,
+      texto: aberta ? (
+        <p id={idTexto} className="ajuda-regra">
+          {textoAjuda(id, f.pontuacao)}
+        </p>
+      ) : null,
+      descrita: aberta ? idTexto : undefined,
+    };
+  };
+  const aj = {
+    privada: ajudaDe('privada', 'Mesa privada'),
+    variante: ajudaDe('variante', 'Variante'),
+    pontuacao: ajudaDe('pontuacao', 'Pontuação'),
+    familia: ajudaDe('familia', 'Família'),
+    mao11: ajudaDe('mao11', 'Mão de ferro'),
+    tempoFamilia: ajudaDe('tempo-familia', 'Tempo para pedir família'),
+    tempoJogada: ajudaDe('tempo-jogada', 'Tempo por jogada'),
+    humanos: ajudaDe('humanos', 'Humanos'),
+    bots: ajudaDe('bots', 'Bots'),
+    cacife: ajudaDe('cacife', 'Valendo Fichas'),
+    sinais: ajudaDe('sinais', 'Sinais entre parceiros'),
+    provocacoes: ajudaDe('provocacoes', 'Provocações'),
+    interceptar: ajudaDe('interceptar', 'Interceptar sinais'),
+    maoDe10: ajudaDe('maoDe10', `Mão de ${limiteMaoEspecial(f.pontuacao)}`),
+    maoLimpa: ajudaDe('maoLimpa', 'Mão limpa'),
+  };
+
   const comecarTutorial = () => {
     if (!aoTutorial) return;
     if (apelidoConta === undefined) gravarApelido(f.nome.trim());
@@ -170,13 +205,15 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
               </button>
             )}
             {aoCriarPrivada && (
-              <label className="alternar-privada">
-                <input type="checkbox" checked={f.privada} onChange={(e) => mudar('privada', e.target.checked)} />
-                <span>
-                  Mesa privada <small>(só entra quem tiver o link)</small>
-                </span>
-              </label>
+              <div className="alternar-privada-linha">
+                <label className="alternar-privada">
+                  <input type="checkbox" checked={f.privada} aria-describedby={aj.privada.descrita} onChange={(e) => mudar('privada', e.target.checked)} />
+                  <span>Mesa privada</span>
+                </label>
+                {aj.privada.botao}
+              </div>
             )}
+            {aj.privada.texto}
           </div>
         </div>
         <details className="regras-mesa" open={regrasAbertas} onToggle={(e) => setRegrasAbertas(e.currentTarget.open)}>
@@ -186,52 +223,75 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
           </summary>
           <div className="regras-grade">
             <div className="campo">
-              <label htmlFor="variante">Variante</label>
-              <select id="variante" value={f.variante} onChange={(e) => setF((x) => trocarVariante(x, e.target.value as Variante))}>
-                <option value="paulista">Paulista (com vira)</option>
-                <option value="mineiro">Mineiro (manilhas fixas)</option>
+              <div className="campo-rotulo">
+                <label htmlFor="variante">Variante</label>
+                {aj.variante.botao}
+              </div>
+              <select id="variante" aria-describedby={aj.variante.descrita} value={f.variante} onChange={(e) => setF((x) => trocarVariante(x, e.target.value as Variante))}>
+                <option value="paulista">Paulista</option>
+                <option value="mineiro">Mineiro</option>
               </select>
+              {aj.variante.texto}
             </div>
             <div className="campo">
-              <label htmlFor="pontuacao">Pontuação</label>
-              <select id="pontuacao" value={f.pontuacao} onChange={(e) => mudar('pontuacao', e.target.value as Pontuacao)}>
+              <div className="campo-rotulo">
+                <label htmlFor="pontuacao">Pontuação</label>
+                {aj.pontuacao.botao}
+              </div>
+              <select id="pontuacao" aria-describedby={aj.pontuacao.descrita} value={f.pontuacao} onChange={(e) => mudar('pontuacao', e.target.value as Pontuacao)}>
                 <option value="1-3-6-9-12">1, 3, 6, 9, 12</option>
                 <option value="2-4-8-10-12">2, 4, 8, 10, 12</option>
               </select>
+              {aj.pontuacao.texto}
             </div>
             <div className="campo">
-              <label htmlFor="familia">Família</label>
-              <select id="familia" value={f.familia} onChange={(e) => mudar('familia', e.target.value as RegrasMesa['familia'])}>
+              <div className="campo-rotulo">
+                <label htmlFor="familia">Família</label>
+                {aj.familia.botao}
+              </div>
+              <select id="familia" aria-describedby={aj.familia.descrita} value={f.familia} onChange={(e) => mudar('familia', e.target.value as RegrasMesa['familia'])}>
                 <option value="off">Desligada</option>
-                <option value="aberta">Aberta (mostra as cartas)</option>
+                <option value="aberta">Aberta</option>
                 <option value="fechada">Fechada</option>
               </select>
+              {aj.familia.texto}
             </div>
             <div className="campo">
-              <label htmlFor="mao11">Mão de ferro</label>
-              <select id="mao11" value={f.maoDe11} onChange={(e) => mudar('maoDe11', e.target.value as RegrasMesa['maoDe11'])}>
+              <div className="campo-rotulo">
+                <label htmlFor="mao11">Mão de ferro</label>
+                {aj.mao11.botao}
+              </div>
+              <select id="mao11" aria-describedby={aj.mao11.descrita} value={f.maoDe11} onChange={(e) => mudar('maoDe11', e.target.value as RegrasMesa['maoDe11'])}>
                 <option value="off">Desligada</option>
                 <option value="onzeAOnze">
                   Só no {limiteMaoEspecial(f.pontuacao)} a {limiteMaoEspecial(f.pontuacao)}
                 </option>
               </select>
+              {aj.mao11.texto}
             </div>
             {f.familia !== 'off' && (
               <div className="campo">
-                <label htmlFor="tempo-familia">Tempo para pedir família</label>
-                <select id="tempo-familia" value={String(f.tempoFamiliaS)} onChange={(e) => mudar('tempoFamiliaS', Number(e.target.value) as FormLobby['tempoFamiliaS'])}>
+                <div className="campo-rotulo">
+                  <label htmlFor="tempo-familia">Tempo para pedir família</label>
+                  {aj.tempoFamilia.botao}
+                </div>
+                <select id="tempo-familia" aria-describedby={aj.tempoFamilia.descrita} value={String(f.tempoFamiliaS)} onChange={(e) => mudar('tempoFamiliaS', Number(e.target.value) as FormLobby['tempoFamiliaS'])}>
                   {TEMPOS_FAMILIA_S.map((s) => (
                     <option key={s} value={String(s)}>
                       {s} segundos
                     </option>
                   ))}
                 </select>
+                {aj.tempoFamilia.texto}
               </div>
             )}
             <div className="campo">
-              <label htmlFor="tempo-jogada">Tempo por jogada</label>
+              <div className="campo-rotulo">
+                <label htmlFor="tempo-jogada">Tempo por jogada</label>
+                {aj.tempoJogada.botao}
+              </div>
               <select
-                id="tempo-jogada"
+                id="tempo-jogada" aria-describedby={aj.tempoJogada.descrita}
                 value={f.privada && f.semLimiteDeTempo ? 'semLimite' : String(f.tempoJogadaS)}
                 onChange={(e) => {
                   const v = e.target.value;
@@ -247,49 +307,73 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
                 {/* Sem relógio só entre amigos: nas públicas o relógio segura a mesa. */}
                 {f.privada && aoCriarPrivada && <option value="semLimite">Sem limite</option>}
               </select>
+              {aj.tempoJogada.texto}
             </div>
             <div className="campo">
-              <label htmlFor="humanos">Humanos</label>
-              <select id="humanos" value={String(f.humanos)} onChange={(e) => mudar('humanos', Number(e.target.value))}>
-                <option value="1">Só eu (3 bots)</option>
+              <div className="campo-rotulo">
+                <label htmlFor="humanos">Humanos</label>
+                {aj.humanos.botao}
+              </div>
+              <select id="humanos" aria-describedby={aj.humanos.descrita} value={String(f.humanos)} onChange={(e) => mudar('humanos', Number(e.target.value))}>
+                <option value="1">Só eu</option>
                 <option value="2">2 humanos</option>
                 <option value="3">3 humanos</option>
                 <option value="4">4 humanos</option>
               </select>
+              {aj.humanos.texto}
             </div>
             <div className="campo">
-              <label htmlFor="bots">Bots</label>
-              <select id="bots" value={f.nivelBot} onChange={(e) => mudar('nivelBot', e.target.value as NivelBot)}>
+              <div className="campo-rotulo">
+                <label htmlFor="bots">Bots</label>
+                {aj.bots.botao}
+              </div>
+              <select id="bots" aria-describedby={aj.bots.descrita} value={f.nivelBot} onChange={(e) => mudar('nivelBot', e.target.value as NivelBot)}>
                 <option value="facil">Fácil</option>
                 <option value="dificil">Difícil</option>
               </select>
+              {aj.bots.texto}
             </div>
             {/* Linha inteira: "1000 Fichas por cabeça" não cabe na coluna da direita. */}
             {apelidoConta !== undefined && (f.humanos >= 2 || f.privada) && (
               <div className="campo largo">
-                <label htmlFor="cacife">Valendo Fichas</label>
-                <select id="cacife" value={String(f.cacife ?? 0)} onChange={(e) => mudar('cacife', Number(e.target.value))}>
+                <div className="campo-rotulo">
+                  <label htmlFor="cacife">Valendo Fichas</label>
+                  {aj.cacife.botao}
+                </div>
+                <select id="cacife" aria-describedby={aj.cacife.descrita} value={String(f.cacife ?? 0)} onChange={(e) => mudar('cacife', Number(e.target.value))}>
                   {CACIFES.map((c) => (
                     <option key={c} value={String(c)}>
                       {c === 0 ? 'Sem cacife' : `${c} Fichas por cabeça`}
                     </option>
                   ))}
                 </select>
+                {aj.cacife.texto}
               </div>
             )}
-            <label className="campo-check largo">
-              <input type="checkbox" checked={f.sinais} onChange={(e) => mudar('sinais', e.target.checked)} />
-              Sinais entre parceiros
-            </label>
-            <label className="campo-check largo">
-              <input type="checkbox" checked={f.provocacoes} onChange={(e) => mudar('provocacoes', e.target.checked)} />
-              Provocações (tocar no nome de alguém e usar a sua moldura)
-            </label>
+            <div className="campo-check-linha largo">
+              <label className="campo-check">
+                <input type="checkbox" checked={f.sinais} aria-describedby={aj.sinais.descrita} onChange={(e) => mudar('sinais', e.target.checked)} />
+                Sinais entre parceiros
+              </label>
+              {aj.sinais.botao}
+            </div>
+            {aj.sinais.texto}
+            <div className="campo-check-linha largo">
+              <label className="campo-check">
+                <input type="checkbox" checked={f.provocacoes} aria-describedby={aj.provocacoes.descrita} onChange={(e) => mudar('provocacoes', e.target.checked)} />
+                Provocações
+              </label>
+              {aj.provocacoes.botao}
+            </div>
+            {aj.provocacoes.texto}
             {f.sinais && (
               <div className="campo largo">
-                <label htmlFor="interceptar">Adversários podem interceptar sinais</label>
+                <div className="campo-rotulo">
+                  <label htmlFor="interceptar">Adversários podem interceptar sinais</label>
+                  {aj.interceptar.botao}
+                </div>
                 <select
-                  id="interceptar"
+                  id="interceptar" aria-describedby={aj.interceptar.descrita}
                   value={String(f.chanceInterceptarSinal)}
                   onChange={(e) => mudar('chanceInterceptarSinal', Number(e.target.value))}
                 >
@@ -299,19 +383,28 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
                     </option>
                   ))}
                 </select>
+                {aj.interceptar.texto}
               </div>
             )}
-            <label className="campo-check largo">
-              <input type="checkbox" checked={f.maoDe10} onChange={(e) => mudar('maoDe10', e.target.checked)} />
-              Mão de {limiteMaoEspecial(f.pontuacao)}
-            </label>
-            {f.variante === 'mineiro' && (
-              <label className="campo-check largo">
-                <input type="checkbox" checked={f.maoLimpa} onChange={(e) => mudar('maoLimpa', e.target.checked)} />
-                <span>
-                  Mão limpa <small>(sem 4 a 7, com 2 coringas)</small>
-                </span>
+            <div className="campo-check-linha largo">
+              <label className="campo-check">
+                <input type="checkbox" checked={f.maoDe10} aria-describedby={aj.maoDe10.descrita} onChange={(e) => mudar('maoDe10', e.target.checked)} />
+                Mão de {limiteMaoEspecial(f.pontuacao)}
               </label>
+              {aj.maoDe10.botao}
+            </div>
+            {aj.maoDe10.texto}
+            {f.variante === 'mineiro' && (
+              <>
+                <div className="campo-check-linha largo">
+                  <label className="campo-check">
+                    <input type="checkbox" checked={f.maoLimpa} aria-describedby={aj.maoLimpa.descrita} onChange={(e) => mudar('maoLimpa', e.target.checked)} />
+                    Mão limpa
+                  </label>
+                  {aj.maoLimpa.botao}
+                </div>
+                {aj.maoLimpa.texto}
+              </>
             )}
           </div>
           <p className="regras-salvas">

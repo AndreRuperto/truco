@@ -449,6 +449,86 @@ button:disabled {
   height: 22px;
   accent-color: var(--form-acento, var(--madeira-funda));
 }
+/* "?" de cada regra (lobby): rótulo + botão na mesma linha; a explicação abre logo abaixo. */
+.campo-rotulo {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  min-width: 0;
+}
+.campo-check-linha,
+.alternar-privada-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  min-width: 0;
+}
+.campo-check-linha .campo-check {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+/* A explicação aberta num campo da coluna não estica o vizinho da mesma linha. */
+.regras-grade {
+  align-items: start;
+}
+.alternar-privada-linha {
+  flex: 1 1 220px;
+}
+.alternar-privada-linha .alternar-privada {
+  flex: 1 1 auto;
+}
+/* Alvo de toque de 32px (24 é o mínimo do WCAG 2.5.8) num círculo de giz; o desenho é de 22px. */
+.botao-ajuda-regra {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-height: 0;
+  margin: -6px 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--form-tinta-suave, var(--tinta-suave));
+  font-weight: 800;
+  font-size: var(--t-1);
+  line-height: 1;
+  cursor: pointer;
+}
+.botao-ajuda-regra > span[aria-hidden] {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+.botao-ajuda-regra:hover,
+.botao-ajuda-regra[aria-expanded='true'] {
+  color: var(--check-fundo, var(--grito));
+}
+.botao-ajuda-regra:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 1px;
+}
+.ajuda-regra {
+  margin: 0;
+  padding: var(--e2) var(--e3);
+  border-left: 3px solid var(--check-fundo, var(--grito));
+  border-radius: 0 var(--raio-carta) var(--raio-carta) 0;
+  background: color-mix(in srgb, var(--form-campo, var(--branco)) 70%, transparent);
+  color: var(--form-tinta, var(--tinta));
+  font-size: var(--t-1);
+  line-height: 1.45;
+}
+/* Na grade das regras, a explicação de um campo da coluna ocupa a linha inteira. */
+.regras-grade > .ajuda-regra {
+  grid-column: 1 / -1;
+}
+.campo .ajuda-regra {
+  margin-top: var(--e1);
+}
 .campo-check small {
   display: block;
   color: var(--form-tinta-suave, var(--tinta-suave));
@@ -5708,4 +5788,7 @@ body:has(.tela-mesa) {
   .provocacao-texto {
     display: block;
   }
+}
+.lobby-outros > .ajuda-regra {
+  flex: 1 1 100%;
 }
