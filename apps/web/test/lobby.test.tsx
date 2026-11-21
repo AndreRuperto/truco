@@ -68,7 +68,9 @@ describe('Lobby', () => {
     await user.selectOptions(screen.getByLabelText('Variante'), 'mineiro');
     const caixa = screen.getByRole('checkbox', { name: /Mão limpa/ });
     expect(caixa).not.toBeChecked();
-    expect(caixa.closest('label')).toHaveTextContent('sem 4 a 7, com 2 coringas');
+    // O que era o "(sem 4 a 7, com 2 coringas)" agora está no "?".
+    await user.click(screen.getByRole('button', { name: 'O que é Mão limpa?' }));
+    expect(screen.getByText(/4, 5, 6 e 7 comuns e põe 2 coringas/)).toBeInTheDocument();
     await user.click(caixa);
     const resumo = screen.getByText('Regras da mesa').closest('summary')!;
     expect(resumo).toHaveTextContent('mão limpa');
@@ -139,7 +141,7 @@ describe('Lobby', () => {
     await user.click(screen.getByText('Regras da mesa'));
     expect(screen.getByLabelText('Tempo por jogada')).toHaveValue('20');
     expect(screen.queryByRole('option', { name: 'Sem limite' })).toBeNull();
-    await user.click(screen.getByLabelText('Mesa privada (só entra quem tiver o link)'));
+    await user.click(screen.getByLabelText('Mesa privada'));
     expect(screen.getByLabelText('Tempo por jogada')).toHaveValue('20');
     await user.selectOptions(screen.getByLabelText('Tempo por jogada'), 'semLimite');
     expect(screen.getByText(/sem limite de tempo/)).toBeInTheDocument();
@@ -152,9 +154,9 @@ describe('Lobby', () => {
     const aoCriarPrivada = vi.fn();
     const aoJogar = vi.fn();
     render(<Lobby aoJogar={aoJogar} aoCriarPrivada={aoCriarPrivada} />);
-    await user.click(screen.getByLabelText('Mesa privada (só entra quem tiver o link)'));
+    await user.click(screen.getByLabelText('Mesa privada'));
     await user.selectOptions(screen.getByLabelText('Tempo por jogada'), 'semLimite');
-    await user.click(screen.getByLabelText('Mesa privada (só entra quem tiver o link)'));
+    await user.click(screen.getByLabelText('Mesa privada'));
     await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
     expect(aoJogar.mock.calls[0][0]).not.toHaveProperty('semLimiteDeTempo');
   });
@@ -164,7 +166,7 @@ describe('Lobby', () => {
     const aoJogar = vi.fn();
     const aoCriarPrivada = vi.fn();
     render(<Lobby aoJogar={aoJogar} aoCriarPrivada={aoCriarPrivada} />);
-    await user.click(screen.getByLabelText('Mesa privada (só entra quem tiver o link)'));
+    await user.click(screen.getByLabelText('Mesa privada'));
     await user.click(screen.getByRole('button', { name: 'Criar mesa privada' }));
     expect(aoJogar).not.toHaveBeenCalled();
     expect(aoCriarPrivada.mock.calls[0][0]).toMatchObject({ modo: 'privada' });
