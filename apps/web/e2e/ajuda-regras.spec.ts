@@ -25,6 +25,12 @@ for (const [nomeTela, uso] of [
         await page.emulateMedia({ colorScheme: tema });
         const fundos = await ajudas.evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
         expect(new Set(fundos), `fundo do "?" no tema ${tema}`).toEqual(new Set(['rgba(0, 0, 0, 0)']));
+        // Nem com o mouse em cima.
+        if (nomeTela === '1440x900') {
+          await ajudas.first().hover();
+          expect(await ajudas.first().evaluate((e) => getComputedStyle(e).backgroundColor), `fundo do "?" com hover no tema ${tema}`).toBe('rgba(0, 0, 0, 0)');
+          await page.mouse.move(0, 0);
+        }
       }
       const textos = await page.locator('.regras-grade label, .regras-grade option').allTextContents();
       expect(textos.filter((t) => /[()]/.test(t))).toEqual([]);
@@ -38,6 +44,11 @@ for (const [nomeTela, uso] of [
       await page.getByRole('button', { name: 'O que é Variante?' }).click();
       await page.locator('details.regras-mesa').scrollIntoViewIfNeeded();
       await page.emulateMedia({ colorScheme: 'dark' });
+      await page.getByRole('button', { name: 'O que é Variante?' }).click();
+      const grade = testInfo.outputPath(`grupos-${nomeTela}.png`);
+      await page.locator('details.regras-mesa').screenshot({ path: grade });
+      await testInfo.attach('grupos', { path: grade, contentType: 'image/png' });
+      await page.getByRole('button', { name: 'O que é Variante?' }).click();
       const foto = testInfo.outputPath(`ajuda-${nomeTela}.png`);
       await page.locator('details.regras-mesa').screenshot({ path: foto });
       await testInfo.attach('ajuda', { path: foto, contentType: 'image/png' });

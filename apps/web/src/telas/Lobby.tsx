@@ -222,6 +222,7 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
             <small>{resumoLobby(f)}</small>
           </summary>
           <div className="regras-grade">
+            <h3 className="regras-grupo largo">Jogo</h3>
             <div className="campo">
               <div className="campo-rotulo">
                 <label htmlFor="variante">Variante</label>
@@ -269,20 +270,51 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
               </select>
               {aj.mao11.texto}
             </div>
-            {f.familia !== 'off' && (
+            <div className="campo-check-linha largo">
+              <label className="campo-check">
+                <input type="checkbox" checked={f.maoDe10} aria-describedby={aj.maoDe10.descrita} onChange={(e) => mudar('maoDe10', e.target.checked)} />
+                Mão de {limiteMaoEspecial(f.pontuacao)}
+              </label>
+              {aj.maoDe10.botao}
+            </div>
+            {aj.maoDe10.texto}
+            {f.variante === 'mineiro' && (
+              <>
+                <div className="campo-check-linha largo">
+                  <label className="campo-check">
+                    <input type="checkbox" checked={f.maoLimpa} aria-describedby={aj.maoLimpa.descrita} onChange={(e) => mudar('maoLimpa', e.target.checked)} />
+                    Mão limpa
+                  </label>
+                  {aj.maoLimpa.botao}
+                </div>
+                {aj.maoLimpa.texto}
+              </>
+            )}
+            <h3 className="regras-grupo largo">Jogadores e tempo</h3>
+            <div className="campo">
+              <div className="campo-rotulo">
+                <label htmlFor="humanos">Humanos</label>
+                {aj.humanos.botao}
+              </div>
+              <select id="humanos" aria-describedby={aj.humanos.descrita} value={String(f.humanos)} onChange={(e) => mudar('humanos', Number(e.target.value))}>
+                <option value="1">Só eu</option>
+                <option value="2">2 humanos</option>
+                <option value="3">3 humanos</option>
+                <option value="4">4 humanos</option>
+              </select>
+              {aj.humanos.texto}
+            </div>
+            {f.humanos < 4 && (
               <div className="campo">
                 <div className="campo-rotulo">
-                  <label htmlFor="tempo-familia">Tempo para pedir família</label>
-                  {aj.tempoFamilia.botao}
+                  <label htmlFor="bots">Bots</label>
+                  {aj.bots.botao}
                 </div>
-                <select id="tempo-familia" aria-describedby={aj.tempoFamilia.descrita} value={String(f.tempoFamiliaS)} onChange={(e) => mudar('tempoFamiliaS', Number(e.target.value) as FormLobby['tempoFamiliaS'])}>
-                  {TEMPOS_FAMILIA_S.map((s) => (
-                    <option key={s} value={String(s)}>
-                      {s} segundos
-                    </option>
-                  ))}
+                <select id="bots" aria-describedby={aj.bots.descrita} value={f.nivelBot} onChange={(e) => mudar('nivelBot', e.target.value as NivelBot)}>
+                  <option value="facil">Fácil</option>
+                  <option value="dificil">Difícil</option>
                 </select>
-                {aj.tempoFamilia.texto}
+                {aj.bots.texto}
               </div>
             )}
             <div className="campo">
@@ -309,30 +341,22 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
               </select>
               {aj.tempoJogada.texto}
             </div>
-            <div className="campo">
-              <div className="campo-rotulo">
-                <label htmlFor="humanos">Humanos</label>
-                {aj.humanos.botao}
+            {f.familia !== 'off' && (
+              <div className="campo">
+                <div className="campo-rotulo">
+                  <label htmlFor="tempo-familia">Tempo para pedir família</label>
+                  {aj.tempoFamilia.botao}
+                </div>
+                <select id="tempo-familia" aria-describedby={aj.tempoFamilia.descrita} value={String(f.tempoFamiliaS)} onChange={(e) => mudar('tempoFamiliaS', Number(e.target.value) as FormLobby['tempoFamiliaS'])}>
+                  {TEMPOS_FAMILIA_S.map((s) => (
+                    <option key={s} value={String(s)}>
+                      {s} segundos
+                    </option>
+                  ))}
+                </select>
+                {aj.tempoFamilia.texto}
               </div>
-              <select id="humanos" aria-describedby={aj.humanos.descrita} value={String(f.humanos)} onChange={(e) => mudar('humanos', Number(e.target.value))}>
-                <option value="1">Só eu</option>
-                <option value="2">2 humanos</option>
-                <option value="3">3 humanos</option>
-                <option value="4">4 humanos</option>
-              </select>
-              {aj.humanos.texto}
-            </div>
-            <div className="campo">
-              <div className="campo-rotulo">
-                <label htmlFor="bots">Bots</label>
-                {aj.bots.botao}
-              </div>
-              <select id="bots" aria-describedby={aj.bots.descrita} value={f.nivelBot} onChange={(e) => mudar('nivelBot', e.target.value as NivelBot)}>
-                <option value="facil">Fácil</option>
-                <option value="dificil">Difícil</option>
-              </select>
-              {aj.bots.texto}
-            </div>
+            )}
             {/* Linha inteira: "1000 Fichas por cabeça" não cabe na coluna da direita. */}
             {apelidoConta !== undefined && (f.humanos >= 2 || f.privada) && (
               <div className="campo largo">
@@ -350,6 +374,7 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
                 {aj.cacife.texto}
               </div>
             )}
+            <h3 className="regras-grupo largo">Na mesa</h3>
             <div className="campo-check-linha largo">
               <label className="campo-check">
                 <input type="checkbox" checked={f.sinais} aria-describedby={aj.sinais.descrita} onChange={(e) => mudar('sinais', e.target.checked)} />
@@ -358,16 +383,8 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
               {aj.sinais.botao}
             </div>
             {aj.sinais.texto}
-            <div className="campo-check-linha largo">
-              <label className="campo-check">
-                <input type="checkbox" checked={f.provocacoes} aria-describedby={aj.provocacoes.descrita} onChange={(e) => mudar('provocacoes', e.target.checked)} />
-                Provocações
-              </label>
-              {aj.provocacoes.botao}
-            </div>
-            {aj.provocacoes.texto}
             {f.sinais && (
-              <div className="campo largo">
+              <div className="campo largo campo-dependente">
                 <div className="campo-rotulo">
                   <label htmlFor="interceptar">Adversários podem interceptar sinais</label>
                   {aj.interceptar.botao}
@@ -388,24 +405,12 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
             )}
             <div className="campo-check-linha largo">
               <label className="campo-check">
-                <input type="checkbox" checked={f.maoDe10} aria-describedby={aj.maoDe10.descrita} onChange={(e) => mudar('maoDe10', e.target.checked)} />
-                Mão de {limiteMaoEspecial(f.pontuacao)}
+                <input type="checkbox" checked={f.provocacoes} aria-describedby={aj.provocacoes.descrita} onChange={(e) => mudar('provocacoes', e.target.checked)} />
+                Provocações
               </label>
-              {aj.maoDe10.botao}
+              {aj.provocacoes.botao}
             </div>
-            {aj.maoDe10.texto}
-            {f.variante === 'mineiro' && (
-              <>
-                <div className="campo-check-linha largo">
-                  <label className="campo-check">
-                    <input type="checkbox" checked={f.maoLimpa} aria-describedby={aj.maoLimpa.descrita} onChange={(e) => mudar('maoLimpa', e.target.checked)} />
-                    Mão limpa
-                  </label>
-                  {aj.maoLimpa.botao}
-                </div>
-                {aj.maoLimpa.texto}
-              </>
-            )}
+            {aj.provocacoes.texto}
           </div>
           <p className="regras-salvas">
             {aoSalvarNaConta ? 'Estas regras ficam salvas na sua conta.' : 'Estas regras ficam salvas neste aparelho. Entre na conta para levar para qualquer lugar.'}
