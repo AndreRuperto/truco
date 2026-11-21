@@ -32,6 +32,21 @@ for (const [nomeTela, uso] of [
           await page.mouse.move(0, 0);
         }
       }
+      // Respiro do círculo: pelo menos 8 px até o campo de baixo e 6 px até o texto do rótulo
+      // (com a margem negativa de antes, o círculo ficava a 3 px do campo).
+      const folgas = await page.evaluate(() =>
+        [...document.querySelectorAll('.campo-rotulo')].map((r) => {
+          const circ = r.querySelector('.botao-ajuda-regra > span[aria-hidden]')!.getBoundingClientRect();
+          const faixa = document.createRange();
+          faixa.selectNodeContents(r.querySelector('label')!);
+          const campo = r.parentElement!.querySelector('select')!.getBoundingClientRect();
+          return { rotulo: r.textContent, ateOCampo: campo.top - circ.bottom, ladoAoTexto: circ.left - faixa.getBoundingClientRect().right };
+        }),
+      );
+      for (const f of folgas) {
+        expect(f.ateOCampo, `${f.rotulo}: espaço entre o "?" e o campo`).toBeGreaterThanOrEqual(8);
+        expect(f.ladoAoTexto, `${f.rotulo}: espaço entre o texto e o "?"`).toBeGreaterThanOrEqual(6);
+      }
       const textos = await page.locator('.regras-grade label, .regras-grade option').allTextContents();
       expect(textos.filter((t) => /[()]/.test(t))).toEqual([]);
 

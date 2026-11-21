@@ -506,8 +506,9 @@ button:disabled {
 .alternar-privada-linha .alternar-privada {
   flex: 1 1 auto;
 }
-/* Alvo de toque de 44px (o mínimo da casa, ver responsividade.spec) num círculo de giz de 22px; a
-   margem negativa não deixa o alvo grande empurrar a linha do rótulo. */
+/* Alvo de toque de 44px (o mínimo da casa, ver responsividade.spec) num círculo de giz de 22px. A
+   margem negativa segura o alvo grande sem empurrar muito a linha do rótulo, mas deixa 5px em volta
+   do círculo: com -12px ele ficava a 3px do campo de baixo. */
 .botao-ajuda-regra {
   flex: none;
   display: inline-grid;
@@ -515,7 +516,7 @@ button:disabled {
   width: 44px;
   height: 44px;
   min-height: 0;
-  margin: -12px -8px;
+  margin: -6px -8px;
   padding: 0;
   border: 0;
   border-radius: 50%;
