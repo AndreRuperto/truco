@@ -287,15 +287,15 @@ export function gravarApelido(nome: string): void {
 }
 
 /**
- * A mesa do tutorial: paulista como vem, sozinho contra bots fáceis, sem relógio, sem família e sem
- * sinais (o treinador explica o básico: ritual, carta, truco). O resto das regras fica no Manual.
+ * A mesa do tutorial: paulista como vem (com mão de 11 e de ferro), família fechada, sozinho contra
+ * bots fáceis, sem relógio e sem sinais. O treinador explica cada situação na hora em que aparece.
  */
 export function opcoesTutorial(nome: string): OpcoesEntrada {
   const f: FormLobby = {
     ...formPadrao('paulista', nome),
     humanos: 1,
     nivelBot: 'facil',
-    familia: 'off',
+    familia: 'fechada',
     sinais: false,
     provocacoes: false,
     privada: false,

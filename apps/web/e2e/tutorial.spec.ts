@@ -28,15 +28,16 @@ for (const [nomeTela, uso] of [
         const passo = (await treinador.getAttribute('data-passo')) ?? '';
         vistos.add(passo);
         // Faz o que o passo pede, como alguém seguindo o treinador.
-        for (const nome of ['Passar pra cortar', 'Cortar', 'Por cima']) {
+        for (const nome of ['Passar pra cortar', 'Cortar', 'Por cima', 'Sem família', 'Deixar passar']) {
           const b = page.getByRole('button', { name: nome, exact: true });
           if (await b.isVisible()) await b.click({ timeout: 800 }).catch(() => {});
         }
         if (passo === 'primeira-carta' && (await jogavel.count()) > 0) await jogavel.first().click({ timeout: 800 }).catch(() => {});
-        expect(vistos.has('primeira-carta')).toBe(true);
+        expect(vistos.has('primeira-carta'), `passos vistos: ${[...vistos].join(', ')}`).toBe(true);
       }).toPass({ timeout: 60_000, intervals: [400] });
       expect([...vistos].some((p) => p.startsWith('embaralhar') || p.startsWith('cortar') || p.startsWith('dar'))).toBe(true);
-      await expect(page.locator('.barra-acoes, .rodape-mesa')).not.toContainText(/\d+\s?s\b/);
+      // A vez não mostra segundos (a janela de família tem o tempo dela, de propósito).
+      await expect(page.getByText(/Sua vez\s*·\s*\d+\s?s/)).toHaveCount(0);
 
       const foto = testInfo.outputPath(`tutorial-${nomeTela}.png`);
       await page.screenshot({ path: foto });
@@ -53,7 +54,32 @@ for (const [nomeTela, uso] of [
       const vira = await page.locator('.vira').first().boundingBox();
       if (vira) expect(cruza(vira), 'o treinador cobre a vira').toBe(false);
 
-      await treinador.getByRole('button', { name: 'Pular tutorial' }).click();
+      // Recolher: vira uma etiqueta pequena, que também não cobre a mão nem a vira.
+      if ((await treinador.getAttribute('data-passo')) !== 'recolhido') await treinador.getByRole('button', { name: 'Recolher' }).click();
+      await expect(treinador).toHaveAttribute('data-passo', 'recolhido');
+      const etiqueta = (await treinador.boundingBox())!;
+      const cruzaEtiqueta = (r: { x: number; y: number; width: number; height: number }) =>
+        etiqueta.x < r.x + r.width && r.x < etiqueta.x + etiqueta.width && etiqueta.y < r.y + r.height && r.y < etiqueta.y + etiqueta.height;
+      for (const r of cartas) expect(cruzaEtiqueta(r), 'a etiqueta cobre uma carta da mão').toBe(false);
+      if (vira) expect(cruzaEtiqueta(vira), 'a etiqueta cobre a vira').toBe(false);
+      const ordem = await page.getByRole('button', { name: 'Ordem' }).boundingBox();
+      if (ordem) expect(cruzaEtiqueta(ordem), 'a etiqueta cobre o botão Ordem').toBe(false);
+      // Nem as cartas que os outros têm na mão (assentos) nem as jogadas no centro.
+      const outras = await page.locator('.assento .carta, [data-testid="centro"] .jogada').evaluateAll((els) =>
+        els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }),
+      );
+      for (const r of outras) expect(cruzaEtiqueta(r), 'a etiqueta cobre uma carta da mesa').toBe(false);
+      const fotoRecolhido = testInfo.outputPath(`tutorial-recolhido-${nomeTela}.png`);
+      await page.screenshot({ path: fotoRecolhido });
+      await testInfo.attach('tutorial-recolhido', { path: fotoRecolhido, contentType: 'image/png' });
+
+      // "Pular" está na etiqueta (desktop) ou no painel, a um toque (celular).
+      const pularRecolhido = treinador.getByRole('button', { name: 'Pular', exact: true });
+      if (await pularRecolhido.isVisible()) await pularRecolhido.click();
+      else {
+        await treinador.getByRole('button', { name: /Abrir o tutorial/ }).click();
+        await treinador.getByRole('button', { name: 'Pular tutorial' }).click();
+      }
       await expect(treinador).toHaveCount(0);
       // A partida segue normal.
       await expect(page.locator('.tela-mesa')).toBeVisible();
