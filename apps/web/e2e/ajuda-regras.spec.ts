@@ -19,6 +19,13 @@ for (const [nomeTela, uso] of [
       for (const caixa of await ajudas.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0))) {
         expect(Math.min(caixa.width, caixa.height)).toBeGreaterThanOrEqual(44);
       }
+      // Sem fundo nos dois temas: só o círculo de giz (no escuro, o fundo dos botões do formulário
+      // pintava um disco de 44px em volta do "?").
+      for (const tema of ['dark', 'light'] as const) {
+        await page.emulateMedia({ colorScheme: tema });
+        const fundos = await ajudas.evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
+        expect(new Set(fundos), `fundo do "?" no tema ${tema}`).toEqual(new Set(['rgba(0, 0, 0, 0)']));
+      }
       const textos = await page.locator('.regras-grade label, .regras-grade option').allTextContents();
       expect(textos.filter((t) => /[()]/.test(t))).toEqual([]);
 
@@ -30,6 +37,7 @@ for (const [nomeTela, uso] of [
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
       await page.getByRole('button', { name: 'O que é Variante?' }).click();
       await page.locator('details.regras-mesa').scrollIntoViewIfNeeded();
+      await page.emulateMedia({ colorScheme: 'dark' });
       const foto = testInfo.outputPath(`ajuda-${nomeTela}.png`);
       await page.locator('details.regras-mesa').screenshot({ path: foto });
       await testInfo.attach('ajuda', { path: foto, contentType: 'image/png' });
