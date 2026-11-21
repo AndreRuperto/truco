@@ -304,15 +304,17 @@ button:disabled {
     --foco: var(--tinta);
   }
 }
-/* Botão secundário dentro do formulário escuro: um tom acima da lousa, para não sumir nela. */
-.formulario button:not(.botao-principal) {
+/* Botão secundário dentro do formulário escuro: um tom acima da lousa, para não sumir nela.
+   O "?" das regras fica de fora: é só um círculo de giz, sem fundo (no escuro, este fundo virava
+   um disco de 44px em volta dele). */
+.formulario button:not(.botao-principal, .botao-ajuda-regra) {
   border-color: var(--form-borda);
 }
 @media (prefers-color-scheme: dark) {
-  .formulario button:not(.botao-principal) {
+  .formulario button:not(.botao-principal, .botao-ajuda-regra) {
     background: color-mix(in srgb, var(--lousa) 86%, var(--giz));
   }
-  .formulario button:not(.botao-principal):hover:not(:disabled) {
+  .formulario button:not(.botao-principal, .botao-ajuda-regra):hover:not(:disabled) {
     background: color-mix(in srgb, var(--lousa) 76%, var(--giz));
   }
 }
