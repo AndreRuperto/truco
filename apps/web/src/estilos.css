@@ -469,6 +469,33 @@ button:disabled {
   flex: 0 1 auto;
   min-width: 0;
 }
+/* Subtítulos dos grupos das regras (Jogo / Jogadores e tempo / Na mesa): giz pequeno com um traço,
+   o primeiro colado no topo e os outros com um respiro antes. */
+.regras-grupo {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin: var(--e3) 0 0;
+  color: var(--form-tinta-suave, var(--tinta-suave));
+  font-size: var(--t-1);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.regras-grupo:first-child {
+  margin-top: 0;
+}
+.regras-grupo::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed var(--form-borda, var(--papel-borda));
+}
+/* Campo que só existe por causa do de cima (interceptar ← sinais): recuado e ligado por um traço. */
+.campo-dependente {
+  margin-inline-start: var(--e5);
+  padding-inline-start: var(--e3);
+  border-inline-start: 2px solid var(--form-borda, var(--papel-borda));
+}
 /* A explicação aberta num campo da coluna não estica o vizinho da mesma linha. */
 .regras-grade {
   align-items: start;
@@ -507,8 +534,10 @@ button:disabled {
   border: 2px solid currentColor;
   border-radius: 50%;
 }
-.botao-ajuda-regra:hover,
+.botao-ajuda-regra:hover:not(:disabled),
 .botao-ajuda-regra[aria-expanded='true'] {
+  /* Mesma forma do hover geral dos botões (button:hover:not(:disabled)), que pintaria um disco. */
+  background: transparent;
   color: var(--check-fundo, var(--grito));
 }
 .botao-ajuda-regra:focus-visible {
