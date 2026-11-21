@@ -2,7 +2,7 @@ import { type AuthContext, type Client, ErrorCode, Room, type RoomException, typ
 import type { Cadeira } from '@truco/engine';
 import { randomInt, randomUUID } from 'node:crypto';
 import { Mesa, type Tempos } from './mesa/Mesa';
-import { filtroDaSala, limparNome, opcoesDaSala, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA } from './mesa/protocolo';
+import { filtroDaSala, limparNome, opcoesDaSala, SAIDA_CONTA_SUSPENSA, SAIDA_PARTIDA_CANCELADA, temposDaMesa } from './mesa/protocolo';
 import { RegistroMesa } from './registroMesa';
 import { saldosDe } from './repo/carteira';
 import { visualDe } from './repo/loja';
@@ -211,7 +211,7 @@ export class MesaRoom extends Room {
     MesaRoom.salasVivas.add(this);
     const cru = (options && typeof options === 'object' ? options : {}) as Record<string, unknown>;
     const opcoes = opcoesDaSala(cru);
-    const { modo, regras, humanos, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, provocacoes, semLimiteDeTempo } = opcoes;
+    const { modo, regras, humanos, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, provocacoes, semLimiteDeTempo, ritmo, tempoJogadaS } = opcoes;
     if (modo === 'ranqueada') {
       if (cru.fichaInterna !== MesaRoom.fichaInterna) throw new Error('mesa ranqueada só pela fila');
       this.reservados = jogadoresReservados(cru.jogadores);
@@ -244,9 +244,11 @@ export class MesaRoom extends Room {
       sinais,
       provocacoes,
       semLimiteDeTempo,
+      ritmo,
+      tempoJogadaS,
       chanceFalaBot: 0.2,
-      // O tempo de família vem da mesa; `MesaRoom.tempos` (testes, E2E) pode encurtar.
-      tempos: { janelaFamiliaMs: tempoFamiliaS * 1000, ...MesaRoom.tempos },
+      // Ritmo, jogada e família vêm da mesa; `MesaRoom.tempos` (testes, E2E) pode encurtar.
+      tempos: { ...temposDaMesa(opcoes), janelaFamiliaMs: tempoFamiliaS * 1000, ...MesaRoom.tempos },
       rand: randCripto,
       relogio: {
         agendar: (ms, fn) => {

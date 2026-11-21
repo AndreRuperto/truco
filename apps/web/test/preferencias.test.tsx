@@ -29,7 +29,7 @@ describe('preferências da tela inicial (lógica)', () => {
       tempoFamiliaS: 20,
       sinais: false,
     });
-    expect(formInicial('Ana')).toEqual({ ...PREFERENCIAS_PADRAO, nome: 'Ana', privada: false, provocacoes: true });
+    expect(formInicial('Ana')).toEqual({ ...PREFERENCIAS_PADRAO, nome: 'Ana', privada: false, provocacoes: true, ritmo: 'calmo', tempoJogadaS: 20 });
   });
 
   test('o que está salvo vai por cima do padrão; preferenciasDe tira apelido e privada', () => {

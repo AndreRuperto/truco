@@ -132,6 +132,10 @@ export interface MsgEstado {
    * vez dele). Quem caiu continua com o prazo normal. Ausente = com limite (servidor antigo).
    */
   semLimiteDeTempo?: boolean;
+  /** Ritmo da mesa (bots e animações). Ausente = calmo. */
+  ritmo?: Ritmo;
+  /** Segundos por jogada escolhidos na criação. Ausente = 20. */
+  tempoJogadaS?: number;
   /** Quantos humanos a mesa espera antes de começar sozinha (o resto vira bot). */
   humanosEsperados: number;
   visao: Visao | null;
@@ -247,10 +251,27 @@ export interface OpcoesSala {
   cacife: number;
   /** Sem prazo para quem está conectado (só na mesa privada; ver `MsgEstado.semLimiteDeTempo`). */
   semLimiteDeTempo: boolean;
+  ritmo: Ritmo;
+  tempoJogadaS: TempoJogadaS;
 }
 
 /** Sinais vêm ligados no paulista e desligados no mineiro (quem quiser liga na mesa). */
 export const sinaisPadrao = (variante: Variante) => variante !== 'mineiro';
+
+/**
+ * Ritmo da mesa, escolhido ao criar: "calmo" dá tempo de acompanhar os bots (padrão desde
+ * 2026-11-20); "rapido" é o ritmo de antes. Muda o tempo do bot pensar e do fim da mão (e, na tela,
+ * a duração das animações); os prazos dos humanos vêm de `tempoJogadaS`.
+ */
+export const RITMOS = ['calmo', 'rapido'] as const;
+export type Ritmo = (typeof RITMOS)[number];
+export const TEMPOS_DO_RITMO: Record<Ritmo, { botMs: number; pausaMaoMs: number }> = {
+  calmo: { botMs: 1_400, pausaMaoMs: 2_600 },
+  rapido: { botMs: 900, pausaMaoMs: 1_800 },
+};
+/** Segundos para cada jogada (e para responder truco, conferir, empilhar), escolhidos ao criar a mesa. */
+export const TEMPOS_JOGADA_S = [15, 20, 30] as const;
+export type TempoJogadaS = (typeof TEMPOS_JOGADA_S)[number];
 
 export const TEMPOS_FAMILIA_S = [20, 25, 30] as const;
 export type TempoFamiliaS = (typeof TEMPOS_FAMILIA_S)[number];
@@ -267,6 +288,8 @@ export function chaveRegras(
   tempoFamiliaS: number = 20,
   sinais: boolean = sinaisPadrao(regras.variante),
   provocacoes: boolean = true,
+  ritmo: Ritmo = 'calmo',
+  tempoJogadaS: number = 20,
 ): string {
   return [
     regras.pontuacao,
@@ -279,6 +302,9 @@ export function chaveRegras(
     `sin:${sinais ? 1 : 0}`,
     // Só quando desligadas: as chaves das mesas de antes (e do PWA antigo) não mudam.
     ...(provocacoes ? [] : ['prov:0']),
+    // Ritmo e tempo só fora do padrão, pelo mesmo motivo.
+    ...(ritmo === 'calmo' ? [] : [`rit:${ritmo}`]),
+    ...(tempoJogadaS === 20 ? [] : [`tj:${tempoJogadaS}`]),
   ].join('|');
 }
 
@@ -327,6 +353,8 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
       // Vem só da fila (que calcula pela patente); o cliente não cria ranqueada.
       cacife: cacifeRanqueadaValido(o.cacife),
       semLimiteDeTempo: false,
+      ritmo: 'calmo',
+      tempoJogadaS: 20,
     };
   }
   const nivelBot: NivelBot = modo === 'classica' ? 'facil' : modo === 'desafio' ? 'dificil' : nivelPedido;
@@ -339,7 +367,10 @@ export function opcoesDaSala(cru: unknown): OpcoesSala {
   // exceção é o tutorial: sozinho contra bots fáceis, ninguém espera por quem está aprendendo.
   const tutorial = o.tutorial === true && modo === 'classica' && humanosMesa === 1;
   const semLimiteDeTempo = (modo === 'privada' || tutorial) && o.semLimiteDeTempo === true;
-  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, provocacoes, cacife, semLimiteDeTempo };
+  const ritmo = um(o.ritmo, RITMOS, 'calmo');
+  const tj = o.tempoJogadaS;
+  const tempoJogadaS: TempoJogadaS = (TEMPOS_JOGADA_S as readonly unknown[]).includes(tj) ? (tj as TempoJogadaS) : 20;
+  return { modo, regras, humanos: humanosMesa, nivelBot, chanceInterceptarSinal, tempoFamiliaS, sinais, provocacoes, cacife, semLimiteDeTempo, ritmo, tempoJogadaS };
 }
 
 /** Campos do `filterBy` da sala `mesa`, sempre preenchidos com valores validados. */
@@ -359,7 +390,12 @@ export function filtroDaSala(o: OpcoesSala): FiltroSala {
     variante: o.regras.variante,
     humanos: o.humanos,
     nivelBot: o.nivelBot,
-    chaveRegras: chaveRegras(o.regras, o.chanceInterceptarSinal, o.tempoFamiliaS, o.sinais, o.provocacoes),
+    chaveRegras: chaveRegras(o.regras, o.chanceInterceptarSinal, o.tempoFamiliaS, o.sinais, o.provocacoes, o.ritmo, o.tempoJogadaS),
     cacife: o.cacife,
   };
+}
+
+/** Os tempos que a mesa ganha pelo ritmo e pelo tempo por jogada escolhidos. */
+export function temposDaMesa(o: Pick<OpcoesSala, 'ritmo' | 'tempoJogadaS'>): { botMs: number; pausaMaoMs: number; jogadaMs: number } {
+  return { ...TEMPOS_DO_RITMO[o.ritmo], jogadaMs: o.tempoJogadaS * 1000 };
 }

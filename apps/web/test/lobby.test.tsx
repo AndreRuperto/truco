@@ -30,6 +30,8 @@ describe('Lobby', () => {
       tempoFamiliaS: 20,
       sinais: false,
       provocacoes: true,
+      ritmo: 'calmo',
+      tempoJogadaS: 20,
       chaveRegras: '2-4-8-10-12|m10:1|m11:off|fam:fechada|lim:0|int:0.25|tf:20|sin:0',
       modo: 'desafio',
       cacife: 0,
@@ -133,10 +135,12 @@ describe('Lobby', () => {
     const aoCriarPrivada = vi.fn();
     const aoJogar = vi.fn();
     render(<Lobby aoJogar={aoJogar} aoCriarPrivada={aoCriarPrivada} />);
-    // Mesa pública: a opção nem aparece (o relógio segura as mesas com desconhecidos).
-    expect(screen.queryByLabelText('Tempo por jogada')).toBeNull();
+    // Mesa pública: escolhe 15, 20 ou 30 s, mas nunca "Sem limite" (o relógio segura as mesas com desconhecidos).
+    await user.click(screen.getByText('Regras da mesa'));
+    expect(screen.getByLabelText('Tempo por jogada')).toHaveValue('20');
+    expect(screen.queryByRole('option', { name: 'Sem limite' })).toBeNull();
     await user.click(screen.getByLabelText('Mesa privada (só entra quem tiver o link)'));
-    expect(screen.getByLabelText('Tempo por jogada')).toHaveValue('limite');
+    expect(screen.getByLabelText('Tempo por jogada')).toHaveValue('20');
     await user.selectOptions(screen.getByLabelText('Tempo por jogada'), 'semLimite');
     expect(screen.getByText(/sem limite de tempo/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Criar mesa privada' }));

@@ -91,7 +91,14 @@ export function textoInterceptacao(chance: number): string {
 }
 
 /** Linhas curtas com as regras da mesa (sala de espera). */
-export function resumoRegras(r: RegrasMesa, chanceInterceptarSinal: number, sinais = true, semLimiteDeTempo = false): string[] {
+export function resumoRegras(
+  r: RegrasMesa,
+  chanceInterceptarSinal: number,
+  sinais = true,
+  semLimiteDeTempo = false,
+  ritmo?: 'calmo' | 'rapido',
+  tempoJogadaS?: number,
+): string[] {
   return [
     r.variante === 'paulista' ? 'Paulista (com vira)' : 'Mineiro (manilhas fixas)',
     `Pontos ${r.pontuacao.split('-').join(' · ')}`,
@@ -100,6 +107,8 @@ export function resumoRegras(r: RegrasMesa, chanceInterceptarSinal: number, sina
     TEXTO_FAMILIA[r.familia],
     ...(r.variante === 'mineiro' && r.maoLimpa === true ? ['Mão limpa (sem 4 a 7, com 2 coringas)'] : []),
     sinais ? textoInterceptacao(chanceInterceptarSinal) : 'Sem sinais entre parceiros',
-    ...(semLimiteDeTempo ? ['Sem limite de tempo por jogada'] : []),
+    // Servidor antigo (sem os campos): a linha do ritmo não aparece.
+    ...(ritmo ? [ritmo === 'rapido' ? 'Ritmo rápido' : 'Ritmo calmo'] : []),
+    ...(semLimiteDeTempo ? ['Sem limite de tempo por jogada'] : tempoJogadaS ? [`${tempoJogadaS} segundos por jogada`] : []),
   ];
 }

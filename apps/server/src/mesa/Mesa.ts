@@ -42,7 +42,9 @@ import {
   type MsgEstado,
   type MsgProvocacao,
   type NivelBot,
+  type Ritmo,
   type Sinal,
+  TEMPOS_DO_RITMO,
 } from './protocolo';
 import { aplicarBatida, decidirBatidaBot, forcaDaBatida, JANELA_BATIDA_MS, mesaFisicaInicial, type MsgBatida, pedidoQueBate } from './mesaFisica';
 import { cartaDoSinal, falaDaRodada, rodadaFechada, sinalDaMao } from './social';
@@ -89,8 +91,9 @@ export interface Tempos {
 
 export const TEMPOS_PADRAO: Tempos = {
   jogadaMs: 20_000,
-  botMs: 1_400,
-  pausaMaoMs: 2_600,
+  // Ritmo "calmo" (o padrão; ver TEMPOS_DO_RITMO).
+  botMs: TEMPOS_DO_RITMO.calmo.botMs,
+  pausaMaoMs: TEMPOS_DO_RITMO.calmo.pausaMaoMs,
   intervaloMensagemMs: 1_000,
   ritualMs: 12_000,
   conferirMs: 6_000,
@@ -136,6 +139,10 @@ export interface OpcoesMesa {
    * A janela de família continua com o tempo dela (`janelaFamiliaMs`).
    */
   semLimiteDeTempo?: boolean;
+  /** Ritmo escolhido na criação (só informa a tela; os tempos chegam em `tempos`). */
+  ritmo?: Ritmo;
+  /** Segundos por jogada escolhidos na criação (só informa a tela; o prazo vem de `tempos.jogadaMs`). */
+  tempoJogadaS?: number;
   /** Chance (0–1) de um bot bater na mesa ao pedir seis/nove/doze. Padrão `CHANCE_BATIDA_BOT`. */
   chanceBatidaBot?: number;
 }
@@ -924,6 +931,8 @@ export class Mesa {
       sinais: this.o.sinais !== false,
       provocacoes: this.provocacoesLigadas(),
       semLimiteDeTempo: this.o.semLimiteDeTempo === true,
+      ritmo: this.o.ritmo ?? 'calmo',
+      tempoJogadaS: this.o.tempoJogadaS ?? 20,
       humanosEsperados: this.o.humanosEsperados,
       visao: s ? visaoDoJogador(s, c) : null,
       prazo: this.prazo,
