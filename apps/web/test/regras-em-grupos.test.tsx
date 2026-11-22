@@ -8,7 +8,7 @@ beforeEach(() => localStorage.clear());
 /** Rótulos das regras na ordem da tela, com o grupo de cada um. */
 function ordem(): string[] {
   const grade = document.querySelector('.regras-grade')!;
-  return [...grade.querySelectorAll('.regras-grupo, .campo-rotulo label, .campo-check')].map((e) =>
+  return [...grade.querySelectorAll('.regras-grupo, .campo-rotulo label, .campo-rotulo .rotulo-grupo, .campo-check')].map((e) =>
     e.classList.contains('regras-grupo') ? `# ${e.textContent}` : (e.textContent ?? '').trim(),
   );
 }
@@ -32,6 +32,7 @@ describe('regras da mesa em grupos', () => {
       '# Jogadores e tempo',
       'Humanos',
       'Bots',
+      'Ritmo da mesa',
       'Tempo por jogada',
       'Tempo para pedir família',
       '# Na mesa',

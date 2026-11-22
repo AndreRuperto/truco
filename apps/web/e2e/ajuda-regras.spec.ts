@@ -38,8 +38,9 @@ for (const [nomeTela, uso] of [
         [...document.querySelectorAll('.campo-rotulo')].map((r) => {
           const circ = r.querySelector('.botao-ajuda-regra > span[aria-hidden]')!.getBoundingClientRect();
           const faixa = document.createRange();
-          faixa.selectNodeContents(r.querySelector('label')!);
-          const campo = r.parentElement!.querySelector('select')!.getBoundingClientRect();
+          faixa.selectNodeContents(r.querySelector('label, .rotulo-grupo')!);
+          // O ritmo é um par de cartões (radiogroup) no lugar do select.
+          const campo = r.parentElement!.querySelector('select, [role=radiogroup]')!.getBoundingClientRect();
           return { rotulo: r.textContent, ateOCampo: campo.top - circ.bottom, ladoAoTexto: circ.left - faixa.getBoundingClientRect().right };
         }),
       );
