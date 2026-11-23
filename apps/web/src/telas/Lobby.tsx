@@ -99,6 +99,7 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
     mao11: ajudaDe('mao11', 'Mão de ferro'),
     tempoFamilia: ajudaDe('tempo-familia', 'Tempo para pedir família'),
     tempoJogada: ajudaDe('tempo-jogada', 'Tempo por jogada'),
+    ritmo: ajudaDe('ritmo', 'Ritmo da mesa'),
     humanos: ajudaDe('humanos', 'Humanos'),
     bots: ajudaDe('bots', 'Bots'),
     cacife: ajudaDe('cacife', 'Valendo Fichas'),
@@ -173,25 +174,6 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
               </small>
             )}
           </div>
-          <fieldset className="ritmo-mesa">
-            <legend id="ritmo-mesa-titulo">Ritmo da mesa</legend>
-            <div role="radiogroup" aria-labelledby="ritmo-mesa-titulo" className="ritmo-opcoes">
-              {(
-                [
-                  ['calmo', 'Calmo', 'dá tempo de acompanhar'],
-                  ['rapido', 'Rápido', 'pra quem já joga'],
-                ] as const
-              ).map(([valor, rotulo, explica]) => (
-                <label key={valor} className="ritmo-opcao">
-                  <input type="radio" name="ritmo" value={valor} checked={f.ritmo === valor} onChange={() => mudar('ritmo', valor)} />
-                  <span>
-                    <strong>{rotulo}</strong>
-                    <small>{explica}</small>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
           <button type="submit" className="botao-principal">
             {f.privada && aoCriarPrivada ? 'Criar mesa privada' : 'Jogar agora'}
           </button>
@@ -317,6 +299,31 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
                 {aj.bots.texto}
               </div>
             )}
+            <div className="ritmo-mesa largo">
+              <div className="campo-rotulo">
+                <span id="ritmo-mesa-titulo" className="rotulo-grupo">
+                  Ritmo da mesa
+                </span>
+                {aj.ritmo.botao}
+              </div>
+              <div role="radiogroup" aria-labelledby="ritmo-mesa-titulo" aria-describedby={aj.ritmo.descrita} className="ritmo-opcoes">
+                {(
+                  [
+                    ['calmo', 'Calmo', 'dá tempo de acompanhar'],
+                    ['rapido', 'Rápido', 'pra quem já joga'],
+                  ] as const
+                ).map(([valor, rotulo, explica]) => (
+                  <label key={valor} className="ritmo-opcao">
+                    <input type="radio" name="ritmo" value={valor} checked={f.ritmo === valor} onChange={() => mudar('ritmo', valor)} />
+                    <span>
+                      <strong>{rotulo}</strong>
+                      <small>{explica}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {aj.ritmo.texto}
+            </div>
             <div className="campo">
               <div className="campo-rotulo">
                 <label htmlFor="tempo-jogada">Tempo por jogada</label>

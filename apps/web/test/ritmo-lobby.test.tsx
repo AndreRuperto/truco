@@ -23,11 +23,18 @@ describe('ritmo e tempo por jogada no lobby', () => {
     expect(o.chaveRegras).toBe(chaveRegras({ variante: f.variante, ...o.regras }, o.chanceInterceptarSinal, o.tempoFamiliaS, o.sinais, o.provocacoes, 'rapido', 30));
   });
 
-  test('o ritmo fica à vista no menu inicial, fora das regras recolhidas', async () => {
+  // Pedido do André (2026-11-22): o ritmo vale para a mesa inteira, então mora nas regras da mesa,
+  // no grupo "Jogadores e tempo", logo antes do tempo por jogada, com o "?" explicando.
+  test('o ritmo fica nas regras da mesa, em "Jogadores e tempo", com o "?"', async () => {
     const user = userEvent.setup();
     const aoJogar = vi.fn();
     render(<Lobby aoJogar={aoJogar} />);
+    expect(screen.getByRole('radiogroup', { name: 'Ritmo da mesa', hidden: true })).not.toBeVisible();
+    await user.click(screen.getByText('Regras da mesa'));
     const grupo = screen.getByRole('radiogroup', { name: 'Ritmo da mesa' });
+    expect(grupo.closest('.regras-grade')).not.toBeNull();
+    await user.click(screen.getByRole('button', { name: 'O que é Ritmo da mesa?' }));
+    expect(screen.getByText(/Calmo: os bots pensam com calma/)).toBeVisible();
     expect(screen.getByRole('radio', { name: /Calmo/ })).toBeChecked();
     expect(grupo).toBeVisible();
     await user.click(screen.getByRole('radio', { name: /Rápido/ }));

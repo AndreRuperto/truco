@@ -9,6 +9,7 @@ export type IdAjuda =
   | 'mao11'
   | 'tempo-familia'
   | 'tempo-jogada'
+  | 'ritmo'
   | 'humanos'
   | 'bots'
   | 'cacife'
@@ -36,6 +37,8 @@ export function textoAjuda(id: IdAjuda, pontuacao: Pontuacao): string {
       return 'Depois de dar as cartas, quanto tempo todos têm para pedir família antes da primeira jogada.';
     case 'tempo-jogada':
       return 'Quanto tempo cada um tem para jogar ou responder. Se acabar, o jogo faz a jogada por você. Sem limite só existe na mesa privada.';
+    case 'ritmo':
+      return 'Calmo: os bots pensam com calma e há uma pausa entre as mãos, dá tempo de ver cada carta. Rápido: tudo anda mais ligeiro, pra quem já conhece o jogo. Vale para a mesa toda.';
     case 'humanos':
       return 'Quantas pessoas vão jogar. As cadeiras que sobrarem ficam com bots. Só eu: você, seu parceiro e os dois adversários são bots.';
     case 'bots':
