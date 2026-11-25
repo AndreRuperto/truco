@@ -22,6 +22,7 @@ import {
 import { marcarTutorial, tutorialPendente } from '../logica/tutorial';
 import { type IdAjuda, textoAjuda } from '../logica/ajudaRegras';
 import { BotaoAjuda } from '../componentes/Ajuda';
+import { type PassoTour, TourLobby } from '../componentes/TourLobby';
 
 interface Props {
   aoJogar: (o: OpcoesEntrada) => void;
@@ -116,6 +117,20 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
     aoTutorial(opcoesTutorial((apelidoConta ?? f.nome).trim() || 'Jogador'));
   };
 
+  // Tour da 1ª visita: uma coisa de cada vez em destaque; o convite do tutorial é o último passo.
+  const passosTour: PassoTour[] = [
+    { alvo: 'jogar', titulo: 'Jogar agora', texto: 'Senta numa mesa na hora. Faltando gente, bots completam as cadeiras.' },
+    { alvo: 'regras', titulo: 'Regras da mesa', texto: 'Variante, pontuação, ritmo e tempo. Cada regra tem um "?" que explica.' },
+    ...(aoCriarPrivada
+      ? [{ alvo: 'privada', titulo: 'Mesa privada', texto: 'Para jogar com a turma: você ganha um link de convite.' }]
+      : []),
+    {
+      alvo: 'tutorial',
+      titulo: 'Primeira vez por aqui?',
+      texto: 'Aprenda jogando: uma partida guiada contra bots, sem pressa. O tutorial fica sempre aqui.',
+    },
+  ];
+
   const enviar = (e: FormEvent) => {
     e.preventDefault();
     if (apelidoConta === undefined) gravarApelido(f.nome.trim());
@@ -130,25 +145,14 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
       <h1 className="letreiro">Truco</h1>
       <p className="letreiro-sub">Senta, que a mesa tá posta.</p>
       {aoTutorial && convite && (
-        <section className="convite-tutorial" aria-labelledby="convite-tutorial-titulo">
-          <h2 id="convite-tutorial-titulo">Primeira vez por aqui?</h2>
-          <p>Aprenda jogando: uma partida guiada contra bots, sem pressa. Dá para pular quando quiser.</p>
-          <div className="convite-tutorial-botoes">
-            <button type="button" className="botao-principal" onClick={comecarTutorial}>
-              Começar tutorial
-            </button>
-            <button
-              type="button"
-              className="botao-discreto"
-              onClick={() => {
-                marcarTutorial('pulado');
-                setConvite(false);
-              }}
-            >
-              Agora não
-            </button>
-          </div>
-        </section>
+        <TourLobby
+          passos={passosTour}
+          aoComecarTutorial={comecarTutorial}
+          aoPular={() => {
+            marcarTutorial('pulado');
+            setConvite(false);
+          }}
+        />
       )}
       <form className="formulario" onSubmit={enviar}>
         <div className="lobby-principal">
@@ -174,7 +178,7 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
               </small>
             )}
           </div>
-          <button type="submit" className="botao-principal">
+          <button type="submit" className="botao-principal" data-tour="jogar">
             {f.privada && aoCriarPrivada ? 'Criar mesa privada' : 'Jogar agora'}
           </button>
           <div className="lobby-outros">
@@ -182,12 +186,12 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
               Ranqueada
             </button>
             {aoTutorial && (
-              <button type="button" onClick={comecarTutorial}>
+              <button type="button" onClick={comecarTutorial} data-tour="tutorial">
                 Tutorial
               </button>
             )}
             {aoCriarPrivada && (
-              <div className="alternar-privada-linha">
+              <div className="alternar-privada-linha" data-tour="privada">
                 <label className="alternar-privada">
                   <input type="checkbox" checked={f.privada} aria-describedby={aj.privada.descrita} onChange={(e) => mudar('privada', e.target.checked)} />
                   <span>Mesa privada</span>
@@ -199,7 +203,7 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
           </div>
         </div>
         <details className="regras-mesa" open={regrasAbertas} onToggle={(e) => setRegrasAbertas(e.currentTarget.open)}>
-          <summary>
+          <summary data-tour="regras">
             <span>Regras da mesa</span>
             <small>{resumoLobby(f)}</small>
           </summary>

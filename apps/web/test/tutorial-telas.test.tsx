@@ -18,7 +18,10 @@ describe('tutorial no lobby', () => {
     const user = userEvent.setup();
     const aoTutorial = vi.fn();
     render(<Lobby aoJogar={vi.fn()} aoTutorial={aoTutorial} />);
-    const convite = screen.getByRole('region', { name: 'Primeira vez por aqui?' });
+    // O convite é o último passo do tour da 1ª visita (tour-lobby.test.tsx).
+    await user.click(screen.getByRole('button', { name: 'Próximo' }));
+    await user.click(screen.getByRole('button', { name: 'Próximo' }));
+    const convite = screen.getByRole('dialog', { name: 'Primeira vez por aqui?' });
     await user.click(screen.getByRole('button', { name: 'Começar tutorial' }));
     expect(aoTutorial).toHaveBeenCalledWith(
       expect.objectContaining({ tutorial: true, semLimiteDeTempo: true, humanos: 1, nivelBot: 'facil', modo: 'classica', sinais: false }),
@@ -30,12 +33,14 @@ describe('tutorial no lobby', () => {
   test('"Agora não" some com o convite e não volta; o botão de tutorial continua', async () => {
     const user = userEvent.setup();
     const { unmount } = render(<Lobby aoJogar={vi.fn()} aoTutorial={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: 'Próximo' }));
+    await user.click(screen.getByRole('button', { name: 'Próximo' }));
     await user.click(screen.getByRole('button', { name: 'Agora não' }));
-    expect(screen.queryByRole('region', { name: 'Primeira vez por aqui?' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Primeira vez por aqui?' })).toBeNull();
     expect(localStorage.getItem(CHAVE_TUTORIAL)).toBe('pulado');
     unmount();
     render(<Lobby aoJogar={vi.fn()} aoTutorial={vi.fn()} />);
-    expect(screen.queryByRole('region', { name: 'Primeira vez por aqui?' })).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByRole('button', { name: 'Tutorial' })).toBeInTheDocument();
   });
 });
