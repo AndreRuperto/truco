@@ -354,3 +354,41 @@ describe('RegistroMesa', () => {
   });
 });
 
+
+describe('RegistroMesa: quem criou a mesa', () => {
+  test('o primeiro a sentar numa mesa não ranqueada fica gravado como criador, também na revanche', async () => {
+    const s = servicosDeTeste(b.db, { agora: () => T0 });
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia' });
+    const r = new RegistroMesa(s, { variante: 'mineiro', modo: 'privada', formato: null });
+    r.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+    r.sentou({ cadeira: 1, usuarioId: bia.id, nome: 'bia' });
+    r.iniciou();
+    r.terminou(fimDe(0, [12, 3]));
+    r.iniciou();
+    await r.ocioso();
+    const ps = await b.db.select().from(partidas).orderBy(asc(partidas.id));
+    expect(ps.map((p) => p.criadorId)).toEqual([ana.id, ana.id]);
+  });
+
+  test('convidado abrindo a mesa e ranqueada (aberta pela fila): sem criador', async () => {
+    const s = servicosDeTeste(b.db, { agora: () => T0 });
+    const ana = await criarUsuario(b.db, { apelidoBase: 'ana' });
+    const bia = await criarUsuario(b.db, { apelidoBase: 'bia' });
+    const convidado = new RegistroMesa(s, { variante: 'paulista', modo: 'classica', formato: null });
+    convidado.sentou({ cadeira: 0, usuarioId: null, nome: 'zé' });
+    convidado.sentou({ cadeira: 1, usuarioId: ana.id, nome: 'ana' });
+    convidado.iniciou();
+    await convidado.ocioso();
+    const ranq = new RegistroMesa(s, { variante: 'paulista', modo: 'ranqueada', formato: '1x1' });
+    ranq.sentou({ cadeira: 0, usuarioId: ana.id, nome: 'ana' });
+    ranq.sentou({ cadeira: 1, usuarioId: bia.id, nome: 'bia' });
+    ranq.iniciou();
+    await ranq.ocioso();
+    const ps = await b.db.select().from(partidas).orderBy(asc(partidas.id));
+    expect(ps.map((p) => [p.modo, p.criadorId])).toEqual([
+      ['classica', null],
+      ['ranqueada', null],
+    ]);
+  });
+});

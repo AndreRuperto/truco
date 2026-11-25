@@ -76,28 +76,34 @@ export const ratings = pgTable(
   (t) => [primaryKey({ columns: [t.usuarioId, t.variante] }), index('ratings_ranking_idx').on(t.variante, t.pontos)],
 );
 
-export const partidas = pgTable('partidas', {
-  id: serial('id').primaryKey(),
-  variante: text('variante', { enum: VARIANTES }).notNull(),
-  modo: text('modo', { enum: MODOS }).notNull(),
-  /** Só nas ranqueadas. */
-  formato: text('formato', { enum: FORMATOS }),
-  ranqueada: boolean('ranqueada').notNull().default(false),
-  placar0: smallint('placar_0').notNull().default(0),
-  placar1: smallint('placar_1').notNull().default(0),
-  /** Dupla vencedora (0 | 1); nula até terminar. */
-  vencedora: smallint('vencedora'),
-  iniciadaEm: quando('iniciada_em').notNull().defaultNow(),
-  terminadaEm: quando('terminada_em'),
-  /** Terminou só com bots (todos os humanos saíram): não conta. */
-  abandonada: boolean('abandonada').notNull().default(false),
-  /** Fichas que cada humano com conta pagou (cacife efetivo); 0 = sem cacife. */
-  cacife: integer('cacife').notNull().default(0),
-  /** Soma dos cacifes pagos. */
-  pote: integer('pote').notNull().default(0),
-  /** Ranqueada repetida entre o mesmo grupo em 24 h (ranking/mesmoGrupo.ts): Elo e pontos não mudaram. */
-  eloCongelado: boolean('elo_congelado').notNull().default(false),
-});
+export const partidas = pgTable(
+  'partidas',
+  {
+    id: serial('id').primaryKey(),
+    /** Quem abriu a mesa (primeiro a sentar, com conta). Nulo: ranqueada (a fila abre), convidado ou partida anterior a este registro. */
+    criadorId: integer('criador_id').references(() => usuarios.id, { onDelete: 'set null' }),
+    variante: text('variante', { enum: VARIANTES }).notNull(),
+    modo: text('modo', { enum: MODOS }).notNull(),
+    /** Só nas ranqueadas. */
+    formato: text('formato', { enum: FORMATOS }),
+    ranqueada: boolean('ranqueada').notNull().default(false),
+    placar0: smallint('placar_0').notNull().default(0),
+    placar1: smallint('placar_1').notNull().default(0),
+    /** Dupla vencedora (0 | 1); nula até terminar. */
+    vencedora: smallint('vencedora'),
+    iniciadaEm: quando('iniciada_em').notNull().defaultNow(),
+    terminadaEm: quando('terminada_em'),
+    /** Terminou só com bots (todos os humanos saíram): não conta. */
+    abandonada: boolean('abandonada').notNull().default(false),
+    /** Fichas que cada humano com conta pagou (cacife efetivo); 0 = sem cacife. */
+    cacife: integer('cacife').notNull().default(0),
+    /** Soma dos cacifes pagos. */
+    pote: integer('pote').notNull().default(0),
+    /** Ranqueada repetida entre o mesmo grupo em 24 h (ranking/mesmoGrupo.ts): Elo e pontos não mudaram. */
+    eloCongelado: boolean('elo_congelado').notNull().default(false),
+  },
+  (t) => [index('partidas_criador_idx').on(t.criadorId)],
+);
 
 export const participacoes = pgTable(
   'participacoes',

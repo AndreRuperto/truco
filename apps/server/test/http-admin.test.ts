@@ -44,7 +44,16 @@ async function entrarPorLink(email: string) {
 }
 const cookieDeQuem = async (email: string) => cookieDe((await entrarPorLink(email)).setCookie);
 
-const ROTAS_GET = ['/api/admin/resumo', '/api/admin/usuarios', '/api/admin/mesas', '/api/admin/partidas', '/api/admin/auditoria'];
+const ROTAS_GET = [
+  '/api/admin/resumo',
+  '/api/admin/usuarios',
+  '/api/admin/mesas',
+  '/api/admin/partidas',
+  '/api/admin/partidas?visao=criadas',
+  '/api/admin/partidas?visao=jogadas',
+  '/api/admin/partidas?visao=todas',
+  '/api/admin/auditoria',
+];
 
 describe('porteiro do admin', () => {
   test('sem sessão: 401 em todas as rotas', async () => {
@@ -177,5 +186,85 @@ describe('painel', () => {
     expect(r.json.partidas[0].jogadores.map((j: any) => j.nome)).toEqual(['chefe', 'Bot 1']);
     const us = (await app.pedir('/api/admin/usuarios', { cookie })).json.usuarios;
     expect(us.find((u: any) => u.apelido === 'chefe').partidas).toBe(1);
+  });
+});
+
+describe('partidas: visões criadas, jogadas e todas', () => {
+  const nova = async (o: { criadorId?: number | null; jogadores?: (number | null)[]; minuto?: number }) => {
+    const [p] = await b.db
+      .insert(partidas)
+      .values({ variante: 'paulista', modo: 'privada', criadorId: o.criadorId ?? null, iniciadaEm: new Date(AGORA.getTime() + (o.minuto ?? 0) * 60_000) })
+      .returning();
+    const js = o.jogadores ?? [];
+    if (js.length > 0) {
+      await b.db.insert(participacoes).values(
+        js.map((usuarioId, cadeira) => ({ partidaId: p.id, usuarioId, nome: usuarioId ? `u${usuarioId}` : 'Bot', humano: usuarioId !== null, cadeira, dupla: cadeira % 2 })),
+      );
+    }
+    return p.id;
+  };
+
+  test('cada visão filtra pelo admin logado, com contagens e o total de antigas sem criador', async () => {
+    const chefe = await entrarPorLink('chefe@x.com');
+    const cookie = cookieDe(chefe.setCookie);
+    const eu = chefe.json.usuario.id as number;
+    const ana = (await entrarPorLink('ana@x.com')).json.usuario.id as number;
+    const criouEJogou = await nova({ criadorId: eu, jogadores: [eu, null], minuto: 1 });
+    const criouSemJogar = await nova({ criadorId: eu, jogadores: [ana, null], minuto: 2 });
+    const jogouNaDaAna = await nova({ criadorId: ana, jogadores: [ana, eu], minuto: 3 });
+    const soDaAna = await nova({ criadorId: ana, jogadores: [ana, null], minuto: 4 });
+    const antigaQueJoguei = await nova({ criadorId: null, jogadores: [eu, null], minuto: 5 });
+    const ids = async (visao: string) => {
+      const r = await app.pedir(`/api/admin/partidas?visao=${visao}`, { cookie });
+      expect(r.status, visao).toBe(200);
+      return r.json;
+    };
+
+    const criadas = await ids('criadas');
+    expect(criadas.partidas.map((p: any) => p.id)).toEqual([criouSemJogar, criouEJogou]);
+    expect(criadas.partidas[0].criadorId).toBe(eu);
+    expect(criadas.contagens).toEqual({ criadas: 2, jogadas: 3, todas: 5 });
+    expect(criadas.semCriador).toBe(1);
+    expect(criadas.proximo).toBeNull();
+
+    expect((await ids('jogadas')).partidas.map((p: any) => p.id)).toEqual([antigaQueJoguei, jogouNaDaAna, criouEJogou]);
+    const todas = await ids('todas');
+    expect(todas.partidas.map((p: any) => p.id)).toEqual([antigaQueJoguei, soDaAna, jogouNaDaAna, criouSemJogar, criouEJogou]);
+    expect(todas.partidas[0].criadorId).toBeNull();
+    // Sem visão: "todas", como antes.
+    expect((await app.pedir('/api/admin/partidas', { cookie })).json.partidas).toHaveLength(5);
+  });
+
+  test('"todas" pagina pelo cursor, sem repetir nem pular, e o limite tem teto', async () => {
+    const cookie = await cookieDeQuem('chefe@x.com');
+    const criadas: number[] = [];
+    for (let i = 0; i < 23; i++) criadas.push(await nova({ minuto: i }));
+    const vistas: number[] = [];
+    let antes: number | null = null;
+    let paginas = 0;
+    do {
+      const r = await app.pedir(`/api/admin/partidas?visao=todas&limite=10${antes ? `&antes=${antes}` : ''}`, { cookie });
+      expect(r.status).toBe(200);
+      expect(r.json.partidas.length).toBeLessThanOrEqual(10);
+      vistas.push(...r.json.partidas.map((p: any) => p.id));
+      antes = r.json.proximo;
+      paginas++;
+    } while (antes !== null && paginas < 10);
+    expect(paginas).toBe(3);
+    expect(vistas).toEqual([...criadas].reverse());
+    expect(vistas.at(-1)).toBe(criadas[0]);
+
+    const grande = await app.pedir('/api/admin/partidas?visao=todas&limite=5000', { cookie });
+    expect(grande.json.partidas).toHaveLength(23);
+    for (let i = 0; i < 40; i++) await nova({ minuto: 100 + i });
+    expect((await app.pedir('/api/admin/partidas?visao=todas&limite=5000', { cookie })).json.partidas).toHaveLength(50);
+    expect((await app.pedir('/api/admin/partidas?visao=todas', { cookie })).json.partidas).toHaveLength(20);
+  });
+
+  test('parâmetros inválidos: 400', async () => {
+    const cookie = await cookieDeQuem('chefe@x.com');
+    for (const q of ['visao=minhas', 'visao=', 'limite=0', 'limite=abc', 'antes=-1', 'antes=x', 'visao=todas&visao=criadas', 'limite=10&limite=20']) {
+      expect((await app.pedir(`/api/admin/partidas?${q}`, { cookie })).status, q).toBe(400);
+    }
   });
 });

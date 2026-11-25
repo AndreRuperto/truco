@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import type { MesaAdmin, SalaAberta, UsuarioApi } from '../api/tipos';
+import { type MesaAdmin, type PaginaPartidasAdmin, type SalaAberta, type UsuarioApi, VISOES_PARTIDAS_ADMIN, type VisaoPartidasAdmin } from '../api/tipos';
 import { emailDoLink, extrairLink } from '../auth/emails';
 import { chaveDeIp, LimiteTaxa } from '../auth/limite';
 import { VARIANTES } from '../banco/schema';
@@ -30,7 +30,7 @@ import {
   usuarioDaSessao,
   usuarioPorId,
 } from '../repo/usuarios';
-import { banirUsuario, desbanirUsuario, listarUsuariosAdmin, partidasRecentesAdmin, resumoAdmin } from '../repo/admin';
+import { banirUsuario, desbanirUsuario, listarUsuariosAdmin, contagensPartidasAdmin, partidasAdmin, resumoAdmin } from '../repo/admin';
 import { historico, perfil, ranking } from '../repo/partidas';
 import type { Servicos } from '../servicos';
 import { cabecalhosSeguranca, hashesDeScriptsInline } from './cabecalhos';
@@ -431,8 +431,21 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     res.json({ mesas: x.listarMesas ? await x.listarMesas() : [] });
   });
 
-  admin.get('/partidas', async (_req, res) => {
-    res.json({ partidas: await partidasRecentesAdmin(s.banco) });
+  // ?visao=criadas|jogadas|todas (padrão: todas) &limite=1..50 (padrão 20) &antes=<id> (cursor da página anterior).
+  admin.get('/partidas', async (req, res) => {
+    const q = req.query;
+    const visao = q.visao === undefined ? 'todas' : q.visao;
+    if (typeof visao !== 'string' || !(VISOES_PARTIDAS_ADMIN as readonly string[]).includes(visao)) {
+      return void res.status(400).json({ erro: 'visão inválida' });
+    }
+    const inteiro = (v: unknown) => (typeof v === 'string' && /^[1-9]\d{0,9}$/.test(v) ? Number(v) : null);
+    const limite = q.limite === undefined ? 20 : inteiro(q.limite);
+    const antes = q.antes === undefined ? undefined : inteiro(q.antes);
+    if (limite === null || antes === null) return void res.status(400).json({ erro: 'paginação inválida' });
+    const adminId = (res.locals.admin as Usuario).id;
+    const pagina = await partidasAdmin(s.banco, { visao: visao as VisaoPartidasAdmin, adminId, antes, limite: Math.min(limite, 50) });
+    const corpo: PaginaPartidasAdmin = { ...pagina, ...(await contagensPartidasAdmin(s.banco, adminId)) };
+    res.json(corpo);
   });
 
   admin.get('/auditoria', async (_req, res) => {
