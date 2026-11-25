@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { hrefDe, lerRota, linkConvite } from '../src/logica/rotas';
+import { ABAS_LOJA, hrefDe, lerRota, linkConvite } from '../src/logica/rotas';
 
 describe('rotas por hash', () => {
   test('lerRota', () => {
@@ -28,7 +28,9 @@ describe('rotas por hash', () => {
     expect(lerRota('#/admin/xyz')).toEqual({ tela: 'admin', aba: 'resumo' });
     expect(lerRota('#/nada')).toEqual({ tela: 'inicio' });
     expect(lerRota('#/loja')).toEqual({ tela: 'loja', aba: 'verso' });
-    expect(lerRota('#/loja/pila')).toEqual({ tela: 'loja', aba: 'pila' });
+    // Compra de Pila com dinheiro fechada: o link antigo cai na Loja normal.
+    expect(lerRota('#/loja/pila')).toEqual({ tela: 'loja', aba: 'verso' });
+    expect(ABAS_LOJA).not.toContain('pila');
     expect(lerRota('#/loja/xyz')).toEqual({ tela: 'loja', aba: 'verso' });
     const id = '0b6f0c1e-9a51-4a0b-8f53-2f6f2c4f9a10';
     expect(lerRota(`#/loja/obrigado?pedido=${id}`)).toEqual({ tela: 'lojaObrigado', pedido: id });
@@ -36,7 +38,7 @@ describe('rotas por hash', () => {
   });
 
   test('hrefDe é o inverso de lerRota', () => {
-    for (const h of ['#/', '#/entrar', '#/entrar?token=t1', '#/perfil', '#/perfil?editar', '#/perfil/3', '#/historico', '#/ranking/mineiro', '#/salas', '#/privada/abcd', '#/fila', '#/como-jogar', '#/privacidade', '#/termos', '#/admin', '#/admin/mesas', '#/loja', '#/loja/moldura', '#/loja/pila', '#/loja/obrigado?pedido=0b6f0c1e-9a51-4a0b-8f53-2f6f2c4f9a10']) {
+    for (const h of ['#/', '#/entrar', '#/entrar?token=t1', '#/perfil', '#/perfil?editar', '#/perfil/3', '#/historico', '#/ranking/mineiro', '#/salas', '#/privada/abcd', '#/fila', '#/como-jogar', '#/privacidade', '#/termos', '#/admin', '#/admin/mesas', '#/loja', '#/loja/moldura', '#/loja/obrigado?pedido=0b6f0c1e-9a51-4a0b-8f53-2f6f2c4f9a10']) {
       expect(hrefDe(lerRota(h))).toBe(h);
     }
   });

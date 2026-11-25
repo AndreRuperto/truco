@@ -55,18 +55,21 @@ describe('TelaLoja', () => {
     expect(screen.queryByRole('button', { name: 'Comprar' })).toBeNull();
   });
 
-  test('pacote de Pila abre o checkout; desligado, avisa "em breve"', async () => {
-    const user = userEvent.setup();
+  test('compra de Pila com dinheiro fechada: sem aba, sem pacotes, sem botão de pagar', () => {
     const api = apiFalsa();
-    const ir = vi.fn();
-    const { unmount } = render(<TelaLoja aba="pila" api={api} usuario={USUARIO} catalogo={CATALOGO} carteira={CARTEIRA} aoMudar={async () => {}} aoIrParaPagamento={ir} />);
-    await user.click(screen.getByRole('button', { name: /Comprar Bolso/ }));
-    expect(api.loja.criarPedido).toHaveBeenCalledWith('bolso');
-    expect(ir).toHaveBeenCalledWith('https://checkout.infinitepay.io/x');
-    unmount();
-    render(<TelaLoja aba="pila" api={api} usuario={USUARIO} catalogo={{ ...CATALOGO, pagamentoAtivo: false }} carteira={CARTEIRA} aoMudar={async () => {}} />);
-    expect(screen.getByText(/abre em breve/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Comprar Bolso/ })).toBeDisabled();
+    // Mesmo se a aba antiga chegar por prop (e com o servidor dizendo que o pagamento está ativo).
+    render(<TelaLoja aba="pila" api={api} usuario={USUARIO} catalogo={CATALOGO} carteira={CARTEIRA} aoMudar={async () => {}} />);
+    const abas = screen.getByRole('navigation', { name: 'Seções da loja' });
+    expect(within(abas).queryByText(/Comprar Pila/)).toBeNull();
+    expect([...abas.querySelectorAll('a')].map((a) => a.getAttribute('href'))).not.toContain('#/loja/pila');
+    expect(screen.queryByRole('heading', { name: 'Pacotes de Pila' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Comprar Bolso/ })).toBeNull();
+    expect(screen.queryByText(/R\$/)).toBeNull();
+    expect(screen.queryByText(/Pila se compra/)).toBeNull();
+    expect(api.loja.criarPedido).not.toHaveBeenCalled();
+    // Cai nos itens (Baralho), que continuam à venda.
+    expect(screen.getByRole('heading', { level: 2, name: 'Baralho' })).toBeInTheDocument();
+    expect(within(screen.getByTestId('item-verso-chita')).getByRole('button', { name: 'Comprar' })).toBeEnabled();
   });
 
   test('obrigado: confere o pedido e avisa quando pagou', async () => {
