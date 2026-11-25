@@ -1,12 +1,13 @@
 import type { CarteiraApi, CatalogoApi, Conquista, RatingVariante, UsuarioApi } from '@truco/api';
 import type { Variante } from '@truco/engine';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { AVATARES_PRONTOS } from '@truco/api';
 import { Avatar, DesenhoAvatar, NOME_AVATAR, reduzirFoto } from '../componentes/Avatar';
 import { BotaoGoogle } from '../componentes/BotaoGoogle';
 import { PreferenciasTema } from '../componentes/PreferenciasTema';
 import { SeuVisual } from '../componentes/SeuVisual';
 import { NOME_VARIANTE } from '../logica/conta';
+import type { AbaPerfil } from '../logica/rotas';
 import type { Api } from '../rede/api';
 import { useCarregar } from '../rede/hooks';
 
@@ -16,6 +17,10 @@ interface Props {
   id: number | null;
   /** Veio de "Editar perfil": rola até o bloco de edição e põe o foco no apelido. */
   editar?: boolean;
+  /** Aba pedida pela URL (`?aba=`); sem ela, Conta no próprio perfil e Pontos no de outro jogador. */
+  aba?: AbaPerfil;
+  /** O jogador trocou de aba: põe na URL. `substituir` (setas) troca a entrada do histórico em vez de empilhar. */
+  aoTrocarAba?: (aba: AbaPerfil, opcoes: { substituir: boolean }) => void;
   /** Quem está logado (para mostrar e-mail e Google no próprio perfil). */
   usuario?: UsuarioApi | null;
   /** Client ID do Google, se o login com Google estiver ligado no servidor. */
@@ -27,8 +32,44 @@ interface Props {
   visual?: { catalogo: CatalogoApi | null; carteira: CarteiraApi | null; api: Pick<Api, 'loja'>; aoMudar: () => Promise<void> };
 }
 
-export function TelaPerfil({ api, id, editar = false, usuario = null, googleClientId = null, aoTrocarApelido, aoExcluir, visual }: Props) {
+const NOME_ABA: Record<AbaPerfil, string> = { conta: 'Conta', pontos: 'Pontos', conquistas: 'Conquistas' };
+
+export function TelaPerfil({ api, id, editar = false, aba: abaPedida, aoTrocarAba, usuario = null, googleClientId = null, aoTrocarApelido, aoExcluir, visual }: Props) {
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.perfil(id ?? undefined), [id]);
+  // Conta só no próprio perfil; Conquistas só quando o servidor manda a lista.
+  const abas: AbaPerfil[] = [...(id === null ? (['conta'] as const) : []), 'pontos', ...(dados?.conquistas?.length ? (['conquistas'] as const) : [])];
+  const pedida = editar ? 'conta' : abaPedida;
+  const abaUrl = pedida && abas.includes(pedida) ? pedida : abas[0];
+  const [abaLocal, setAbaLocal] = useState<AbaPerfil>(abaUrl);
+  // A URL manda (voltar/avançar do navegador, link compartilhado, "Editar perfil").
+  useEffect(() => setAbaLocal(abaUrl), [abaUrl]);
+  const aba = abas.includes(abaLocal) ? abaLocal : abaUrl;
+  const botoes = useRef<Partial<Record<AbaPerfil, HTMLButtonElement | null>>>({});
+  const escolher = (a: AbaPerfil, substituir: boolean) => {
+    setAbaLocal(a);
+    if (a !== aba) aoTrocarAba?.(a, { substituir });
+  };
+  const teclar = (e: KeyboardEvent<HTMLButtonElement>) => {
+    const i = abas.indexOf(aba);
+    const alvo =
+      e.key === 'ArrowRight' ? abas[(i + 1) % abas.length]
+      : e.key === 'ArrowLeft' ? abas[(i - 1 + abas.length) % abas.length]
+      : e.key === 'Home' ? abas[0]
+      : e.key === 'End' ? abas[abas.length - 1]
+      : null;
+    if (!alvo) return;
+    e.preventDefault();
+    // Ativação automática (os painéis já estão carregados); seta não empilha histórico.
+    escolher(alvo, true);
+    botoes.current[alvo]?.focus();
+  };
+  const feitas = dados?.conquistas?.filter((c) => c.alcancada).length ?? 0;
+  const total = dados?.conquistas?.length ?? 0;
+  const painel = (a: AbaPerfil, filhos: ReactNode) => (
+    <div role="tabpanel" id={`painel-perfil-${a}`} aria-labelledby={`aba-perfil-${a}`} className="perfil-painel" hidden={aba !== a} tabIndex={0}>
+      {filhos}
+    </div>
+  );
   return (
     <main className="tela-conta pagina-perfil">
       {carregando && !dados && <p role="status">Carregando…</p>}
@@ -46,27 +87,58 @@ export function TelaPerfil({ api, id, editar = false, usuario = null, googleClie
             </h1>
             <p>Patentes, números e conquistas de quem senta à mesa.</p>
           </header>
-          {id === null && (
-            <EditarPerfil
-              apelido={dados.usuario.apelido}
-              usuario={usuario}
-              editar={editar}
-              api={api}
-              googleClientId={googleClientId}
-              visual={visual}
-              aoSalvar={(u) => {
-                aoTrocarApelido?.(u);
-                recarregar();
-              }}
-            />
+          <div className="perfil-abas" role="tablist" aria-label="Seções do perfil">
+            {abas.map((a) => (
+              <button
+                key={a}
+                ref={(b) => {
+                  botoes.current[a] = b;
+                }}
+                type="button"
+                role="tab"
+                id={`aba-perfil-${a}`}
+                aria-controls={`painel-perfil-${a}`}
+                aria-selected={aba === a}
+                tabIndex={aba === a ? 0 : -1}
+                onClick={() => escolher(a, false)}
+                onKeyDown={teclar}
+              >
+                {NOME_ABA[a]}
+                {a === 'conquistas' && (
+                  <>
+                    <span className="perfil-aba-resumo" aria-hidden="true">
+                      {feitas}/{total}
+                    </span>
+                    <span className="so-leitor"> {feitas} de {total}</span>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+          {id === null &&
+            painel(
+              'conta',
+              <>
+                <EditarPerfil
+                  apelido={dados.usuario.apelido}
+                  usuario={usuario}
+                  editar={editar}
+                  api={api}
+                  googleClientId={googleClientId}
+                  visual={visual}
+                  aoSalvar={(u) => {
+                    aoTrocarApelido?.(u);
+                    recarregar();
+                  }}
+                />
+                {usuario && api.excluirConta && <ExcluirConta apelido={usuario.apelido} excluir={api.excluirConta} aoExcluir={() => aoExcluir?.()} />}
+              </>,
+            )}
+          {painel(
+            'pontos',
+            (['paulista', 'mineiro'] as const).map((v) => <CartaoVariante key={v} variante={v} r={dados.variantes[v]} />),
           )}
-          {(['paulista', 'mineiro'] as const).map((v) => (
-            <CartaoVariante key={v} variante={v} r={dados.variantes[v]} />
-          ))}
-          {dados.conquistas && dados.conquistas.length > 0 && <Conquistas lista={dados.conquistas} />}
-          {id === null && usuario && api.excluirConta && (
-            <ExcluirConta apelido={usuario.apelido} excluir={api.excluirConta} aoExcluir={() => aoExcluir?.()} />
-          )}
+          {dados.conquistas && dados.conquistas.length > 0 && painel('conquistas', <Conquistas lista={dados.conquistas} />)}
         </>
       )}
     </main>

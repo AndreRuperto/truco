@@ -2027,6 +2027,59 @@ body:has(.tela-mesa) {
   color: var(--giz-suave);
 }
 
+/* Abas do perfil (Conta, Pontos, Conquistas): régua de madeira, a escolhida em madeira cheia. */
+.perfil-abas {
+  /* Cada aba parte da largura do próprio rótulo ("Conquistas" é o mais largo) e divide a sobra. */
+  display: flex;
+  gap: var(--e2);
+  margin: var(--e4) 0;
+}
+.perfil-abas [role='tab'] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 48px;
+  margin: 0;
+  padding: var(--e1) var(--e2);
+  border: 2px solid var(--madeira-funda);
+  border-radius: var(--raio-botao);
+  background: color-mix(in srgb, var(--madeira) 25%, transparent);
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.15;
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur);
+}
+.perfil-abas [role='tab'][aria-selected='true'] {
+  background: var(--madeira);
+  color: var(--papel);
+  box-shadow: inset 0 -3px 0 var(--grito);
+}
+.perfil-abas [role='tab']:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+.perfil-aba-resumo {
+  font-size: var(--t-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.perfil-painel[hidden] {
+  display: none;
+}
+.perfil-painel:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 4px;
+  border-radius: var(--raio-painel);
+}
+.perfil-painel > :first-child {
+  margin-top: 0;
+}
+
 /* Conquistas do perfil: medalhas de giz na lousa. */
 .conquistas {
   margin: var(--e5) 0 0;

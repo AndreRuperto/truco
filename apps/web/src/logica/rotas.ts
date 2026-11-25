@@ -3,7 +3,7 @@ import type { Variante } from '@truco/engine';
 export type Rota =
   | { tela: 'inicio' }
   | { tela: 'entrar'; token: string | null }
-  | { tela: 'perfil'; id: number | null; editar?: true }
+  | { tela: 'perfil'; id: number | null; editar?: true; aba?: AbaPerfil }
   | { tela: 'historico' }
   | { tela: 'ranking'; variante: Variante }
   | { tela: 'salas' }
@@ -20,6 +20,10 @@ export type Rota =
 export const ABAS_LOJA = ['verso', 'roupa', 'moldura', 'avatar', 'tampo', 'habilidade', 'pila'] as const;
 export type AbaLoja = (typeof ABAS_LOJA)[number];
 
+/** Abas do perfil: dados da conta (só no próprio), pontos por variante e conquistas. */
+export const ABAS_PERFIL = ['conta', 'pontos', 'conquistas'] as const;
+export type AbaPerfil = (typeof ABAS_PERFIL)[number];
+
 export const ABAS_ADMIN = ['resumo', 'usuarios', 'pedidos', 'auditoria', 'mesas', 'partidas'] as const;
 export type AbaAdmin = (typeof ABAS_ADMIN)[number];
 
@@ -32,8 +36,11 @@ export function lerRota(hash: string): Rota {
     case 'perfil': {
       const n = Number(partes[1]);
       const id = Number.isInteger(n) && n > 0 ? n : null;
-      // "?editar" (só no próprio perfil) leva direto ao bloco de edição.
-      return id === null && new URLSearchParams(busca).has('editar') ? { tela: 'perfil', id, editar: true } : { tela: 'perfil', id };
+      const q = new URLSearchParams(busca);
+      // "?editar" (só no próprio perfil) leva direto ao bloco de edição, na aba Conta.
+      if (id === null && q.has('editar')) return { tela: 'perfil', id, editar: true };
+      const aba = q.get('aba');
+      return aba && (ABAS_PERFIL as readonly string[]).includes(aba) ? { tela: 'perfil', id, aba: aba as AbaPerfil } : { tela: 'perfil', id };
     }
     case 'historico':
       return { tela: 'historico' };
@@ -72,7 +79,8 @@ export function hrefDe(r: Rota): string {
     case 'entrar':
       return r.token ? `#/entrar?token=${encodeURIComponent(r.token)}` : '#/entrar';
     case 'perfil':
-      return r.id ? `#/perfil/${r.id}` : r.editar ? '#/perfil?editar' : '#/perfil';
+      if (!r.id && r.editar) return '#/perfil?editar';
+      return `#/perfil${r.id ? `/${r.id}` : ''}${r.aba ? `?aba=${r.aba}` : ''}`;
     case 'historico':
       return '#/historico';
     case 'ranking':

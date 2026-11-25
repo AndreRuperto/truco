@@ -122,7 +122,7 @@ async function medirContraste(page: Page): Promise<{ falhas: Falha[]; medidos: n
 }
 
 const PUBLICAS = ['#/', '#/salas', '#/como-jogar', '#/entrar', '#/ranking/paulista', '#/loja', '#/privacidade', '#/termos'];
-const COM_CONTA = ['#/perfil', '#/historico', '#/loja', '#/fila'];
+const COM_CONTA = ['#/perfil', '#/perfil?aba=pontos', '#/perfil?aba=conquistas', '#/historico', '#/loja', '#/fila'];
 const ADMIN = ['#/admin', '#/admin/usuarios', '#/admin/auditoria'];
 
 async function entrar(page: Page, email: string, ip: string): Promise<void> {
