@@ -50,3 +50,6 @@ export async function ateMinhaVezComAcao(page: Page, timeout = 90_000): Promise<
   }
   throw new Error('não chegou à sua vez com ação no rodapé a tempo');
 }
+
+/** Aparelho que nunca abriu o Truco (a config marca a 1ª visita como vista em todos os outros testes). */
+export const SEM_VISITA = { cookies: [], origins: [] };

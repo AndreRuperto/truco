@@ -28,7 +28,8 @@ export function textoEtapa(v: Visao, nome: (c: Cadeira) => string): string | nul
   const m = v.mao;
   if (m?.cangada && v.fase === 'empilhando') {
     if (m.cangada.empilhou[v.cadeira]) return 'Cangou! Esperando os outros empilharem';
-    return v.regras.variante === 'mineiro' ? 'Cangou! Escolha a carta que vai por cima (vale a de baixo)' : 'Cangou! Escolha a carta que vai por cima';
+    // Só o mineiro empilha (no paulista, cangou a 1ª, a 2ª é jogada normal).
+    return 'Cangou! Escolha a carta que vai por cima (vale a de baixo)';
   }
   if (m?.cangada && v.fase === 'jogando') {
     const o = m.cangada.etapa === 'baixo' ? 'abrir as de baixo' : 'mostrar as de cima';

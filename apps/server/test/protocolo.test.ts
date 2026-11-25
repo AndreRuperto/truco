@@ -62,6 +62,14 @@ describe('opcoesDaSala', () => {
     expect(opcoesDaSala({ modo: 'ranqueada', variante: 'mineiro', humanos: 2, regras: { maoLimpa: true } }).regras.maoLimpa).toBe(false);
   });
 
+  // Pesquisa de regras (2026-11-25): família é do mineiro; no paulista, com a vira, Q, J e K podem ser manilha.
+  test('família: só no mineiro; no paulista sai desligada mesmo se o cliente pedir', () => {
+    for (const familia of ['aberta', 'fechada'] as const) {
+      expect(opcoesDaSala({ variante: 'paulista', regras: { familia } }).regras.familia).toBe('off');
+      expect(opcoesDaSala({ variante: 'mineiro', regras: { familia } }).regras.familia).toBe(familia);
+    }
+  });
+
   test('valores inválidos caem no padrão', () => {
     const o = opcoesDaSala({ variante: 'gaucho', humanos: 9, nivelBot: 'deus', regras: { maoDe10: 'sim', familia: 'talvez' }, chanceInterceptarSinal: 2 });
     expect(o).toEqual({ modo: 'classica', regras: REGRAS_RANQUEADA.paulista, humanos: 1, nivelBot: 'facil', chanceInterceptarSinal: 0, tempoFamiliaS: 20, sinais: true, provocacoes: true, cacife: 0, semLimiteDeTempo: false, ritmo: 'calmo', tempoJogadaS: 20 });

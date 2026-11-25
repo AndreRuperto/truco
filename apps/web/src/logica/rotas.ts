@@ -16,9 +16,18 @@ export type Rota =
   | { tela: 'loja'; aba: AbaLoja }
   | { tela: 'lojaObrigado'; pedido: string | null };
 
-/** Abas da loja: os slots de itens e os pacotes de Pila. */
-export const ABAS_LOJA = ['verso', 'roupa', 'moldura', 'avatar', 'tampo', 'habilidade', 'pila'] as const;
-export type AbaLoja = (typeof ABAS_LOJA)[number];
+/**
+ * Compra de Pila com dinheiro real (aba "Comprar Pila"). FECHADA desde 2026-11-25: sem a aba,
+ * `#/loja/pila` cai na Loja normal. Para reabrir, troque para `true` junto com
+ * `COMPRA_PILA_ABERTA` do servidor (apps/server/src/loja/compraPila.ts).
+ */
+export const COMPRA_PILA_ABERTA: boolean = false;
+
+/** Todas as abas que a loja conhece: os slots de itens e os pacotes de Pila. */
+const TODAS_ABAS_LOJA = ['verso', 'roupa', 'moldura', 'avatar', 'tampo', 'habilidade', 'pila'] as const;
+export type AbaLoja = (typeof TODAS_ABAS_LOJA)[number];
+/** Abas que aparecem e que a rota aceita (sem "pila" enquanto a compra estiver fechada). */
+export const ABAS_LOJA: readonly AbaLoja[] = COMPRA_PILA_ABERTA ? TODAS_ABAS_LOJA : TODAS_ABAS_LOJA.filter((a) => a !== 'pila');
 
 /** Abas do perfil: dados da conta (só no próprio), pontos por variante e conquistas. */
 export const ABAS_PERFIL = ['conta', 'pontos', 'conquistas'] as const;

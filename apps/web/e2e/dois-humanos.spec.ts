@@ -126,8 +126,8 @@ test('quatro humanos: recarga temporária preserva cadeira e mantém os outros c
       await page.getByText('Regras da mesa', { exact: true }).click();
       await page.getByLabel('Apelido').fill(['Ana', 'Bia', 'Cid', 'Duda'][i]);
       await page.getByLabel('Variante').selectOption('paulista');
+      // Com 4 humanos não há bot: o campo "Bots" some (desde as regras em grupos).
       await page.getByLabel('Humanos').selectOption('4');
-      await page.getByLabel('Bots').selectOption('facil');
       await page.getByLabel('Adversários podem interceptar sinais').selectOption({ label: 'Nunca' });
       await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
     }
@@ -164,8 +164,8 @@ test('quatro humanos completam partida até o placar final', async ({ browser })
       await page.getByText('Regras da mesa', { exact: true }).click();
       await page.getByLabel('Apelido').fill(nomes[i]);
       await page.getByLabel('Variante').selectOption('paulista');
+      // Com 4 humanos não há bot: o campo "Bots" some (desde as regras em grupos).
       await page.getByLabel('Humanos').selectOption('4');
-      await page.getByLabel('Bots').selectOption('facil');
       await page.getByLabel('Adversários podem interceptar sinais').selectOption({ label: 'Nunca' });
       await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
     }

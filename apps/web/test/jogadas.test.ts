@@ -71,10 +71,8 @@ describe('rodada recolhida', () => {
   test('empate: as cartas ficam e somem (sem destino)', () => {
     const fechada = jogar(inicio(MAOS_EMPATE), RODADA_1);
     expect(exib(fechada).resultado).toBe('empate');
-    // Cangou: todos empilham e a vez manda mostrar; aí a rodada empatada sai da mesa.
-    let e = fechada;
-    for (const cadeira of [0, 1, 2, 3] as const) e = reduce(e, { tipo: 'empilhar', cadeira, indice: 0 });
-    e = reduce(e, { tipo: 'mostrar', cadeira: e.mao!.vez });
+    // Paulista: cangou, a 2ª é normal; na 1ª carta dela a rodada empatada sai da mesa.
+    const e = reduce(fechada, { tipo: 'jogar', cadeira: fechada.mao!.vez, indice: 0 });
     const r = rodadaRecolhida(exib(fechada), exib(e), 0)!;
     expect(r.chaves).toHaveLength(4);
     expect(r.destino).toBeNull();

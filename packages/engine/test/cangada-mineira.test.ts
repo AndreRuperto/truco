@@ -71,19 +71,23 @@ describe('cangada no mineiro: a de baixo decide', () => {
   });
 });
 
-describe('cangada no paulista continua: a de cima decide', () => {
+// Pesquisa de regras (2026-11-25): no paulista não há pilha; empatou a 1ª, a 2ª é jogada normal
+// e decide. A pilha (de cima descarte, de baixo vale) é do mineiro, como a casa joga.
+describe('cangada no paulista: sem pilha, a 2ª rodada é normal e decide', () => {
   // Vira J → manilha é o K, que ninguém tem.
-  test('as de cima abrem uma por vez e decidem', () => {
-    let s = empilharTodos(jogarSeq(distribuida(PAULISTA, MAOS, 'Jp'), RODADA_IDX0));
-    expect(s.mao!.cangada!.etapa).toBe('cima');
+  test('ninguém empilha; a 2ª rodada sai como qualquer outra e decide', () => {
+    let s = jogarSeq(distribuida(PAULISTA, MAOS, 'Jp'), RODADA_IDX0);
     expect(s.mao!.rodadas).toEqual(['empate']);
-    expect(s.mao!.mesa).toEqual([]);
-    s = abrirTodas(s);
+    expect(s.fase).toBe('jogando');
+    expect(s.mao!.cangada).toBeNull();
+    // Abre quem jogou primeiro a carta que empatou (a cadeira 0, com o 3o).
+    expect(s.mao!.vez).toBe(0);
+    s = jogarSeq(s, RODADA_IDX0);
     expect(s.ultimaMao).toMatchObject({ vencedor: 1, rodadas: ['empate', 1] });
   });
 
-  test('o bot põe a mais forte por cima', () => {
+  test('o bot joga carta, não empilha', () => {
     const s = jogarSeq(distribuida(PAULISTA, MAOS, 'Jp'), RODADA_IDX0);
-    expect(botFacil(s, 1)).toEqual({ tipo: 'empilhar', cadeira: 1, indice: 0 });
+    expect(botFacil(s, 0)?.tipo).toBe('jogar');
   });
 });
