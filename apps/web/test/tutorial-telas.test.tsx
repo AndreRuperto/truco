@@ -24,6 +24,8 @@ describe('tutorial no lobby', () => {
       expect.objectContaining({ tutorial: true, semLimiteDeTempo: true, humanos: 1, nivelBot: 'facil', modo: 'classica', sinais: false }),
     );
     expect(aoTutorial.mock.calls[0][0].regras.familia).toBe('fechada');
+    // Família só existe no mineiro: o tutorial é no mineiro (o padrão da casa).
+    expect(aoTutorial.mock.calls[0][0].variante).toBe('mineiro');
     expect(convite).toBeInTheDocument();
   });
 

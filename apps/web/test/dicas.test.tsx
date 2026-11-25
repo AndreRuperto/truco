@@ -25,20 +25,20 @@ describe('qual dica aparece', () => {
     expect(dicaDe(msgEstado(r2), ['manilha'])?.id).toBe('truco');
     const trucado = reduce(r2, { tipo: 'truco', cadeira: 0 });
     expect(dicaDe(msgEstado(trucado, 1))?.id).toBe('responder');
-    // paulista, novoBaralho: os quatro 4 cangam
-    expect(dicaDe(msgEstado(jogar(s, [[0, 0], [1, 0], [2, 0], [3, 0]])))?.id).toBe('cangada');
+    // Paulista, novoBaralho: os quatro 4 cangam, mas lá não se empilha (a 2ª é normal).
+    expect(dicaDe(msgEstado(jogar(s, [[0, 0], [1, 0], [2, 0], [3, 0]])))?.id).not.toBe('cangada');
   });
 
-  test('cangada: no paulista vale a de cima, no mineiro a de baixo', () => {
+  test('cangada: só o mineiro empilha (vale a de baixo); no paulista a 2ª é jogada normal', () => {
     // R1 canga (3o x 3e); ninguém tem manilha.
     const MAOS = [['3o', '5o', '6o'], ['3e', '2e', '6e'], ['4o', '5e', 'Qo'], ['4e', '5c', 'Qe']];
     const r1: [number, number][] = [[0, 0], [1, 0], [2, 0], [3, 0]];
     const paulista = jogar(distribuida(PAULISTA, MAOS, [0, 0], 'Jp'), r1 as never);
     const mineiro = jogar(distribuida(MINEIRO, MAOS), r1 as never);
-    expect(dicaDe(msgEstado(paulista))?.texto).toMatch(/ela decide a 2ª/);
+    expect(dicaDe(msgEstado(paulista))?.id).not.toBe('cangada');
+    expect(paulista.fase).toBe('jogando');
     expect(dicaDe(msgEstado(mineiro))?.texto).toMatch(/Quem decide é a de baixo/);
     expect(textoEtapa(msgEstado(mineiro).visao!, () => 'x')).toBe('Cangou! Escolha a carta que vai por cima (vale a de baixo)');
-    expect(textoEtapa(msgEstado(paulista).visao!, () => 'x')).toBe('Cangou! Escolha a carta que vai por cima');
   });
 
   test('fora da vez, nada', () => {

@@ -227,18 +227,21 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
               </select>
               {aj.pontuacao.texto}
             </div>
-            <div className="campo">
-              <div className="campo-rotulo">
-                <label htmlFor="familia">Família</label>
-                {aj.familia.botao}
+            {/* Família só existe no mineiro: no paulista, com a vira, Q, J e K podem ser manilha. */}
+            {f.variante === 'mineiro' && (
+              <div className="campo">
+                <div className="campo-rotulo">
+                  <label htmlFor="familia">Família</label>
+                  {aj.familia.botao}
+                </div>
+                <select id="familia" aria-describedby={aj.familia.descrita} value={f.familia} onChange={(e) => mudar('familia', e.target.value as RegrasMesa['familia'])}>
+                  <option value="off">Desligada</option>
+                  <option value="aberta">Aberta</option>
+                  <option value="fechada">Fechada</option>
+                </select>
+                {aj.familia.texto}
               </div>
-              <select id="familia" aria-describedby={aj.familia.descrita} value={f.familia} onChange={(e) => mudar('familia', e.target.value as RegrasMesa['familia'])}>
-                <option value="off">Desligada</option>
-                <option value="aberta">Aberta</option>
-                <option value="fechada">Fechada</option>
-              </select>
-              {aj.familia.texto}
-            </div>
+            )}
             <div className="campo">
               <div className="campo-rotulo">
                 <label htmlFor="mao11">Mão de ferro</label>
@@ -348,7 +351,7 @@ export function Lobby({ verso, aoTutorial, aoJogar, aoRanqueada, aoCriarPrivada,
               </select>
               {aj.tempoJogada.texto}
             </div>
-            {f.familia !== 'off' && (
+            {f.variante === 'mineiro' && f.familia !== 'off' && (
               <div className="campo">
                 <div className="campo-rotulo">
                   <label htmlFor="tempo-familia">Tempo para pedir família</label>
@@ -444,7 +447,7 @@ function resumoLobby(f: FormLobby): string {
     f.pontuacao,
     f.maoDe10 ? `mão de ${limiteMaoEspecial(f.pontuacao)}` : null,
     f.maoDe11 === 'onzeAOnze' ? 'mão de ferro' : null,
-    TEXTO_FAMILIA[f.familia],
+    f.variante === 'mineiro' ? TEXTO_FAMILIA[f.familia] : null,
     f.variante === 'mineiro' && f.maoLimpa ? 'mão limpa' : null,
     bots > 0 ? `${bots} ${bots === 1 ? 'bot' : 'bots'} ${nivel}` : 'só humanos',
     !f.sinais ? 'sem sinais' : f.chanceInterceptarSinal > 0 ? 'sinais interceptáveis' : null,

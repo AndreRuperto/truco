@@ -135,10 +135,8 @@ export function passoDoTutorial(msg: MsgEstado, nome: (c: Cadeira) => string): P
     return {
       id: 'cangada',
       titulo: 'Cangou!',
-      texto:
-        v.regras.variante === 'mineiro'
-          ? 'A 1ª rodada empatou. Junte as duas cartas e toque na que vai por cima: no mineiro ela fica à mostra e não vale; quem decide é a de baixo.'
-          : 'A 1ª rodada empatou. Junte as duas cartas e toque na que vai por cima: ela decide. A de baixo só abre se cangar de novo.',
+      // Só o mineiro empilha (no paulista, cangou a 1ª, a 2ª é jogada normal).
+      texto: 'A 1ª rodada empatou. Junte as duas cartas e toque na que vai por cima: ela fica à mostra e não vale; quem decide é a de baixo.',
       topico: 'cangada',
     };
   }
@@ -191,7 +189,10 @@ export function passoDoTutorial(msg: MsgEstado, nome: (c: Cadeira) => string): P
     return {
       id: 'primeira-carta',
       titulo: 'Sua vez de jogar',
-      texto: 'A vira, a carta virada no meio, mostra a manilha: o valor logo acima dela ganha de todos. Toque numa carta para jogar.',
+      texto:
+        v.regras.variante === 'mineiro'
+          ? 'As manilhas são fixas e ganham de todas: zap (4 de paus), 7 de copas, espadilha (Ás de espadas) e 7 de ouros. Toque numa carta para jogar.'
+          : 'A vira, a carta virada no meio, mostra a manilha: o valor logo acima dela ganha de todos. Toque numa carta para jogar.',
       topico: 'carta',
     };
   }

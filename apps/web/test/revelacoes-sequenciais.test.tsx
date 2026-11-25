@@ -70,35 +70,6 @@ describe('revelação das famílias fechadas', () => {
   });
 });
 
-describe('cangada na segunda rodada', () => {
-  // Cada um mostra a sua na vez dele (o motor revela uma por vez): as cartas entram no centro como
-  // jogadas normais, sem a lateral que antes escalonava as quatro reveladas de uma vez.
-  test('cada carta mostrada aparece no centro na hora, uma por vez, sem lateral', () => {
-    let s = jogar(distribuida(PAULISTA, [
-      ['3o', '4o', '5o'],
-      ['3e', '4e', '5e'],
-      ['4c', '5c', '6c'],
-      ['4p', '5p', '6p'],
-    ], [0, 0], '7o'), [[0, 0], [1, 0], [2, 0], [3, 0]]);
-    expect(s.fase).toBe('empilhando');
-    for (const cadeira of [0, 1, 2, 3] as const) s = reduce(s, { tipo: 'empilhar', cadeira, indice: 0 });
-    const v0 = visaoDoJogador(s, 0);
-    const { rerender } = render(<CentroMesa mao={v0.mao} ultimaMao={v0.ultimaMao} minha={0} variante="paulista" />);
-    act(() => vi.advanceTimersByTime(MOSTRA_RODADA_MS));
-    for (let n = 1; n <= 3; n++) {
-      s = reduce(s, { tipo: 'mostrar', cadeira: s.mao!.vez });
-      const v = visaoDoJogador(s, 0);
-      rerender(<CentroMesa mao={v.mao} ultimaMao={v.ultimaMao} minha={0} variante="paulista" />);
-      expect(screen.getByTestId('centro').querySelectorAll('.jogada')).toHaveLength(n);
-    }
-    s = reduce(s, { tipo: 'mostrar', cadeira: s.mao!.vez });
-    const v = visaoDoJogador(s, 0);
-    rerender(<CentroMesa mao={v.mao} ultimaMao={v.ultimaMao} minha={0} variante="paulista" />);
-    expect(screen.getByTestId('centro').querySelectorAll('.jogada')).toHaveLength(4);
-    expect(screen.queryByTestId('cangada-lateral')).toBeNull();
-  });
-});
-
 describe('cangada no mineiro', () => {
   test('as de cima viram juntas e ficam à vista até a 1ª de baixo ser aberta', () => {
     let s = jogar(distribuida(MINEIRO, [

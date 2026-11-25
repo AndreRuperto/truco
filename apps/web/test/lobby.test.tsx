@@ -50,12 +50,13 @@ describe('Lobby', () => {
     await user.selectOptions(screen.getByLabelText('Pontuação'), '2-4-8-10-12');
     expect(screen.getByLabelText('Mão de 10')).not.toBeChecked();
     expect(screen.getByRole('option', { name: 'Só no 10 a 10' })).toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText('Família'), 'aberta');
+    // Família só existe no mineiro: no paulista o campo nem aparece e a mesa vai sem ela.
+    expect(screen.queryByLabelText('Família')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
     expect(aoJogar.mock.calls[0][0]).toMatchObject({
       nome: 'Jogador',
       variante: 'paulista',
-      regras: { pontuacao: '2-4-8-10-12', maoDe10: false, maoDe11: 'onzeAOnze', familia: 'aberta' },
+      regras: { pontuacao: '2-4-8-10-12', maoDe10: false, maoDe11: 'onzeAOnze', familia: 'off' },
     });
   });
 
