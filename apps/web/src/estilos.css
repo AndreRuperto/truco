@@ -5138,6 +5138,11 @@ body:has(.tela-mesa) {
   justify-content: center;
   margin-top: var(--e3);
 }
+/* Fora dos cartões, no fundo da página: lousa atrás do giz, para ler no tema claro também. */
+.admin-mais .admin-botao.secundario {
+  min-width: 12rem;
+  background: var(--lousa);
+}
 .admin-numeros {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
