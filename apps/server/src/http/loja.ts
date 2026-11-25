@@ -3,6 +3,7 @@ import type { CarteiraApi, CatalogoApi, PedidoAdmin, PedidoApi } from '../api/ti
 import { chaveDeIp, LimiteTaxa } from '../auth/limite';
 import { registrarAuditoria } from '../repo/auditoria';
 import { ITENS, PACOTES, pacotePorId } from '../loja/catalogo';
+import { COMPRA_PILA_ABERTA, ERRO_COMPRA_PILA_FECHADA } from '../loja/compraPila';
 import { MOEDAS, type Moeda } from '../loja/regras';
 import { carteiraDe, extrato, movimentar, SaldoInsuficiente } from '../repo/carteira';
 import { comprarItem, equipadosDe, equipar, inventarioDe } from '../repo/loja';
@@ -36,6 +37,8 @@ export function rotasLoja(api: Router, d: DepsLoja): void {
   const ehAdmin = d.ehAdmin ?? (() => false);
   const TODOS_PAGOS = ITENS.filter((i) => i.preco).map((i) => i.id);
   const limiteWebhook = d.limiteWebhook ?? new LimiteTaxa(60, 60_000);
+  /** Compra de Pila com dinheiro: fechada pela constante (os testes podem reabrir). */
+  const compraAberta = s.compraPilaAberta ?? COMPRA_PILA_ABERTA;
   const logado = async (req: Request, res: Response): Promise<Usuario | null> => {
     const u = await usuarioDe(req);
     if (!u) res.status(401).json({ erro: 'entre na sua conta' });
@@ -43,7 +46,7 @@ export function rotasLoja(api: Router, d: DepsLoja): void {
   };
 
   api.get('/loja/catalogo', (_req, res) => {
-    const c: CatalogoApi = { itens: [...ITENS], pacotes: [...PACOTES], pagamentoAtivo: !!s.pagamento };
+    const c: CatalogoApi = { itens: [...ITENS], pacotes: [...PACOTES], pagamentoAtivo: compraAberta && !!s.pagamento };
     res.json(c);
   });
 
@@ -86,6 +89,8 @@ export function rotasLoja(api: Router, d: DepsLoja): void {
   });
 
   api.post('/loja/pedidos', async (req, res) => {
+    // Antes do login: nada de pedido nem checkout enquanto a compra estiver fechada.
+    if (!compraAberta) return void res.status(403).json({ erro: ERRO_COMPRA_PILA_FECHADA });
     const u = await logado(req, res);
     if (!u) return;
     if (!s.pagamento) return void res.status(503).json({ erro: 'a compra de Pila ainda não está aberta' });

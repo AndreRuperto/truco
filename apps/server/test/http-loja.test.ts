@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, afterEach, describe, expect, test } from 'vitest';
 import { extrairLink } from '../src/auth/emails';
 import { LimiteTaxa } from '../src/auth/limite';
+import { COMPRA_PILA_ABERTA } from '../src/loja/compraPila';
 import { GatewayDeTeste } from '../src/pagamento/infinitepay';
 import { type Servicos, servicosDeTeste } from '../src/servicos';
 import { type BancoDeTeste, bancoDeTeste } from './banco-helpers';
@@ -16,8 +17,10 @@ const AGORA = new Date('2026-11-11T15:00:00Z');
 beforeAll(async () => {
   b = await bancoDeTeste();
 }, 30_000);
+// O código da compra de Pila continua testado com a compra reaberta (`compraPilaAberta: true`);
+// o bloqueio de produção (COMPRA_PILA_ABERTA = false) tem o próprio describe abaixo.
 async function subir(extra: Partial<Servicos> = {}) {
-  s = servicosDeTeste(b.db, { admins: ['chefe@x.com'], agora: () => AGORA, pagamento: { gateway }, ...extra });
+  s = servicosDeTeste(b.db, { admins: ['chefe@x.com'], agora: () => AGORA, pagamento: { gateway }, compraPilaAberta: true, ...extra });
   app = await subirApp(s, { limiteLinkIp: new LimiteTaxa(100, 60_000), limiteLinkEmail: new LimiteTaxa(100, 60_000) });
 }
 beforeEach(async () => {
@@ -53,6 +56,73 @@ describe('admin tem todos os itens (pedido do André)', () => {
     const ana = await cookieDeQuem('ana@x.com');
     expect((await app.pedir('/api/loja/eu', { cookie: ana })).json.inventario).toEqual([]);
     expect((await app.pedir('/api/loja/equipar', { cookie: ana, metodo: 'PUT', corpo: { slot: 'moldura', itemId: 'moldura-neon' } })).status).toBe(403);
+  });
+});
+
+describe('compra de Pila com dinheiro bloqueada (padrão)', () => {
+  beforeEach(async () => {
+    await app.fechar();
+    // Sem `compraPilaAberta`: vale a constante do servidor, mesmo com o gateway configurado.
+    await subir({ compraPilaAberta: undefined });
+  });
+
+  test('a constante vem desligada', () => {
+    expect(COMPRA_PILA_ABERTA).toBe(false);
+  });
+
+  test('criar pedido é recusado com mensagem clara e não cria pedido nem abre checkout', async () => {
+    const cookie = await cookieDeQuem('ana@x.com');
+    const r = await app.pedir('/api/loja/pedidos', { cookie, corpo: { pacoteId: 'bolso' } });
+    expect(r.status).toBe(403);
+    expect(r.json.erro).toBe('a compra de Pila com dinheiro está fechada por enquanto');
+    expect(gateway.links).toEqual([]);
+    const chefe = await cookieDeQuem('chefe@x.com');
+    expect((await app.pedir('/api/admin/pedidos', { cookie: chefe })).json.pedidos).toEqual([]);
+    // Sem login também é recusado (nada de 401 que sugira "entre e tente").
+    expect((await app.pedir('/api/loja/pedidos', { corpo: { pacoteId: 'bolso' } })).status).toBe(403);
+  });
+
+  test('catálogo diz que a compra está fechada, e o resto da loja segue funcionando', async () => {
+    const cat = (await app.pedir('/api/loja/catalogo')).json;
+    expect(cat.pagamentoAtivo).toBe(false);
+    expect(cat.itens.length).toBeGreaterThan(0);
+    const cookie = await cookieDeQuem('ana@x.com');
+    const anaId = (await app.pedir('/api/eu', { cookie })).json.usuario.id;
+    expect((await app.pedir('/api/loja/eu', { cookie })).json.fichas).toBe(1100);
+    // Item de Fichas: compra e equipa normalmente.
+    const chefe = await cookieDeQuem('chefe@x.com');
+    expect((await app.pedir(`/api/admin/usuarios/${anaId}/ajuste`, { cookie: chefe, corpo: { moeda: 'fichas', delta: 2000, motivo: 'teste' } })).status).toBe(200);
+    expect((await app.pedir('/api/loja/comprar-item', { cookie, corpo: { itemId: 'moldura-giz' } })).status).toBe(204);
+    expect((await app.pedir('/api/loja/equipar', { cookie, metodo: 'PUT', corpo: { slot: 'moldura', itemId: 'moldura-giz' } })).status).toBe(204);
+    // Item de Pila com saldo que já existia (ex.: ajuste do admin): também segue funcionando.
+    expect((await app.pedir(`/api/admin/usuarios/${anaId}/ajuste`, { cookie: chefe, corpo: { moeda: 'pila', delta: 80, motivo: 'teste' } })).status).toBe(200);
+    expect((await app.pedir('/api/loja/comprar-item', { cookie, corpo: { itemId: 'moldura-corda' } })).status).toBe(204);
+    expect((await app.pedir('/api/loja/eu', { cookie })).json).toMatchObject({ fichas: 100, pila: 0, inventario: expect.arrayContaining(['moldura-giz', 'moldura-corda']), equipados: { moldura: 'moldura-giz' } });
+  });
+
+  test('pedido antigo: webhook e retorno ainda confirmam, o dono consulta e o admin lista e estorna', async () => {
+    // Pedido criado quando a compra estava aberta.
+    await app.fechar();
+    await subir();
+    const ana = await cookieDeQuem('ana@x.com');
+    const id = (await app.pedir('/api/loja/pedidos', { cookie: ana, corpo: { pacoteId: 'bolso' } })).json.pedido.id as string;
+    await app.fechar();
+    await subir({ compraPilaAberta: undefined });
+
+    gateway.pagar('tx-antigo', 990);
+    expect((await app.pedir('/api/loja/webhook/infinitepay', { corpo: { order_nsu: id, transaction_nsu: 'tx-antigo', invoice_slug: 's' } })).status).toBe(200);
+    const volta = await fetch(`${app.base}/api/loja/retorno?order_nsu=${id}&transaction_nsu=tx-antigo&slug=s&capture_method=pix`, { redirect: 'manual' });
+    expect(volta.status).toBe(302);
+    expect((await app.pedir(`/api/loja/pedidos/${id}`, { cookie: ana })).json.pedido.status).toBe('pago');
+    expect((await app.pedir('/api/loja/eu', { cookie: ana })).json.pila).toBe(220);
+
+    const chefe = await cookieDeQuem('chefe@x.com');
+    const ps = await app.pedir('/api/admin/pedidos', { cookie: chefe });
+    expect(ps.status).toBe(200);
+    expect(ps.json.pedidos).toHaveLength(1);
+    expect(ps.json.pedidos[0]).toMatchObject({ pacoteId: 'bolso', status: 'pago' });
+    expect((await app.pedir(`/api/admin/pedidos/${id}/estorno`, { cookie: chefe, corpo: {} })).status).toBe(200);
+    expect((await app.pedir('/api/loja/eu', { cookie: ana })).json.pila).toBe(0);
   });
 });
 

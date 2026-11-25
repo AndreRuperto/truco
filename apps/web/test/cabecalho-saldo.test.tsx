@@ -22,6 +22,13 @@ describe('saldo no cabeçalho', () => {
     expect(saldo.nextElementSibling).toHaveClass('menu-conta');
   });
 
+  test('nenhum link do cabeçalho leva à compra de Pila; o saldo abre a Loja normal', () => {
+    const { container } = render(<Cabecalho pronta usuario={ana} aoSair={() => {}} saldos={{ fichas: 1200, pila: 0 }} />);
+    expect(screen.getByTestId('cabecalho-saldo')).toHaveAttribute('href', '#/loja');
+    expect([...container.querySelectorAll('a')].map((a) => a.getAttribute('href'))).not.toContain('#/loja/pila');
+    expect(screen.queryByText(/comprar (pila|fichas)/i)).toBeNull();
+  });
+
   test('ícone é decorativo (o nome da moeda vem do rótulo)', () => {
     const { container } = render(<IconeMoeda moeda="fichas" />);
     const svg = container.querySelector('svg')!;

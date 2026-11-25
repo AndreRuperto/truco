@@ -5,7 +5,7 @@ import { IconeMoeda } from '../componentes/IconeMoeda';
 import { PreviaItem } from '../componentes/PreviaItem';
 import { equiparNaConta } from '../logica/equipar';
 import { estadoDoItem, formatarReais, formatarSaldo, MOTIVO_LANCAMENTO, NOME_MOEDA, rotuloPreco } from '../logica/lojaItens';
-import { ABAS_LOJA, type AbaLoja, hrefDe } from '../logica/rotas';
+import { ABAS_LOJA, type AbaLoja, COMPRA_PILA_ABERTA, hrefDe } from '../logica/rotas';
 import type { Api } from '../rede/api';
 
 export const NOME_ABA: Record<AbaLoja, string> = {
@@ -33,10 +33,12 @@ interface Props {
   aoTentarDeNovo?: () => void;
 }
 
-export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrParaPagamento = (u) => window.location.assign(u), erroCatalogo = null, aoTentarDeNovo }: Props) {
+export function TelaLoja({ aba: abaPedida, api, usuario, catalogo, carteira, aoMudar, aoIrParaPagamento = (u) => window.location.assign(u), erroCatalogo = null, aoTentarDeNovo }: Props) {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'erro'; texto: string } | null>(null);
   const [confirmar, setConfirmar] = useState<ItemLoja | null>(null);
+  // Aba fora da lista (ex.: "pila" com a compra fechada) vira a primeira, como na rota.
+  const aba: AbaLoja = ABAS_LOJA.includes(abaPedida) ? abaPedida : 'verso';
   useEffect(() => setAviso(null), [aba]);
 
   const itens = catalogo?.itens ?? [];
@@ -85,7 +87,7 @@ export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrP
       <h1>Loja do boteco</h1>
       <p className="loja-intro">
         Itens só de visual: não mudam o jogo. <strong>Fichas</strong> se ganham jogando e valem nas mesas com cacife;{' '}
-        <strong>Pila</strong> se compra e serve só aqui na loja. Uma não vira a outra, e nenhuma vira dinheiro.
+        <strong>Pila</strong> serve só aqui na loja{COMPRA_PILA_ABERTA ? ' e se compra na aba Comprar Pila' : ''}. Uma não vira a outra, e nenhuma vira dinheiro.
       </p>
       {usuario && carteira ? (
         <dl className="loja-saldos" aria-label="Seus saldos">
@@ -139,7 +141,7 @@ export function TelaLoja({ aba, api, usuario, catalogo, carteira, aoMudar, aoIrP
         ) : (
           <p role="status">Carregando a loja…</p>
         )
-      ) : aba === 'pila' ? (
+      ) : COMPRA_PILA_ABERTA && aba === 'pila' ? (
         <section aria-labelledby="titulo-pila">
           <h2 id="titulo-pila">Pacotes de Pila</h2>
           {!catalogo.pagamentoAtivo && (
