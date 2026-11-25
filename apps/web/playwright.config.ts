@@ -16,7 +16,11 @@ export default defineConfig({
     // 1ª visita já vista: o tour do lobby escurece a tela e prenderia os testes que não são dele.
     // Vale também para browser.newContext() (conferido no playwright 1.63); tour.spec.ts e
     // tutorial.spec.ts começam do zero com `storageState: SEM_VISITA`.
-    storageState: { cookies: [], origins: [{ origin: `http://127.0.0.1:${PORTA_WEB}`, localStorage: [{ name: 'truco:tutorial', value: 'pulado' }] }] },
+    // Também a origem do servidor, que serve o build de produção (deploy.spec.ts).
+    storageState: {
+      cookies: [],
+      origins: [`http://127.0.0.1:${PORTA_WEB}`, `http://127.0.0.1:${PORTA_SERVIDOR}`].map((origin) => ({ origin, localStorage: [{ name: 'truco:tutorial', value: 'pulado' }] })),
+    },
   },
   // Largura de celular: é o layout principal.
   projects: [{ name: 'celular', use: { ...devices['Pixel 7'] } }],
