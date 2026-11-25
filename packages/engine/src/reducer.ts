@@ -388,7 +388,8 @@ function fecharRodada(s: EstadoPartida, m: EstadoMao): void {
   }
   // Cangou a 1ª: cada um junta as 2 que sobraram e escolhe a de cima (na mão de ferro ninguém vê as cartas: segue normal).
   // Quem cangou (igualou a mais forte) abre primeiro.
-  if (m.rodadas.length === 1 && resultado === 'empate' && m.tipo !== 'mao11') {
+  // Só no mineiro: no paulista a 2ª rodada é jogada normal e decide (pesquisa de regras, 2026-11-25).
+  if (m.rodadas.length === 1 && resultado === 'empate' && m.tipo !== 'mao11' && s.regras.variante === 'mineiro') {
     m.cangada = { etapa: 'empilhando', empilhou: [false, false, false, false] };
     m.vez = quemCangou(rodada);
     s.fase = 'empilhando';

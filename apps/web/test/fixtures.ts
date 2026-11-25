@@ -65,12 +65,13 @@ export function naSegundaRodada(s: EstadoPartida): EstadoPartida {
     return x;
   };
   const padrao = rodada([0, 0, 0, 0]);
-  if (padrao.fase !== 'empilhando') return padrao;
-  // Cangar agora empilha as cartas: para os testes da 2ª rodada "normal", a cadeira 0 leva a 1ª.
+  if (padrao.mao?.rodadas[0] !== 'empate') return padrao;
+  // Para os testes da 2ª rodada "normal", a cadeira 0 leva a 1ª (cangar empilha no mineiro e, no
+  // paulista, deixa a mão sem vencedor da 1ª).
   for (let i = 0; i < 81; i++) {
     const ind = [i % 3, Math.floor(i / 3) % 3, Math.floor(i / 9) % 3, Math.floor(i / 27) % 3];
     const x = rodada(ind);
-    if (x.fase === 'jogando' && x.mao?.vez === 0) return x;
+    if (x.fase === 'jogando' && x.mao?.rodadas[0] !== 'empate' && x.mao?.vez === 0) return x;
   }
   throw new Error('naSegundaRodada: nenhuma 1ª rodada sem cangar com a vez na cadeira 0');
 }

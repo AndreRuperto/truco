@@ -300,7 +300,8 @@ describe('MesaRoom', () => {
     const chave = chaveRegras({ variante: 'paulista', ...regras }, 0);
     const a = await colyseus.sdk.joinOrCreate('mesa', { variante: 'paulista', humanos: 2, nivelBot: 'facil', regras, chaveRegras: chave, nome: 'Ana' });
     coletor(a);
-    const outras = { ...regras, familia: 'aberta' } as const;
+    // Família não existe no paulista: as regras diferentes são a mão de 11.
+    const outras = { ...regras, maoDe10: true } as const;
     const b = await colyseus.sdk.joinOrCreate('mesa', {
       variante: 'paulista',
       humanos: 2,

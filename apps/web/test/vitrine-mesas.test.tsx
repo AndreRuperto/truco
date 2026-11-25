@@ -36,7 +36,7 @@ describe('Vitrine de mesas', () => {
   test('configuração dos cards respeita regras salvas, mas força quatro lugares e bots anunciados', () => {
     const preferencias = {
       ...PREFERENCIAS_PADRAO,
-      variante: 'paulista' as const,
+      variante: 'mineiro' as const,
       pontuacao: '2-4-8-10-12' as const,
       familia: 'aberta' as const,
       humanos: 1,
@@ -48,7 +48,7 @@ describe('Vitrine de mesas', () => {
       modo: 'classica',
       humanos: 4,
       nivelBot: 'facil',
-      variante: 'paulista',
+      variante: 'mineiro',
       regras: { pontuacao: '2-4-8-10-12', familia: 'aberta' },
     });
     expect(classica.chaveRegras).toContain('fam:aberta');

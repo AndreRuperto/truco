@@ -81,11 +81,16 @@ describe.each(VARIANTES)('empates no $nome', ({ regras, vira, base }) => {
     expect(cartasDaPartida(fim)).toHaveLength(40);
   });
 
-  test('o 1º empate abre a cangada: todos empilham antes da 2ª rodada', () => {
+  test(regras.variante === 'mineiro' ? 'o 1º empate abre a cangada: todos empilham antes da 2ª rodada' : 'o 1º empate não empilha: a 2ª rodada é jogada normal', () => {
     let s = distribuida(regras, maosPara(['E', 'V']), vira);
     for (let i = 0; i < 4; i++) s = jogarUma(s);
-    expect(s.fase).toBe('empilhando');
-    expect(s.mao!.cangada).toMatchObject({ etapa: 'empilhando' });
+    if (regras.variante === 'mineiro') {
+      expect(s.fase).toBe('empilhando');
+      expect(s.mao!.cangada).toMatchObject({ etapa: 'empilhando' });
+    } else {
+      expect(s.fase).toBe('jogando');
+      expect(s.mao!.cangada).toBeNull();
+    }
   });
 
   test('empate depois de uma rodada vencida não abre cangada', () => {

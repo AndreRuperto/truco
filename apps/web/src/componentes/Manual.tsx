@@ -353,22 +353,16 @@ function secoesDe(v: Variante): SecaoInfo[] {
             <strong>As três empataram</strong>: ninguém marca ponto.
           </li>
         </ul>
-        <h3>Cangou a 1ª: cartas empilhadas</h3>
+        <h3>Cangou a 1ª</h3>
         <p>
-          Quando a 1ª rodada canga, ninguém joga a 2ª carta na vez. <strong>Todo mundo junta as duas cartas que sobraram,
-          uma em cima da outra</strong>, e escolhe qual vai por cima. Cada um escolhe sem ver o que os outros fizeram. Na mesa, é só tocar na carta que vai
-          por cima.
+          <strong>Paulista: a 2ª decide.</strong> Ninguém empilha: a 2ª rodada é jogada como qualquer outra, e quem levar
+          leva a mão. Se a 2ª também cangar, a 3ª decide.
         </p>
         <p>
-          <strong>Paulista: vale a de cima.</strong>
+          <strong>Mineiro: cartas empilhadas.</strong> Ninguém joga a 2ª carta na vez. <strong>Todo mundo junta as duas
+          cartas que sobraram, uma em cima da outra</strong>, e escolhe qual vai por cima. Cada um escolhe sem ver o que os
+          outros fizeram. Na mesa, é só tocar na carta que vai por cima.
         </p>
-        <ol>
-          <li>
-            Quem cangou mostra a de cima primeiro; depois, um de cada vez, cada um mostra a sua. Antes de mostrar, quem é
-            da vez pode pedir truco (no blefe, se quiser). As de cima decidem a 2ª.
-          </li>
-          <li>Se a 2ª também cangar, abrem a de baixo do mesmo jeito, uma por vez, e ela decide a 3ª.</li>
-        </ol>
         <p>
           <strong>Mineiro: vale a de baixo.</strong>
         </p>

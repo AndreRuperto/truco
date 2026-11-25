@@ -35,16 +35,17 @@ describe('agruparAcoes', () => {
     expect(ui(s, 0)).toMatchObject({ jogaveis: [0, 1], cobriveis: [0, 1] });
   });
 
-  test('cangada: clicar na carta empilha; empilhado, a vez tem Truco! e "Mostrar a sua"', () => {
-    // paulista, novoBaralho: os quatro 4 cangam na 1ª.
-    const s = jogar(distribuida(PAULISTA), [[0, 0], [1, 0], [2, 0], [3, 0]]);
+  test('cangada: clicar na carta empilha; empilhado, a vez tem Truco! e "Abrir a de baixo"', () => {
+    // Mineiro (só ele empilha), sem manilha em jogo: 3o x 3e cangam na 1ª.
+    const MAOS = [['3o', '5o', '6o'], ['3e', '2e', '6e'], ['4o', '5e', 'Qo'], ['4e', '5c', 'Qe']];
+    const s = jogar(distribuida(MINEIRO, MAOS), [[0, 0], [1, 0], [2, 0], [3, 0]]);
     expect(ui(s, 0)).toEqual({ jogaveis: [], cobriveis: [], empilhaveis: [0, 1], botoes: [] });
     let e = s;
     for (const cadeira of [0, 1, 2, 3] as const) e = reduce(e, { tipo: 'empilhar', cadeira, indice: 0 });
-    expect(rotulos(e, e.mao!.vez)).toEqual(['Truco!', 'Mostrar a sua']);
+    expect(rotulos(e, e.mao!.vez)).toEqual(['Truco!', 'Abrir a de baixo']);
     // Cada um mostra a própria: depois da vez, o próximo tem os mesmos botões.
     e = reduce(e, { tipo: 'mostrar', cadeira: e.mao!.vez });
-    expect(rotulos(e, e.mao!.vez)).toEqual(['Truco!', 'Mostrar a sua']);
+    expect(rotulos(e, e.mao!.vez)).toEqual(['Truco!', 'Abrir a de baixo']);
   });
 
   test('mão de 10: jogar ou correr da mão', () => {
