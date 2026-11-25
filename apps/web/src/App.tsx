@@ -258,6 +258,11 @@ export function App() {
               key={rota.id ?? 'eu'}
               id={rota.id}
               editar={rota.editar === true}
+              aba={rota.aba}
+              // Aba na URL (dá para voltar e compartilhar); a de abertura fica de fora: #/perfil e #/perfil/3.
+              aoTrocarAba={(aba, opcoes) =>
+                navegar({ tela: 'perfil', id: rota.id, ...(aba === (rota.id === null ? 'conta' : 'pontos') ? {} : { aba }) }, opcoes)
+              }
               api={api}
               usuario={ses.usuario}
               googleClientId={ses.config.google}
