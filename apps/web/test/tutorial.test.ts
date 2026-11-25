@@ -20,12 +20,20 @@ describe('passo do tutorial (sai só do estado da mesa)', () => {
     expect(passo(corte, 0)).toMatchObject({ id: 'cortar-outro', texto: expect.stringContaining('Jogador 2') });
   });
 
+  // O tutorial é no mineiro: manilhas fixas e truco valendo 4 (correr dá 2).
+  test('no mineiro: a 1ª carta fala das manilhas fixas e o truco vale 4', () => {
+    const s = distribuida(MINEIRO);
+    expect(passo(s, 0)).toMatchObject({ id: 'primeira-carta', texto: expect.stringContaining('zap (4 de paus)') });
+    const r2 = naSegundaRodada(s);
+    expect(passo(r2, r2.mao!.vez)).toMatchObject({ id: 'truco', texto: expect.stringContaining('valer 4. Se eles correrem, vocês levam 2') });
+  });
+
   test('na mão: primeira carta (com a vira), esperar a vez, truco a partir da 2ª rodada, responder sempre', () => {
     const s = distribuida(PAULISTA);
     expect(passo(s, 0)).toMatchObject({ id: 'primeira-carta', topico: 'carta', texto: expect.stringContaining('vira') });
     expect(passo(s, 1)).toMatchObject({ id: 'esperar', texto: expect.stringContaining('Jogador 0') });
     const r2 = naSegundaRodada(s);
-    expect(passo(r2, 0)).toMatchObject({ id: 'truco', topico: 'truco' });
+    expect(passo(r2, 0)).toMatchObject({ id: 'truco', topico: 'truco', texto: expect.stringContaining('valer 3. Se eles correrem, vocês levam 1') });
     const trucado = reduce(r2, { tipo: 'truco', cadeira: 0 });
     expect(passo(trucado, 1)).toMatchObject({ id: 'responder', repete: true });
     // Já trucada: no lugar do truco, a carta coberta (da 2ª rodada em diante).

@@ -51,7 +51,8 @@ for (const [nomeTela, uso] of [
         els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }),
       );
       for (const r of cartas) expect(cruza(r), 'o treinador cobre uma carta da mão').toBe(false);
-      const vira = await page.locator('.vira').first().boundingBox();
+      // O tutorial é no mineiro, sem vira; se um dia tiver, o treinador também não a cobre.
+      const vira = (await page.locator('.vira').count()) > 0 ? await page.locator('.vira').first().boundingBox() : null;
       if (vira) expect(cruza(vira), 'o treinador cobre a vira').toBe(false);
 
       // Recolher: vira uma etiqueta pequena, que também não cobre a mão nem a vira.

@@ -1,4 +1,4 @@
-import { type Cadeira, duplaDe, limiteMaoEspecial } from '@truco/engine';
+import { type Cadeira, duplaDe, ESCADAS, limiteMaoEspecial } from '@truco/engine';
 import type { MsgEstado } from '@truco/protocolo';
 
 /**
@@ -173,7 +173,7 @@ export function passoDoTutorial(msg: MsgEstado, nome: (c: Cadeira) => string): P
     return {
       id: 'truco',
       titulo: 'Agora vale pedir truco',
-      texto: 'Toque em "Truco!" e a mão passa a valer 3. Se eles correrem, vocês levam 1. Dá para pedir no blefe, com carta fraca.',
+      texto: `Toque em "Truco!" e a mão passa a valer ${ESCADAS[v.regras.pontuacao][1]}. Se eles correrem, vocês levam ${ESCADAS[v.regras.pontuacao][0]}. Dá para pedir no blefe, com carta fraca.`,
       topico: 'truco',
     };
   }
