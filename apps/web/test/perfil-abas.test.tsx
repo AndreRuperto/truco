@@ -62,9 +62,11 @@ describe('TelaPerfil em abas', () => {
     await user.keyboard('{ArrowRight}');
     expect(screen.getByRole('tab', { name: 'Pontos' })).toHaveFocus();
     expect(screen.getByRole('tab', { name: 'Pontos' })).toHaveAttribute('aria-selected', 'true');
-    // Seta não empilha histórico: troca a entrada atual.
-    expect(aoTrocarAba).toHaveBeenLastCalledWith('pontos', { substituir: true });
-    await user.keyboard('{ArrowRight}{ArrowRight}');
+    // Saindo da aba de abertura, empilha (o "voltar" volta a Conta); depois, seta troca a entrada atual.
+    expect(aoTrocarAba).toHaveBeenLastCalledWith('pontos', { substituir: false });
+    await user.keyboard('{ArrowRight}');
+    expect(aoTrocarAba).toHaveBeenLastCalledWith('conquistas', { substituir: true });
+    await user.keyboard('{ArrowRight}');
     expect(screen.getByRole('tab', { name: 'Conta' })).toHaveFocus();
     await user.keyboard('{ArrowLeft}');
     expect(screen.getByRole('tab', { name: /Conquistas/ })).toHaveFocus();

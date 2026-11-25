@@ -76,6 +76,15 @@ for (const scheme of ['light', 'dark'] as const) {
       await expect(page).toHaveURL(/#\/perfil$/);
       await expect(conta).toHaveAttribute('aria-selected', 'true');
       await expect(page.getByRole('button', { name: 'Excluir minha conta…' })).toBeVisible();
+
+      // "Editar perfil" (link do cabeçalho) estando em outra aba: abre Conta e põe o foco no apelido.
+      await pontos.click();
+      await expect(page).toHaveURL(/#\/perfil\?aba=pontos$/);
+      await page.evaluate(() => {
+        window.location.hash = '#/perfil?editar';
+      });
+      await expect(conta).toHaveAttribute('aria-selected', 'true');
+      await expect(page.getByLabel('Apelido', { exact: true })).toBeFocused();
     } finally {
       await contexto.close();
     }

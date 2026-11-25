@@ -41,8 +41,14 @@ export function TelaPerfil({ api, id, editar = false, aba: abaPedida, aoTrocarAb
   const pedida = editar ? 'conta' : abaPedida;
   const abaUrl = pedida && abas.includes(pedida) ? pedida : abas[0];
   const [abaLocal, setAbaLocal] = useState<AbaPerfil>(abaUrl);
-  // A URL manda (voltar/avançar do navegador, link compartilhado, "Editar perfil").
-  useEffect(() => setAbaLocal(abaUrl), [abaUrl]);
+  // A URL manda (voltar/avançar do navegador, link compartilhado, "Editar perfil"). Sincroniza na
+  // própria renderização, não num efeito: o painel Conta já sai visível quando o "editar" dos filhos
+  // rola e põe o foco no apelido (efeitos de filhos rodam antes dos do pai).
+  const [urlAnterior, setUrlAnterior] = useState(abaUrl);
+  if (urlAnterior !== abaUrl) {
+    setUrlAnterior(abaUrl);
+    setAbaLocal(abaUrl);
+  }
   const aba = abas.includes(abaLocal) ? abaLocal : abaUrl;
   const botoes = useRef<Partial<Record<AbaPerfil, HTMLButtonElement | null>>>({});
   const escolher = (a: AbaPerfil, substituir: boolean) => {
@@ -59,14 +65,15 @@ export function TelaPerfil({ api, id, editar = false, aba: abaPedida, aoTrocarAb
       : null;
     if (!alvo) return;
     e.preventDefault();
-    // Ativação automática (os painéis já estão carregados); seta não empilha histórico.
-    escolher(alvo, true);
+    // Ativação automática (os painéis já estão carregados). Seta não empilha histórico, exceto ao sair
+    // da aba de abertura: assim o "voltar" ainda volta a ela em vez de sair do perfil.
+    escolher(alvo, aba !== abas[0]);
     botoes.current[alvo]?.focus();
   };
   const feitas = dados?.conquistas?.filter((c) => c.alcancada).length ?? 0;
   const total = dados?.conquistas?.length ?? 0;
   const painel = (a: AbaPerfil, filhos: ReactNode) => (
-    <div role="tabpanel" id={`painel-perfil-${a}`} aria-labelledby={`aba-perfil-${a}`} className="perfil-painel" hidden={aba !== a} tabIndex={0}>
+    <div role="tabpanel" id={`painel-perfil-${a}`} aria-labelledby={`aba-perfil-${a}`} className="perfil-painel" hidden={aba !== a} tabIndex={a === 'conta' ? undefined : 0}>
       {filhos}
     </div>
   );
