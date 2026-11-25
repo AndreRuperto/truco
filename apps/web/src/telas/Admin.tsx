@@ -1,6 +1,6 @@
-import type { DiaAdmin, LinhaAuditoria, MesaAdmin, PartidaAdmin, PedidoAdmin, UsuarioAdmin } from '@truco/api';
+import type { DiaAdmin, LinhaAuditoria, MesaAdmin, PaginaPartidasAdmin, PartidaAdmin, PedidoAdmin, UsuarioAdmin, VisaoPartidasAdmin } from '@truco/api';
 import { formatarReais } from '../logica/lojaItens';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Avatar } from '../componentes/Avatar';
 import { NOME_MODO, NOME_VARIANTE } from '../logica/conta';
 import { ABAS_ADMIN, type AbaAdmin, hrefDe } from '../logica/rotas';
@@ -517,18 +517,75 @@ function Mesas({ api }: { api: ApiAdmin }) {
 
 // ---------- partidas ----------
 
+const VISOES: { id: VisaoPartidasAdmin; nome: string; vazio: string }[] = [
+  { id: 'criadas', nome: 'Criadas por mim', vazio: 'Você ainda não abriu nenhuma mesa que virou partida.' },
+  { id: 'jogadas', nome: 'Que joguei', vazio: 'Você ainda não sentou em nenhuma partida registrada.' },
+  { id: 'todas', nome: 'Todas', vazio: 'Nenhuma partida registrada ainda.' },
+];
+
 function Partidas({ api }: { api: ApiAdmin }) {
-  const { dados, erro, carregando } = useCarregar(() => api.admin.partidas(), []);
+  const [visao, setVisao] = useState<VisaoPartidasAdmin>('todas');
+  const [pagina, setPagina] = useState<PaginaPartidasAdmin | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  // Cada pedido leva um número: a resposta de uma visão antiga (clique rápido) é descartada.
+  const pedido = useRef(0);
+
+  const carregar = (v: VisaoPartidasAdmin, antes?: number) => {
+    const n = ++pedido.current;
+    setCarregando(true);
+    setErro(null);
+    api.admin.partidas(v, antes).then(
+      (r) => {
+        if (n !== pedido.current) return;
+        setPagina((atual) => (antes !== undefined && atual ? { ...r, partidas: [...atual.partidas, ...r.partidas] } : r));
+        setCarregando(false);
+      },
+      (e: unknown) => {
+        if (n !== pedido.current) return;
+        setErro(e instanceof Error ? e.message : String(e));
+        setCarregando(false);
+      },
+    );
+  };
+  useEffect(() => {
+    setPagina(null);
+    carregar(visao);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visao]);
+
+  const atual = VISOES.find((v) => v.id === visao)!;
   return (
-    <section aria-label="Partidas recentes">
-      <Estado carregando={carregando} erro={erro} temDados={!!dados} />
-      {dados && dados.partidas.length === 0 && <p className="admin-vazio">Nenhuma partida registrada ainda.</p>}
-      {dados && dados.partidas.length > 0 && (
+    <section aria-label="Partidas">
+      <div className="admin-abas admin-visoes" role="group" aria-label="Quais partidas">
+        {VISOES.map((v) => (
+          <button key={v.id} type="button" aria-pressed={v.id === visao} onClick={() => setVisao(v.id)}>
+            {v.nome}
+            {pagina && <span className="admin-visao-conta"> ({pagina.contagens[v.id]})</span>}
+          </button>
+        ))}
+      </div>
+      {visao === 'criadas' && pagina && pagina.semCriador > 0 && (
+        <p className="admin-aviso">
+          {pagina.semCriador === 1 ? '1 partida não tem' : `${pagina.semCriador} partidas não têm`} criador registrado (as antigas, as ranqueadas e
+          as abertas por convidado): {pagina.semCriador === 1 ? 'ela aparece' : 'elas aparecem'} em Todas e, se você jogou, em Que joguei.
+        </p>
+      )}
+      <Estado carregando={carregando} erro={erro} temDados={!!pagina} />
+      {pagina && pagina.partidas.length === 0 && <p className="admin-vazio">{atual.vazio}</p>}
+      {pagina && pagina.partidas.length > 0 && (
         <ul className="admin-lista">
-          {dados.partidas.map((p) => (
+          {pagina.partidas.map((p) => (
             <CartaoPartida key={p.id} p={p} />
           ))}
         </ul>
+      )}
+      {pagina?.proximo != null && (
+        <div className="admin-mais">
+          <button type="button" className="admin-botao secundario" disabled={carregando} onClick={() => carregar(visao, pagina.proximo ?? undefined)}>
+            {carregando ? 'Carregando…' : 'Carregar mais'}
+          </button>
+        </div>
       )}
     </section>
   );

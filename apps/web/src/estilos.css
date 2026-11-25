@@ -5073,6 +5073,71 @@ body:has(.tela-mesa) {
   background: var(--grito);
   color: var(--tinta);
 }
+/* Visões da aba Partidas (criadas por mim · que joguei · todas): mesmo trilho das abas, com botões. */
+.admin-visoes {
+  margin-bottom: var(--e3);
+}
+.admin-visoes button {
+  flex: 1 0 auto;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--e3);
+  border: 0;
+  border-radius: calc(var(--raio-botao) - 4px);
+  background: transparent;
+  color: var(--giz-suave);
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.admin-visoes button:hover {
+  color: var(--giz);
+}
+.admin-visoes button[aria-pressed='true'] {
+  background: var(--grito);
+  color: var(--tinta);
+}
+.admin-visao-conta {
+  margin-left: 0.25em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+@media (max-width: 539px) {
+  /* Três visões lado a lado: o nome quebra em duas linhas e a contagem desce. */
+  .admin-visoes {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .admin-visoes button {
+    flex-direction: column;
+    min-height: 48px;
+    padding: var(--e1);
+    white-space: normal;
+    line-height: 1.15;
+    text-align: center;
+  }
+  .admin-visao-conta {
+    margin-left: 0;
+  }
+}
+.admin-aviso {
+  margin: 0 0 var(--e3);
+  padding: var(--e2) var(--e3);
+  border: 1px solid #3e4d45;
+  border-left: 3px solid var(--grito);
+  border-radius: 4px;
+  /* Lousa nos dois temas, como os cartões: o giz é o texto (o --texto-suave do claro some no escuro da lousa). */
+  background: var(--lousa);
+  color: var(--giz-suave);
+  font-size: var(--t-1);
+}
+.admin-mais {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--e3);
+}
 .admin-numeros {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
