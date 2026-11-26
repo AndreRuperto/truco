@@ -309,6 +309,8 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
   }
   function mostrarBalao(pos: Posicao, texto: string | null): void {
     const b = baloes[pos];
+    const quem = pos === 'baixo' ? undefined : personagens[pos];
+    if (quem) quem.falando = texto !== null;
     if (texto) {
       b.texto.textContent = texto;
       b.obj.visible = true;

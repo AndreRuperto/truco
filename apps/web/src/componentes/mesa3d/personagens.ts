@@ -2,12 +2,14 @@ import * as THREE from 'three';
 import { CH, type Baralho3D } from './cartas';
 import { mat, malha } from './sala';
 import type { Texturas } from './texturas';
+import { barba3d, BARBAS, penteado3d, zBoca, type Barba, type Penteado, type Sobrancelha } from './cabelos';
 
 const PI = Math.PI;
 const V = (x = 0, y = 0, z = 0): THREE.Vector3 => new THREE.Vector3(x, y, z);
 const clamp = THREE.MathUtils.clamp;
 
-export type Estilo = 'palha' | 'careca' | 'coque' | 'bone' | 'boina';
+/** Chapéu ou cabelo fixo; 'cabelo' = sem chapéu, com o `penteado` (cabelos.ts). */
+export type Estilo = 'palha' | 'careca' | 'coque' | 'bone' | 'boina' | 'cabelo';
 
 export interface Visual {
   estilo: Estilo;
@@ -18,6 +20,10 @@ export interface Visual {
   labios: string;
   barriga?: number;
   bone?: string;
+  /** Só com estilo 'cabelo'. */
+  penteado?: Penteado;
+  barba?: Barba;
+  sobrancelha?: Sobrancelha;
 }
 
 /** Os visuais base (os quatro do protótipo, o boné do Juninho e uma boina). */
@@ -27,7 +33,15 @@ const VISUAIS: Visual[] = [
   { estilo: 'coque', pele: '#7d5232', camisa: 'bolinhas', calca: '#2a2a3a', cabelo: '#16100c', labios: '#7a2a2a' },
   { estilo: 'bone', pele: '#8d5a3b', camisa: '#3f9b66', calca: '#2c3f5c', cabelo: '#1a120c', labios: '#5a2a20', bone: '#a3302a' },
   { estilo: 'boina', pele: '#c48d62', camisa: 'listras', calca: '#3a3530', cabelo: '#5a4030', labios: '#7a3a2a', bone: '#2c3f5c' },
+  // Sem chapéu, com os cabelos do Conversa de Boteco (cabelos.ts).
+  { estilo: 'cabelo', penteado: 'topete', pele: '#c48d62', camisa: '#b8202a', calca: '#2a2a3a', cabelo: '#2a1a10', labios: '#7a3a2a' },
+  { estilo: 'cabelo', penteado: 'blackpower', pele: '#6b4428', camisa: '#e9b02c', calca: '#2c3f5c', cabelo: '#120c08', labios: '#5a2a20' },
+  { estilo: 'cabelo', penteado: 'longo', pele: '#e3b596', camisa: '#2f6d6a', calca: '#3b3a35', cabelo: '#7a4a22', labios: '#9a5a4a' },
+  { estilo: 'cabelo', penteado: 'calvo', pele: '#a8764f', camisa: '#efeadf', calca: '#5b4636', cabelo: '#bdb6aa', labios: '#6b3a28', barriga: 1.1 },
+  { estilo: 'cabelo', penteado: 'cacheado', pele: '#8d5a3b', camisa: 'xadrez', calca: '#2a2a3a', cabelo: '#1a120c', labios: '#5a2a20' },
+  { estilo: 'cabelo', penteado: 'curto', pele: '#e3b596', camisa: '#1d4e89', calca: '#3a3530', cabelo: '#3a2618', labios: '#9a5a4a' },
 ];
+const SOBRANCELHAS: Sobrancelha[] = ['normal', 'grossa', 'fina'];
 const PELES = ['#e3b596', '#c48d62', '#a8764f', '#8d5a3b', '#6b4428'];
 
 function hash(s: string): number {
@@ -43,8 +57,11 @@ function hash(s: string): number {
 export function visualPorNome(nome: string): Visual {
   const h = hash(nome.trim().toLowerCase());
   const base = VISUAIS[h % VISUAIS.length];
-  const trocaPele = (h >>> 8) % 3 === 0;
-  return trocaPele ? { ...base, pele: PELES[(h >>> 12) % PELES.length] } : base;
+  const v: Visual = { ...base, sobrancelha: SOBRANCELHAS[(h >>> 20) % SOBRANCELHAS.length] };
+  if ((h >>> 8) % 3 === 0) v.pele = PELES[(h >>> 12) % PELES.length];
+  // Careca já tem bigode, a boina já tem barba e o coque fica sem: barba sorteada só para os outros.
+  if (base.estilo !== 'careca' && base.estilo !== 'boina' && base.estilo !== 'coque') v.barba = BARBAS[(h >>> 16) % BARBAS.length];
+  return v;
 }
 
 export interface Braco {
@@ -67,6 +84,9 @@ export interface Personagem {
   tronco: THREE.Group;
   cabeca: THREE.Group;
   olhos: THREE.Mesh[];
+  /** Mexe enquanto o balão de fala está aberto (`falando`). */
+  boca: THREE.Mesh;
+  falando: boolean;
   bracos: [Braco, Braco];
   leque: THREE.Group;
   cartas: CartaLeque[];
@@ -219,14 +239,17 @@ export function criarPersonagem(nome: string, v: Visual, tx: Texturas, empe = fa
     o.position.set(x, 0.1, 0.102);
     cabeca.add(branco, o);
     olhos.push(o, branco);
-    const s = new THREE.Mesh(new THREE.BoxGeometry(0.045, v.estilo === 'careca' ? 0.016 : 0.01, 0.012), mCabelo);
+    const grossa = v.estilo === 'careca' || v.sobrancelha === 'grossa';
+    const s = new THREE.Mesh(new THREE.BoxGeometry(v.sobrancelha === 'fina' ? 0.04 : 0.045, grossa ? 0.016 : v.sobrancelha === 'fina' ? 0.007 : 0.01, 0.012), mCabelo);
     s.position.set(x, 0.135, 0.1);
-    s.rotation.z = x > 0 ? -0.12 : 0.12;
+    s.rotation.z = (x > 0 ? -0.12 : 0.12) * (grossa ? 1.5 : 1);
     cabeca.add(s);
   }
   const boca = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.009, 0.01), M(v.labios));
-  boca.position.set(0, 0.025, 0.1);
+  boca.position.set(0, 0.025, zBoca(v.barba));
   cabeca.add(boca);
+  if (v.estilo === 'cabelo' && v.penteado) penteado3d(cabeca, v.penteado, v.cabelo, (c) => M(c));
+  if (v.barba) barba3d(cabeca, v.barba, v.cabelo, v.pele, (c) => M(c));
 
   if (v.estilo === 'palha') {
     const mPalha = M('#ffffff', { map: tx.palha, roughness: 0.9 });
@@ -310,7 +333,7 @@ export function criarPersonagem(nome: string, v: Visual, tx: Texturas, empe = fa
   for (const m of materiais) m.userData.cor = m.color.clone();
 
   return {
-    nome, raiz, tronco, cabeca, olhos, bracos, leque, cartas: [], materiais, empe,
+    nome, raiz, tronco, cabeca, olhos, boca, falando: false, bracos, leque, cartas: [], materiais, empe,
     fase: rnd() * 6, inclinar: 0, pesoA: 0, alvoA: V(), cartaNaMao: null,
     yaw: 0, pitch: 0.25, yawAlvo: 0, pitchAlvo: 0.25,
     proxOlhar: 1 + rnd() * 3, proxPiscar: 1 + rnd() * 3, piscando: 0,
@@ -416,6 +439,9 @@ export function viver(p: Personagem, dt: number, t: number, ocioso: boolean, ctx
   p.piscando = Math.max(0, p.piscando - dt);
   const fe = p.piscando > 0 || p.apagado ? 0.12 : 1;
   for (const o of p.olhos) o.scale.y = fe;
+  // Boca que fala (como no Conversa de Boteco): abre e fecha enquanto o balão está aberto.
+  // Com movimento reduzido (`ocioso` false) fica parada.
+  p.boca.scale.y = p.falando && ocioso && !p.apagado ? 1 + 2.4 * Math.abs(Math.sin(t * 11 + p.fase)) : 1;
 
   p.tronco.updateMatrixWorld(true);
   if (p.empe) return;
