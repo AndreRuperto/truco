@@ -23,12 +23,19 @@ describe('falas gravadas', () => {
 
   test('existe um .mp3 para cada voz × fala × jeito de dizer', () => {
     const publico = join(__dirname, '..', 'public');
+    // As vozes pessoais (voz clonada de conta) ficam fora do Git: só confere se a pasta delas estiver à mão.
+    const pessoais = process.env.VOZES_PESSOAIS_DIR;
     const faltando: string[] = [];
-    for (const tipo of [...VOZES.keys(), ...(Object.keys(VOZES_PESSOAIS) as (keyof typeof VOZES_PESSOAIS)[])])
+    const tipos = [
+      ...[...VOZES.keys()].map((t) => [t, publico] as const),
+      ...(pessoais ? (Object.keys(VOZES_PESSOAIS) as (keyof typeof VOZES_PESSOAIS)[]).map((t) => [t, pessoais] as const) : []),
+    ];
+    for (const [tipo, pasta] of tipos)
       for (const [id, f] of Object.entries(FALAS) as [IdFala, { ditos: readonly string[] }][])
         f.ditos.forEach((_, n) => {
           const url = arquivoDaFala(tipo, id, n);
-          if (!existsSync(join(publico, url))) faltando.push(url);
+          const arquivo = pasta === publico ? join(publico, url) : join(pasta, url.replace(/^\/vozes\//, ''));
+          if (!existsSync(arquivo)) faltando.push(url);
         });
     expect(faltando).toEqual([]);
   });

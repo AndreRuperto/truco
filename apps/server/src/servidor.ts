@@ -10,6 +10,8 @@ import type { Servicos } from './servicos';
 export interface ExtrasServidor {
   /** Pasta do build do web, servida na mesma origem (produção). */
   pastaWeb?: string | null;
+  /** Pasta das vozes pessoais, fora do Git (`VOZES_PESSOAIS_DIR`). */
+  pastaVozesPessoais?: string | null;
 }
 
 export function criarServidor(servicos: Servicos, extras: ExtrasServidor = {}) {
@@ -35,6 +37,7 @@ export function criarServidor(servicos: Servicos, extras: ExtrasServidor = {}) {
         contarSalas,
         versao: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
         pastaWeb: extras.pastaWeb ?? null,
+        pastaVozesPessoais: extras.pastaVozesPessoais ?? null,
         derrubarConta: (id) => {
           MesaRoom.derrubarConta(id);
           FilaRoom.derrubarConta(id);

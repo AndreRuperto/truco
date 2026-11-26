@@ -1,5 +1,6 @@
 /**
- * Contas com voz própria (clonada no ElevenLabs; os áudios ficam em web/public/vozes/<voz>-*.mp3).
+ * Contas com voz própria (clonada no ElevenLabs). Os áudios `<voz>-*.mp3` NÃO ficam no Git: em produção vêm
+ * do volume em VOZES_PESSOAIS_DIR (ver `pastaVozesPessoais` em http/app.ts), no mesmo endereço /vozes/.
  * Chave = apelido da conta, sem caixa. Só vale para quem está LOGADO nessa conta: convidado com
  * o mesmo nome não ganha a voz (o MesaRoom só consulta isto com `client.auth`).
  */

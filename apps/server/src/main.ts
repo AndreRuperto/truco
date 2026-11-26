@@ -35,7 +35,10 @@ const orfas = await encerrarOrfas(servicos.banco, servicos.agora());
 if (orfas > 0) log.aviso('partidas_orfas_fechadas', { quantidade: orfas });
 
 const pastaWeb = existsSync(join(PASTA_WEB, 'index.html')) ? PASTA_WEB : null;
-const servidor = criarServidor(servicos, { pastaWeb });
+// Vozes pessoais (voz clonada de conta) ficam fora do Git, num volume: VOZES_PESSOAIS_DIR.
+const dirVozes = process.env.VOZES_PESSOAIS_DIR;
+const pastaVozesPessoais = dirVozes && existsSync(dirVozes) ? dirVozes : null;
+const servidor = criarServidor(servicos, { pastaWeb, pastaVozesPessoais });
 // Sessões e links vencidos: no boot e a cada hora (timer com unref).
 const pararLimpeza = agendarLimpeza(() => limparExpirados(servicos.banco, servicos.agora()));
 // Redeploy/SIGTERM: antes de o Colyseus derrubar as conexões, nenhuma queda vira abandono.
