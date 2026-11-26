@@ -188,6 +188,8 @@ export interface JogadorPartidaAdmin {
 
 export interface PartidaAdmin {
   id: number;
+  /** Conta que abriu a mesa; null = ranqueada, convidado ou partida antiga (sem registro). */
+  criadorId: number | null;
   variante: Variante;
   modo: ModoMesa;
   ranqueada: boolean;
@@ -291,3 +293,16 @@ export interface ResultadoEstornoApi {
   faltou: number;
 }
 
+
+export const VISOES_PARTIDAS_ADMIN = ['criadas', 'jogadas', 'todas'] as const;
+export type VisaoPartidasAdmin = (typeof VISOES_PARTIDAS_ADMIN)[number];
+
+export interface PaginaPartidasAdmin {
+  partidas: PartidaAdmin[];
+  /** Cursor da próxima página (`antes=`); null = acabou. */
+  proximo: number | null;
+  /** Total de cada visão para o admin logado. */
+  contagens: Record<VisaoPartidasAdmin, number>;
+  /** Partidas sem criador registrado (antigas, ranqueadas ou abertas por convidado). */
+  semCriador: number;
+}

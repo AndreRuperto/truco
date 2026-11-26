@@ -32,6 +32,8 @@ const CADEIRAS: Cadeira[] = [0, 1, 2, 3];
 export class RegistroMesa {
   private partidaId: number | null = null;
   private readonly humanos = new Map<Cadeira, JogadorSala>();
+  /** Quem abriu a mesa: o primeiro a sentar (undefined = ninguém sentou ainda). Ranqueada é aberta pela fila. */
+  private criadorId: number | null | undefined;
   private readonly contadores: Contadores[] = CADEIRAS.map(contadoresZerados);
   /** Denúncias já feitas nesta sala, "de>alvo": uma por par, para não encher a auditoria. */
   private readonly denuncias = new Set<string>();
@@ -50,6 +52,7 @@ export class RegistroMesa {
   ) {}
 
   sentou(j: JogadorSala): void {
+    if (this.criadorId === undefined) this.criadorId = this.info.modo === 'ranqueada' ? null : j.usuarioId;
     this.humanos.set(j.cadeira, j);
   }
 
@@ -85,7 +88,7 @@ export class RegistroMesa {
         const j = this.humanos.get(c);
         return j ? { cadeira: c, usuarioId: j.usuarioId, nome: j.nome, humano: true } : { cadeira: c, usuarioId: null, nome: 'Bot', humano: false };
       });
-      const r = await iniciarPartidaComCacife(s.banco, { ...this.info, assentos }, s.agora());
+      const r = await iniciarPartidaComCacife(s.banco, { ...this.info, assentos, criadorId: this.criadorId ?? null }, s.agora());
       this.partidaId = r.id;
       this.aoCacife(r.cacife, r.pote);
     });

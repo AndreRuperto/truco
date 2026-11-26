@@ -29,6 +29,8 @@ export interface InicioPartida {
   assentos: AssentoRegistro[];
   /** Cacife pedido (Fichas); 0 ou ausente = sem cacife. */
   cacife?: number;
+  /** Conta que abriu a mesa; null/ausente = sem criador (ranqueada, convidado). */
+  criadorId?: number | null;
 }
 
 export interface PartidaIniciada {
@@ -101,7 +103,7 @@ export async function iniciarPartidaComCacife(db: Banco, i: InicioPartida, agora
     const ranqueada = i.modo === 'ranqueada';
     const [p] = await tx
       .insert(partidas)
-      .values({ variante: i.variante, modo: i.modo, formato: i.formato, ranqueada, iniciadaEm: agora })
+      .values({ variante: i.variante, modo: i.modo, formato: i.formato, ranqueada, criadorId: i.criadorId ?? null, iniciadaEm: agora })
       .returning({ id: partidas.id });
     const linhas = [];
     for (const a of i.assentos) {

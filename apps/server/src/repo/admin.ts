@@ -1,5 +1,5 @@
-import { and, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
-import type { DiaAdmin, PartidaAdmin, UsuarioAdmin } from '../api/tipos';
+import { and, desc, eq, ilike, inArray, isNull, lt, or, type SQL, sql } from 'drizzle-orm';
+import type { DiaAdmin, PartidaAdmin, UsuarioAdmin, VisaoPartidasAdmin } from '../api/tipos';
 import type { Banco } from '../banco/banco';
 import { participacoes, partidas, sessoes, usuarios } from '../banco/schema';
 
@@ -87,8 +87,42 @@ export async function desbanirUsuario(db: Banco, id: number): Promise<boolean> {
   return r.length > 0;
 }
 
-export async function partidasRecentesAdmin(db: Banco, limite = 50): Promise<PartidaAdmin[]> {
-  const ps = await db.select().from(partidas).orderBy(desc(partidas.iniciadaEm), desc(partidas.id)).limit(limite);
+// Nome qualificado à mão: dentro do sql`` o Drizzle escreve só "id", que a subconsulta leria como j.id.
+const existeParticipacao = (usuarioId: number) =>
+  sql`exists (select 1 from participacoes j where j.partida_id = partidas.id and j.usuario_id = ${usuarioId})`;
+
+function filtroVisao(visao: VisaoPartidasAdmin, adminId: number): SQL | undefined {
+  if (visao === 'criadas') return eq(partidas.criadorId, adminId);
+  if (visao === 'jogadas') return existeParticipacao(adminId);
+  return undefined;
+}
+
+/** Até `limite` partidas da visão, as mais novas primeiro (por id), antes do cursor `antes`. */
+export async function partidasAdmin(
+  db: Banco,
+  o: { visao: VisaoPartidasAdmin; adminId: number; antes?: number; limite: number },
+): Promise<{ partidas: PartidaAdmin[]; proximo: number | null }> {
+  const filtro = and(filtroVisao(o.visao, o.adminId), o.antes !== undefined ? lt(partidas.id, o.antes) : undefined);
+  // Um a mais só para saber se há próxima página.
+  const ps = await db.select().from(partidas).where(filtro).orderBy(desc(partidas.id)).limit(o.limite + 1);
+  const pagina = ps.slice(0, o.limite);
+  return { partidas: await comJogadores(db, pagina), proximo: ps.length > o.limite ? pagina[pagina.length - 1].id : null };
+}
+
+/** Totais das três visões para o admin e quantas partidas não têm criador registrado. */
+export async function contagensPartidasAdmin(db: Banco, adminId: number): Promise<{ contagens: Record<VisaoPartidasAdmin, number>; semCriador: number }> {
+  const [c] = await db
+    .select({
+      todas: sql<number>`count(*)::int`,
+      criadas: sql<number>`count(*) filter (where ${partidas.criadorId} = ${adminId})::int`,
+      jogadas: sql<number>`count(*) filter (where ${existeParticipacao(adminId)})::int`,
+      semCriador: sql<number>`count(*) filter (where ${partidas.criadorId} is null)::int`,
+    })
+    .from(partidas);
+  return { contagens: { criadas: c.criadas, jogadas: c.jogadas, todas: c.todas }, semCriador: c.semCriador };
+}
+
+async function comJogadores(db: Banco, ps: (typeof partidas.$inferSelect)[]): Promise<PartidaAdmin[]> {
   if (ps.length === 0) return [];
   const js = await db
     .select()
@@ -100,6 +134,7 @@ export async function partidasRecentesAdmin(db: Banco, limite = 50): Promise<Par
     .orderBy(participacoes.cadeira);
   return ps.map((p) => ({
     id: p.id,
+    criadorId: p.criadorId,
     variante: p.variante,
     modo: p.modo,
     ranqueada: p.ranqueada,

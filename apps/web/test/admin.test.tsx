@@ -1,4 +1,4 @@
-import type { UsuarioAdmin } from '@truco/api';
+import type { PartidaAdmin, UsuarioAdmin } from '@truco/api';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
@@ -32,7 +32,7 @@ function apiFalsa(extra: Partial<Record<string, unknown>> = {}) {
       banir: vi.fn(async () => undefined),
       desbanir: vi.fn(async () => undefined),
       mesas: vi.fn(async () => ({ mesas: [] })),
-      partidas: vi.fn(async () => ({ partidas: [] })),
+      partidas: vi.fn(async () => ({ partidas: [], proximo: null, contagens: { criadas: 0, jogadas: 0, todas: 0 }, semCriador: 0 })),
       ...extra,
     },
   } as any;
@@ -160,3 +160,71 @@ describe('admin da loja e auditoria (F4.7)', () => {
   });
 });
 
+
+describe('partidas: visões do admin', () => {
+  const partida = (id: number, nome: string): PartidaAdmin => ({
+    id,
+    criadorId: null,
+    variante: 'paulista',
+    modo: 'privada',
+    ranqueada: false,
+    placar: [12, 3],
+    vencedora: 0,
+    abandonada: false,
+    iniciadaEm: '2026-11-21T03:33:00Z',
+    terminadaEm: '2026-11-21T03:50:00Z',
+    jogadores: [{ nome, usuarioId: 1, humano: true, dupla: 0, abandonou: false }],
+  });
+  const contagens = { criadas: 0, jogadas: 2, todas: 3 };
+  const pagina = (partidas: PartidaAdmin[], proximo: number | null = null) => ({ partidas, proximo, contagens, semCriador: 2 });
+
+  test('troca de visão pede a visão certa, mostra a contagem e o vazio de cada uma', async () => {
+    const user = userEvent.setup();
+    const partidas = vi.fn(async (visao: string) =>
+      visao === 'criadas' ? pagina([]) : visao === 'jogadas' ? pagina([partida(9, 'joguei')]) : pagina([partida(10, 'de todos')]),
+    );
+    render(<TelaAdmin aba="partidas" api={apiFalsa({ partidas })} />);
+    const seletor = screen.getByRole('group', { name: 'Quais partidas' });
+    // Começa em "Todas".
+    expect(within(seletor).getByRole('button', { name: /^Todas/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByText('de todos')).toBeInTheDocument();
+    expect(partidas).toHaveBeenLastCalledWith('todas', undefined);
+    expect(within(seletor).getByRole('button', { name: 'Que joguei (2)' })).toBeInTheDocument();
+    expect(within(seletor).getByRole('button', { name: 'Todas (3)' })).toBeInTheDocument();
+
+    await user.click(within(seletor).getByRole('button', { name: /^Que joguei/ }));
+    expect(partidas).toHaveBeenLastCalledWith('jogadas', undefined);
+    expect(await screen.findByText('joguei')).toBeInTheDocument();
+    expect(screen.queryByText('de todos')).not.toBeInTheDocument();
+    expect(within(seletor).getByRole('button', { name: /^Que joguei/ })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(within(seletor).getByRole('button', { name: /^Criadas por mim/ }));
+    expect(partidas).toHaveBeenLastCalledWith('criadas', undefined);
+    expect(await screen.findByText('Você ainda não abriu nenhuma mesa que virou partida.')).toBeInTheDocument();
+    // As antigas não têm criador: a tela avisa onde elas estão.
+    expect(screen.getByText(/2 partidas não têm criador registrado/)).toBeInTheDocument();
+    expect(screen.queryByText('joguei')).not.toBeInTheDocument();
+  });
+
+  test('vazios de "Que joguei" e "Todas"', async () => {
+    const user = userEvent.setup();
+    const partidas = vi.fn(async () => ({ partidas: [], proximo: null, contagens: { criadas: 0, jogadas: 0, todas: 0 }, semCriador: 0 }));
+    render(<TelaAdmin aba="partidas" api={apiFalsa({ partidas })} />);
+    expect(await screen.findByText('Nenhuma partida registrada ainda.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Que joguei/ }));
+    expect(await screen.findByText('Você ainda não sentou em nenhuma partida registrada.')).toBeInTheDocument();
+    expect(screen.queryByText(/não têm criador registrado/)).not.toBeInTheDocument();
+  });
+
+  test('"Carregar mais" pede a página seguinte pelo cursor e junta na lista', async () => {
+    const user = userEvent.setup();
+    const partidas = vi.fn(async (_visao: string, antes?: number) => (antes === 10 ? pagina([partida(4, 'segunda')]) : pagina([partida(11, 'primeira'), partida(10, 'outra')], 10)));
+    render(<TelaAdmin aba="partidas" api={apiFalsa({ partidas })} />);
+    expect(await screen.findByText('primeira')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Carregar mais' }));
+    expect(partidas).toHaveBeenLastCalledWith('todas', 10);
+    expect(await screen.findByText('segunda')).toBeInTheDocument();
+    expect(screen.getByText('primeira')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Carregar mais' })).not.toBeInTheDocument();
+  });
+});

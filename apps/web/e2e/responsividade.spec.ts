@@ -112,6 +112,7 @@ test('telas com conta (perfil, histórico, fila, loja, admin) e sala de espera',
       await visitar(page, '/#/admin', 'admin', h1, problemas, t);
       await visitar(page, '/#/admin/pedidos', 'admin pedidos', h1, problemas, t);
       await visitar(page, '/#/admin/auditoria', 'admin auditoria', h1, problemas, t);
+      await visitar(page, '/#/admin/partidas', 'admin partidas', h1, problemas, t);
       await visitar(page, '/' + sala, 'sala de espera', () => expect(page.getByLabel('Link de convite')).toBeVisible({ timeout: 15_000 }), problemas, t);
     }
     expect(problemas, 'telas com conta').toEqual([]);
