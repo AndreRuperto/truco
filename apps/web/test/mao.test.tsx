@@ -39,6 +39,32 @@ describe('Mao', () => {
     expect(alternar).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('"Jogar coberta" é um botão curto: uma palavra visível, verso desenhado e o nome completo para leitor de tela', () => {
+    render(<Mao cartas={CARTAS.slice(0, 2)} jogaveis={[0, 1]} cobriveis={[0, 1]} variante="mineiro" vira={null} aoJogar={vi.fn()} />);
+    const alternar = screen.getByRole('button', { name: 'Jogar coberta' });
+    // Uma palavra só: no celular o texto em duas linhas ("Jogar / coberta") ficava solto ao lado da mão.
+    expect(alternar).toHaveTextContent(/^Coberta$/);
+    expect(alternar).toHaveAttribute('title', 'Jogar a próxima carta virada para baixo');
+    const verso = alternar.querySelector('.alternar-coberta-verso');
+    expect(verso).not.toBeNull();
+    expect(verso).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  test('modo coberta pelo teclado: Tab chega ao botão, espaço liga e Enter desliga', async () => {
+    const user = userEvent.setup();
+    render(<Mao cartas={CARTAS.slice(0, 2)} jogaveis={[0, 1]} cobriveis={[0, 1]} variante="mineiro" vira={null} aoJogar={vi.fn()} />);
+    const alternar = screen.getByRole('button', { name: 'Jogar coberta' });
+    await user.tab();
+    await user.tab();
+    await user.tab();
+    expect(alternar).toHaveFocus();
+    await user.keyboard(' ');
+    expect(alternar).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '4 de ouros (coberta)' })).toBeEnabled();
+    await user.keyboard('{Enter}');
+    expect(alternar).toHaveAttribute('aria-pressed', 'false');
+  });
+
   test('modo coberta desliga quando deixa de poder cobrir', async () => {
     const user = userEvent.setup();
     const props = { cartas: CARTAS, jogaveis: [0, 1, 2], variante: 'mineiro' as const, vira: null, aoJogar: vi.fn() };

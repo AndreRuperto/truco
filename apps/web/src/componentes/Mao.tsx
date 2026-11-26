@@ -110,8 +110,17 @@ export function Mao({ cartas, jogaveis, cobriveis, variante, vira, aoJogar, pilh
         })}
       </div>
       {podeCobrir && (
-        <button type="button" className="alternar-coberta" aria-pressed={cobrindo} onClick={() => setCobrir((x) => !x)}>
-          Jogar coberta
+        // Uma palavra visível ("Coberta") e um versinho de carta; o nome completo vai no aria-label.
+        <button
+          type="button"
+          className="alternar-coberta"
+          aria-label="Jogar coberta"
+          title="Jogar a próxima carta virada para baixo"
+          aria-pressed={cobrindo}
+          onClick={() => setCobrir((x) => !x)}
+        >
+          <span className="alternar-coberta-verso" aria-hidden="true" />
+          <span className="alternar-coberta-rotulo">Coberta</span>
         </button>
       )}
     </div>

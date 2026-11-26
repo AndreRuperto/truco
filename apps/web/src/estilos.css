@@ -2898,10 +2898,49 @@ body:has(.tela-mesa) {
   opacity: 1;
   cursor: default;
 }
+/* "Jogar coberta": botão curto de lousa com contorno de giz, um versinho de carta e uma palavra.
+   Fica ao lado da mão, centrado na altura das cartas; secundário ao "Truco!" (amarelo) do rodapé.
+   Ligado: vermelho de "eles", contorno tracejado (igual ao das cartas no modo coberta) e o
+   versinho tomba, para o estado não depender só da cor. */
+.alternar-coberta {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 58px;
+  min-height: 64px;
+  padding: 8px 10px;
+  border-color: color-mix(in srgb, var(--giz-suave) 70%, var(--lousa));
+  font-size: var(--t-1);
+  line-height: 1.1;
+  white-space: nowrap;
+  box-shadow:
+    0 2px 0 color-mix(in srgb, var(--sombra) 25%, transparent),
+    0 6px 12px color-mix(in srgb, var(--sombra) 35%, transparent);
+}
+.alternar-coberta-verso {
+  width: 20px;
+  height: 28px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(45deg, var(--verso-linha) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(-45deg, var(--verso-linha) 0 1px, transparent 1px 5px),
+    var(--verso);
+  box-shadow: 0 0 0 2px var(--papel);
+  transition: transform var(--dur) ease-out;
+}
 .alternar-coberta[aria-pressed='true'] {
   background: var(--eles-forte);
-  border-color: var(--eles-forte);
+  border-color: var(--branco);
+  border-style: dashed;
   color: var(--branco);
+}
+.alternar-coberta[aria-pressed='true']:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--eles-forte) 85%, var(--sombra));
+}
+.alternar-coberta[aria-pressed='true'] .alternar-coberta-verso {
+  transform: rotate(-12deg);
 }
 
 /* ---------- ações, cronômetro, social ---------- */
