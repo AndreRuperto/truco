@@ -45,6 +45,11 @@ export interface ExtrasApp {
   listarMesas?: () => Promise<MesaAdmin[]>;
   /** Pasta do build do web; ausente/null = não serve estáticos (dev usa o Vite). */
   pastaWeb?: string | null;
+  /**
+   * Pasta das vozes pessoais (`<voz>-*.mp3`, ex.: a voz clonada de uma conta), fora do Git. Em produção é
+   * um volume do Railway (`VOZES_PESSOAIS_DIR`). Servida em `/vozes`, antes do build do web.
+   */
+  pastaVozesPessoais?: string | null;
   limiteLinkIp?: LimiteTaxa;
   limiteLinkEmail?: LimiteTaxa;
   /** Por IP, em confirmar link e login com Google (padrão: 30 a cada 15 min). */
@@ -463,6 +468,13 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
     res.status(404).json({ erro: 'não encontrado' });
   });
   app.use('/api', api);
+
+  // Vozes pessoais: mesmo endereço das outras falas (/vozes/<voz>-<fala>-<n>.mp3), mas o arquivo vem de
+  // uma pasta fora do repositório. Só .mp3; o que não estiver lá segue para o build (ou 404).
+  if (x.pastaVozesPessoais) {
+    const vozes = express.static(x.pastaVozesPessoais, { index: false, maxAge: '7d', dotfiles: 'deny' });
+    app.use('/vozes', (req, res, next) => (/^\/[a-z0-9-]+\.mp3$/.test(req.path) ? vozes(req, res, next) : next()));
+  }
 
   if (x.pastaWeb) {
     const pasta = x.pastaWeb;
