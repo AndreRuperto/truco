@@ -15,6 +15,11 @@ export const PENTEADOS: Penteado[] = ['curto', 'topete', 'blackpower', 'cacheado
 export const BARBAS: Barba[] = ['nenhuma', 'bigode', 'bigodao', 'cavanhaque', 'cheia', 'rala'];
 
 const ESCALA = 0.478;
+/**
+ * Largura e profundidade encolhem mais que a altura: o crânio daqui é redondo e o bloco do Boteco,
+ * na escala da altura, ficava largo como um capacete (visto na mesa, de lado; capturas 2026-11-26).
+ */
+const ESCALA_XZ = 0.42;
 const CENTRO_Y = 0.08;
 /** Meia altura da cabeça no desenho original. */
 const H = 0.26;
@@ -22,9 +27,10 @@ const H = 0.26;
 type Mat = (cor: THREE.ColorRepresentation) => THREE.Material;
 
 function bloco(cab: THREE.Object3D, m: THREE.Material, w: number, h: number, d: number, x: number, y: number, z: number): THREE.Mesh {
-  const k = ESCALA;
-  const b = new THREE.Mesh(new THREE.BoxGeometry(w * k, h * k, d * k), m);
-  b.position.set(x * k, y * k + CENTRO_Y, z * k);
+  const k = ESCALA, kx = ESCALA_XZ;
+  const b = new THREE.Mesh(new THREE.BoxGeometry(w * kx, h * k, d * kx), m);
+  // a frente (franja, bigode, barba) fica onde a cara está: z na escala da altura
+  b.position.set(x * kx, y * k + CENTRO_Y, z > 0.15 ? z * k : z * kx);
   b.castShadow = true;
   b.receiveShadow = true;
   cab.add(b);
@@ -38,8 +44,9 @@ export function penteado3d(cab: THREE.Object3D, estilo: Penteado, cor: string, M
   const c = M(cor);
   const p = (w: number, h: number, d: number, x: number, y: number, z: number): THREE.Mesh => bloco(cab, c, w, h, d, x, y, z);
   if (estilo === 'calvo') {
-    for (const k of [-1, 1]) p(0.06, 0.26, 0.38, k * 0.245, H - 0.17, -0.04);
-    p(0.5, 0.3, 0.1, 0, H - 0.2, -0.225);
+    // o crânio daqui é redondo: lados mais perto da cabeça que no Boteco (lá a cabeça é um bloco)
+    for (const k of [-1, 1]) p(0.05, 0.22, 0.32, k * 0.215, H - 0.19, -0.06);
+    p(0.42, 0.28, 0.1, 0, H - 0.21, -0.2);
     return;
   }
   if (estilo === 'topete') {
@@ -66,9 +73,9 @@ export function penteado3d(cab: THREE.Object3D, estilo: Penteado, cor: string, M
     // cachos: icosaedros de detalhe 0 em volta do topo (posições fixas, sem sorteio)
     for (let i = 0; i < 12; i++) {
       const a = (i / 12) * Math.PI * 2, r = 0.18 + (((i * 37) % 7) / 7) * 0.06;
-      const raio = (0.1 + (((i * 13) % 5) / 5) * 0.04) * ESCALA;
+      const raio = (0.1 + (((i * 13) % 5) / 5) * 0.04) * ESCALA_XZ;
       const b = new THREE.Mesh(new THREE.IcosahedronGeometry(raio, 0), c);
-      b.position.set(Math.cos(a) * r * ESCALA, (H + 0.04 + (((i * 29) % 6) / 6) * 0.06) * ESCALA + CENTRO_Y, (Math.sin(a) * r - 0.03) * ESCALA);
+      b.position.set(Math.cos(a) * r * ESCALA_XZ, (H + 0.04 + (((i * 29) % 6) / 6) * 0.06) * ESCALA + CENTRO_Y, (Math.sin(a) * r - 0.03) * ESCALA_XZ);
       b.castShadow = true;
       cab.add(b);
     }
@@ -110,9 +117,9 @@ export function barba3d(cab: THREE.Object3D, estilo: Barba, cor: string, pele: s
     return;
   }
   if (estilo === 'cavanhaque') { p(0.2, 0.05, 0.04, 0, -0.08, 0.24); p(0.16, 0.14, 0.1, 0, -H + 0.06, 0.2); return; }
-  // cheia
-  p(0.49, 0.24, 0.32, 0, -H + 0.08, 0.1);
-  for (const s of [-1, 1]) p(0.04, 0.3, 0.28, s * 0.24, -H + 0.18, -0.01);
+  // cheia (mais estreita que no Boteco: o queixo daqui é redondo)
+  p(0.4, 0.22, 0.28, 0, -H + 0.09, 0.1);
+  for (const s of [-1, 1]) p(0.04, 0.26, 0.24, s * 0.2, -H + 0.18, 0.0);
   p(0.22, 0.05, 0.04, 0, -0.08, 0.245);
 }
 

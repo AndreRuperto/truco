@@ -82,3 +82,25 @@ Corrigido para sombra 256 em vez de nenhuma.
 - Contexto perdido: testado com o componente simulado; a perda real de GPU NAO_EXECUTADO.
 - Revisão independente por outra pessoa: NAO_EXECUTADO (a revisão aqui é do mesmo modelo).
 - Rota C (quadro "quem trucou" no grito) fica como próximo passo possível.
+
+## Bonecos: cabeça do Conversa de Boteco (2026-11-26, segundo commit)
+
+Pedido do André depois da comparação: manter o corpo, os braços (IK), o leque e a roupa da loja do Truco e trazer
+do Boteco só a cabeça.
+
+- `cabelos.ts` (novo): 8 penteados (curto, topete, black power, cacheado, médio, longo, calvo, raspado) e 6 barbas
+  (nenhuma, bigode, bigodão, cavanhaque, cheia, rala), convertidos do `web/cena/boneco.ts` do Boteco. Blocos chapados.
+- `personagens.ts`: 6 visuais novos sem chapéu (de 5 para 11); barba e sobrancelha (normal, grossa, fina) sorteadas
+  pelo nome; careca, boina e coque sem barba sorteada; boca abre e fecha enquanto o balão está aberto, parada com
+  movimento reduzido. Alguns bots ficam com outra cara (o sorteio agora vai de 11, não de 5).
+- `test/mesa3d-bonecos.test.ts` (novo): mesmo nome dá o mesmo visual, ≥ 7 cabeças diferentes em 20 nomes, peças
+  presas à cabeça, boca à frente da barba cheia, boca que fala e parada com movimento reduzido.
+
+**O que só apareceu renderizado:** na primeira versão o cabelo, na escala da altura da cabeça do Boteco, ficava largo
+como um capacete na cabeça redonda do Truco, e a barba cheia parecia uma máscara. Largura e profundidade passaram a
+encolher mais (0,42) que a altura (0,478), e a barba cheia e o calvo ficaram mais estreitos.
+Captura: `capturas/mesa-3d-enquadramento/bonecos-antes-depois.jpg` (os bots são sorteados a cada partida, então as
+pessoas da mesa mudam entre as duas capturas).
+
+FPS com os cabelos novos, mesma medição: 320×568 26,9 · 360×640 35,3 · 390×844 29,0 · 430×932 24,8 · 1280×800 13,8
+(sem queda em relação ao primeiro commit).
