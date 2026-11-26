@@ -8,7 +8,7 @@ import { agirNoRitual } from './apoio';
  * Só registra screenshots; não reprova. As asserções ficam em qa-visual-mesa.spec.ts.
  * Rodar sob demanda:
  *   TRUCO_CAPTURAS=antes pnpm exec playwright test e2e/capturas-coberta.spec.ts
- * Saída: docs/qa-frontend/capturas/jogar-coberta/<TRUCO_CAPTURAS>-<viewport>-<vista>-<n>cartas.png
+ * Saída: docs/qa-frontend/capturas/jogar-coberta/<TRUCO_CAPTURAS>-<viewport>-<vista>-<n>cartas.jpg
  */
 const FASE = process.env.TRUCO_CAPTURAS ?? '';
 test.skip(!FASE, 'capturas sob demanda (TRUCO_CAPTURAS=antes|depois)');
@@ -71,23 +71,23 @@ for (const [largura, altura, toque] of TAMANHOS) {
         await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
         await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
         if (vista === '3d') await page.waitForTimeout(2_000);
-        const nome = (n: number) => join(SAIDA, `${FASE}-${largura}x${altura}-${vista}-${n}cartas.png`);
+        const nome = (n: number) => join(SAIDA, `${FASE}-${largura}x${altura}-${vista}-${n}cartas.jpg`);
         if (vista === 'personagens') {
           await ateMao(page, 3);
-          await page.screenshot({ path: nome(3) });
+          await page.screenshot({ path: nome(3), type: 'jpeg', quality: 82 });
         }
         await ateMao(page, 2);
-        await page.screenshot({ path: nome(2) });
+        await page.screenshot({ path: nome(2), type: 'jpeg', quality: 82 });
         if (vista === 'personagens') {
           // Ligado: mostra o estado pressionado.
           await page.getByRole('button', { name: 'Jogar coberta' }).click();
           await page.waitForTimeout(250);
-          await page.screenshot({ path: join(SAIDA, `${FASE}-${largura}x${altura}-${vista}-2cartas-ligado.png`) });
+          await page.screenshot({ path: join(SAIDA, `${FASE}-${largura}x${altura}-${vista}-2cartas-ligado.jpg`), type: 'jpeg', quality: 82 });
           await page.getByRole('button', { name: 'Jogar coberta' }).click();
         }
         await ateMao(page, 1).catch(() => {});
         if ((await page.getByTestId('minha-mao').locator('button.carta-botao:enabled').count()) === 1) {
-          await page.screenshot({ path: nome(1) });
+          await page.screenshot({ path: nome(1), type: 'jpeg', quality: 82 });
         }
       } finally {
         await page.context().close();

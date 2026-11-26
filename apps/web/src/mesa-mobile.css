@@ -297,8 +297,10 @@
     grid-template-columns: minmax(0, auto) auto;
     justify-content: center;
     align-items: center;
-    /* A última carta do leque gira 6°: folga para o canto dela não encostar no botão. */
-    column-gap: 12px;
+    /* A última carta do leque gira 6° a partir da base: o canto de cima avança ~0,18 da
+       largura da carta além da coluna (14px com carta de 76px, medido). A folga acompanha
+       a carta e deixa ~9px livres até "Jogar coberta". */
+    column-gap: calc(var(--carta-l) * 0.2 + 8px);
   }
   .tela-mesa .minha-mao > .dica-pilha { grid-column: 1 / -1; }
   /* Botão curto ("Coberta" numa linha, sem a caixa de 76px com texto em duas linhas). */
