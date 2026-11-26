@@ -297,16 +297,15 @@
     grid-template-columns: minmax(0, auto) auto;
     justify-content: center;
     align-items: center;
-    column-gap: 6px;
+    /* A última carta do leque gira 6°: folga para o canto dela não encostar no botão. */
+    column-gap: 12px;
   }
   .tela-mesa .minha-mao > .dica-pilha { grid-column: 1 / -1; }
+  /* Botão curto ("Coberta" numa linha, sem a caixa de 76px com texto em duas linhas). */
   .tela-mesa .minha-mao > .alternar-coberta {
-    width: 76px;
-    min-height: 44px;
-    padding: 6px 7px;
-    font-size: .8rem;
-    line-height: 1.15;
-    white-space: normal;
+    min-width: 56px;
+    min-height: 60px;
+    padding: 7px 8px;
   }
   .tela-mesa .minha-mao .cartas {
     max-width: 100%;

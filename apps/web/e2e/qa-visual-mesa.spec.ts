@@ -740,3 +740,63 @@ for (const [largura, altura] of [[1440, 900], [1280, 800], [1024, 768]] as const
     }
   });
 }
+
+/**
+ * Print do André (2026-11-26, celular ~430px no navegador do Instagram): "Jogar coberta" aparecia
+ * como texto em duas linhas numa caixa escura encostada na 2ª carta, solto e sem hierarquia.
+ * Agora é um botão curto ("Coberta" + versinho de carta) ao lado da mão, centrado na altura das
+ * cartas e afastado da última, com alvo de toque de pelo menos 44px.
+ */
+for (const [largura, altura] of [[320, 568], [360, 640], [360, 740], [390, 844], [430, 932]] as const) {
+  test('celular: "Jogar coberta" alinhado à mão, numa linha - ' + largura + 'x' + altura, async ({ page }, testInfo) => {
+    test.setTimeout(150_000);
+    await page.setViewportSize({ width: largura, height: altura });
+    await page.goto('/');
+    await page.getByLabel('Apelido').fill('QA Coberta');
+    await page.getByRole('button', { name: 'Jogar agora', exact: true }).click();
+    await expect(page.locator('.tela-mesa')).toBeVisible({ timeout: 15_000 });
+    const coberta = page.getByRole('button', { name: 'Jogar coberta' });
+    const jogavel = page.getByTestId('minha-mao').locator('button.carta-botao:enabled');
+    const deNovo = page.getByRole('button', { name: 'Jogar de novo' });
+    // "Jogar coberta" só vale da 2ª vaza em diante.
+    await expect(async () => {
+      if (await deNovo.isVisible()) await deNovo.click({ timeout: 1_000 }).catch(() => {});
+      await agirNoRitual(page).catch(() => false);
+      if (!(await coberta.isVisible()) && (await jogavel.count()) > 0) await jogavel.first().click({ timeout: 1_000 }).catch(() => {});
+      await expect(coberta).toBeVisible({ timeout: 300 });
+    }).toPass({ timeout: 120_000, intervals: [300] });
+    await expect(page.locator('.tela-mesa[data-dando~="baixo"]')).toHaveCount(0, { timeout: 10_000 });
+    await expect.poll(() => page.evaluate(() => Array.from(
+      document.querySelectorAll('[data-testid="minha-mao"] .carta-botao .carta'),
+    ).every((c) => c.getAnimations().length === 0))).toBe(true);
+    const g = await page.evaluate(() => {
+      const el = document.querySelector('[data-testid="minha-mao"] .alternar-coberta')!;
+      const botao = el.getBoundingClientRect();
+      const rotulo = el.querySelector('.alternar-coberta-rotulo');
+      const linhaRotulo = rotulo ? parseFloat(getComputedStyle(rotulo).lineHeight) : NaN;
+      const cartas = Array.from(document.querySelectorAll('[data-testid="minha-mao"] .carta-botao .carta')).map((c) => c.getBoundingClientRect());
+      const topo = Math.min(...cartas.map((r) => r.top));
+      const base = Math.max(...cartas.map((r) => r.bottom));
+      return {
+        folga: botao.left - Math.max(...cartas.map((r) => r.right)),
+        desvioCentro: Math.abs((botao.top + botao.bottom) / 2 - (topo + base) / 2),
+        largura: botao.width,
+        altura: botao.height,
+        direita: botao.right,
+        alturaRotulo: rotulo ? rotulo.getBoundingClientRect().height : NaN,
+        linhaRotulo,
+        sobraX: document.documentElement.scrollWidth - innerWidth,
+      };
+    });
+    const foto = testInfo.outputPath('coberta-celular-' + largura + 'x' + altura + '.png');
+    await page.screenshot({ path: foto });
+    await testInfo.attach('coberta-celular', { path: foto, contentType: 'image/png' });
+    expect(g.folga, 'folga entre a última carta e "Jogar coberta" (px)').toBeGreaterThanOrEqual(8);
+    expect(g.desvioCentro, '"Jogar coberta" fora do centro vertical das cartas (px)').toBeLessThanOrEqual(6);
+    expect(g.largura, 'alvo de toque estreito').toBeGreaterThanOrEqual(44);
+    expect(g.altura, 'alvo de toque baixo').toBeGreaterThanOrEqual(44);
+    expect(g.alturaRotulo, 'rótulo quebrou em mais de uma linha').toBeLessThanOrEqual(g.linhaRotulo * 1.2);
+    expect(g.direita, '"Jogar coberta" saiu da tela').toBeLessThanOrEqual(largura);
+    expect(g.sobraX, 'rolagem horizontal').toBeLessThanOrEqual(0);
+  });
+}
