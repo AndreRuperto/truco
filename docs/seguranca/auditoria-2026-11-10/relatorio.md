@@ -58,5 +58,5 @@ O indicador vale só para o catálogo da skill e **não** mede conformidade com 
 ## Corrigir primeiro (o que sobra)
 
 1. ~~Decidir a regra contra conluio na ranqueada (SEC-03).~~ Decidida (D1) e aplicada em 2026-11-13.
-2. **Conferir no Railway:** `RESEND_API_KEY` definida (senão o login por e-mail para de funcionar com SEC-02); `NODE_ENV=production`; `ADMIN_EMAILS` só com e-mails seus.
-3. **Depois do deploy:** testar o login com Google sob a CSP e conferir os cabeçalhos (`curl -I https://<site>/`).
+2. ~~Conferir as variáveis do serviço no Railway.~~ Conferido em 2026-11-26: `RESEND_API_KEY` e `ADMIN_EMAILS` definidas e o servidor em modo de produção.
+3. ~~Conferir os cabeçalhos depois do deploy.~~ Conferido em 2026-11-26: CSP, `X-Frame-Options: DENY` e HSTS presentes.
