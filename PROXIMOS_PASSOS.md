@@ -140,6 +140,7 @@ A branch sai de `claude/seguranca` (inclui os commits de segurança ainda sem me
 - [ ] **Antes de `LOJA_PAGAMENTO=on`:** advogado (modelo, Fichas na ranqueada, termos da loja em `TermosLoja`, ECA Digital e caixas para menores), confirmação **por escrito** da InfinitePay sobre vender moeda virtual de jogo, contador (nota e tributos), teste real com R$ 4,90 e estorno.
 - [ ] Painel de admin: aba de pedidos e ajuste de saldo na interface (hoje só pela API: `GET /api/admin/pedidos`, `POST /api/admin/usuarios/:id/ajuste`).
 - [ ] Vista 3D: verso e roupa equipados ainda não aparecem no 3D (só no 2D personagens/cadeiras).
+- [ ] Compra de Pila com dinheiro FECHADA (2026-11-25): para reabrir, `COMPRA_PILA_ABERTA = true` em `apps/server/src/loja/compraPila.ts` e em `apps/web/src/logica/rotas.ts`. Enquanto isso, itens de Pila só com Pila de ajuste do admin.
 - [ ] Estorno vindo do webhook (`refunded`) ainda não desconta o Pila sozinho: hoje é pelo ajuste de admin.
 - [ ] QA visual independente (outro agente ou pessoa) da loja e da mesa com cacife, como pede o `AGENTS.md`.
 

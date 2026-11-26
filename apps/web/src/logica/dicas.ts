@@ -60,10 +60,8 @@ export function dicaAgora(msg: MsgEstado, ui: AcoesUI, vistas: readonly IdDica[]
     ui.empilhaveis.length > 0
       ? {
           id: 'cangada',
-          texto:
-            v.regras.variante === 'mineiro'
-              ? 'Cangou (a 1ª rodada empatou)! Toque na carta que vai por cima: ela fica à mostra e não vale. Quem decide é a de baixo, aberta uma por vez.'
-              : 'Cangou (a 1ª rodada empatou)! Toque na carta que vai por cima: ela decide a 2ª. A de baixo só abre se cangar de novo.',
+          // Só o mineiro empilha; no paulista a 2ª rodada é jogada normal.
+          texto: 'Cangou (a 1ª rodada empatou)! Toque na carta que vai por cima: ela fica à mostra e não vale. Quem decide é a de baixo, aberta uma por vez.',
         }
       : null,
     msg.janelaFamilia && !msg.janelaFamilia.decidiram.includes(msg.minhaCadeira)

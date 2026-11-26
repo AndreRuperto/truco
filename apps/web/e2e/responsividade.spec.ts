@@ -104,6 +104,8 @@ test('telas com conta (perfil, histórico, fila, loja, admin) e sala de espera',
       const t = `${w}x${h}`;
       const h1 = () => expect(page.locator('main h1, main h2').first()).toBeVisible({ timeout: 15_000 });
       await visitar(page, '/#/perfil', 'perfil', h1, problemas, t);
+      await visitar(page, '/#/perfil?aba=pontos', 'perfil pontos', h1, problemas, t);
+      await visitar(page, '/#/perfil?aba=conquistas', 'perfil conquistas', h1, problemas, t);
       await visitar(page, '/#/historico', 'histórico', h1, problemas, t);
       await visitar(page, '/#/fila', 'fila', h1, problemas, t);
       await visitar(page, '/#/loja', 'loja', h1, problemas, t);

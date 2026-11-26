@@ -55,7 +55,7 @@ test('link mágico, fila 1x1 com dois jogadores e abandono que custa Elo e bloqu
     await expect
       .poll(async () => (await (await ana.request.get(`${WEB}/api/perfil`)).json()).variantes.paulista.elo, { timeout: 10_000 })
       .toBe(984);
-    await ana.goto('/#/perfil');
+    await ana.goto('/#/perfil?aba=pontos');
     await expect(ana.getByTestId('elo-paulista')).toHaveText('984');
     await expect(ana.getByTestId('pontos-paulista')).toHaveText('0');
 

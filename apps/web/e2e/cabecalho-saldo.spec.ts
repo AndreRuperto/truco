@@ -70,7 +70,13 @@ for (const scheme of ['light', 'dark'] as const) {
         await page.locator('.cabecalho').screenshot({ path: `test-results/cabecalho-saldo-${t.width}x${t.height}-${scheme}.png` });
       }
       await page.setViewportSize({ width: 390, height: 844 });
-      await page.goto('/#/loja');
+      // O saldo leva à Loja normal (itens), nunca à compra de Pila com dinheiro, que está fechada.
+      await page.goto('/#/');
+      await expect(page.getByTestId('cabecalho-saldo')).toHaveAttribute('href', '#/loja');
+      await expect(page.locator('a[href="#/loja/pila"]')).toHaveCount(0);
+      await page.getByTestId('cabecalho-saldo').click();
+      await expect(page.getByRole('heading', { level: 2, name: 'Baralho' })).toBeVisible();
+      await expect(page.getByText(/Comprar Pila|Pacotes de Pila/)).toHaveCount(0);
       await expect(page.locator('.loja-saldos svg.moeda-pila')).toBeVisible();
       await page.locator('.loja-saldos').screenshot({ path: `test-results/loja-saldos-${scheme}.png` });
     } finally {

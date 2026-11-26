@@ -220,7 +220,8 @@ export function opcoesDeEntrada(f: FormLobby): OpcoesEntrada {
     pontuacao: f.pontuacao,
     maoDe10: f.maoDe10,
     maoDe11: f.maoDe11,
-    familia: f.familia,
+    // Família e mão limpa só existem no mineiro (o servidor também garante).
+    familia: f.variante === 'mineiro' ? f.familia : 'off',
     maoLimpa: f.variante === 'mineiro' && f.maoLimpa,
   };
   const chance = Math.min(1, Math.max(0, f.chanceInterceptarSinal));
@@ -287,12 +288,13 @@ export function gravarApelido(nome: string): void {
 }
 
 /**
- * A mesa do tutorial: paulista como vem (com mão de 11 e de ferro), família fechada, sozinho contra
- * bots fáceis, sem relógio e sem sinais. O treinador explica cada situação na hora em que aparece.
+ * A mesa do tutorial: mineiro como vem (o padrão da casa, com mão de 10 e de ferro), família fechada
+ * (família só existe no mineiro), sozinho contra bots fáceis, sem relógio e sem sinais. O treinador
+ * explica cada situação na hora em que aparece.
  */
 export function opcoesTutorial(nome: string): OpcoesEntrada {
   const f: FormLobby = {
-    ...formPadrao('paulista', nome),
+    ...formPadrao('mineiro', nome),
     humanos: 1,
     nivelBot: 'facil',
     familia: 'fechada',

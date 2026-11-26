@@ -1978,43 +1978,86 @@ body:has(.tela-mesa) {
     width: min(360px, 28vw);
   }
 }
-/* Convite da 1ª visita no lobby: lousa com borda de giz, acima do formulário. */
-.convite-tutorial {
-  position: relative;
-  z-index: 1;
-  width: min(440px, 100%);
-  margin: 0 auto var(--e4);
+/* Tour da 1ª visita no lobby: escurece a tela, recorta o elemento do passo com borda de giz
+   amarelo e explica num balão de lousa ao lado. O último passo é o convite do tutorial. */
+.tour-tampa {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+.tour-destaque {
+  position: fixed;
+  z-index: 71;
+  border: 3px solid var(--grito);
+  border-radius: var(--raio-botao);
+  box-shadow: 0 0 0 200vmax color-mix(in srgb, var(--sombra) 78%, transparent);
+  pointer-events: none;
+  transition:
+    top var(--dur) ease,
+    left var(--dur) ease,
+    width var(--dur) ease,
+    height var(--dur) ease;
+}
+.tour-balao {
+  position: fixed;
+  z-index: 72;
+  box-sizing: border-box;
   padding: var(--e4);
   border: 3px solid var(--grito);
   border-radius: var(--raio-painel);
   background: var(--lousa);
   color: var(--giz);
   box-shadow: var(--sombra-tampo);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
-.convite-tutorial h2 {
+.tour-contagem {
+  margin: 0 0 var(--e1);
+  font-size: var(--t-1);
+  color: var(--giz-suave);
+}
+.tour-balao h2 {
   margin: 0 0 var(--e1);
   font-family: var(--fonte-giz);
   font-size: var(--t3);
   line-height: 1.05;
   color: var(--grito);
 }
-.convite-tutorial p {
+.tour-balao p:not(.tour-contagem) {
   margin: 0 0 var(--e3);
   line-height: 1.4;
 }
-.convite-tutorial-botoes {
+.tour-botoes {
   display: flex;
   flex-wrap: wrap;
   gap: var(--e2);
   align-items: center;
 }
-.convite-tutorial .botao-principal {
-  flex: 1 1 180px;
+.tour-botoes .botao-principal {
+  flex: 1 1 160px;
 }
-.convite-tutorial .botao-discreto {
+.tour-botoes .botao-discreto {
   border-color: transparent;
   background: transparent;
   color: var(--giz-suave);
+}
+/* Telas baixas: balão mais enxuto para caber junto do destaque. */
+@media (max-height: 700px) {
+  .tour-balao {
+    padding: var(--e3);
+  }
+  .tour-balao h2 {
+    font-size: var(--t2);
+  }
+  .tour-balao p:not(.tour-contagem) {
+    margin-bottom: var(--e2);
+    line-height: 1.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-destaque {
+    transition: none;
+  }
 }
 .dica-mesa-botoes {
   display: flex;
@@ -2025,6 +2068,59 @@ body:has(.tela-mesa) {
   border-color: transparent;
   background: transparent;
   color: var(--giz-suave);
+}
+
+/* Abas do perfil (Conta, Pontos, Conquistas): régua de madeira, a escolhida em madeira cheia. */
+.perfil-abas {
+  /* Cada aba parte da largura do próprio rótulo ("Conquistas" é o mais largo) e divide a sobra. */
+  display: flex;
+  gap: var(--e2);
+  margin: var(--e4) 0;
+}
+.perfil-abas [role='tab'] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 48px;
+  margin: 0;
+  padding: var(--e1) var(--e2);
+  border: 2px solid var(--madeira-funda);
+  border-radius: var(--raio-botao);
+  background: color-mix(in srgb, var(--madeira) 25%, transparent);
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.15;
+  cursor: pointer;
+  transition: background var(--dur), color var(--dur);
+}
+.perfil-abas [role='tab'][aria-selected='true'] {
+  background: var(--madeira);
+  color: var(--papel);
+  box-shadow: inset 0 -3px 0 var(--grito);
+}
+.perfil-abas [role='tab']:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+.perfil-aba-resumo {
+  font-size: var(--t-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.perfil-painel[hidden] {
+  display: none;
+}
+.perfil-painel:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 4px;
+  border-radius: var(--raio-painel);
+}
+.perfil-painel > :first-child {
+  margin-top: 0;
 }
 
 /* Conquistas do perfil: medalhas de giz na lousa. */

@@ -1,4 +1,5 @@
 import { devices, expect, test } from '@playwright/test';
+import { SEM_VISITA } from './apoio';
 
 // Tutorial (pedido do André, 2026-11-20): na 1ª visita o lobby oferece uma partida guiada; o
 // treinador explica o passo do momento e "Pular tutorial" fica sempre na tela.
@@ -10,13 +11,16 @@ for (const [nomeTela, uso] of [
 ] as const) {
   test(`tutorial: 1ª visita, passos guiados e pular quando quiser - ${nomeTela}`, async ({ browser }, testInfo) => {
     test.setTimeout(120_000);
-    const ctx = await browser.newContext({ ...uso, baseURL: test.info().project.use.baseURL });
+    const ctx = await browser.newContext({ ...uso, baseURL: test.info().project.use.baseURL, storageState: SEM_VISITA });
     const page = await ctx.newPage();
     try {
       await page.goto('/');
-      const convite = page.getByRole('region', { name: 'Primeira vez por aqui?' });
+      // O convite é o último passo do tour da 1ª visita (tour.spec.ts).
+      const tour = page.getByRole('dialog');
+      await expect(tour).toBeVisible();
+      while (await tour.getByRole('button', { name: 'Próximo' }).isVisible()) await tour.getByRole('button', { name: 'Próximo' }).click();
+      const convite = page.getByRole('dialog', { name: 'Primeira vez por aqui?' });
       await expect(convite).toBeVisible();
-      await page.getByLabel('Apelido').fill('QA Tutorial');
       await convite.getByRole('button', { name: 'Começar tutorial' }).click();
 
       const treinador = page.getByRole('complementary', { name: 'Tutorial' });
@@ -51,7 +55,8 @@ for (const [nomeTela, uso] of [
         els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }),
       );
       for (const r of cartas) expect(cruza(r), 'o treinador cobre uma carta da mão').toBe(false);
-      const vira = await page.locator('.vira').first().boundingBox();
+      // O tutorial é no mineiro, sem vira; se um dia tiver, o treinador também não a cobre.
+      const vira = (await page.locator('.vira').count()) > 0 ? await page.locator('.vira').first().boundingBox() : null;
       if (vira) expect(cruza(vira), 'o treinador cobre a vira').toBe(false);
 
       // Recolher: vira uma etiqueta pequena, que também não cobre a mão nem a vira.

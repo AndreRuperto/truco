@@ -52,4 +52,19 @@ describe('regras da mesa em grupos', () => {
     await user.selectOptions(screen.getByLabelText('Humanos'), '4');
     expect(screen.queryByLabelText('Bots')).toBeNull();
   });
+
+  // Pesquisa de regras (2026-11-25): família é do mineiro; no paulista a opção nem aparece.
+  test('no paulista não há família: somem "Família" e "Tempo para pedir família", e a mesa vai sem ela', async () => {
+    const user = userEvent.setup();
+    const aoJogar = vi.fn();
+    render(<Lobby aoJogar={aoJogar} />);
+    await user.click(screen.getByText('Regras da mesa'));
+    expect(screen.getByLabelText('Família')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Variante'), 'paulista');
+    expect(screen.queryByLabelText('Família')).toBeNull();
+    expect(screen.queryByLabelText('Tempo para pedir família')).toBeNull();
+    expect(document.querySelector('details.regras-mesa > summary small')!.textContent).not.toMatch(/família/);
+    await user.click(screen.getByRole('button', { name: 'Jogar agora' }));
+    expect(aoJogar.mock.calls[0][0].regras.familia).toBe('off');
+  });
 });

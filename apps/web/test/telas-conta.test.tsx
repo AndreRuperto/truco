@@ -118,7 +118,7 @@ describe('TelaPerfil', () => {
       { id: 'frequentador', nome: 'Freguês da casa', descricao: 'Termine 10 partidas.', alcancada: false, progresso: { atual: 7, meta: 10 } },
       { id: 'primeira-vitoria', nome: 'Primeira vitória', descricao: 'Ganhe uma partida.', alcancada: true, progresso: null },
     ];
-    render(<TelaPerfil id={null} api={{ perfil: vi.fn(async () => ({ ...PERFIL, conquistas })), trocarApelido: vi.fn() }} />);
+    render(<TelaPerfil id={null} aba="conquistas" api={{ perfil: vi.fn(async () => ({ ...PERFIL, conquistas })), trocarApelido: vi.fn() }} />);
     const secao = await screen.findByRole('region', { name: /Conquistas/ });
     expect(secao).toHaveTextContent('1 de 2');
     const itens = within(secao).getAllByRole('listitem');
@@ -128,7 +128,7 @@ describe('TelaPerfil', () => {
   });
 
   test('mostra patente, pontos, Elo e estatísticas por variante', async () => {
-    render(<TelaPerfil id={null} api={{ perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn() }} />);
+    render(<TelaPerfil id={null} aba="pontos" api={{ perfil: vi.fn(async () => PERFIL), trocarApelido: vi.fn() }} />);
     expect(await screen.findByRole('heading', { name: 'ana' })).toBeInTheDocument();
     const paulista = screen.getByRole('region', { name: 'Paulista' });
     expect(within(paulista).getByTestId('elo-paulista')).toHaveTextContent('1016');

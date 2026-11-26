@@ -10,7 +10,18 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   timeout: 300_000,
-  use: { baseURL: `http://127.0.0.1:${PORTA_WEB}`, trace: 'retain-on-failure' },
+  use: {
+    baseURL: `http://127.0.0.1:${PORTA_WEB}`,
+    trace: 'retain-on-failure',
+    // 1ª visita já vista: o tour do lobby escurece a tela e prenderia os testes que não são dele.
+    // Vale também para browser.newContext() (conferido no playwright 1.63); tour.spec.ts e
+    // tutorial.spec.ts começam do zero com `storageState: SEM_VISITA`.
+    // Também a origem do servidor, que serve o build de produção (deploy.spec.ts).
+    storageState: {
+      cookies: [],
+      origins: [`http://127.0.0.1:${PORTA_WEB}`, `http://127.0.0.1:${PORTA_SERVIDOR}`].map((origin) => ({ origin, localStorage: [{ name: 'truco:tutorial', value: 'pulado' }] })),
+    },
+  },
   // Largura de celular: é o layout principal.
   projects: [{ name: 'celular', use: { ...devices['Pixel 7'] } }],
   // O `env` de cada webServer é somado ao process.env (PATH etc. continuam valendo) — conferido
@@ -39,9 +50,10 @@ export default defineConfig({
         TRUCO_RECONEXAO_S: '30',
         // Admins só para o E2E (contas de teste da caixa de saída): telas (responsividade.spec.ts) e o
         // baralho equipado no fundo (fundo-baralho.spec.ts) e "Seu visual" no perfil (perfil-visual.spec.ts);
-        // admin tem todos os itens, sem comprar.
-        ADMIN_EMAILS: 'admin.qa@teste.dev,admin.baralho@teste.dev,admin.perfil.claro@teste.dev,admin.perfil.escuro@teste.dev',
-        // Loja: o checkout volta pago na hora (nunca cobra; ignorado em produção).
+        // admin tem todos os itens, sem comprar. admin.loja dá Pila por ajuste (loja.spec.ts).
+        ADMIN_EMAILS: 'admin.loja@teste.dev,admin.qa@teste.dev,admin.baralho@teste.dev,admin.perfil.claro@teste.dev,admin.perfil.escuro@teste.dev',
+        // Loja: o checkout volta pago na hora (nunca cobra; ignorado em produção). Com a compra de Pila
+        // fechada (COMPRA_PILA_ABERTA), o servidor recusa o pedido antes de chegar aqui (loja.spec.ts).
         LOJA_PAGAMENTO: 'simulado',
         TRUCO_URL_PUBLICA: `http://127.0.0.1:${PORTA_WEB}`,
       },

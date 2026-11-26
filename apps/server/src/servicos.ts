@@ -24,6 +24,8 @@ export interface Servicos {
   agora: () => Date;
   /** Compra de Pila. null/ausente = desligada (a loja mostra "em breve"). */
   pagamento?: { gateway: GatewayPagamento } | null;
+  /** Só para testes: sobrepõe `COMPRA_PILA_ABERTA` (loja/compraPila.ts). Ausente = a constante. */
+  compraPilaAberta?: boolean;
 }
 
 /**
