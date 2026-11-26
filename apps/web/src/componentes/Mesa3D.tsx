@@ -31,7 +31,10 @@ export function Mesa3D({ estado, minha, batida = null, aoFalhar }: Props) {
     importarComRecarga(() => import('./mesa3d/cena'))
       .then(({ criarCena3D }) => {
         if (!vivo || !caixa.current) return;
-        const c = criarCena3D(caixa.current, { reduzido: movimentoReduzido() });
+        const c = criarCena3D(caixa.current, {
+          reduzido: movimentoReduzido(),
+          aoPerderContexto: () => { if (vivo) aoFalhar('contexto WebGL perdido'); },
+        });
         cena.current = c;
         c.atualizar(ultimo.current);
         setPronta(true);

@@ -1,0 +1,32 @@
+{
+  "320x568": {
+    "fps": 25.7,
+    "scrollW": 320,
+    "erroWebGL": null,
+    "qualidade": "media"
+  },
+  "360x640": {
+    "fps": 33.2,
+    "scrollW": 360,
+    "erroWebGL": null,
+    "qualidade": "baixa"
+  },
+  "390x844": {
+    "fps": 26.6,
+    "scrollW": 390,
+    "erroWebGL": null,
+    "qualidade": "baixa"
+  },
+  "430x932": {
+    "fps": 24.7,
+    "scrollW": 430,
+    "erroWebGL": null,
+    "qualidade": "baixa"
+  },
+  "1280x800": {
+    "fps": 14.6,
+    "scrollW": 1280,
+    "erroWebGL": null,
+    "qualidade": "baixa"
+  }
+}

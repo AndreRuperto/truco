@@ -69,6 +69,8 @@ export interface Cena3D {
 export interface OpcoesCena3D {
   /** prefers-reduced-motion: sem idle, voos instantâneos. */
   reduzido: boolean;
+  /** Contexto WebGL perdido (GPU reiniciada, falta de memória): a tela volta para a mesa 2D. */
+  aoPerderContexto?: () => void;
 }
 
 /** Assinatura do módulo `cena.ts` (carregado sob demanda: three.js não entra no bundle principal). */

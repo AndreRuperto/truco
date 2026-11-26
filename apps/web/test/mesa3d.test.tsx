@@ -2,7 +2,7 @@ import { reduce } from '@truco/engine';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import type { Estado3D } from '../src/componentes/mesa3d/tipos';
+import type { Estado3D, OpcoesCena3D } from '../src/componentes/mesa3d/tipos';
 import { exibicaoMesa } from '../src/logica/jogadas';
 import { estadoMesa3D } from '../src/logica/mesa3d';
 import type { EstadoLoja } from '../src/rede/loja';
@@ -11,8 +11,12 @@ import { CADEIRAS_PADRAO, distribuida, jogar, msgEstado, PAULISTA } from './fixt
 
 const atualizacoes: Estado3D[] = [];
 const destruir = vi.fn();
+const opcoesRecebidas: OpcoesCena3D[] = [];
 vi.mock('../src/componentes/mesa3d/cena', () => ({
-  criarCena3D: () => ({ atualizar: (e: Estado3D) => atualizacoes.push(e), bater: vi.fn(), destruir }),
+  criarCena3D: (_c: HTMLElement, o: OpcoesCena3D) => {
+    opcoesRecebidas.push(o);
+    return { atualizar: (e: Estado3D) => atualizacoes.push(e), bater: vi.fn(), destruir };
+  },
 }));
 
 beforeEach(() => {
@@ -114,6 +118,19 @@ describe('vista 3D na mesa', () => {
     expect(destruir).toHaveBeenCalled();
     render(<TelaMesa snap={snap()} acoes={acoes()} />);
     expect(screen.getByTestId('mesa-3d')).toBeInTheDocument();
+  });
+
+  test('contexto WebGL perdido no meio da partida volta para a mesa 2D com aviso', async () => {
+    localStorage.setItem(CHAVE_VISTA_3D, '1');
+    render(<TelaMesa snap={snap()} acoes={acoes()} />);
+    await act(async () => { await vi.dynamicImportSettled(); });
+    expect(screen.getByTestId('mesa-3d')).toBeInTheDocument();
+    const perder = opcoesRecebidas.at(-1)?.aoPerderContexto;
+    expect(perder).toBeTypeOf('function');
+    act(() => perder!());
+    expect(screen.queryByTestId('mesa-3d')).toBeNull();
+    expect(screen.getByTestId('tampo')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Voltamos para a mesa normal');
   });
 
   test('troca madeira por feltro e plástico também na cena 3D sem alterar a jogada', async () => {
