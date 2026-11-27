@@ -87,3 +87,21 @@ test('tour: Esc fecha, o foco não escapa do balão, e o tema claro também escu
     await ctx.close();
   }
 });
+
+// Mudanças de layout sem resize da janela também devem atualizar o recorte.
+test('tour acompanha mudança de geometria do alvo', async ({ browser }) => {
+  const ctx = await browser.newContext({ ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 }, baseURL: test.info().project.use.baseURL, storageState: SEM_VISITA });
+  try {
+    const page = await ctx.newPage();
+    await page.goto('/');
+    const alvo = page.locator('[data-tour-ativo]');
+    await expect(alvo).toBeVisible();
+    await alvo.evaluate(el => { (el as HTMLElement).style.transform = 'translateX(24px)'; });
+    await expect(async () => {
+      const [a, d] = await Promise.all([alvo.boundingBox(), page.locator('.tour-destaque').boundingBox()]);
+      expect(a && d && contem(d, a)).toBeTruthy();
+    }).toPass({ timeout: 5_000 });
+  } finally {
+    await ctx.close();
+  }
+});
