@@ -13,11 +13,12 @@ import {
 } from './sala';
 import { COR, criarTexturas, semente, texturaVerso } from './texturas';
 import { vestir3D } from './vestir';
+import { centrarMesa, vistaPadrao } from './enquadrar';
+import { AJUSTES, MedidorFps, nivelAbaixo, nivelInicial, type Nivel } from './qualidade';
 
 const PI = Math.PI;
 const V = (x = 0, y = 0, z = 0): THREE.Vector3 => new THREE.Vector3(x, y, z);
 const clamp = THREE.MathUtils.clamp;
-const lerp = THREE.MathUtils.lerp;
 const suave = (k: number): number => k * k * (3 - 2 * k);
 const saida = (k: number): number => 1 - Math.pow(1 - k, 3);
 const entrada = (k: number): number => k * k * k;
@@ -63,6 +64,10 @@ class Animador {
   relogio = 0;
   private tarefas: Tarefa[] = [];
   constructor(private readonly instantaneo: boolean) {}
+  /** Alguma animação em curso (carta voando, braço, batida)? */
+  get ocupado(): boolean {
+    return this.tarefas.length > 0;
+  }
   /** Uma tarefa nova com o mesmo `dono` cancela (e resolve) a anterior. */
   animar(dur: number, fn: (k: number) => void, ease: (k: number) => number = suave, dono?: object): Promise<void> {
     if (dono) this.cancelar(dono);
@@ -102,7 +107,7 @@ class Animador {
 
 // ---------------------------------------------------------------- rótulos CSS2D
 const FONTE = "var(--fonte-ui, 'Bricolage Grotesque', system-ui, sans-serif)";
-function criarBalao(reduzido: boolean): { obj: CSS2DObject; texto: HTMLDivElement; caixa: HTMLDivElement } {
+function criarBalao(reduzido: boolean): { obj: CSS2DObject; texto: HTMLDivElement; caixa: HTMLDivElement; rabo: HTMLDivElement } {
   const fora = document.createElement('div');
   fora.style.pointerEvents = 'none';
   const caixa = document.createElement('div');
@@ -124,7 +129,7 @@ function criarBalao(reduzido: boolean): { obj: CSS2DObject; texto: HTMLDivElemen
   const obj = new CSS2DObject(fora);
   obj.center.set(0.5, 1);
   obj.visible = false;
-  return { obj, texto, caixa };
+  return { obj, texto, caixa, rabo };
 }
 
 // ---------------------------------------------------------------- a cena
@@ -134,16 +139,27 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
   const largura = (): number => Math.max(1, container.clientWidth);
   const altura = (): number => Math.max(1, container.clientHeight);
 
-  // Celular (tela pequena): no máximo 1,5 pixel por ponto e sombra PCF simples. Com a CPU 4x mais
-  // lenta a cena fazia ~8 FPS (e2e/auditoria-desempenho.spec.ts, docs/qa-frontend/animacoes-2026-11.md).
-  const pequeno = Math.min(largura(), altura()) < 500;
+  // Qualidade em três níveis (qualidade.ts). Celular começa em média: no máximo 1,5 pixel por ponto e
+  // sombra PCF simples (com a CPU 4x mais lenta a cena fazia ~8 FPS: docs/qa-frontend/animacoes-2026-11.md).
+  // Se o FPS medido ficar baixo, desce para baixa (1 pixel por ponto, sombra 256). `?qualidade=` força.
+  const pedido = new URLSearchParams(location.search).get('qualidade');
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  let nivel: Nivel = nivelInicial({ menorLado: Math.min(largura(), altura()), nucleos: nav.hardwareConcurrency, memoria: nav.deviceMemory, pedido });
+  const medidor = new MedidorFps(pedido !== null);
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pequeno ? 1.5 : 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, AJUSTES[nivel].pixels));
   renderer.setSize(largura(), altura(), false);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = pequeno ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = AJUSTES[nivel].sombra > 0;
+  renderer.shadowMap.type = AJUSTES[nivel].sombraSuave ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  renderer.domElement.dataset.qualidade = nivel;
+  // Contexto WebGL perdido (GPU reiniciada, memória do celular): a tela volta para a mesa 2D.
+  const perdeuContexto = (ev: Event): void => {
+    ev.preventDefault();
+    opcoes.aoPerderContexto?.();
+  };
+  renderer.domElement.addEventListener('webglcontextlost', perdeuContexto);
   Object.assign(renderer.domElement.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', display: 'block' });
   if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
   container.appendChild(renderer.domElement);
@@ -161,7 +177,8 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
 
   const tx = criarTexturas();
   const baralho = new Baralho3D(tx.verso);
-  cena.add(criarSala(tx), criarLuzes(pequeno ? 512 : 1024));
+  const luzes = criarLuzes(AJUSTES[nivel].sombra || 512);
+  cena.add(criarSala(tx), luzes);
   const mesas = criarMesas(tx);
   const mesaGrupo = new THREE.Group();
   cena.add(mesaGrupo);
@@ -292,6 +309,8 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
   }
   function mostrarBalao(pos: Posicao, texto: string | null): void {
     const b = baloes[pos];
+    const quem = pos === 'baixo' ? undefined : personagens[pos];
+    if (quem) quem.falando = texto !== null;
     if (texto) {
       b.texto.textContent = texto;
       b.obj.visible = true;
@@ -702,11 +721,6 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
   const GIRO = 0.14, INCLINA = 0.1;
   controles.minAzimuthAngle = -GIRO;
   controles.maxAzimuthAngle = GIRO;
-  function vistaPadrao(a: number): { fov: number; pos: THREE.Vector3; alvo: THREE.Vector3 } {
-    if (a >= 1.3) return { fov: 57, pos: V(0, 1.36, 1.2), alvo: V(0, 0.9, -0.12) };
-    const k = clamp((1.3 - a) / 0.75, 0, 1); // 0 = largo, 1 = celular estreito
-    return { fov: lerp(57, 70, k), pos: V(0, lerp(1.36, 1.46, k), lerp(1.2, 1.88, k)), alvo: V(0, lerp(0.9, 0.97, k), -0.1) };
-  }
   function aplicarVista(): void {
     const w = largura(), h = altura();
     camera.aspect = w / h;
@@ -726,6 +740,8 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
     const d = camera.position.distanceTo(controles.target);
     controles.minDistance = d;
     controles.maxDistance = d;
+    // O centro da mesa no meio da caixa, não no pé (enquadrar.ts).
+    centrarMesa(camera, w, h);
   }
   aplicarVista();
   let ultimoTam = `${largura()}x${altura()}`;
@@ -739,10 +755,63 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
   });
   observador.observe(container);
 
+  // ---------------------------------------------------------------- qualidade
+  function aplicarNivel(n: Nivel): void {
+    nivel = n;
+    const a = AJUSTES[n];
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, a.pixels));
+    renderer.setSize(largura(), altura(), false);
+    const comSombra = a.sombra > 0;
+    const tipo = a.sombraSuave ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    const mudouSombra = renderer.shadowMap.enabled !== comSombra || renderer.shadowMap.type !== tipo;
+    renderer.shadowMap.enabled = comSombra;
+    renderer.shadowMap.type = tipo;
+    luzes.traverse((o) => {
+      const l = o as THREE.SpotLight;
+      if (!l.isLight || !l.shadow) return;
+      if (comSombra) l.shadow.mapSize.set(a.sombra, a.sombra);
+      l.shadow.map?.dispose();
+      l.shadow.map = null as unknown as THREE.WebGLRenderTarget;
+    });
+    // Ligar/desligar a sombra ou trocar o tipo muda o shader: os materiais recompilam uma vez.
+    if (mudouSombra) cena.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh) for (const mm of Array.isArray(m.material) ? m.material : [m.material]) mm.needsUpdate = true; });
+    renderer.domElement.dataset.qualidade = n;
+  }
+
+  // ---------------------------------------------------------------- balões dentro do quadro
+  // O rótulo CSS2D fica centrado na cabeça; nas cadeiras laterais ele saía pela borda da caixa.
+  // Empurra a caixa para dentro (propriedade `translate`, que não briga com o `transform` do balão).
+  const MARGEM_BALAO = 6;
+  function balaoNoQuadro(): void {
+    const cx = container.getBoundingClientRect();
+    for (const pos of OUTROS) {
+      const b = baloes[pos];
+      if (!b.obj.visible) continue;
+      const atual = Number(b.caixa.dataset.dx ?? 0);
+      const r = b.caixa.getBoundingClientRect();
+      if (r.width === 0) continue;
+      const esq = r.left - atual, dir = r.right - atual;
+      let dx = 0;
+      if (esq < cx.left + MARGEM_BALAO) dx = cx.left + MARGEM_BALAO - esq;
+      else if (dir > cx.right - MARGEM_BALAO) dx = cx.right - MARGEM_BALAO - dir;
+      dx = Math.round(dx);
+      if (dx !== atual) {
+        b.caixa.dataset.dx = String(dx);
+        b.caixa.style.translate = dx ? `${dx}px 0` : '';
+        b.rabo.style.left = `calc(50% - ${dx}px)`;
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- laço
+  // Com a mesa parada (nada voando, sem tremor, anel da vez quieto) desenha no máximo a 30 FPS:
+  // respiração e olhar continuam, e o celular esquenta menos.
+  const PASSO_OCIOSO = 1 / 30;
+  let semDesenhar = 0;
   const relogio = new THREE.Clock();
   function quadro(): void {
-    const dt = Math.min(relogio.getDelta(), 0.05);
+    const dtBruto = relogio.getDelta();
+    const dt = Math.min(dtBruto, 0.05);
     anim.passo(dt);
     const t = anim.relogio;
     for (const o of OUTROS) { const p = personagens[o]; if (p) viver(p, dt, t, !reduzido, ctx); }
@@ -767,13 +836,23 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
     } else mesaGrupo.position.set(0, 0, 0);
 
     controles.update();
+    semDesenhar += dtBruto;
+    const ocioso = !anim.ocupado && tremor <= 0.0002 && vezK >= 1;
+    if (ocioso && semDesenhar < PASSO_OCIOSO) return;
+    const desde = semDesenhar;
+    semDesenhar = 0;
     renderer.render(cena, camera);
     rotulos.render(cena, camera);
+    balaoNoQuadro();
+    if (medidor.registrar(desde)) {
+      const abaixo = nivelAbaixo(nivel);
+      if (abaixo) aplicarNivel(abaixo);
+    }
   }
   const visibilidade = (): void => {
     if (destruido) return;
     if (document.hidden) renderer.setAnimationLoop(null);
-    else { relogio.getDelta(); renderer.setAnimationLoop(quadro); }
+    else { relogio.getDelta(); medidor.zerar(); renderer.setAnimationLoop(quadro); }
   };
   document.addEventListener('visibilitychange', visibilidade);
   renderer.setAnimationLoop(document.hidden ? null : quadro);
@@ -784,6 +863,7 @@ export const criarCena3D: CriarCena3D = (container, opcoes) => {
     destruido = true;
     renderer.setAnimationLoop(null);
     document.removeEventListener('visibilitychange', visibilidade);
+    renderer.domElement.removeEventListener('webglcontextlost', perdeuContexto);
     observador.disconnect();
     controles.dispose();
     anim.parar();

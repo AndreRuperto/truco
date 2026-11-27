@@ -1,0 +1,27 @@
+{
+  "320x568": {
+    "fps": 28.3,
+    "scrollW": 320,
+    "erroWebGL": null
+  },
+  "360x640": {
+    "fps": 21.4,
+    "scrollW": 360,
+    "erroWebGL": null
+  },
+  "390x844": {
+    "fps": 16.8,
+    "scrollW": 390,
+    "erroWebGL": null
+  },
+  "430x932": {
+    "fps": 14.7,
+    "scrollW": 430,
+    "erroWebGL": null
+  },
+  "1280x800": {
+    "fps": 7.6,
+    "scrollW": 1280,
+    "erroWebGL": null
+  }
+}

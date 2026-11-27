@@ -1,5 +1,14 @@
 # Próximos passos — Truco
 
+## 2026-11-26 · branch `claude/mesa-3d-enquadramento` · vista 3D (PR)
+
+- [x] Estudo das cenas 3D do Júri, Conversa de Boteco e Vasco 3D; prancha-guia "Cena 3D" (https://claude.ai/artifact/3fYPVwgGuiVArScxn9LmF6, cópia em `C:\projetos\pranchas`).
+- [x] Rota A: mesa centrada na caixa do celular, qualidade adaptativa, 30 FPS com a mesa parada, contexto perdido volta ao 2D, balões laterais no quadro.
+- [ ] Medir a vista 3D num celular real (FPS e nível em que fica).
+- [ ] Talvez: rota C (câmera chega em quem gritou "Truco!" e volta), esboço em `docs/qa-frontend/capturas/mesa-3d-enquadramento/esbocos-390x844.jpg`.
+- Decisão: manter os bonecos atuais (arredondar custou até 27% de FPS e quase não aparece).
+
+
 ## 2026-11-13 · branch `claude/provocacoes` · provocações prontas (PR); avatares e admin em produção (#32)
 
 Fases 0–6 em produção (último merge: #31, 6f2ee1e, e-mail de contato nas páginas legais). Fase 7 **não** começou (André disse "ainda não").
@@ -72,7 +81,7 @@ Fases 0, 1 e 2 estão em produção. A Fase 3 (animações e sensação de jogo)
 
 Pendências registradas:
 - [ ] Desempenho 2D com a CPU 4x mais lenta: de 3 a 5 quadros acima de 100 ms por mão (meta: nenhum). Falta um perfil de CPU com atribuição das tarefas longas.
-- [ ] Desempenho 3D: 12,3 FPS no headless com WebGL em software (meta: 30). Medir em aparelho real (Fase 7).
+- [ ] Desempenho 3D: 12,3 FPS no headless com WebGL em software (meta: 30). Medir em aparelho real (Fase 7). 2026-11-26 (`claude/mesa-3d-enquadramento`): qualidade adaptativa (alta/média/baixa, `?qualidade=`) e laço a 30 FPS com a mesa parada; headless 390×844 de 16,8 para 26,6 FPS em "baixa" (docs/qa-frontend/mesa-3d-enquadramento-2026-11.md). Falta o aparelho real.
 - [ ] QA independente da Fase 3 (não feito).
 - [ ] Pendências da Fase 2: dica sobre o centro em 320/360×640 (P3), painel "Ordem" sobre o placar no desktop (P2), balões 3D laterais fora do quadro (P2).
 - [ ] PR da branch `claude/mvp-f0-checklist`.
@@ -86,7 +95,7 @@ Fases 0 e 1 estão em produção. Fase 2 (acabamento visual e temas) concluída,
 Pendências registradas (não bloqueiam a fase):
 - [ ] P3: em 320×568 e 360×640, a dica de 3 linhas cobre o centro da mesa. Precisa redesenho (por exemplo, recolher quando houver carta na mesa). O teste está como `test.fail`.
 - [ ] P2: no desktop, o painel "Ordem" aberto cobre "Nós" e o placar (A3, anterior à branch).
-- [ ] P2: na vista 3D, os balões das cadeiras laterais saem do quadro (A5, anterior à branch).
+- [x] P2: na vista 3D, os balões das cadeiras laterais saem do quadro (A5). Empurrados para dentro da caixa em `claude/mesa-3d-enquadramento` (2026-11-26).
 - [ ] P3: no desktop, a dica cobre o nome de cima; em 320×568, o botão "Ordem" encosta na etiqueta de cima (A4, A10).
 - [ ] Reteste pelo QA independente depois das correções (não foi feito).
 - [ ] PR da branch `claude/mvp-f0-checklist` (checklist da F0).
