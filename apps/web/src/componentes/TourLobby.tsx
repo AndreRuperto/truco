@@ -48,14 +48,26 @@ export function TourLobby({ passos, aoPular, aoComecarTutorial }: Props) {
     if (!el) return;
     el.setAttribute('data-tour-ativo', '');
     el.scrollIntoView?.({ block: 'center' });
+    let quadro = 0;
+    let anterior: Caixa | undefined;
     const medir = () => {
       const r = el.getBoundingClientRect();
-      setCaixa({ top: r.top - FOLGA, left: r.left - FOLGA, width: r.width + FOLGA * 2, height: r.height + FOLGA * 2 });
+      const nova = { top: r.top - FOLGA, left: r.left - FOLGA, width: r.width + FOLGA * 2, height: r.height + FOLGA * 2 };
+      if (!anterior || nova.top !== anterior.top || nova.left !== anterior.left || nova.width !== anterior.width || nova.height !== anterior.height) {
+        anterior = nova;
+        setCaixa(nova);
+      }
     };
-    medir();
+    // Fontes, transições e mudanças no layout podem mover o alvo sem resize ou scroll.
+    const acompanhar = () => {
+      medir();
+      quadro = requestAnimationFrame(acompanhar);
+    };
+    acompanhar();
     window.addEventListener('resize', medir);
     window.addEventListener('scroll', medir, true);
     return () => {
+      cancelAnimationFrame(quadro);
       el.removeAttribute('data-tour-ativo');
       window.removeEventListener('resize', medir);
       window.removeEventListener('scroll', medir, true);

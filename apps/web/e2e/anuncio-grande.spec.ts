@@ -185,7 +185,9 @@ async function pedirTruco(page: Page, antes: () => Promise<unknown> = async () =
       // Sem truco na 1ª rodada: joga uma carta para a partida andar.
       if (!agiu && (await carta.isVisible())) {
         await page.waitForTimeout(600);
-        if (!(await truco.isVisible())) await carta.click({ timeout: 800 }).catch(() => {});
+        if (!(await truco.isVisible()) || !(await truco.isEnabled({ timeout: 200 }).catch(() => false))) {
+          await carta.click({ timeout: 800 }).catch(() => {});
+        }
       }
     }
     await page.waitForTimeout(250);

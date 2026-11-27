@@ -38,6 +38,8 @@ const pastaWeb = existsSync(join(PASTA_WEB, 'index.html')) ? PASTA_WEB : null;
 // Vozes pessoais (voz clonada de conta) ficam fora do Git, num volume: VOZES_PESSOAIS_DIR.
 const dirVozes = process.env.VOZES_PESSOAIS_DIR;
 const pastaVozesPessoais = dirVozes && existsSync(dirVozes) ? dirVozes : null;
+// Variável definida e pasta sumida (volume desmontado ou perdido): a voz pessoal some calada. Avisar.
+if (dirVozes && !pastaVozesPessoais) log.aviso('vozes_pessoais_sem_pasta', { pasta: dirVozes });
 const servidor = criarServidor(servicos, { pastaWeb, pastaVozesPessoais });
 // Sessões e links vencidos: no boot e a cada hora (timer com unref).
 const pararLimpeza = agendarLimpeza(() => limparExpirados(servicos.banco, servicos.agora()));

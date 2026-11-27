@@ -157,6 +157,8 @@ export function configurarApp(app: Application, s: Servicos, x: ExtrasApp = {}):
       versao: x.versao ?? null,
       salas: vivas?.salas ?? null,
       jogadores: vivas?.jogadores ?? null,
+      // false = VOZES_PESSOAIS_DIR sem pasta (volume perdido): as vozes pessoais estão dando 404.
+      vozesPessoais: !!x.pastaVozesPessoais,
       banco,
     });
   });
