@@ -26,9 +26,13 @@ jobs:
       - run: pnpm --filter @truco/web build
 
   e2e:
-    name: Playwright - partidas e reconexão
+    name: Playwright - partidas e reconexão (${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -40,14 +44,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @truco/web exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+      - run: pnpm test:e2e --shard=${{ matrix.shard }}/3
         env:
           CI: 'true'
       - name: Guardar rastros em caso de falha
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-traces
+          name: playwright-traces-${{ matrix.shard }}
           path: apps/web/test-results/
           retention-days: 7
           if-no-files-found: ignore
