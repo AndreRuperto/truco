@@ -73,7 +73,7 @@ Sem `DATABASE_URL` o servidor usa PGlite em disco dentro do container — os dad
 | `GOOGLE_CLIENT_ID` | para login Google | client ID (passo 6). Sem ela, o botão do Google não aparece. |
 | `TRUCO_ORIGENS` | raro | outras origens aceitas no CORS, separadas por vírgula |
 | `TRUCO_K_ELO` | não | K do Elo (inteiro de 1 a 100; padrão 32) |
-| `ADMIN_EMAILS` | para ter admin | e-mails de quem vê o painel `#/admin`, separados por vírgula (ex. `andrerupertodev@gmail.com`). Sem ela, ninguém é admin. |
+| `ADMIN_EMAILS` | para ter admin | e-mails de quem vê o painel `#/admin`, separados por vírgula (ex. `voce@exemplo.com`). Sem ela, ninguém é admin. |
 | `LOJA_PAGAMENTO` | só para vender Pila | `on` liga a compra de Pila pela InfinitePay. **Não ligue antes do advogado e da confirmação por escrito da InfinitePay** (ver `docs/legal/` e `docs/plans/2026-11-11-loja-duas-moedas-design.md`). Sem ela, a loja funciona só com itens de Fichas e mostra "em breve" nos pacotes. `simulado` é só para E2E/dev e é ignorado em produção. |
 | `INFINITEPAY_HANDLE` | com `LOJA_PAGAMENTO=on` | sua InfiniteTag, sem o `$`. O checkout precisa estar habilitado em Configurações do Checkout no app da InfinitePay. |
 | `INFINITEPAY_API_KEY` | opcional | chave `inchk_...` do Checkout Integrado (vai no header `X-Api-Key`; só no servidor). |

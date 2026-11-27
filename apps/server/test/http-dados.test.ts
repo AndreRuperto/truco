@@ -156,7 +156,7 @@ describe('dados', () => {
     expect(r.status).toBe(200);
     expect(r.json).toMatchObject({ ok: true, versao: 'abc1234', salas: 3, jogadores: 7, banco: { ok: true } });
     expect(r.json.banco.ms).toBeGreaterThanOrEqual(0);
-    expect(Object.keys(r.json).sort()).toEqual(['banco', 'jogadores', 'ok', 'salas', 'versao']);
+    expect(Object.keys(r.json).sort()).toEqual(['banco', 'jogadores', 'ok', 'salas', 'versao', 'vozesPessoais']);
   });
 
   test('/saude com o banco fora: 503 e ok false (o healthcheck do Railway percebe)', async () => {
